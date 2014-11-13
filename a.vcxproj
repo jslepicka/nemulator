@@ -1,0 +1,426 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectName>nemulator</ProjectName>
+    <ProjectGuid>{082B52AB-87BC-410E-B46D-039E9E38DDF1}</ProjectGuid>
+    <RootNamespace>a</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+    <SccProjectName>
+    </SccProjectName>
+    <SccAuxPath>
+    </SccAuxPath>
+    <SccLocalPath>
+    </SccLocalPath>
+    <SccProvider>
+    </SccProvider>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>NotSet</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>NotSet</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>NotSet</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>NotSet</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Configuration)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Configuration)\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</LinkIncremental>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</LinkIncremental>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Configuration)\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
+    <LibraryPath>$(LibraryPath);$(DXSDK_DIR)Lib\x86</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
+    <LibraryPath>$(LibraryPath);$(DXSDK_DIR)Lib\x86</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
+    <LibraryPath>$(LibraryPath);$(DXSDK_DIR)Lib\x64</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
+    <LibraryPath>$(LibraryPath);$(DXSDK_DIR)Lib\x64</LibraryPath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>C:\boost\boost_1_52_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>C:\boost\boost_1_52_0;C:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN64;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>C:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>C:\boost\boost_1_52_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <AssemblerOutput>AssemblyAndSourceCode</AssemblerOutput>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableParallelCodeGeneration>
+      </EnableParallelCodeGeneration>
+      <AdditionalOptions>/Qvec-report:1 %(AdditionalOptions)</AdditionalOptions>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <FloatingPointExceptions>
+      </FloatingPointExceptions>
+      <CallingConvention>Cdecl</CallingConvention>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <TargetMachine>MachineX86</TargetMachine>
+      <Profile>true</Profile>
+    </Link>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>C:\boost\boost_1_52_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN64;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <AssemblerOutput>AssemblyAndSourceCode</AssemblerOutput>
+      <MultiProcessorCompilation>
+      </MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <Profile>true</Profile>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="a.cpp" />
+    <ClCompile Include="audio_info.cpp" />
+    <ClCompile Include="bmp_writer.cpp" />
+    <ClCompile Include="config.cpp" />
+    <ClCompile Include="crc32.cpp" />
+    <ClCompile Include="D3d10App.cpp" />
+    <ClCompile Include="Game.cpp" />
+    <ClCompile Include="input_handler.cpp" />
+    <ClCompile Include="mem_viewer.cpp" />
+    <ClCompile Include="menu.cpp" />
+    <ClCompile Include="Nemulator.cpp" />
+    <ClCompile Include="nes\apu2.cpp" />
+    <ClCompile Include="nes\mappers\mapper1.cpp" />
+    <ClCompile Include="nes\mappers\mapper10.cpp" />
+    <ClCompile Include="nes\mappers\mapper103.cpp" />
+    <ClCompile Include="nes\mappers\mapper105.cpp" />
+    <ClCompile Include="nes\mappers\mapper11.cpp" />
+    <ClCompile Include="nes\mappers\mapper112.cpp" />
+    <ClCompile Include="nes\mappers\mapper113.cpp" />
+    <ClCompile Include="nes\mappers\mapper115.cpp" />
+    <ClCompile Include="nes\mappers\mapper118.cpp" />
+    <ClCompile Include="nes\mappers\mapper119.cpp" />
+    <ClCompile Include="nes\mappers\mapper140.cpp" />
+    <ClCompile Include="nes\mappers\mapper146.cpp" />
+    <ClCompile Include="nes\mappers\mapper15.cpp" />
+    <ClCompile Include="nes\mappers\mapper152.cpp" />
+    <ClCompile Include="nes\mappers\mapper16.cpp" />
+    <ClCompile Include="nes\mappers\mapper18.cpp" />
+    <ClCompile Include="nes\mappers\mapper180.cpp" />
+    <ClCompile Include="nes\mappers\mapper184.cpp" />
+    <ClCompile Include="nes\mappers\mapper185.cpp" />
+    <ClCompile Include="nes\mappers\mapper19.cpp" />
+    <ClCompile Include="nes\mappers\mapper193.cpp" />
+    <ClCompile Include="nes\mappers\mapper2.cpp" />
+    <ClCompile Include="nes\mappers\mapper228.cpp" />
+    <ClCompile Include="nes\mappers\mapper232.cpp" />
+    <ClCompile Include="nes\mappers\mapper24.cpp" />
+    <ClCompile Include="nes\mappers\mapper243.cpp" />
+    <ClCompile Include="nes\mappers\mapper3.cpp" />
+    <ClCompile Include="nes\mappers\mapper32.cpp" />
+    <ClCompile Include="nes\mappers\mapper33.cpp" />
+    <ClCompile Include="nes\mappers\mapper34.cpp" />
+    <ClCompile Include="nes\mappers\mapper4.cpp" />
+    <ClCompile Include="nes\mappers\mapper40.cpp" />
+    <ClCompile Include="nes\mappers\mapper41.cpp" />
+    <ClCompile Include="nes\mappers\mapper42.cpp" />
+    <ClCompile Include="nes\mappers\mapper44.cpp" />
+    <ClCompile Include="nes\mappers\mapper47.cpp" />
+    <ClCompile Include="nes\mappers\mapper5.cpp" />
+    <ClCompile Include="nes\mappers\mapper64.cpp" />
+    <ClCompile Include="nes\mappers\mapper65.cpp" />
+    <ClCompile Include="nes\mappers\mapper66.cpp" />
+    <ClCompile Include="nes\mappers\mapper67.cpp" />
+    <ClCompile Include="nes\mappers\mapper68.cpp" />
+    <ClCompile Include="nes\mappers\mapper69.cpp" />
+    <ClCompile Include="nes\mappers\mapper7.cpp" />
+    <ClCompile Include="nes\mappers\mapper70.cpp" />
+    <ClCompile Include="nes\mappers\mapper71.cpp" />
+    <ClCompile Include="nes\mappers\mapper72.cpp" />
+    <ClCompile Include="nes\mappers\mapper73.cpp" />
+    <ClCompile Include="nes\mappers\mapper75.cpp" />
+    <ClCompile Include="nes\mappers\mapper76.cpp" />
+    <ClCompile Include="nes\mappers\mapper77.cpp" />
+    <ClCompile Include="nes\mappers\mapper78.cpp" />
+    <ClCompile Include="nes\mappers\mapper79.cpp" />
+    <ClCompile Include="nes\mappers\mapper8.cpp" />
+    <ClCompile Include="nes\mappers\mapper80.cpp" />
+    <ClCompile Include="nes\mappers\mapper82.cpp" />
+    <ClCompile Include="nes\mappers\mapper85.cpp" />
+    <ClCompile Include="nes\mappers\mapper86.cpp" />
+    <ClCompile Include="nes\mappers\mapper87.cpp" />
+    <ClCompile Include="nes\mappers\mapper88.cpp" />
+    <ClCompile Include="nes\mappers\mapper89.cpp" />
+    <ClCompile Include="nes\mappers\mapper9.cpp" />
+    <ClCompile Include="nes\mappers\mapper92.cpp" />
+    <ClCompile Include="nes\mappers\mapper93.cpp" />
+    <ClCompile Include="nes\mappers\mapper94.cpp" />
+    <ClCompile Include="nes\mappers\mapper95.cpp" />
+    <ClCompile Include="nes\mappers\mapper97.cpp" />
+    <ClCompile Include="nes\mappers\mapper_mc_acc.cpp" />
+    <ClCompile Include="nes\mappers\mapper_mmc6.cpp" />
+    <ClCompile Include="nes\mappers\mapper_vrc4.cpp" />
+    <ClCompile Include="nes_input_handler.cpp" />
+    <ClCompile Include="qam.cpp" />
+    <ClCompile Include="resampler.cpp" />
+    <ClCompile Include="sound.cpp" />
+    <ClCompile Include="stats.cpp" />
+    <ClCompile Include="status.cpp" />
+    <ClCompile Include="task.cpp" />
+    <ClCompile Include="task1.cpp" />
+    <ClCompile Include="tasklist.cpp" />
+    <ClCompile Include="TexturePanel.cpp" />
+    <ClCompile Include="TexturePanelItem.cpp" />
+    <ClCompile Include="nes\cpu.cpp" />
+    <ClCompile Include="nes\joypad.cpp" />
+    <ClCompile Include="nes\mapper.cpp" />
+    <ClCompile Include="nes\nes.cpp" />
+    <ClCompile Include="nes\ppu.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="a.h" />
+    <ClInclude Include="audio_info.h" />
+    <ClInclude Include="biquad8.hpp" />
+    <ClInclude Include="bmp_writer.h" />
+    <ClInclude Include="config.h" />
+    <ClInclude Include="constants.h" />
+    <ClInclude Include="crc32.h" />
+    <ClInclude Include="D3d10App.h" />
+    <ClInclude Include="effect.fxo.h" />
+    <ClInclude Include="effect2.fxo.h" />
+    <ClInclude Include="Game.h" />
+    <ClInclude Include="input_handler.h" />
+    <ClInclude Include="mem_access_log.h" />
+    <ClInclude Include="mem_viewer.h" />
+    <ClInclude Include="menu.h" />
+    <ClInclude Include="Nemulator.h" />
+    <ClInclude Include="nes\apu2.h" />
+    <ClInclude Include="nes\apu_luts.h" />
+    <ClInclude Include="nes\cpu.h" />
+    <ClInclude Include="nes\fir_coefs.h" />
+    <ClInclude Include="nes\ines.h" />
+    <ClInclude Include="nes\joypad.h" />
+    <ClInclude Include="nes\mapper.h" />
+    <ClInclude Include="nes\mappers\mapper1.h" />
+    <ClInclude Include="nes\mappers\mapper10.h" />
+    <ClInclude Include="nes\mappers\mapper103.h" />
+    <ClInclude Include="nes\mappers\mapper105.h" />
+    <ClInclude Include="nes\mappers\mapper11.h" />
+    <ClInclude Include="nes\mappers\mapper112.h" />
+    <ClInclude Include="nes\mappers\mapper113.h" />
+    <ClInclude Include="nes\mappers\mapper115.h" />
+    <ClInclude Include="nes\mappers\mapper118.h" />
+    <ClInclude Include="nes\mappers\mapper119.h" />
+    <ClInclude Include="nes\mappers\mapper140.h" />
+    <ClInclude Include="nes\mappers\mapper146.h" />
+    <ClInclude Include="nes\mappers\mapper15.h" />
+    <ClInclude Include="nes\mappers\mapper152.h" />
+    <ClInclude Include="nes\mappers\mapper16.h" />
+    <ClInclude Include="nes\mappers\mapper18.h" />
+    <ClInclude Include="nes\mappers\mapper180.h" />
+    <ClInclude Include="nes\mappers\mapper184.h" />
+    <ClInclude Include="nes\mappers\mapper185.h" />
+    <ClInclude Include="nes\mappers\mapper19.h" />
+    <ClInclude Include="nes\mappers\mapper193.h" />
+    <ClInclude Include="nes\mappers\mapper2.h" />
+    <ClInclude Include="nes\mappers\mapper228.h" />
+    <ClInclude Include="nes\mappers\mapper232.h" />
+    <ClInclude Include="nes\mappers\mapper24.h" />
+    <ClInclude Include="nes\mappers\mapper243.h" />
+    <ClInclude Include="nes\mappers\mapper3.h" />
+    <ClInclude Include="nes\mappers\mapper32.h" />
+    <ClInclude Include="nes\mappers\mapper33.h" />
+    <ClInclude Include="nes\mappers\mapper34.h" />
+    <ClInclude Include="nes\mappers\mapper4.h" />
+    <ClInclude Include="nes\mappers\mapper40.h" />
+    <ClInclude Include="nes\mappers\mapper41.h" />
+    <ClInclude Include="nes\mappers\mapper42.h" />
+    <ClInclude Include="nes\mappers\mapper44.h" />
+    <ClInclude Include="nes\mappers\mapper47.h" />
+    <ClInclude Include="nes\mappers\mapper5.h" />
+    <ClInclude Include="nes\mappers\mapper64.h" />
+    <ClInclude Include="nes\mappers\mapper65.h" />
+    <ClInclude Include="nes\mappers\mapper66.h" />
+    <ClInclude Include="nes\mappers\mapper67.h" />
+    <ClInclude Include="nes\mappers\mapper68.h" />
+    <ClInclude Include="nes\mappers\mapper69.h" />
+    <ClInclude Include="nes\mappers\mapper7.h" />
+    <ClInclude Include="nes\mappers\mapper70.h" />
+    <ClInclude Include="nes\mappers\mapper71.h" />
+    <ClInclude Include="nes\mappers\mapper72.h" />
+    <ClInclude Include="nes\mappers\mapper73.h" />
+    <ClInclude Include="nes\mappers\mapper75.h" />
+    <ClInclude Include="nes\mappers\mapper76.h" />
+    <ClInclude Include="nes\mappers\mapper77.h" />
+    <ClInclude Include="nes\mappers\mapper78.h" />
+    <ClInclude Include="nes\mappers\mapper79.h" />
+    <ClInclude Include="nes\mappers\mapper8.h" />
+    <ClInclude Include="nes\mappers\mapper80.h" />
+    <ClInclude Include="nes\mappers\mapper82.h" />
+    <ClInclude Include="nes\mappers\mapper85.h" />
+    <ClInclude Include="nes\mappers\mapper86.h" />
+    <ClInclude Include="nes\mappers\mapper87.h" />
+    <ClInclude Include="nes\mappers\mapper88.h" />
+    <ClInclude Include="nes\mappers\mapper89.h" />
+    <ClInclude Include="nes\mappers\mapper9.h" />
+    <ClInclude Include="nes\mappers\mapper92.h" />
+    <ClInclude Include="nes\mappers\mapper93.h" />
+    <ClInclude Include="nes\mappers\mapper94.h" />
+    <ClInclude Include="nes\mappers\mapper95.h" />
+    <ClInclude Include="nes\mappers\mapper97.h" />
+    <ClInclude Include="nes\mappers\mappers.h" />
+    <ClInclude Include="nes\mappers\mapper_mc_acc.h" />
+    <ClInclude Include="nes\mappers\mapper_mmc6.h" />
+    <ClInclude Include="nes\mappers\mapper_vrc4.h" />
+    <ClInclude Include="nes\ppu.h" />
+    <ClInclude Include="nes_input_handler.h" />
+    <ClInclude Include="qam.h" />
+    <ClInclude Include="resampler.h" />
+    <ClInclude Include="sound.h" />
+    <ClInclude Include="stats.h" />
+    <ClInclude Include="status.h" />
+    <ClInclude Include="task.h" />
+    <ClInclude Include="task1.h" />
+    <ClInclude Include="tasklist.h" />
+    <ClInclude Include="TexturePanel.h" />
+    <ClInclude Include="TexturePanelItem.h" />
+    <ClInclude Include="nes\nes.h" />
+    <ClInclude Include="nes\Palette.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
