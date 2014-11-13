@@ -1,0 +1,31 @@
+#include "mapper95.h"
+
+
+c_mapper95::c_mapper95()
+{
+	//Dragon Buster (J)
+	mapperName = "Mapper 95";
+}
+
+void c_mapper95::WriteByte(unsigned short address, unsigned char value)
+{
+	switch (address & 0xE001)
+	{
+	case 0xA000:
+		break;
+	default:
+		c_mapper4::WriteByte(address, value);
+	}
+}
+
+void c_mapper95::Sync()
+{
+	int or = chr_xor >> 1;
+	int add = chr_xor >> 2;
+
+	name_table[0] = &vram[0x400 * ((chr[0 | or] & 0x20) >> 5)];
+	name_table[1] = &vram[0x400 * ((chr[(0 | or) + add] & 0x20) >> 5)];
+	name_table[2] = &vram[0x400 * ((chr[1 << or] & 0x20) >> 5)];
+	name_table[3] = &vram[0x400 * ((chr[(1 << or) + add] & 0x20) >> 5)];
+	c_mapper4::Sync();
+}

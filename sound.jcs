@@ -1,0 +1,404 @@
+///////////////////////////////////////////////////////////////////////////////////
+//                                                                               //
+//   nemulator (an NES emulator)                                                 //
+//                                                                               //
+//   Copyright (C) 2003-2009 James Slepicka <james@nemulator.com>                //
+//                                                                               //
+//   This program is free software; you can redistribute it and/or modify        //
+//   it under the terms of the GNU General Public License as published by        //
+//   the Free Software Foundation; either version 2 of the License, or           //
+//   (at your option) any later version.                                         //
+//                                                                               //
+//   This program is distributed in the hope that it will be useful,             //
+//   but WITHOUT ANY WARRANTY; without even the implied warranty of              //
+//   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               //
+//   GNU General Public License for more details.                                //
+//                                                                               //
+//   You should have received a copy of the GNU General Public License           //
+//   along with this program; if not, write to the Free Software                 //
+//   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA   //
+//                                                                               //
+///////////////////////////////////////////////////////////////////////////////////
+
+#include "sound.h"
+#include <math.h>
+
+Sound::Sound(HWND hWnd)
+{
+	this->hWnd = hWnd;
+	resets = 0;
+	freq = default_freq = 47500;
+	max_freq = default_max_freq = (int)(48000 * 1.02);
+	min_freq = default_min_freq = (int)(48000 * .98);
+	highest_freq = 0;
+	lowest_freq = 99999;
+	freq_sum = 0;
+	stable = 0;
+	stability_clock = 0;
+	lpDS = NULL;
+	adjustPeriod = 3;
+	lastb = 0;
+	ZeroMemory(&wf, sizeof(WAVEFORMATEX));
+	wf.wFormatTag = WAVE_FORMAT_PCM;
+	wf.nChannels = 1;
+	wf.nSamplesPerSec = 48000;
+	wf.wBitsPerSample = 16;
+	wf.nBlockAlign = wf.wBitsPerSample / 8 * wf.nChannels;
+	wf.nAvgBytesPerSec = wf.nSamplesPerSec * wf.nBlockAlign;
+
+	ZeroMemory(&bufferdesc, sizeof(DSBUFFERDESC));
+	bufferdesc.dwSize = sizeof(DSBUFFERDESC); 
+	//bufferdesc.dwFlags = DSBCAPS_GLOBALFOCUS | DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_CTRLFREQUENCY | DSBCAPS_CTRLVOLUME; 
+	bufferdesc.dwFlags = DSBCAPS_GLOBALFOCUS | DSBCAPS_TRUEPLAYPOSITION | DSBCAPS_CTRLFREQUENCY | DSBCAPS_CTRLVOLUME; 
+	bufferdesc.dwBufferBytes = (wf.nAvgBytesPerSec * BUFFER_MSEC)/1000;
+	bufferdesc.lpwfxFormat = &wf;
+
+	ZeroMemory(&primaryBufferDesc, sizeof(DSBUFFERDESC));
+	primaryBufferDesc.dwSize = sizeof(DSBUFFERDESC);
+	primaryBufferDesc.dwFlags = DSBCAPS_PRIMARYBUFFER;
+	primaryBufferDesc.dwBufferBytes = 0;
+
+	adjustment_sensitivity = 1.0;
+	stability_steps = stability_reset;
+	unstable_clock = 0;
+	slope = 0.0;
+	sum_x = 0;
+	sum_y = 0;
+	sum_xy = 0;
+	sum_x_squared = 0;
+}
+
+Sound::~Sound(void)
+{
+	if (buffer)
+	{
+		Stop();
+		buffer->Release();
+		buffer = NULL;
+	}
+
+	if (lpDS)
+	{
+		lpDS->Release();
+		lpDS = NULL;
+	}
+}
+
+int Sound::Init(void)
+{
+	if (DS_OK != DirectSoundCreate(NULL, &lpDS, NULL))
+	{
+		MessageBox(NULL, "DirectSoundCreate failed", "", MB_OK);
+		return 0;
+	}
+	if (DS_OK != IDirectSound_SetCooperativeLevel(lpDS, hWnd, DSSCL_PRIORITY))
+	{
+		MessageBox(NULL, "IDirectSound_SetCooperativeLevel failed", "", MB_OK);
+		return 0;
+	}
+	if (DS_OK != lpDS->CreateSoundBuffer(&primaryBufferDesc, &primaryBuffer, NULL))
+	{
+		MessageBox(NULL, "Unable to create primary sound buffer", "", MB_OK);
+		return 0;
+	}
+	if (DS_OK != primaryBuffer->SetFormat(&wf))
+	{
+		MessageBox(NULL, "Unable to set primary buffer format", "", MB_OK);
+		return 0;
+	}
+
+	primaryBuffer->Release();
+	primaryBuffer = NULL;
+
+	if (DS_OK != lpDS->CreateSoundBuffer(&bufferdesc, &buffer, NULL))
+	{
+		//MessageBox(NULL, "CreateSoundBuffer failed", "", MB_OK);
+		return 0;
+	}
+	Clear();
+
+	//bufferOffset = bufferdesc.dwBufferBytes - (int)((wf.nAvgBytesPerSec / 60) * 1.5);
+	//bufferOffset = 0;
+	//buffer->SetCurrentPosition(target);
+	buffer->SetCurrentPosition(0);
+	bufferOffset = target;
+	//Play();
+	//Sleep(100);
+	//Stop();
+
+	return 1;
+}
+
+void Sound::Play(void)
+{
+
+	buffer->Play(0, 0, DSBPLAY_LOOPING);
+
+}
+
+void Sound::Stop(void)
+{
+	buffer->Stop();
+
+}
+
+void Sound::SetVolume(long volume)
+{
+	buffer->SetVolume(volume);
+}
+
+void Sound::Reset()
+{
+	buffer->SetCurrentPosition(0);
+	bufferOffset = target;
+	resets++;
+	if (!stable)
+	{
+		freq = default_freq;
+		buffer->SetFrequency(freq);
+		max_freq = default_max_freq;
+		min_freq = default_min_freq;
+		stability_steps = stability_reset;
+		unstable_clock = 0;
+		stable = 0;
+	}
+
+
+}
+
+int Sound::Sync()
+{
+	int b = GetMaxWrite();
+	//should make this user adjustable
+	int in_target = 0;
+
+	if (--adjustPeriod == 0)
+	{
+		bool rising;
+		if (b > lastb)
+			rising = true;
+		else
+			rising = false;
+		rate = b - lastb;
+		lastb = b;
+		adjustPeriod = adjustFrames;
+		if (b > 9600)
+		{
+			Reset();
+		}
+		else if (b > (target + 3200))
+		{
+			if (rate > 50)
+				freq -= (int)(32 * adjustment_sensitivity);
+			else if (rate > 25)
+				freq -= (int)(16 * adjustment_sensitivity);
+			else if (rate > 10)
+				freq -= (int)(4 * adjustment_sensitivity);
+			else if (rate > 0)
+				freq -= (int)(2 * adjustment_sensitivity);
+			if (stable)
+				unstable_clock++;
+		}
+		else if (b < 1600)
+			Reset();
+		else if (b < target)
+		{
+			if (rate < -50)
+				freq += (int)(32 * adjustment_sensitivity);
+			else if (rate < -25)
+				freq += (int)(16 * adjustment_sensitivity);
+			else if (rate < -10)
+				freq += (int)(4 * adjustment_sensitivity);
+			else if (rate < 0)
+				freq += (int)(2 * adjustment_sensitivity);
+			if (stable)
+				unstable_clock++;
+		}
+		else
+		{
+			in_target = 1;
+			if (stable)
+			{
+				unstable_clock--;
+				if (unstable_clock < 0)
+					unstable_clock = 0;
+			}
+			int min = 3200 + 3200*.25;
+			int max = 6400 - 3200*.25;
+			if (rate < -50 && b < max)
+				freq += 8;
+			else if (rate < -25 && b < max)
+				freq += 4;
+			else if (rate < -5 && b < max)
+				freq += 2;
+			else if (rate > 50 && b > min)
+				freq -= 8;
+			else if (rate > 25 && b > min)
+				freq -= 4;
+			else if (rate > 5 && b > min)
+				freq -= 2;
+		}
+		if (freq < min_freq)
+			freq = min_freq;
+		if (freq > max_freq)
+			freq = max_freq;
+		buffer->SetFrequency(freq);
+	}
+
+	freq_sum += freq;
+	if (freq < lowest_freq)
+		lowest_freq = freq;
+	if (freq > highest_freq)
+		highest_freq = freq;
+
+	sum_x += (stability_clock+1);
+	sum_y += b;
+	sum_x_squared += ((stability_clock+1) * (stability_clock+1));
+	sum_xy += (stability_clock+1) * b;
+
+	if (++stability_clock == 3 * 60)
+	{
+		slope = (double)(stability_clock * sum_xy - sum_x*sum_y) / (stability_clock * sum_x_squared - sum_x * sum_x);
+		int avg_freq = freq_sum / stability_clock;
+		if (!stable)
+		{
+			//if (highest_freq - lowest_freq < 50 && avg_freq != highest_freq && avg_freq != lowest_freq)
+			if (abs(slope) < 1.0)
+			{
+				stability_steps--;
+				int avg_freq = freq_sum / stability_clock;
+				max_freq = avg_freq + 25 * stability_steps;
+				min_freq = avg_freq - 25 * stability_steps;
+				if (stability_steps == 1)
+					stable = 1;
+			}
+			else
+			{
+				stability_steps++;
+				if (stability_steps > stability_reset)
+					stability_steps = stability_reset;
+				int avg_freq = freq_sum / stability_clock;
+				max_freq = avg_freq + 25 * stability_steps;
+				min_freq = avg_freq - 25 * stability_steps;
+			}
+		}
+		else
+		{
+			//if (unstable_clock >= (stability_clock * .5) || avg_freq == highest_freq || avg_freq == lowest_freq)
+			if (abs(slope) >= 1.0)
+			{
+				stable = 0;
+				unstable_clock = 0;
+				stability_steps = 2;
+				max_freq += 25;
+				min_freq -= 25;
+			}
+		}
+		lowest_freq = 999999;
+		highest_freq = 0;
+		freq_sum = 0;
+		stability_clock = 0;
+		sum_x = 0;
+		sum_y = 0;
+		sum_x_squared = 0;
+		sum_xy = 0;
+	}
+	return b;
+}
+
+void Sound::SetMaxFps(double fps)
+{
+	max_freq = (int)(fps / 60.0 * 48000 * 1.01);
+}
+
+void Sound::Clear()
+{
+	LPBYTE lpbuf1 = NULL;
+	LPBYTE lpbuf2 = NULL;
+	DWORD dwsize1;
+
+	buffer->Lock(0, 0, (LPVOID*)&lpbuf1, &dwsize1, NULL, NULL, DSBLOCK_ENTIREBUFFER);
+	for (int i = 0; i < (int)dwsize1; i++)
+	{
+		lpbuf1[i] = 0;
+	}
+	buffer->Unlock(lpbuf1, dwsize1, NULL, NULL);
+
+
+}
+
+int Sound::Copy(short *src, int numSamples)
+{
+	//return 0;
+	HRESULT hr;
+	LPBYTE lpbuf1 = NULL;
+	LPBYTE lpbuf2 = NULL;
+	DWORD dwsize1 = 0;
+	DWORD dwsize2 = 0;
+	DWORD dwbyteswritten1 = 0;
+	DWORD dwbyteswritten2 = 0;
+
+	//wait until there's enough room in the DirectSound buffer for the new samples
+	while ((GetMaxWrite() & ~1) < numSamples * 2);
+
+	// Lock the sound buffer
+	hr = buffer->Lock(bufferOffset, (DWORD)(numSamples * 2), (LPVOID *)&lpbuf1, &dwsize1, (LPVOID *)&lpbuf2, &dwsize2, 0);
+	if (hr == DS_OK)
+	{
+		//pOutBuffer = out_buf;
+		if ((dwbyteswritten1 = CopyBuffer(lpbuf1, dwsize1, src, numSamples)) == dwsize1)
+			if (lpbuf2)
+			{
+				//src += dwbyteswritten1 / 2;
+				//numSamples -= dwbyteswritten1 / 2;
+				dwbyteswritten2 = CopyBuffer(lpbuf2, dwsize2, src + dwbyteswritten1 / 2, numSamples - dwbyteswritten1 / 2);
+			}
+
+
+			// Update our buffer offset and unlock sound buffer
+			bufferOffset = (bufferOffset + dwbyteswritten1 + dwbyteswritten2) % bufferdesc.dwBufferBytes;
+
+			//numSamples -= dwbyteswritten1/2 + dwbyteswritten2/2;
+
+			buffer->Unlock (lpbuf1, dwbyteswritten1, lpbuf2, dwbyteswritten2);
+
+			//}
+	}
+	return 0;		
+}
+
+int Sound::CopyBuffer(LPBYTE destBuffer, DWORD destBufferSize, short *src, int srcCount)
+{
+	int copy_size = 0;
+	destBufferSize &= ~1;
+	if (destBufferSize >= srcCount*2)
+		copy_size = srcCount * 2;
+	else
+		copy_size = (destBufferSize & ~1);
+	memcpy(destBuffer, src, copy_size);
+	return copy_size;
+
+	//unsigned int i = 0;
+	//short *p = (short*)destBuffer;
+
+	//while ((i+2) <= destBufferSize && srcCount-- > 0)
+	//{
+	//	*p++ = *src++;
+	//	i+=2;
+	//}
+	//if (i != j)
+	//	int jj = 1;
+	//return i;
+}
+
+int Sound::GetMaxWrite(void)
+{
+	DWORD playCursor;
+
+	buffer->GetCurrentPosition(&playCursor, NULL);
+
+	if (bufferOffset <= playCursor)
+		return playCursor - bufferOffset;
+	else
+		return bufferdesc.dwBufferBytes - bufferOffset + playCursor;
+}
