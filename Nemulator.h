@@ -65,6 +65,7 @@ private:
 	int splash_stage;
 	double splash_timer;
 	double splash_fade_timer;
+	void configure_input();
 
 	float fov_h;
 	float eye_x;

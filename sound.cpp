@@ -23,9 +23,11 @@
 #include "sound.h"
 #include <math.h>
 #include <assert.h>
+#include "config.h"
 //#include <fstream>
 //
 //std::ofstream file;
+extern c_config *config;
 
 Sound::Sound(HWND hWnd)
 {
@@ -41,7 +43,7 @@ Sound::Sound(HWND hWnd)
 	lastb = 0;
 	ZeroMemory(&wf, sizeof(WAVEFORMATEX));
 	wf.wFormatTag = WAVE_FORMAT_PCM;
-	wf.nChannels = 2;
+	wf.nChannels = 1;
 	wf.nSamplesPerSec = 48000;
 	wf.wBitsPerSample = 16;
 	wf.nBlockAlign = wf.wBitsPerSample / 8 * wf.nChannels;
@@ -61,19 +63,30 @@ Sound::Sound(HWND hWnd)
 
 	bufferOffset = 0;
 
-	//delay_len = wf.nSamplesPerSec * (5.0 / 1000.0);
-	delay_len = 256;
+	////delay_len = wf.nSamplesPerSec * (5.0 / 1000.0);
+	//delay = config->get_int("sound.stereo_delay", 0);
 
-	delay_line = new short[delay_len];
-	for (int i = 0; i < delay_len; i++)
-		delay_line[i] = 0;
-	delay_write = delay_len - 1;
-	delay_read = 0;
+	//delay_line = new short[delay_len];
+	//for (int i = 0; i < delay_len; i++)
+	//	delay_line[i] = 0;
+	//delay_read = 0;
+	//set_delay(delay);
+}
+
+int Sound::set_delay(int delay)
+{
+	if (delay < 0)
+		delay = 0;
+	else if (delay >= delay_len)
+		delay = delay_len - 1;
+	delay_write = (delay_read + delay) & 0x3FF;
+	this->delay = delay;
+	return 0;
 }
 
 Sound::~Sound(void)
 {
-	delete[] delay_line;
+	//delete[] delay_line;
 	if (buffer)
 	{
 		Stop();
@@ -289,36 +302,39 @@ int Sound::CopyBuffer(LPBYTE destBuffer, DWORD destBufferSize, const short *src,
 {
 	int copy_size = 0;
 	destBufferSize &= ~1;
-	//if (destBufferSize >= srcCount * 2 * wf.nChannels)
-	//	copy_size = srcCount * 2 * wf.nChannels;
-	//else
-	//	copy_size = (destBufferSize & ~1);
-	//memcpy(destBuffer, src, copy_size);
-	copy_size = 0;
-	short *s = (short*)src;
-	short *d = (short*)destBuffer;
-	for (int i = 0; i < ((destBufferSize >= srcCount * 2 * wf.nChannels) ? srcCount : (destBufferSize / 2 / wf.nChannels)); i++)
-	{
-		if (wf.nChannels == 1)
-		{
-			*d++ = *s++;
-			copy_size += 2;
-		}
-		else if (wf.nChannels == 2)
-		{
-			*d++ = *s;
-			*d++ = delay_line[delay_read];
-			delay_line[delay_write] = *s;
-			s++;
-			//delay_read = (delay_read + 1) % delay_len;
-			//delay_write = (delay_write + 1) % delay_len;
-			delay_read = (delay_read + 1) & 0xFF;
-			delay_write = (delay_write + 1) & 0xFF;
-			copy_size += 4;
-
-		}
-	}
+	if (destBufferSize >= srcCount * 2 * wf.nChannels)
+		copy_size = srcCount * 2 * wf.nChannels;
+	else
+		copy_size = destBufferSize;
+	memcpy(destBuffer, src, copy_size);
 	return copy_size;
+
+	//copy_size = 0;
+	//short *s = (short*)src;
+	//short *d = (short*)destBuffer;
+	//for (int i = 0; i < ((destBufferSize >= srcCount * 2 * wf.nChannels) ? srcCount : (destBufferSize / 2 / wf.nChannels)); i++)
+	//{
+	//	if (wf.nChannels == 1)
+	//	{
+	//		*d++ = *s++;
+	//		copy_size += 2;
+	//	}
+	//	else if (wf.nChannels == 2)
+	//	{
+	//		*d++ = *s;
+	//		delay_line[delay_write] = *s;
+	//		*d++ = delay_line[delay_read];
+
+	//		s++;
+	//		//delay_read = (delay_read + 1) % delay_len;
+	//		//delay_write = (delay_write + 1) % delay_len;
+	//		delay_read = (delay_read + 1) & 0x3FF;
+	//		delay_write = (delay_write + 1) & 0x3FF;
+	//		copy_size += 4;
+
+	//	}
+	//}
+	//return copy_size;
 }
 
 int Sound::GetMaxWrite(void)

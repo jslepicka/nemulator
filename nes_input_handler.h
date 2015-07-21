@@ -46,7 +46,9 @@ public:
 		BUTTON_ESCAPE,
 		BUTTON_RETURN,
 		BUTTON_DEC_SHARPNESS,
-		BUTTON_INC_SHARPNESS
+		BUTTON_INC_SHARPNESS,
+		BUTTON_DEC_SOUND_DELAY,
+		BUTTON_INC_SOUND_DELAY
 	};
 	unsigned char get_nes_byte(int controller);
 	void set_turbo_state(int button, int turbo_enabled);

@@ -77,7 +77,9 @@ Nemulator::Nemulator()
 	input_buffer_end = 0;
 	show_suspend = false;
 
-	_MM_SET_DENORMALS_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+	_MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+	_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+
 }
 
 void Nemulator::kill_threads()
@@ -209,17 +211,53 @@ void Nemulator::generate_palette()
 		i *= saturation;
 		q *= saturation;
 
-		double ntsc_r = y +  0.946882 * i +  0.623557 * q;
-		double ntsc_g = y + -0.274788 * i + -0.635691 * q;
-		double ntsc_b = y + -1.108545 * i +  1.709007 * q;
+		auto clamp = [](int v, int min, int max){
+			return v < min ? min : v > max ? max : v;
+		};
 
-		double cie_x = ntsc_r * 0.4163290 + ntsc_g * 0.3931464 + ntsc_b * 0.1547446;
-		double cie_y = ntsc_r * 0.2216999 + ntsc_g * 0.7032549 + ntsc_b * 0.0750452;
-		double cie_z = ntsc_r * 0.0136576 + ntsc_g * 0.0913604 + ntsc_b * 0.7201920;
+		auto d_clamp = [](double v, double min, double max)
+		{
+			return v < min ? min : v > max ? max : v;
+		};
 
-		double srgb_r = cie_x *  3.1338561 + cie_y * -1.6168667 + cie_z * -0.4906146;
-		double srgb_g = cie_x * -0.9787684 + cie_y *  1.9161415 + cie_z *  0.0334540;
-		double srgb_b = cie_x *  0.0719453 + cie_y * -0.2289914 + cie_z *  1.4052427;
+		//Y'IQ -> NTSC R'G'B'
+		//conversion matrix from http://wiki.nesdev.com/w/index.php/NTSC_video
+		//Adapted from http://en.wikipedia.org/wiki/YIQ, FCC matrix []^-1
+		//double ntsc_r = y +  0.946882 * i +  0.623557 * q;
+		//double ntsc_g = y + -0.274788 * i + -0.635691 * q;
+		//double ntsc_b = y + -1.108545 * i +  1.709007 * q;
+		//double ntsc_r = y + i * 0.946882217090069 + q * 0.623556581986143;
+		//double ntsc_g = y + i * -0.274787646298978 + q * -0.635691079187380;
+		//double ntsc_b = y + i * -1.10854503464203 + q * 1.70900692840647;
+		double ntsc_r = y +  0.956 * i +  0.620 * q;
+		double ntsc_g = y + -0.272 * i + -0.647 * q;
+		double ntsc_b = y + -1.108 * i +  1.705 * q;
+
+		//NTSC R'G'B' -> linear NTSC RGB
+		ntsc_r = pow(d_clamp(ntsc_r, 0.0, 1.0), 2.2);
+		ntsc_g = pow(d_clamp(ntsc_g, 0.0, 1.0), 2.2);
+		ntsc_b = pow(d_clamp(ntsc_b, 0.0, 1.0), 2.2);
+
+		//NTSC RGB (SMPTE-C) -> CIE XYZ
+		//conversion matrix from http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
+		double cie_x = ntsc_r * 0.3935891 + ntsc_g * 0.3652497 + ntsc_b * 0.1916313;
+		double cie_y = ntsc_r * 0.2124132 + ntsc_g * 0.7010437 + ntsc_b * 0.0865432;
+		double cie_z = ntsc_r * 0.0187423 + ntsc_g * 0.1119313 + ntsc_b * 0.9581563;
+
+		//CIE XYZ -> linear sRGB
+		//Shader will return sR'G'B'
+		//conversion matrix from http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
+		double srgb_r2 = cie_x * 3.2404542 + cie_y * -1.5371385 + cie_z * -0.4985314;
+		double srgb_g2 = cie_x * -0.9692660 + cie_y * 1.8760108 + cie_z * 0.0415560;
+		double srgb_b2 = cie_x * 0.0556434 + cie_y * -0.2040259 + cie_z * 1.0572252;
+
+		double srgb_r = ntsc_r * 0.939555319482800 + ntsc_g * 0.0501723952684700 + ntsc_b * 0.0102725646454400;
+		double srgb_g = ntsc_r * 0.0177757796807600 + ntsc_g * 0.965792853854560 + ntsc_b * 0.0164314174435600;
+		double srgb_b = ntsc_r * -0.00162232670898000 + ntsc_g * -0.00437074564609001 + ntsc_b * 1.00599294870830;
+
+		srgb_r = d_clamp(srgb_r, 0.0, 1.0);
+		srgb_g = d_clamp(srgb_g, 0.0, 1.0);
+		srgb_b = d_clamp(srgb_b, 0.0, 1.0);
 
 		auto gammafix = [](double f){
 			float gamma = 2.2;
@@ -228,13 +266,10 @@ void Nemulator::generate_palette()
 			return f < 0.0 ? 0.0 : pow(f, gamma);
 		};
 
-		auto clamp = [](int v, int min, int max){
-			return v < min ? min : v > max ? max : v;
-		};
 
-		int rgb = 0x000001 * clamp((int)(255.0 * gammafix(srgb_r)), 0, 255)
-			+ 0x000100 * clamp((int)(255.0 * gammafix(srgb_g)), 0, 255)
-			+ 0x010000 * clamp((int)(255.0 * gammafix(srgb_b)), 0, 255);
+		int rgb = 0x000001 * (int)(255.0 * srgb_r)
+				+ 0x000100 * (int)(255.0 * srgb_g)
+				+ 0x010000 * (int)(255.0 * srgb_b);
 
 		pal[pixel] = rgb | 0xFF000000;
 	}
@@ -248,7 +283,8 @@ void Nemulator::init(void *params)
 
 DWORD WINAPI Nemulator::game_thread(LPVOID lpParam)
 {
-	_MM_SET_DENORMALS_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+	_MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+	_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
 
 	s_game_thread *t = (s_game_thread*)lpParam;
 	while(true)
@@ -378,7 +414,17 @@ void Nemulator::Init()
 	if (menu_delay < 1.0)
 		menu_delay = 1.0;
 
-	g_ih = new c_nes_input_handler(44);
+	configure_input();
+
+	QueryPerformanceCounter(&liLast);
+	OnResize();
+
+}
+
+void Nemulator::configure_input()
+{
+
+	g_ih = new c_nes_input_handler(46);
 	g_ih->set_button_keymap(c_nes_input_handler::BUTTON_1LEFT, config->get_int("joy1.left", VK_LEFT));
 	g_ih->set_button_keymap(c_nes_input_handler::BUTTON_1RIGHT, config->get_int("joy1.right", VK_RIGHT));
 	g_ih->set_button_keymap(c_nes_input_handler::BUTTON_1UP, config->get_int("joy1.up", VK_UP));
@@ -390,25 +436,21 @@ void Nemulator::Init()
 	g_ih->set_button_keymap(c_nes_input_handler::BUTTON_1SELECT, config->get_int("joy1.select", VK_OEM_4));
 	g_ih->set_button_keymap(c_nes_input_handler::BUTTON_1START, config->get_int("joy1.start", VK_OEM_6));
 
-	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_1LEFT, config->get_int("joy1.joy", -1), config->get_int("joy1.joy.left", 0));
+	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_1LEFT, config->get_int("joy1.joy", -1), config->get_int("joy1.joy.left", -1));
 	g_ih->set_button_type(c_nes_input_handler::BUTTON_1LEFT, config->get_int("joy1.joy.left.type", 0));
-
-	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_1RIGHT, config->get_int("joy1.joy", -1), config->get_int("joy1.joy.right", 0));
+	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_1RIGHT, config->get_int("joy1.joy", -1), config->get_int("joy1.joy.right", -1));
 	g_ih->set_button_type(c_nes_input_handler::BUTTON_1RIGHT, config->get_int("joy1.joy.right.type", 0));
-
-	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_1UP, config->get_int("joy1.joy", -1), config->get_int("joy1.joy.up", 0));
+	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_1UP, config->get_int("joy1.joy", -1), config->get_int("joy1.joy.up", -1));
 	g_ih->set_button_type(c_nes_input_handler::BUTTON_1UP, config->get_int("joy1.joy.up.type", 0));
-
-	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_1DOWN, config->get_int("joy1.joy", -1), config->get_int("joy1.joy.down", 0));
+	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_1DOWN, config->get_int("joy1.joy", -1), config->get_int("joy1.joy.down", -1));
 	g_ih->set_button_type(c_nes_input_handler::BUTTON_1DOWN, config->get_int("joy1.joy.down.type", 0));
 
-
-	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_1A, config->get_int("joy1.joy", -1), config->get_int("joy1.joy.a", 0));
-	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_1A_TURBO, config->get_int("joy1.joy", -1), config->get_int("joy1.joy.a_turbo", 0));
-	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_1B, config->get_int("joy1.joy", -1), config->get_int("joy1.joy.b", 0));
-	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_1B_TURBO, config->get_int("joy1.joy", -1), config->get_int("joy1.joy.b_turbo", 0));
-	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_1SELECT, config->get_int("joy1.joy", -1), config->get_int("joy1.joy.select", 0));
-	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_1START, config->get_int("joy1.joy", -1), config->get_int("joy1.joy.start", 0));
+	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_1A, config->get_int("joy1.joy", -1), config->get_int("joy1.joy.a", -1));
+	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_1A_TURBO, config->get_int("joy1.joy", -1), config->get_int("joy1.joy.a_turbo", -1));
+	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_1B, config->get_int("joy1.joy", -1), config->get_int("joy1.joy.b", -1));
+	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_1B_TURBO, config->get_int("joy1.joy", -1), config->get_int("joy1.joy.b_turbo", -1));
+	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_1SELECT, config->get_int("joy1.joy", -1), config->get_int("joy1.joy.select", -1));
+	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_1START, config->get_int("joy1.joy", -1), config->get_int("joy1.joy.start", -1));
 
 	g_ih->set_repeat_mode(c_nes_input_handler::BUTTON_1LEFT, 1);
 	g_ih->set_repeat_mode(c_nes_input_handler::BUTTON_1RIGHT, 1);
@@ -431,16 +473,23 @@ void Nemulator::Init()
 	g_ih->set_button_keymap(c_nes_input_handler::BUTTON_2B_TURBO, config->get_int("joy2.b_turbo", 0));
 	g_ih->set_button_keymap(c_nes_input_handler::BUTTON_2SELECT, config->get_int("joy2.select", 0));
 	g_ih->set_button_keymap(c_nes_input_handler::BUTTON_2START, config->get_int("joy2.start", 0));
-	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_2LEFT, config->get_int("joy2.joy", -1), config->get_int("joy2.joy.left", 0));
-	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_2RIGHT, config->get_int("joy2.joy", -1), config->get_int("joy2.joy.right", 0));
-	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_2UP, config->get_int("joy2.joy", -1), config->get_int("joy2.joy.up", 0));
-	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_2DOWN, config->get_int("joy2.joy", -1), config->get_int("joy2.joy.down", 0));
-	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_2A, config->get_int("joy2.joy", -1), config->get_int("joy2.joy.a", 0));
-	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_2A_TURBO, config->get_int("joy2.joy", -1), config->get_int("joy2.joy.a_turbo", 0));
-	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_2B, config->get_int("joy2.joy", -1), config->get_int("joy2.joy.b", 0));
-	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_2B_TURBO, config->get_int("joy2.joy", -1), config->get_int("joy2.joy.b_turbo", 0));
-	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_2SELECT, config->get_int("joy2.joy", -1), config->get_int("joy2.joy.select", 0));
-	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_2START, config->get_int("joy2.joy", -1), config->get_int("joy2.joy.start", 0));
+
+	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_2LEFT, config->get_int("joy2.joy", -1), config->get_int("joy2.joy.left", -1));
+	g_ih->set_button_type(c_nes_input_handler::BUTTON_2LEFT, config->get_int("joy2.joy.left.type", 0));
+	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_2RIGHT, config->get_int("joy2.joy", -1), config->get_int("joy2.joy.right", -1));
+	g_ih->set_button_type(c_nes_input_handler::BUTTON_2RIGHT, config->get_int("joy2.joy.left.type", 0));
+	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_2UP, config->get_int("joy2.joy", -1), config->get_int("joy2.joy.up", -1));
+	g_ih->set_button_type(c_nes_input_handler::BUTTON_2UP, config->get_int("joy2.joy.left.type", 0));
+	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_2DOWN, config->get_int("joy2.joy", -1), config->get_int("joy2.joy.down", -1));
+	g_ih->set_button_type(c_nes_input_handler::BUTTON_2DOWN, config->get_int("joy2.joy.left.type", 0));
+
+	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_2A, config->get_int("joy2.joy", -1), config->get_int("joy2.joy.a", -1));
+	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_2A_TURBO, config->get_int("joy2.joy", -1), config->get_int("joy2.joy.a_turbo", -1));
+	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_2B, config->get_int("joy2.joy", -1), config->get_int("joy2.joy.b", -1));
+	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_2B_TURBO, config->get_int("joy2.joy", -1), config->get_int("joy2.joy.b_turbo", -1));
+	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_2SELECT, config->get_int("joy2.joy", -1), config->get_int("joy2.joy.select", -1));
+	g_ih->set_button_joymap(c_nes_input_handler::BUTTON_2START, config->get_int("joy2.joy", -1), config->get_int("joy2.joy.start", -1));
+
 	g_ih->set_repeat_mode(c_nes_input_handler::BUTTON_2LEFT, 1);
 	g_ih->set_repeat_mode(c_nes_input_handler::BUTTON_2RIGHT, 1);
 	g_ih->set_repeat_mode(c_nes_input_handler::BUTTON_2UP, 1);
@@ -474,8 +523,10 @@ void Nemulator::Init()
 	g_ih->set_button_keymap(c_nes_input_handler::BUTTON_INC_SHARPNESS, 0x30); //0
 	g_ih->set_repeat_mode(c_nes_input_handler::BUTTON_INC_SHARPNESS, 1);
 
-	QueryPerformanceCounter(&liLast);
-	OnResize();
+	//g_ih->set_button_keymap(c_nes_input_handler::BUTTON_DEC_SOUND_DELAY, 0x37); //7
+	//g_ih->set_repeat_mode(c_nes_input_handler::BUTTON_DEC_SOUND_DELAY, 1);
+	//g_ih->set_button_keymap(c_nes_input_handler::BUTTON_INC_SOUND_DELAY, 0x38); //8
+	//g_ih->set_repeat_mode(c_nes_input_handler::BUTTON_INC_SOUND_DELAY, 1);
 
 }
 
@@ -743,6 +794,40 @@ void Nemulator::ProcessInput(double dt)
 			char buf[6];
 			sprintf_s(buf, sizeof(buf), "%.3f", sharpness);
 			status->add_message("set sharpness to " + std::string(buf));
+		}
+	}
+	else if (g_ih->get_result(c_nes_input_handler::BUTTON_DEC_SOUND_DELAY) &
+		(c_input_handler::RESULT_DOWN | c_input_handler::RESULT_REPEAT_SLOW | c_input_handler::RESULT_REPEAT_FAST | c_input_handler::RESULT_REPEAT_EXTRAFAST))
+	{
+		if (sound->get_delay() > 0)
+		{
+			int adj_amount = 1;
+			if (g_ih->get_result(c_nes_input_handler::BUTTON_DEC_SOUND_DELAY) &
+				(c_input_handler::RESULT_REPEAT_EXTRAFAST))
+			{
+				adj_amount = 10;
+			}
+			sound->set_delay(sound->get_delay() - adj_amount);
+			char buf[32];
+			sprintf_s(buf, sizeof(buf), "%d (%.2f ms)", sound->get_delay(), sound->get_delay() / 48000.0 * 1000.0);
+			status->add_message("set stereo delay to " + std::string(buf));
+		}
+	}
+	else if (g_ih->get_result(c_nes_input_handler::BUTTON_INC_SOUND_DELAY) &
+		(c_input_handler::RESULT_DOWN | c_input_handler::RESULT_REPEAT_SLOW | c_input_handler::RESULT_REPEAT_FAST | c_input_handler::RESULT_REPEAT_EXTRAFAST))
+	{
+		if (sound->get_delay() < (sound->get_delay_len() - 1))
+		{
+			int adj_amount = 1;
+			if (g_ih->get_result(c_nes_input_handler::BUTTON_INC_SOUND_DELAY) &
+				(c_input_handler::RESULT_REPEAT_EXTRAFAST))
+			{
+				adj_amount = 10;
+			}
+			sound->set_delay(sound->get_delay() + adj_amount);
+			char buf[32];
+			sprintf_s(buf, sizeof(buf), "%d (%.2f ms)", sound->get_delay(), sound->get_delay() / 48000.0 * 1000.0);
+			status->add_message("set stereo delay to " + std::string(buf));
 		}
 	}
 
@@ -1564,6 +1649,15 @@ int Nemulator::take_screenshot()
 				}
 				else
 					col = pal[*fb++ & 0x1FF];
+				{
+					int r = col & 0xFF;
+					int g = (col >> 8) & 0xFF;
+					int b = (col >> 16) & 0xFF;
+					r = 255.0 * pow(r/255.0, 1.0 / 2.2);
+					g = 255.0 * pow(g/255.0, 1.0 / 2.2);
+					b = 255.0 * pow(b/255.0, 1.0 / 2.2);
+					col = 0xFF000000 | (b << 16) | (g << 8) | r;
+				}
 				*b_ptr++ = col;
 			}
 		}
