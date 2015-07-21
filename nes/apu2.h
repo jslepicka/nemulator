@@ -50,7 +50,7 @@ public:
 		~c_timer();
 		//void clock(int shift);
 		int clock();
-		int clock2x();
+		//int clock2x();
 		void set_period_lo(int period_lo);
 		void set_period_hi(int period_hi);
 		void set_period(int value);
@@ -285,5 +285,6 @@ private:
 	c_dmc dmc;
 
 	int pre_decimate;
+	int square_clock;
 };
 

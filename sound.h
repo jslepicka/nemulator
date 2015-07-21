@@ -49,6 +49,9 @@ public:
 	int min_freq;
 	double slope;
 	double get_requested_freq();
+	int get_delay() { return delay; }
+	int get_delay_len() { return delay_len; }
+	int set_delay(int delay);
 	void Reset();
 private:
 	double requested_freq;
@@ -79,7 +82,8 @@ private:
 	int freq_values[num_values];
 	int value_index;
 	short *delay_line;
-	int delay_len;
+	static const int delay_len = 1024;
 	int delay_read;
 	int delay_write;
+	int delay;
 };

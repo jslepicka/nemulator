@@ -45,7 +45,7 @@ extern int mem_viewer_active;
 
 void strip_extension(char *path);
 
-const float c_nes::NES_AUDIO_RATE = 341.0f / 3.0f * 262.0f * 60.0f / 3.0f;
+const float c_nes::NES_AUDIO_RATE = 341.0f / 3.0f * 262.0f * 60.0f/* / 3.0f*/;
 
 c_nes::c_nes(void)
 {
@@ -330,7 +330,7 @@ int c_nes::Load()
 	case 4:
 		if (crc32 == 0xA80A0F01 || //Incredible Crash Dummies
 			//crc32 == 0x018A8699 || //Roger Clemens' MVP Baseball
-			crc32 == 0x982DFB38 //|| //Mickey's Safari in Letterland
+			crc32 == 0x982DFB38F //|| //Mickey's Safari in Letterland
 			//crc32 == 0xAF05F37E || //George Foreman's KO Boxing
 			//crc32 == 0x445DD134 //Bart vs. The World
 			) 

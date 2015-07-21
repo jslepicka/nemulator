@@ -1146,7 +1146,9 @@ void c_ppu::update_vram_address()
 			vramAddress = (vramAddress + addressIncrement) & 0x7FFF;
 	}
 	else
+	{
+		//update bus when not rendering
 		vramAddress = (vramAddress + addressIncrement) & 0x7FFF;
-	//not sure if this should update the address on the bus immediately
-	mapper->ppu_read(get_bus_address(vramAddress));
+		mapper->ppu_read(get_bus_address(vramAddress));
+	}
 }

@@ -64,6 +64,7 @@ void c_apu2::reset()
 	triangle.reset();
 	noise.reset();
 	dmc.reset();
+	square_clock = 0;
 }
 
 void c_apu2::write_byte(unsigned short address, unsigned char value)
@@ -184,12 +185,13 @@ void c_apu2::clock_once()
 	clock_timers();
 	if (mixer_enabled)
 	{
-		//Only process every 3rd sample, effecively reducing APU freq. to 595613Hz
-		if (--pre_decimate == 0)
-		{
-			pre_decimate = PRE_DECIMATE_M;
-			mix();
-		}
+		////Only process every 3rd sample, effecively reducing APU freq. to 595613Hz
+		//if (--pre_decimate == 0)
+		//{
+		//	pre_decimate = PRE_DECIMATE_M;
+		//	mix();
+		//}
+		mix();
 	}
 }
 
@@ -227,8 +229,12 @@ void c_apu2::mix()
 
 void c_apu2::clock_timers()
 {
-	square1.clock_timer();
-	square2.clock_timer();
+	if (square_clock)
+	{
+		square1.clock_timer();
+		square2.clock_timer();
+	}
+	square_clock ^= 1;
 	triangle.clock_timer();
 	noise.clock_timer();
 	dmc.clock_timer();
@@ -390,18 +396,18 @@ int c_apu2::c_timer::clock()
 	}
 }
 
-int c_apu2::c_timer::clock2x()
-{
-	if (--counter == 0)
-	{
-		counter = (period + 1) << 1;
-		return 1;
-	}
-	else
-	{
-		return 0;
-	}
-}
+//int c_apu2::c_timer::clock2x()
+//{
+//	if (--counter == 0)
+//	{
+//		counter = (period + 1) << 1;
+//		return 1;
+//	}
+//	else
+//	{
+//		return 0;
+//	}
+//}
 
 void c_apu2::c_timer::set_period_lo(int period_lo)
 {
@@ -568,7 +574,7 @@ c_apu2::c_square::~c_square()
 
 void c_apu2::c_square::clock_timer()
 {
-	if (timer.clock2x())
+	if (timer.clock())
 		sequencer.clock();
 }
 
