@@ -54,7 +54,6 @@ private:
 	int mirroring_mode;
 	bool four_screen;
 	unsigned char sprite_buffer[256/*32*/];
-	//int sprite_index_buffer[512/*64*/];
 	unsigned char sprite_index_buffer[512];
 	int sprite_count;
 	int sprite0_index;

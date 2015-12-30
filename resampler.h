@@ -6,7 +6,7 @@
 class c_resampler
 {
 public:
-	c_resampler(float m);
+	c_resampler(float m, const float *g, const float *b2, const float *a2, const float *a3);
 	virtual ~c_resampler();
 	void set_m(float m);
 	int get_sample_buf(const short **sample_buf);
@@ -17,10 +17,10 @@ private:
 	float m, mf;
 	int samples_required;
 	c_biquad8 *lpf;
-	static float g[8];
-	static float b2[8];
-	static float a2[8];
-	static float a3[8];
+	//static float g[8];
+	//static float b2[8];
+	//static float a2[8];
+	//static float a3[8];
 
 	float blockdc(float sample);
 	float last_sample = 0.0f;

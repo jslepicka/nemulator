@@ -31,6 +31,7 @@
     </SccLocalPath>
     <SccProvider>
     </SccProvider>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -215,6 +216,7 @@
     <ClCompile Include="audio_info.cpp" />
     <ClCompile Include="bmp_writer.cpp" />
     <ClCompile Include="config.cpp" />
+    <ClCompile Include="console.cpp" />
     <ClCompile Include="crc32.cpp" />
     <ClCompile Include="D3d10App.cpp" />
     <ClCompile Include="Game.cpp" />
@@ -293,9 +295,14 @@
     <ClCompile Include="nes\mappers\mapper_mc_acc.cpp" />
     <ClCompile Include="nes\mappers\mapper_mmc6.cpp" />
     <ClCompile Include="nes\mappers\mapper_vrc4.cpp" />
+    <ClCompile Include="nes\mappers\vrc7_audio.cpp" />
     <ClCompile Include="nes_input_handler.cpp" />
     <ClCompile Include="qam.cpp" />
     <ClCompile Include="resampler.cpp" />
+    <ClCompile Include="sms\z80.cpp" />
+    <ClCompile Include="sms\psg.cpp" />
+    <ClCompile Include="sms\sms.cpp" />
+    <ClCompile Include="sms\vdp.cpp" />
     <ClCompile Include="sound.cpp" />
     <ClCompile Include="stats.cpp" />
     <ClCompile Include="status.cpp" />
@@ -316,6 +323,7 @@
     <ClInclude Include="biquad8.hpp" />
     <ClInclude Include="bmp_writer.h" />
     <ClInclude Include="config.h" />
+    <ClInclude Include="console.h" />
     <ClInclude Include="constants.h" />
     <ClInclude Include="crc32.h" />
     <ClInclude Include="D3d10App.h" />
@@ -405,10 +413,15 @@
     <ClInclude Include="nes\mappers\mapper_mc_acc.h" />
     <ClInclude Include="nes\mappers\mapper_mmc6.h" />
     <ClInclude Include="nes\mappers\mapper_vrc4.h" />
+    <ClInclude Include="nes\mappers\vrc7_audio.h" />
     <ClInclude Include="nes\ppu.h" />
     <ClInclude Include="nes_input_handler.h" />
     <ClInclude Include="qam.h" />
     <ClInclude Include="resampler.h" />
+    <ClInclude Include="sms\z80.h" />
+    <ClInclude Include="sms\psg.h" />
+    <ClInclude Include="sms\sms.h" />
+    <ClInclude Include="sms\vdp.h" />
     <ClInclude Include="sound.h" />
     <ClInclude Include="stats.h" />
     <ClInclude Include="status.h" />

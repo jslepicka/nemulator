@@ -16,7 +16,7 @@ public:
 	void set_description(std::string s) { description = s; }
 	std::string get_description() { return description; }
 	int is_active;
-	
+	virtual ID3D10Buffer *get_vertex_buffer() = 0;
 private:
 	virtual void OnActivate(bool load) {};
 	virtual void OnDeactivate() {};

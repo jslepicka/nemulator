@@ -9,7 +9,7 @@
 class c_biquad8
 {
 public:
-	c_biquad8(float *g, float *b2, float *a2, float *a3);
+	c_biquad8(const float *g, const float *b2, const float *a2, const float *a3);
 	~c_biquad8(void);
 	float process_df2t(float input);
 #ifdef AVX
@@ -33,7 +33,7 @@ private:
 #endif
 };
 
-inline c_biquad8::c_biquad8(float *g, float *b2, float *a2, float *a3)
+inline c_biquad8::c_biquad8(const float *g, const float *b2, const float *a2, const float *a3)
 {
 	d1 = (__m128*)_aligned_malloc(sizeof(__m128), 16);
 	d2 = (__m128*)_aligned_malloc(sizeof(__m128), 16);

@@ -25,6 +25,7 @@
 #include <windows.h>
 #include <map>
 #include "..\resampler.h"
+#include "..\console.h"
 
 class c_cpu;
 class c_ppu;
@@ -35,20 +36,22 @@ class c_apu2;
 class c_mem_access_log;
 struct iNesHeader;
 
-class c_nes
+class c_nes : public c_console
 {
 public:
 	c_nes(void);
 	~c_nes(void);
-	int Reset(void);
+	int reset(void);
 	int EmulateFrame(void);
 	int emulate_frame();
 	int emulate_frame_accurate(void);
 	int emulate_frame_fast(void);
 	int emulation_mode;
-	void set_apu_freq(double freq);
+	void set_audio_freq(double freq);
 	int get_nwc_time();
-
+	int is_loaded() { return loaded; }
+	int get_emulation_mode() { return emulation_mode; }
+	void set_emulation_mode(int mode) { emulation_mode = mode; }
 	enum modes
 	{
 		EMULATION_MODE_FAST,
@@ -56,7 +59,7 @@ public:
 	};
 
 	int emulate_frame2();
-	int *GetVideo(void);
+	int *get_video(void);
 	int get_sound_buf(const short **sound_buf);
 	unsigned char *GetJoy1(void);
 	unsigned char *GetJoy2(void);
@@ -65,12 +68,9 @@ public:
 	unsigned char *joy1, *joy2, *joy3, *joy4;
 	bool loaded;
 	unsigned char DmcRead(unsigned short address);
-	int Load(/*char *path, char *filename*/);
-	char path[MAX_PATH];
-	char sram_path[MAX_PATH];
-	char filename[MAX_PATH];
-	char title[MAX_PATH];
-	char pathFile[MAX_PATH];
+	int load(/*char *path, char *filename*/);
+
+
 	char additionalInfo[256];
 	const char *get_mapper_name();
 	int get_mapper_number();
@@ -93,6 +93,10 @@ public:
 	void disable_mixer();
 
 private:
+	static const float g[8];
+	static const float b2[8];
+	static const float a2[8];
+	static const float a3[8];
 	static const float NES_AUDIO_RATE;
 	c_resampler *resampler;
 	int num_apu_samples;
