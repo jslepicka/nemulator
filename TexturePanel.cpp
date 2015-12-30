@@ -140,8 +140,8 @@ void TexturePanel::Init()
 	};
 	UINT numElements = sizeof(elementDesc)/sizeof(elementDesc[0]);
 	
-	//hr = D3DX10CreateEffectFromFile("effect.fx", NULL, NULL, "fx_4_0", 0, 0, d3dDev, NULL, NULL, &effect, NULL, NULL);
-	hr = D3DX10CreateEffectFromMemory((LPCVOID)g_effect1, sizeof(g_effect1), "effect1", NULL, NULL, "fx_4_0", 0, 0, d3dDev, NULL, NULL, &effect, NULL, NULL);
+	hr = D3DX10CreateEffectFromFile("effect.fx", NULL, NULL, "fx_4_0", 0, 0, d3dDev, NULL, NULL, &effect, NULL, NULL);
+	//hr = D3DX10CreateEffectFromMemory((LPCVOID)g_effect1, sizeof(g_effect1), "effect1", NULL, NULL, "fx_4_0", 0, 0, d3dDev, NULL, NULL, &effect, NULL, NULL);
 	if (FAILED(hr))
 	{
 		MessageBox(NULL, "D3DX10CreateEffectFromFile failed", 0, 0);
@@ -683,14 +683,15 @@ void TexturePanel::DrawItem(c_item_container *item, int draw_border, float x, fl
 	UINT stride = sizeof(SimpleVertex);
 	UINT offset = 0;
 	d3dDev->IASetInputLayout(vertexLayout);
-	if (stretch_to_fit && item->selected)
-	{	
-		d3dDev->IASetVertexBuffers(0, 1, &vertexBuffer2, &stride, &offset);
-	}
-	else
-	{
-		d3dDev->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
-	}
+	//if (stretch_to_fit && item->selected)
+	//{	
+	//	d3dDev->IASetVertexBuffers(0, 1, &vertexBuffer2, &stride, &offset);
+	//}
+	//else
+	//{
+	ID3D10Buffer *b = item->item->get_vertex_buffer();
+	d3dDev->IASetVertexBuffers(0, 1, &b, &stride, &offset);
+	//}
 	d3dDev->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
 

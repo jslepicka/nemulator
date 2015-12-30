@@ -47,6 +47,52 @@ void strip_extension(char *path);
 
 const float c_nes::NES_AUDIO_RATE = 341.0f / 3.0f * 262.0f * 60.0f/* / 3.0f*/;
 
+const float c_nes::g[8] = {
+	0.700683474540710f,
+	0.612114369869232f,
+	0.430209249258041f,
+	0.211649417877197f,
+	0.0541417300701141f,
+	0.00239885691553354f,
+	0.000774474814534187f,
+	0.000752069521695375f,
+
+};
+const float c_nes::b2[8] = {
+	-1.99237072467804f,
+	-1.99079644680023f,
+	-1.98649656772614f,
+	-1.97030615806580f,
+	-1.77672874927521f,
+	-1.99293708801270f,
+	2.0f,
+	2.0f,
+
+};
+const float c_nes::a2[8] = {
+	-1.98870587348938f,
+	-1.98303222656250f,
+	-1.97535407543182f,
+	-1.96661865711212f,
+	-1.96026897430420f,
+	-1.99298274517059f,
+	-1.95477044582367f,
+	-1.89821958541870f,
+
+};
+const float c_nes::a3[8] = {
+	0.993388116359711f,
+	0.987003862857819f,
+	0.978214025497437f,
+	0.968153297901154f,
+	0.960825324058533f,
+	0.997999370098114f,
+	0.957868397235870f,
+	0.901227831840515f,
+
+};
+
+
 c_nes::c_nes(void)
 {
 	cpuRam = 0;
@@ -62,7 +108,7 @@ c_nes::c_nes(void)
 	limit_sprites = false;
 	mem_access_log = new c_mem_access_log[256*256];
 	crc32 = 0;
-	resampler = new c_resampler(NES_AUDIO_RATE / 48000.0f);
+	resampler = new c_resampler(NES_AUDIO_RATE / 48000.0f, g, b2, a2, a3);
 }
 
 c_nes::~c_nes(void)
@@ -254,7 +300,7 @@ int c_nes::LoadImage(char *pathFile)
 	return m;
 }
 
-int c_nes::Load()
+int c_nes::load()
 {
 	char sram_path_file[MAX_PATH];
 	sprintf_s(sram_path_file, "%s\\%s", sram_path, filename);
@@ -263,9 +309,9 @@ int c_nes::Load()
 	strip_extension(sram_path_file);
 	sprintf_s(sramFilename, "%s.ram", sram_path_file);
 
-	strcpy_s(title, filename);
+	//strcpy_s(title, filename);
 
-	strip_extension(title);
+	//strip_extension(title);
 
 	cpu = new c_cpu();
 	ppu = new c_ppu();
@@ -573,11 +619,11 @@ int c_nes::Load()
 	strcpy_s(mapper->filename, pathFile);
 	strcpy_s(mapper->sramFilename, sramFilename);
 	mapper->crc32 = crc32;
-	Reset();
+	reset();
 	return 1;
 }
 
-int c_nes::Reset(void)
+int c_nes::reset(void)
 {
 	if (!cpuRam)
 		cpuRam = new unsigned char[2048];
@@ -805,12 +851,12 @@ int c_nes::emulate_frame_fast(void)
 	return 0;
 }
 
-int *c_nes::GetVideo(void)
+int *c_nes::get_video(void)
 {
 	return ppu->pFrameBuffer;
 }
 
-void c_nes::set_apu_freq(double freq)
+void c_nes::set_audio_freq(double freq)
 {
 	//apu2->set_frequency(freq);
 	resampler->set_m(NES_AUDIO_RATE / freq);

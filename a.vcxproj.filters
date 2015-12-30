@@ -25,6 +25,12 @@
     <Filter Include="Header Files\nes\mappers">
       <UniqueIdentifier>{50ad4c5d-db05-4767-a79c-fd3b7b0b82a3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\sms">
+      <UniqueIdentifier>{4e639c03-9abc-4a36-b52e-ec11928a00f9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\sms">
+      <UniqueIdentifier>{3b66f9ea-2dfd-4e43-8f7a-e2954d0405f2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="a.cpp">
@@ -319,6 +325,24 @@
       <Filter>Source Files\nes\mappers</Filter>
     </ClCompile>
     <ClCompile Include="resampler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\vrc7_audio.cpp">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="sms\psg.cpp">
+      <Filter>Source Files\sms</Filter>
+    </ClCompile>
+    <ClCompile Include="sms\sms.cpp">
+      <Filter>Source Files\sms</Filter>
+    </ClCompile>
+    <ClCompile Include="sms\vdp.cpp">
+      <Filter>Source Files\sms</Filter>
+    </ClCompile>
+    <ClCompile Include="sms\z80.cpp">
+      <Filter>Source Files\sms</Filter>
+    </ClCompile>
+    <ClCompile Include="console.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -645,6 +669,24 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="biquad8.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="nes\mappers\vrc7_audio.h">
+      <Filter>Header Files\nes\mappers</Filter>
+    </ClInclude>
+    <ClInclude Include="sms\psg.h">
+      <Filter>Header Files\sms</Filter>
+    </ClInclude>
+    <ClInclude Include="sms\sms.h">
+      <Filter>Header Files\sms</Filter>
+    </ClInclude>
+    <ClInclude Include="sms\vdp.h">
+      <Filter>Header Files\sms</Filter>
+    </ClInclude>
+    <ClInclude Include="sms\z80.h">
+      <Filter>Header Files\sms</Filter>
+    </ClInclude>
+    <ClInclude Include="console.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

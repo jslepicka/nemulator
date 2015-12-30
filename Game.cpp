@@ -7,81 +7,46 @@
 extern int pal[64 * 8];
 extern HANDLE g_start_event;
 
-DWORD WINAPI Game::NesThread(LPVOID lpParam)
-{
-	Game *g = (Game*) lpParam;
-	while (true)
-	{
-		WaitForMultipleObjects(2, g->h, FALSE, INFINITE);
-		if (g->kill)
-			break;
-		if (g->nes->loaded)
-			//g->nes->EmulateFrame();
-			g->nes->emulate_frame();
-		SetEvent(g->eventDone);
-	}
-	//delete g->nes;
-	//g->nes = 0;
-	g->kill = false;
-	g->DestroyEvents();
-	//CloseHandle(g->threadHandle);
-	//g->threadHandle = 0;
-	return 0;
-}
+extern ID3D10Device *d3dDev;
+
+void strip_extension(char *path);
 
 std::string Game::get_filename()
 {
 	return filename;
 }
 
-Game::Game(std::string path, std::string filename, std::string sram_path)
+Game::Game(std::string type, std::string path, std::string filename, std::string sram_path)
 {
 	emulation_mode = c_nes::EMULATION_MODE_FAST;
 	limit_sprites = false;
 	this->path = path;
 	this->filename = filename;
 	this->sram_path = sram_path;
+	this->type = type;
 	ref = 0;
-	nes = 0;
-	running = false;
-	kill = false;
-	threadHandle = NULL;
-	eventStart = NULL;
-	eventDone = NULL;
-	eventKill = NULL;
+	console = 0;
 	mask_sides = false;
 	favorite = false;
 	submapper = 0;
+	strcpy_s(title, filename.c_str());
+	strip_extension(title);
 }
 
 Game::~Game(void)
 {
-	if (nes)
-		delete nes;
+	if (console)
+		delete console;
 }
 
 void Game::OnLoad()
 {
-	//if (!nes)
-	//{
-	//	nes = new c_nes();
-	//	nes->emulate_mode = emulation_mode;
-	//	char fn[MAX_PATH];
-	//	char p[MAX_PATH];
-	//	strcpy_s(fn, MAX_PATH, filename.c_str());
-	//	strcpy_s(p, MAX_PATH, path.c_str());
-	//	nes->Load(p, fn);
-	//	if (nes->loaded)
-	//		InitThread();
-	//}
-	if (!nes->loaded)
+	if (!console->is_loaded())
 	{
-		nes->Load(/*p, fn*/);
-		if (nes->loaded)
+		console->load();
+		if (console->is_loaded())
 		{
-			//nes->set_submapper(submapper);
-			nes->set_sprite_limit(limit_sprites);
-			InitThread();
+			//nes->set_sprite_limit(limit_sprites);
 		}
 	}
 }
@@ -90,17 +55,28 @@ void Game::OnActivate(bool load)
 {
 	if (ref == 0)
 	{
-		if (!nes)
+		if (!console)
 		{
-			nes = new c_nes();
-			nes->emulation_mode = emulation_mode;
-			strcpy_s(nes->filename, MAX_PATH, filename.c_str());
-			strcpy_s(nes->path, MAX_PATH, path.c_str());
-			strcpy_s(nes->sram_path, MAX_PATH, sram_path.c_str());
-			if (load)
-				Load();
-			if (nes->loaded)
-				nes->disable_mixer();
+			if (type == "nes")
+			{
+				console = new c_nes();
+			}
+			else if (type == "sms")
+			{
+				console = new c_sms();
+			}
+			if (console)
+			{
+				console->set_emulation_mode(emulation_mode);
+				strcpy_s(console->filename, MAX_PATH, filename.c_str());
+				strcpy_s(console->path, MAX_PATH, path.c_str());
+				strcpy_s(console->sram_path, MAX_PATH, sram_path.c_str());
+				if (load)
+					console->load();
+				if (console->is_loaded())
+					console->disable_mixer();
+				create_vertex_buffer();
+			}
 		}
 		is_active = 1;
 	}
@@ -114,71 +90,13 @@ void Game::OnDeactivate()
 	--ref;
 	if (ref == 0)
 	{
-		DestroyThread();
-		if (nes)
+		if (console)
 		{
-			delete nes;
-			nes = 0;
+			delete console;
+			console = 0;
 		}
 		is_active = 0;
 	}
-}
-
-void Game::InitEvents()
-{
-	eventStart = CreateEvent(NULL, FALSE, FALSE, NULL);
-	eventDone = CreateEvent(NULL, FALSE, FALSE, NULL);
-	eventKill = CreateEvent(NULL, FALSE, FALSE, NULL);
-	h[0] = eventStart;
-	h[1] = eventKill;
-	//h[0] = g_start_event;
-}
-
-void Game::DestroyEvents()
-{
-	h[0] = 0;
-	h[1] = 0;
-
-	if (eventStart)
-	{
-		CloseHandle(eventStart);
-		eventStart = 0;
-	}
-	if (eventDone)
-	{
-		CloseHandle(eventDone);
-		eventDone = 0;
-	}
-	if (eventKill)
-	{
-		CloseHandle(eventKill);
-		eventKill = 0;
-	}
-}
-
-void Game::InitThread()
-{
-	return;
-	if (threadHandle)
-		return;
-	InitEvents();
-	threadHandle = CreateThread(NULL, 0, Game::NesThread, this, 0, NULL);
-	running = true;
-}
-
-void Game::DestroyThread()
-{
-	return;
-	if (!threadHandle)
-		return;
-	kill = true;
-	running = false;
-	SetEvent(eventKill);
-	WaitForSingleObject(threadHandle, INFINITE);
-	//while (threadHandle)
-	//	Sleep(0);
-	CloseHandle(threadHandle);
-	threadHandle = 0;
 }
 
 void Game::DrawToTexture(ID3D10Texture2D *tex)
@@ -187,24 +105,51 @@ void Game::DrawToTexture(ID3D10Texture2D *tex)
 	map.pData = 0;
 	tex->Map(0, D3D10_MAP_WRITE_DISCARD, NULL, &map);
 	int *p = 0;
-	if (nes->loaded)
+	if (console && console->is_loaded())
 	{
-		int *fb = nes->GetVideo();
-		for (int y = 0; y < 240; ++y)
+		int *fb = console->get_video();
+		if (type == "nes")
 		{
-			p = (int*)map.pData + (y) * (map.RowPitch / 4);
-			for (int x = 0; x < 256; ++x)
+			for (int y = 0; y < 240; ++y)
 			{
-				if (mask_sides && (x < 8 || x > 247))
+				p = (int*)map.pData + (y)* (map.RowPitch / 4);
+				for (int x = 0; x < 256; ++x)
 				{
-					fb++;
+					if (mask_sides && (x < 8 || x > 247))
+					{
+						fb++;
+						*p++ = 0xFF000000;
+					}
+					else
+					{
+						int col = pal[*fb++ & 0x1FF];
+						*p++ = col;
+					}
+				}
+			}
+		}
+		else if (type == "sms")
+		{
+			int y = 0;
+			for (; y < 24; y++)
+			{
+				p = (int*)map.pData + (y)* (map.RowPitch / 4);
+				for (int x = 0; x < 256; x++)
 					*p++ = 0xFF000000;
-				}
-				else
+			}
+			for (; y < 192+24; ++y)
+			{
+				p = (int*)map.pData + (y)* (map.RowPitch / 4);
+				for (int x = 0; x < 256; ++x)
 				{
-					int col = pal[*fb++ & 0x1FF];
-					*p++ = col;
+					*p++ = *fb++;
 				}
+			}
+			for (; y < 256; ++y)
+			{
+				p = (int*)map.pData + (y)* (map.RowPitch / 4);
+				for (int x = 0; x < 256; ++x)
+					*p++ = 0xFF000000;
 			}
 		}
 
@@ -218,10 +163,7 @@ void Game::DrawToTexture(ID3D10Texture2D *tex)
 			for (int x = 0; x < 256; ++x)
 			{
 				c = rand() & 0xFF;
-				//c *= c;
-				//c = c > 255 ? 255 : c;
 				*p++ = 0xFF << 24 | c << 16 | c << 8 | c;
-				//*p++ = 0xFFFF0000;
 			}
 		}
 	}
@@ -230,5 +172,38 @@ void Game::DrawToTexture(ID3D10Texture2D *tex)
 
 bool Game::Selectable()
 {
-	return nes->loaded;
+	if (console)
+		return console->is_loaded();
+	else
+		return 0;
+}
+
+void Game::create_vertex_buffer()
+{
+	SimpleVertex vertices[] =
+	{
+		{ D3DXVECTOR3(-4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2(0.0f, 0.90625f) },
+		{ D3DXVECTOR3(-4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2(0.0f, 0.03125f) },
+		{ D3DXVECTOR3(4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2(1.0f, 0.90625f) },
+		{ D3DXVECTOR3(4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2(1.0f, 0.03125f) },
+	};
+
+	//if (type == "sms")
+	//{
+	//	vertices[0].tex = D3DXVECTOR2(0.0f, .805f);
+	//	vertices[1].tex = D3DXVECTOR2(0.0f, -.055f);
+	//	vertices[2].tex = D3DXVECTOR2(1.0f, .805f);
+	//	vertices[3].tex = D3DXVECTOR2(1.0f, -.055f);
+
+	//}
+
+	bd.Usage = D3D10_USAGE_DEFAULT;
+	bd.ByteWidth = sizeof(SimpleVertex) * 4;
+	bd.BindFlags = D3D10_BIND_VERTEX_BUFFER;
+	bd.CPUAccessFlags = 0;
+	bd.MiscFlags = 0;
+
+	D3D10_SUBRESOURCE_DATA initData;
+	initData.pSysMem = vertices;
+	HRESULT hr = d3dDev->CreateBuffer(&bd, &initData, &vertex_buffer);
 }

@@ -1,6 +1,7 @@
 #include "mapper85.h"
 #include "..\cpu.h"
 #include <math.h>
+#include "vrc7_audio.h"
 
 const int c_mapper85::instruments[16][8] = {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -47,6 +48,7 @@ c_mapper85::c_mapper85()
 	}
 
 	expansion_audio = 1;
+	build_luts();
 }
 
 void c_mapper85::reset()
@@ -69,6 +71,9 @@ void c_mapper85::reset()
 	last_audio_output = 0.0f;
 	am_counter = 0;
 	fm_counter = 0;
+	for (int i = 0; i < 12; i++)
+		output[i] = 0;
+	va.Reset(true);
 }
 
 void c_mapper85::WriteByte(unsigned short address, unsigned char value)
@@ -86,6 +91,7 @@ void c_mapper85::WriteByte(unsigned short address, unsigned char value)
 		case 0x9:
 			if (address & 0x18)
 			{
+				va.Write(address, value);
 				if (address == 0x9010) // audio register select
 				{
 					audio_register_select = value;
@@ -195,7 +201,8 @@ void c_mapper85::clock(int cycles)
 		ticks -= 3;
 		if (++audio_ticks == 36)
 		{
-			clock_audio();
+			va.clock(0);
+			//clock_audio();
 			audio_ticks = 0;
 		}
 	}
@@ -255,13 +262,16 @@ void c_mapper85::clock_audio()
 	am_counter = (am_counter + 78) & 0xFFFFF;
 	fm_counter = (fm_counter + 105) & 0xFFFFF;
 
-	float am_output = (1.0f + sin(2.0f*pi*am_counter / (1 << 20))) * db(.6f);
-	float fm_output = pow(2.0f, 13.75f / 1200.0f * sin(2.0f*pi*fm_counter / (1 << 20)));
+	//float am_output = (1.0f + sin(2.0f*pi*am_counter / (1 << 20))) * db(.6f);
+	//float fm_output = pow(2.0f, 13.75f / 1200.0f * sin(2.0f*pi*fm_counter / (1 << 20)));
+
+	uint32_t am_output = AmLut[(am_counter >> AmLutShift) & AmLutMask];
+	double fm_output = FmLut[(fm_counter >> FmLutShift) & FmLutMask];
 
 	for (int channel = 0; channel < 6; channel++)
 	{
 		int f = channel_regs[channel][1] | ((channel_regs[channel][2] & 0x1) << 8);
-		int b = (channel_regs[channel][2] & 0xE) >> 1;
+		int b = (channel_regs[channel][2] >> 1) & 0x7;
 		int instrument = channel_regs[channel][3] >> 4;
 
 		if (channel == 0)
@@ -272,15 +282,24 @@ void c_mapper85::clock_audio()
 
 		for (int slot = channel*2; slot <= (channel*2)+1; slot++)
 		{
+			//if (envelope_state[slot] == ENV_IDLE)
+			//	continue;
 			int is_carrier = slot & 1;
 			int m = 0;
 			m = multiplier[inst[is_carrier] & 0xF];
-			int vibrato = inst[is_carrier] & 0x40 ? fm_output : 1;
-			phase[slot] += ((f * (1 << b) * m * vibrato / 2) & 0x3FFFF); // * m * v / 2
+			uint32_t freq_rate = f * (1 << b) * m / 2;
+
+			//int vibrato = inst[is_carrier] & 0x40 ? fm_output : 1;
+			//phase[slot] += (f * (1 << b) * m * vibrato / 2); // * m * v / 2
+			//phase[slot] &= 0x3FFFF;
+			/*uint32_t mod = 0;*/
+			if (inst[is_carrier] & 0x40)
+				phase[slot] += (freq_rate / 2 * fm_output);
+			else
+				phase[slot] += freq_rate / 2;
 			if (is_carrier)
 			{
-				phase_secondary[slot] = (phase[slot] + output[slot - 1]) & 0x3FFFF;
-
+				phase_secondary[slot] = (phase[slot] + ((unsigned int)output[slot - 1]/* & 0x3FFFF*/)) & 0x3FFFF;
 			}
 			else
 			{
@@ -292,37 +311,37 @@ void c_mapper85::clock_audio()
 				phase_secondary[slot] = (phase[slot] + feedback) & 0x3FFFF;
 
 			}
-			int s = sin_table[(phase_secondary[slot] >> 9) & 0xFF];
-			s += clock_envelope(slot, inst);
-			float base = 0.0f;
-			if (is_carrier)
+			uint32_t env = clock_envelope(slot, inst);
+			uint32_t mod = phase_secondary[slot];
+			env += HalfSineLut[(mod >> PhaseShift) & PhaseMask];
+
+			//output[slot] = env;
+			if (env < MaxAtten)
 			{
-				base = (db(3) * (channel_regs[channel][3] & 0xF));
-			}
-			else
-			{
-				base = (db(.75f) * (inst[2] & 0x3F));
-			}
-			s += base;
-			s += inst[is_carrier] & 0x80 ? am_output : 0;
-			//TOTAL = half_sine_table[I] + base + key_scale + envelope + AM
-			if (s < (1 << 23))
-			{
-				float o = db2linear(s);
-				if (o > 1.0f || o < 0.0f)
-					int a = 1;
-				if (phase_secondary[slot] & 0x20000)
+				int out = LinearLut[env >> LinearLutShift];
+				if (mod & (1 << 17))
 				{
-					if ((is_carrier && (inst[3] & 0x10)) ||
-						(inst[3] & 0x8))
-						o = 0.0f;
+					if (inst[3] & (0x8 << is_carrier))
+					{
+						out = 0;
+					}
 					else
-						o = -o;
+					{
+						out = -out;
+					}
 				}
-				int adj_out = (int)(o * ((1 << 20)-1));
-				output[slot] = adj_out;
-				if (is_carrier)
-					audio_output += o;
+				if (is_carrier && out != 0)
+				{
+					float f = (out / 1048576.0);
+					if (f > 1.0)
+					{
+						int x = 1;
+					}
+					f *= .5;
+					f += .5;
+					audio_output += f;
+				}
+				output[slot] = out;
 			}
 			else
 			{
@@ -330,6 +349,11 @@ void c_mapper85::clock_audio()
 			}
 		}
 
+
+	}
+	if (audio_output > 6.0f)
+	{
+		int x = 1;
 	}
 	audio_output /= 6.0f;
 	//audio_output += last_audio_output;
@@ -339,7 +363,8 @@ void c_mapper85::clock_audio()
 
 float c_mapper85::mix_audio(float sample)
 {
-	return (sample *.5f) + (audio_output * .5f);
+	float v = va.audio_out / 50000.0;
+	return (sample *.5f) + (v * .5f);
 }
 
 float c_mapper85::linear2db(float in)
@@ -349,10 +374,14 @@ float c_mapper85::linear2db(float in)
 
 float c_mapper85::db2linear(float in)
 {
+	int outscale = (1 << 20);
+	double inscale = (1 << 23) / 48.0 / (1 << 3);
+	double lin = pow(10.0, (in / -20.0 / inscale));
+	//return lin * outscale;
 	return pow(10.0f, (in / -20.0f / ((1 << 23) / 48.0f)));
 }
 
-int c_mapper85::clock_envelope(int slot, const int *inst)
+uint32_t c_mapper85::clock_envelope(int slot, const int *inst)
 {
 	int is_carrier = slot & 0x1;
 	//slot attack rate
@@ -361,10 +390,10 @@ int c_mapper85::clock_envelope(int slot, const int *inst)
 	int rks = 0;
 	int rh = 0;
 	int rl = 0;
-	int bf = channel_regs[slot >> 1][2] & 0xF;
+	int bf = channel_regs[slot & (~1)][2] & 0xF;
 	int kb = inst[is_carrier] & 0x10 ? bf : bf >> 2;
 	int sustain_level = 0;
-	float out = 0.0f;
+	uint32_t out = 0;
 
 	switch (envelope_state[slot])
 	{
@@ -372,6 +401,7 @@ int c_mapper85::clock_envelope(int slot, const int *inst)
 		return (1 << 23);
 		break;
 	case ENV_ATTACK:
+		out = AttackLut[(egc[slot] >> AttackLutShift) & AttackLutMask];
 		r = is_carrier ? inst[5] >> 4 : inst[4] >> 4;
 		if (r != 0)
 		{
@@ -389,9 +419,10 @@ int c_mapper85::clock_envelope(int slot, const int *inst)
 		}
 		//out = db(48.0f) - (db(48.0f) * log(float(egc[slot] == 0 ? 1 : egc[slot])) / log((float)(1 << 23)));
 		//return (int)out;
-		return egc[slot];
+		return out;
 		break;
 	case ENV_DECAY:
+		out = egc[slot];
 		r = is_carrier ? inst[5] & 0xF : inst[4] & 0xF;
 		rks = r * 4 + kb;
 		rh = rks >> 2;
@@ -400,15 +431,16 @@ int c_mapper85::clock_envelope(int slot, const int *inst)
 		rl = rks & 3;
 		egc[slot] += ((rl + 4) << (rh - 1));
 		sustain_level = is_carrier ? inst[7] >> 4 : inst[6] >> 4;
-		sustain_level = (db(3) * sustain_level/* * (1 << 23) / 48*/);
+		sustain_level = (dB(3) * sustain_level/* * (1 << 23) / 48*/);
 		if (egc[slot] >= sustain_level)
 		{
 			egc[slot] = sustain_level;
 			envelope_state[slot] = ENV_SUSTAIN;
 		}
-		return egc[slot];
+		return out;
 		break;
 	case ENV_SUSTAIN:
+		out = egc[slot];
 		//fix: percussive
 		r = 0;
 
@@ -432,9 +464,10 @@ int c_mapper85::clock_envelope(int slot, const int *inst)
 			egc[slot] = (1 << 23);
 			envelope_state[slot] = ENV_IDLE;
 		}
-		return egc[slot];
+		return out;
 		break;
 	case ENV_RELEASE:
+		out = egc[slot];
 		if (channel_regs[slot >> 1][2] & 0x20)
 		{
 			r = 5;
@@ -454,7 +487,7 @@ int c_mapper85::clock_envelope(int slot, const int *inst)
 			egc[slot] = (1 << 23);
 			envelope_state[slot] = ENV_IDLE;
 		}
-		return (egc[slot]);
+		return out;
 		break;
 	default:
 		return (1 << 23);
@@ -477,8 +510,62 @@ void c_mapper85::key_off(int slot)
 	envelope_state[slot] = ENV_RELEASE;
 }
 
-int c_mapper85::db(float db)
+//int c_mapper85::db(float db)
+//{
+//	return (int)(db * (float)(1 << 23) / 48.0f);
+//}
+
+void c_mapper85::build_luts()
 {
-	return (int)(db * (float)(1 << 23) / 48.0f);
+	static const double pi = 3.1415926535897932384626433832795;
+
+	// Build the half sine lut
+	for (int i = 0; i < HalfSineWidth; ++i)
+	{
+		static const double scale = MaxAtten / 48.0;
+
+		double sinx = sin(pi * i / HalfSineWidth);
+		if (!sinx)       HalfSineLut[i] = MaxAtten;
+		else
+		{
+			sinx = -20.0 * log10(sinx) * scale;
+			if (sinx > MaxAtten) HalfSineLut[i] = MaxAtten;
+			else                HalfSineLut[i] = static_cast<uint32_t>(sinx);
+		}
+	}
+
+	// Build the Attack Rate Lut
+	for (int i = 0; i < AttackLutWidth; ++i)
+	{
+		static const double baselog = log(static_cast<double>(MaxAtten >> AttackLutShift));
+
+		AttackLut[i] = dB(48) - static_cast<uint32_t>(dB(48) * log(static_cast<double>(i)) / baselog);
+	}
+
+	// dB to Linear Lut
+	for (int i = 0; i < LinearLutWidth; ++i)
+	{
+		static const int outscale = (1 << 20);              // channel output is 20 bits wide
+		static const double inscale = MaxAtten / 48.0 / (1 << LinearLutShift);
+
+		double lin = pow(10.0, (i / -20.0 / inscale));
+		LinearLut[i] = static_cast<int>(lin * outscale);
+	}
+
+	// Am table
+	for (int i = 0; i < AmLutWidth; ++i)
+	{
+		AmLut[i] = static_cast<uint32_t>((1.0 + sin(2 * pi * i / AmLutWidth)) * dB(0.6));
+	}
+
+	// Fm table
+	for (int i = 0; i < FmLutWidth; ++i)
+	{
+		FmLut[i] = pow(2.0, 13.75 / 1200 * sin(2 * pi * i / FmLutWidth));
+	}
 }
 
+inline int c_mapper85::dB(double dB)
+{
+	return static_cast<int>(dB * MaxAtten / 48.0);
+}
