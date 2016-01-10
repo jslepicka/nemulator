@@ -1,6 +1,12 @@
 #include "input_handler.h"
 #include "windows.h"
 
+#include <crtdbg.h>
+#if defined(DEBUG) | defined(_DEBUG)
+#define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
+#define new DEBUG_NEW
+#endif
+
 c_input_handler::c_input_handler(int buttons)
 {
 	num_buttons = buttons;
@@ -36,6 +42,7 @@ c_input_handler::c_input_handler(int buttons)
 	}
 	joymask = 0;
 	ackd = false;
+	extrafast_enabled = 0;
 }
 
 c_input_handler::~c_input_handler()
@@ -217,7 +224,7 @@ void c_input_handler::poll(double dt)
 					s->state_result |= RESULT_REPEAT;
 					s->ack = 0;
 					s->repeat_count++;
-					if (s->repeat_count > 16)
+					if (s->repeat_count > 16 && extrafast_enabled)
 					{
 						s->repeat_time += repeat_rate_extrafast;
 						s->state_result |= RESULT_REPEAT_EXTRAFAST;

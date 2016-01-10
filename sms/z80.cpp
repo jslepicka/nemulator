@@ -7,6 +7,12 @@
 #include <iostream>
 #include <Windows.h>
 
+#include <crtdbg.h>
+#if defined(DEBUG) | defined(_DEBUG)
+#define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
+#define new DEBUG_NEW
+#endif
+
 #define BYTETOBINARY(byte)  \
   (byte & 0x80 ? 1 : 0), \
   (byte & 0x40 ? 1 : 0), \
@@ -29,22 +35,6 @@ c_z80::c_z80(c_sms *sms)
 	pre_pc = 0;
 	int count = 0;
 	this->sms = sms;
-	for (int i = 0; i < 8192; i++)
-	{
-		valid_locations[i] = 0;
-	}
-	//std::ifstream file;
-	//file.open("c:\\dev\\mark3\\execution_log.txt", std::ios_base::in);
-	//int x = 0;
-	//std::string line;
-	//while (file >> line)
-	//{
-	//	int i = atoi(line.c_str());
-	//	pc_log[x++] = i;
-	//}
-	//file.close();
-
-	valid_locations[0x967] = 1;
 }
 
 
@@ -54,8 +44,10 @@ c_z80::~c_z80(void)
 
 int c_z80::reset()
 {
+	dispatched_cycles = 0;
+	needed_cycles = 0;
+	prev_nmi = 0;
 	halted = 0;
-	pc_log_pos = 0;
 	available_cycles = 0;
 	required_cycles = 0;
 	fetch_opcode = 1;
@@ -116,7 +108,7 @@ int c_z80::emulate_frame()
 	return 1;
 }
 
-const int c_z80::cycle_table[260] = {
+const int c_z80::cycle_table[261] = {
 	//		0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
 	/*0*/	4, 10,  7,  6,  4,  4,  7,  4,  4, 11,  7,  6,  4,  4,  7,  4,
 	/*1*/	8, 10,  7,  6,  4,  4,  7,  4, 12, 11,  7,  6,  4,  4,  7,  4, //check 18
@@ -134,7 +126,7 @@ const int c_z80::cycle_table[260] = {
 	/*D*/	5, 10, 10, 11, 10, 11,  7, 11,  5,  4, 10, 11, 10, 99,  7, 11,
 	/*E*/	5, 10, 10, 19, 10, 11,  7, 11,  5,  4, 10,  4, 10, 99,  7, 11,
 	/*F*/	5, 10, 10,  4, 10, 11,  7, 11,  5,  6, 10,  4, 10, 99,  7, 11,
-	/*10*/  1, 13,  1,  4
+	/*10*/  1, 13,  1,  4, 11
 };
 
 const int c_z80::cb_cycle_table[256] = {
@@ -263,7 +255,11 @@ void c_z80::execute(int cycles)
 			rp = rp_00;
 			rp2 = rp2_00;
 
-			if (sms->irq && IFF1)
+			if (sms->nmi && prev_nmi == 0)
+			{
+				opcode = 0x104;
+			}
+			else if (sms->irq && IFF1)
 			{
 				//printf("IRQ at 0x%04X\n", PC);
 				IFF1 = IFF2 = 0;
@@ -305,6 +301,7 @@ void c_z80::execute(int cycles)
 				}
 			}
 
+			prev_nmi = sms->nmi;
 
 			switch (opcode)
 			{
@@ -312,7 +309,7 @@ void c_z80::execute(int cycles)
 				inc_r();
 				opcode <<= 8;
 				opcode |= sms->read_byte(PC++);
-				required_cycles = cb_cycle_table[opcode & 0xFF];
+				required_cycles += cb_cycle_table[opcode & 0xFF];
 				prefix = 0xCB;
 				break;
 			case 0xDD:
@@ -326,14 +323,14 @@ void c_z80::execute(int cycles)
 					opcode |= sms->read_byte(PC++);
 					opcode <<= 8;
 					opcode |= sms->read_byte(PC++);
-					required_cycles = ddcb_cycle_table[opcode & 0xFF];
+					required_cycles += ddcb_cycle_table[opcode & 0xFF];
 					prefix = 0xDDCB;
 				}
 				else
 				{
 					//replace HL, H, and L, with IX, IXH, and IXL
 					//replace (HL) with (IX+d)
-					required_cycles = dd_cycle_table[opcode & 0xFF];
+					required_cycles += dd_cycle_table[opcode & 0xFF];
 					prefix = 0x00;
 					r = r_dd;
 					rp = rp_dd;
@@ -344,7 +341,7 @@ void c_z80::execute(int cycles)
 				inc_r();
 				opcode <<= 8;
 				opcode |= sms->read_byte(PC++);
-				required_cycles = ed_cycle_table[opcode & 0xFF];
+				required_cycles += ed_cycle_table[opcode & 0xFF];
 				prefix = 0xED;
 				break;
 			case 0xFD:
@@ -358,14 +355,14 @@ void c_z80::execute(int cycles)
 					opcode |= sms->read_byte(PC++);
 					opcode <<= 8;
 					opcode |= sms->read_byte(PC++);
-					//required_cycles = fdcb_cycle_table[opcode & 0xFF];
+					required_cycles += ddcb_cycle_table[opcode & 0xFF];
 					prefix = 0xDDCB;
 				}
 				else
 				{
 					//replace HL, H, and L, with IY, IYH, and IYL
 					//replace (HL) with (IY+d)
-					required_cycles = dd_cycle_table[opcode & 0xFF]; //same as dd_cycle_table
+					required_cycles += dd_cycle_table[opcode & 0xFF]; //same as dd_cycle_table
 					prefix = 0x00;
 					r = r_fd;
 					rp = rp_fd;
@@ -373,11 +370,11 @@ void c_z80::execute(int cycles)
 				}
 				break;
 			default:
-				if (opcode == 0x101 || opcode == 0x103)
+				if (opcode == 0x101 || opcode == 0x103 || opcode == 0x104)
 					prefix = 0x01;
 				else
 					prefix = 0;
-				required_cycles = cycle_table[opcode];
+				required_cycles += cycle_table[opcode];
 				break;
 			}
 			//some instruction counts 
@@ -387,15 +384,24 @@ void c_z80::execute(int cycles)
 		if (required_cycles <= available_cycles)
 		{
 			available_cycles -= required_cycles;
-			//required_cycles = 0;
+
 			fetch_opcode = 1;
+			dispatched_cycles += needed_cycles ? needed_cycles : required_cycles;
+			needed_cycles = 0;
+			required_cycles = 0;
 			execute_opcode();
 		}
 		else
 		{
+			needed_cycles = required_cycles - available_cycles;
 			break;
 		}
 	}
+}
+
+void c_z80::end_frame()
+{
+	needed_cycles = required_cycles - available_cycles;
 }
 
 void c_z80::execute_opcode()
@@ -437,7 +443,8 @@ void c_z80::execute_opcode()
 					BC.byte.hi--;
 					if (BC.byte.hi != 0)
 					{
-						available_cycles -= 5;
+						//available_cycles -= 5;
+						required_cycles += 5;
 						PC += d;
 					}
 					break;
@@ -736,9 +743,7 @@ void c_z80::execute_opcode()
 			if (z == 6 && y == 6)
 			{
 				//HALT
-				//printf("HALT at %x\n", PC);
 				halted = 1;
-				//exit(1);
 			}
 			else
 			{
@@ -943,8 +948,8 @@ void c_z80::execute_opcode()
 				case 1:
 					//(CB)
 					printf("How'd I reach CB?\n");
-					getchar();
-					exit(1);
+					//getchar();
+					//exit(1);
 					break;
 				case 2:
 					//OUT (n), A
@@ -959,16 +964,17 @@ void c_z80::execute_opcode()
 				case 4:
 					//EX (SP), HL
 				{
+
 					if (dd || fd)
 					{
 						int x = 1;
 					}
 					int sp0 = sms->read_byte(SP);
 					int sp1 = sms->read_byte(SP + 1);
-					sms->write_byte(SP, HL.byte.lo);
-					sms->write_byte(SP + 1, HL.byte.hi);
-					HL.byte.lo = sp0;
-					HL.byte.hi = sp1;
+					sms->write_byte(SP, *r[5]);
+					sms->write_byte(SP + 1, *r[4]);
+					*r[5] = sp0;
+					*r[4] = sp1;
 				}
 				break;
 				case 5:
@@ -1004,7 +1010,8 @@ void c_z80::execute_opcode()
 				if (test_flag(y))
 				{
 					push_word(PC);
-					available_cycles -= 7;
+					//available_cycles -= 7;
+					required_cycles += 7;
 					PC = temp;
 				}
 				break;
@@ -1028,20 +1035,20 @@ void c_z80::execute_opcode()
 					case 1:
 						//DD
 						printf("How'd I reach DD?\n");
-						getchar();
-						exit(1);
+						//getchar();
+						//exit(1);
 						break;
 					case 2:
 						//ED
 						printf("How'd I reach ED?\n");
-						getchar();
-						exit(1);
+						//getchar();
+						//exit(1);
 						break;
 					case 3:
 						//FD
 						printf("How'd I reach FD?\n");
-						getchar();
-						exit(1);
+						//getchar();
+						//exit(1);
 						break;
 					}
 					break;
@@ -1073,9 +1080,14 @@ void c_z80::execute_opcode()
 			int x = 1;
 		}
 			break;
+		case 4: //nmi
+			push_word(PC);
+			PC = 0x66;
+			break;
 		default:
-			printf("invalid interrupt\n");
-			exit(1);
+			//printf("invalid interrupt\n");
+			//exit(1);
+			break;
 		}
 		break;
 
@@ -1128,8 +1140,11 @@ void c_z80::execute_opcode()
 
 	case 0xDD:
 		//ugh
-		printf("DD\n");
-		exit(1);
+		//printf("DD\n");
+		//exit(1);
+	{
+		int x = 1;
+	}
 		break;
 
 	case 0xED:
@@ -1245,8 +1260,8 @@ void c_z80::execute_opcode()
 					break;
 				case 1:
 					IM = 0;
-					printf("Undefined interrupt mode\n");
-					exit(1);
+					//printf("Undefined interrupt mode\n");
+					//exit(1);
 					break;
 				case 2:
 					IM = 1;
@@ -1429,7 +1444,8 @@ void c_z80::execute_opcode()
 						BC.word--;
 						if (BC.word != 0)
 						{
-							available_cycles -= 5;
+							//available_cycles -= 5;
+							required_cycles += 5;
 							PC -= 2;
 							set_pv(1);
 						}
@@ -1443,11 +1459,10 @@ void c_z80::execute_opcode()
 						break;
 					case 1:
 						//CPIR
-						//exit(1);
 						if (dd || fd)
 						{
-							printf("CPIR dd/fd\n");
-							exit(1);
+							//printf("CPIR dd/fd\n");
+							//exit(1);
 						}
 						tchar = sms->read_byte(HL.word);
 						CP(tchar);
@@ -1456,7 +1471,8 @@ void c_z80::execute_opcode()
 						if (BC.word != 0 && AF.byte.hi != tchar)
 						{
 							PC -= 2;
-							available_cycles -= 5;
+							//available_cycles -= 5;
+							required_cycles += 5;
 							set_pv(1);
 						}
 						else
@@ -1466,8 +1482,17 @@ void c_z80::execute_opcode()
 						break;
 					case 2:
 						//INIR
-						printf("INIR\n");
-						exit(1);
+						sms->write_byte(HL.word, sms->read_port(BC.byte.lo));
+						HL.word++;
+						BC.byte.hi--;
+						set_z(BC.byte.hi == 0);
+						set_n(1);
+						if (BC.byte.hi != 0)
+						{
+							PC -= 2;
+							//available_cycles -= 5;
+							required_cycles += 5;
+						}
 						break;
 					case 3:
 						//OTIR
@@ -1476,7 +1501,8 @@ void c_z80::execute_opcode()
 						BC.byte.hi--;
 						if (BC.byte.hi != 0)
 						{
-							available_cycles -= 5;
+							//available_cycles -= 5;
+							required_cycles += 5;
 							PC -= 2;
 						}
 						set_n(1);
@@ -1500,7 +1526,8 @@ void c_z80::execute_opcode()
 						BC.word--;
 						if (BC.word != 0)
 						{
-							available_cycles -= 5;
+							//available_cycles -= 5;
+							required_cycles += 5;
 							PC -= 2;
 							set_pv(1);
 						}
@@ -1513,12 +1540,10 @@ void c_z80::execute_opcode()
 						break;
 					case 1:
 						//CPDR
-						printf("CPDR\n");
-						//exit(1);
 						if (dd || fd)
 						{
-							printf("CPDR dd/fd\n");
-							exit(1);
+							//printf("CPDR dd/fd\n");
+							//exit(1);
 						}
 						tchar = sms->read_byte(HL.word);
 						CP(tchar);
@@ -1527,7 +1552,8 @@ void c_z80::execute_opcode()
 						if (BC.word != 0 && AF.byte.hi != tchar)
 						{
 							PC -= 2;
-							available_cycles -= 5;
+							//available_cycles -= 5;
+							required_cycles += 5;
 							set_pv(1);
 						}
 						else
@@ -1538,13 +1564,31 @@ void c_z80::execute_opcode()
 						break;
 					case 2:
 						//INDR
-						printf("INDR\n");
-						exit(1);
+						sms->write_byte(HL.word, BC.byte.lo);
+						HL.word--;
+						BC.byte.hi--;
+						set_z(BC.byte.hi == 0);
+						set_n(1);
+						if (BC.byte.hi != 0)
+						{
+							PC -= 2;
+							//available_cycles -= 5;
+							required_cycles += 5;
+						}
 						break;
 					case 3:
 						//OTDR
-						printf("OTDR\n");
-						exit(1);
+						sms->write_port(BC.byte.lo, sms->read_byte(HL.word));
+						HL.word--;
+						BC.byte.hi--;
+						set_z(BC.byte.hi == 0);
+						set_n(1);
+						if (BC.byte.hi != 0)
+						{
+							PC -= 2;
+							//available_cycles -= 5;
+							required_cycles += 5;
+						}
 						break;
 					}
 					break;
@@ -1553,7 +1597,7 @@ void c_z80::execute_opcode()
 			else
 			{
 				//NOP
-				printf("NOP\n");
+				//printf("NOP\n");
 				//getchar();
 				//exit(1);
 			}
@@ -1570,7 +1614,7 @@ void c_z80::execute_opcode()
 			{
 				//LD r[z], rot[y] (IX+d)
 				printf("LD r[z], rot[y] (IX+d)\n");
-				exit(1);
+				//exit(1);
 			}
 			else
 			{
@@ -1592,7 +1636,7 @@ void c_z80::execute_opcode()
 			{
 				//LD r[z], RES y, (IX+d)
 				printf("LD r[z], RES y, (IX+d)\n");
-				exit(1);
+				//exit(1);
 			}
 			else
 			{
@@ -1608,7 +1652,7 @@ void c_z80::execute_opcode()
 			{
 				//LD r[z], SET y, (IX+d)
 				printf("LD r[z], SET y, (IX+d)\n");
-				exit(1);
+				//exit(1);
 			}
 			else
 			{
@@ -1625,7 +1669,7 @@ void c_z80::execute_opcode()
 
 	default:
 		printf("crap\n");
-		exit(1);
+		//exit(1);
 		break;
 
 	}

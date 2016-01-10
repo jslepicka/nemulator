@@ -130,22 +130,22 @@ int c_mem_viewer::update(double dt, int child_result, void *params)
 	int result_mask = c_input_handler::RESULT_DOWN | c_input_handler::RESULT_REPEAT_SLOW | c_input_handler::RESULT_REPEAT_FAST | c_input_handler::RESULT_REPEAT_EXTRAFAST;
 	if (mem_access_log)
 	{
-		if (g_ih->get_result(c_nes_input_handler::BUTTON_1DOWN, true) & result_mask)
+		if (g_ih->get_result(BUTTON_1DOWN, true) & result_mask)
 		{
 			selected_location += 256;
 			g_ih->ack();
 		}
-		else if (g_ih->get_result(c_nes_input_handler::BUTTON_1UP, true) & result_mask)
+		else if (g_ih->get_result(BUTTON_1UP, true) & result_mask)
 		{
 			selected_location -= 256;
 			g_ih->ack();
 		}
-		else if (g_ih->get_result(c_nes_input_handler::BUTTON_1LEFT, true) & result_mask)
+		else if (g_ih->get_result(BUTTON_1LEFT, true) & result_mask)
 		{
 			selected_location -= 1;
 			g_ih->ack();
 		}
-		else if (g_ih->get_result(c_nes_input_handler::BUTTON_1RIGHT, true) & result_mask)
+		else if (g_ih->get_result(BUTTON_1RIGHT, true) & result_mask)
 		{
 			selected_location +=1;
 			g_ih->ack();

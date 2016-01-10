@@ -2,12 +2,13 @@
 #pragma comment (lib, "winmm.lib")
 #include "windows.h"
 #include "mmsystem.h"
+#include <stdint.h>
 
 class c_input_handler
 {
 public:
 	c_input_handler(int buttons);
-	~c_input_handler();
+	virtual ~c_input_handler();
 	void poll(double dt);
 	void ack();
 	int get_result(int button, bool ack = false);
@@ -17,6 +18,10 @@ public:
 	void set_button_joymap(int button, int joy, int joy_button);
 	void ack_button(int button);
 	void set_button_type(int button, int type);
+	
+	//do something better here
+	void enable_extrafast() { extrafast_enabled = 1; }
+	void disable_extrafast() { extrafast_enabled = 0; }
 	enum results
 	{
 		RESULT_NONE = 0,
@@ -75,4 +80,6 @@ protected:
 	JOYINFOEX joyInfoEx[8];
 	int joy_poll_result[8];
 	unsigned char joymask;
+	int repeat_mask;
+	int extrafast_enabled;
 };

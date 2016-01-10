@@ -2,6 +2,12 @@
 #include <math.h>
 #include <stdio.h>
 
+#include <crtdbg.h>
+#if defined(DEBUG) | defined(_DEBUG)
+#define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
+#define new DEBUG_NEW
+#endif
+
 const float c_psg::g[8] = {
 	0.699921727180481,
 	0.610556006431580,
@@ -91,6 +97,8 @@ void c_psg::reset()
 	noise_register = 0;
 	lfsr = 0x8000;
 	lfsr_out = 0;
+	channel = 0;
+	type = 0;
 }
 
 void c_psg::set_audio_rate(double freq)

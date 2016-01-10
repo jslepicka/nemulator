@@ -2,12 +2,21 @@
 #include "sms.h"
 #include <memory>
 
+#include <crtdbg.h>
+#if defined(DEBUG) | defined(_DEBUG)
+#define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
+#define new DEBUG_NEW
+#endif
+
+long c_vdp::pal_built = 0;
+uint32_t c_vdp::pal[256];
 
 c_vdp::c_vdp(c_sms *sms)
 {
 	this->sms = sms;
 	vram = new unsigned char[16384];
 	frame_buffer = new int[256 * 256];
+	generate_palette();
 }
 
 
@@ -148,7 +157,15 @@ void c_vdp::eval_sprites()
 
 		if (sprite_y == 0xD0)
 			break;
-		unsigned char sprite_y_adjusted = sprite_y + 1;
+		int sprite_y_adjusted = 0;
+		
+		//y values >= 0xF1 are treated as negative
+		if (sprite_y >= 0xF1)
+			sprite_y_adjusted = (char)sprite_y;
+		else
+			sprite_y_adjusted = sprite_y;
+
+		sprite_y_adjusted += 1;
 		int l = line_number;//;
 		int blah = registers[0x1];
 		if (sprite_height > 16)
@@ -159,6 +176,7 @@ void c_vdp::eval_sprites()
 		{
 			//sprite is in range
 			int sprite_x = *(sat + 128 + i*2);
+			sprite_x -= registers[0] & 0x8;
 			int sprite_pattern = *(sat + 129 + i*2);
 			if (registers[0x1] & 0x2)
 			{
@@ -251,7 +269,6 @@ void c_vdp::draw_scanline()
 			{
 				frame_buffer[y * 256 + i] = background_color;
 			}
-			int starting_column = (registers[0x0] & 0x20) ? 1 : 0;
 			for (int column = 0; column < 32; column++)
 			{
 				unsigned int nt_column = (column - x_coarse) & 0x1F;
@@ -374,11 +391,37 @@ int *c_vdp::get_frame_buffer()
 
 int c_vdp::lookup_color(int palette_index)
 {
-	_ASSERTE((palette_index & (~0x1F)) == 0);
-	int color = cram[palette_index];
-	int r = (color & 0x3) * 85;
-	int g = ((color & 0xC) >> 2) * 85;
-	int b = ((color & 0x30) >> 4) * 85;
+	return pal[cram[palette_index]];
+}
 
-	return (b << 16) | (g << 8) | r;
+void c_vdp::generate_palette()
+{
+	auto d_clamp = [](double v, double min, double max)
+	{
+		return v < min ? min : v > max ? max : v;
+	};
+
+	if (InterlockedCompareExchange(&pal_built, 1, 0) == 0)
+	{
+		for (int i = 0; i < 256; i++)
+		{
+			int r_bits = i & 0x3;
+			int g_bits = (i >> 2) & 0x3;
+			int b_bits = (i >> 4) & 0x3;
+
+			double r = pow(d_clamp(r_bits * (1.0 / 3.0), 0.0, 1.0), 2.2);
+			double g = pow(d_clamp(g_bits * (1.0 / 3.0), 0.0, 1.0), 2.2);
+			double b = pow(d_clamp(b_bits * (1.0 / 3.0), 0.0, 1.0), 2.2);
+
+			pal[i] = (int)(255.0 * r)
+				| ((int)(255.0 * g) << 8)
+				| ((int)(255.0 * b) << 16)
+				| 0xFF000000;
+		}
+	}
+}
+
+int c_vdp::get_overscan_color()
+{
+	return pal[cram[0x10 | (registers[7] & 0xF)]];
 }

@@ -80,12 +80,13 @@ int c_qam::update(double dt, int child_result, void *params)
 	{
 		scroll_timer = 0.0;
 		state = STATE_SCROLL_IN;
+		g_ih->disable_extrafast();
 	}
 	else if (state == STATE_READY)
 	{
-		int result_mask = c_input_handler::RESULT_DOWN | c_input_handler::RESULT_REPEAT_SLOW | c_input_handler::RESULT_REPEAT_FAST | c_input_handler::RESULT_REPEAT_EXTRAFAST;
+		int result_mask = c_input_handler::RESULT_DOWN | c_input_handler::RESULT_REPEAT_SLOW | c_input_handler::RESULT_REPEAT_FAST /*| c_input_handler::RESULT_REPEAT_EXTRAFAST*/;
 
-		if (g_ih->get_result(c_nes_input_handler::BUTTON_1RIGHT, true) & result_mask)
+		if (g_ih->get_result(BUTTON_1RIGHT, true) & result_mask)
 		{
 			do
 			{
@@ -93,7 +94,7 @@ int c_qam::update(double dt, int child_result, void *params)
 			} while (valid_chars[selected] == 0);
 			//selected = ++selected % 27;
 		}
-		else if (g_ih->get_result(c_nes_input_handler::BUTTON_1LEFT, true) & result_mask)
+		else if (g_ih->get_result(BUTTON_1LEFT, true) & result_mask)
 		{
 			do
 			{
@@ -103,10 +104,10 @@ int c_qam::update(double dt, int child_result, void *params)
 			} while (valid_chars[selected] == 0);
 			//selected = --selected % 27;
 		}
-		else if ((g_ih->get_result(c_nes_input_handler::BUTTON_1SELECT, true) & c_input_handler::RESULT_DOWN) ||
-			(g_ih->get_result(c_nes_input_handler::BUTTON_1B, true) & c_input_handler::RESULT_DOWN) ||
-			(g_ih->get_result(c_nes_input_handler::BUTTON_1DOWN, true) & c_input_handler::RESULT_DOWN) ||
-			(g_ih->get_result(c_nes_input_handler::BUTTON_ESCAPE, true) & c_input_handler::RESULT_DOWN))
+		else if ((g_ih->get_result(BUTTON_1SELECT, true) & c_input_handler::RESULT_DOWN) ||
+			(g_ih->get_result(BUTTON_1B, true) & c_input_handler::RESULT_DOWN) ||
+			(g_ih->get_result(BUTTON_1DOWN, true) & c_input_handler::RESULT_DOWN) ||
+			(g_ih->get_result(BUTTON_ESCAPE, true) & c_input_handler::RESULT_DOWN))
 		{
 			state = STATE_SCROLL_OUT;
 			scroll_timer = 0.0;
@@ -114,9 +115,9 @@ int c_qam::update(double dt, int child_result, void *params)
 			//g_ih->ack();
 			//return c_task::TASK_RESULT_CANCEL;
 		}
-		else if ((g_ih->get_result(c_nes_input_handler::BUTTON_1START, true) & c_input_handler::RESULT_DOWN) ||
-			(g_ih->get_result(c_nes_input_handler::BUTTON_1A, true) & c_input_handler::RESULT_DOWN) ||
-			(g_ih->get_result(c_nes_input_handler::BUTTON_RETURN, true) & c_input_handler::RESULT_DOWN))
+		else if ((g_ih->get_result(BUTTON_1START, true) & c_input_handler::RESULT_DOWN) ||
+			(g_ih->get_result(BUTTON_1A, true) & c_input_handler::RESULT_DOWN) ||
+			(g_ih->get_result(BUTTON_RETURN, true) & c_input_handler::RESULT_DOWN))
 		{
 			//*(char *)params = c[selected];
 			result = c[selected];
@@ -128,6 +129,7 @@ int c_qam::update(double dt, int child_result, void *params)
 	}
 	else if (state == STATE_IDLE)
 	{
+		g_ih->enable_extrafast();
 		return child_result;
 	}
 	else
@@ -186,7 +188,8 @@ void c_qam::draw()
 		r.left = (clientWidth / 29.0) * (i + 1);
 		r.right = (clientWidth / 29.0) * (i + 2);
 		D3DXCOLOR color;
-		font->DrawText(NULL, j, -1, &r, DT_NOCLIP | DT_CENTER | DT_SINGLELINE | DT_VCENTER, i == selected ? D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f) : valid_chars[i] ? D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f) : D3DXCOLOR(.4f, .4f, .4f, 1.0f));
+		font->DrawText(NULL, j, -1, &r, DT_NOCLIP | DT_CENTER | DT_SINGLELINE | DT_VCENTER, 
+			i == selected ? D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f) : valid_chars[i] ? D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f) : D3DXCOLOR(.4f, .4f, .4f, 1.0f));
 	}
 	d3dDev->OMSetDepthStencilState(state, oldref);
 }

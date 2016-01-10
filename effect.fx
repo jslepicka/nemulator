@@ -3,8 +3,9 @@ Texture2D txDiffuse;
 SamplerState samLinear
 {
 	Filter = MIN_MAG_MIP_LINEAR;
-	AddressU = Clamp;
-	AddressV = Clamp;
+	AddressU = Border;
+	AddressV = Border;
+	BorderColor = float4(0.0f, 0.0f, 0.0f, 1.0f);
 };
 
 matrix World;
@@ -15,6 +16,7 @@ bool showBorder;
 float3 border_color;
 float time;
 float2 output_size;
+float max_y;
 
 //0 = bilinear
 //.499999 = nearest neighbor
@@ -45,12 +47,13 @@ PS_INPUT VS (VS_INPUT input)
 
 float4 PS (PS_INPUT input) : SV_Target
 {
- float2 scale = {output_size.x / 256.0, output_size.y / 224.0};
+ float2 scale = {output_size.x / 256.0, output_size.y / max_y};
  float2 interp = (scale - lerp(scale, 1.0, sharpness))/(scale * 2.0);
  //interp *= sharpness;
  saturate(interp);
 
  float2 p = input.Tex.xy;
+
  p = p * 256.0 + .5;
  float2 i = floor(p);
  float2 f = p - i;
@@ -69,7 +72,7 @@ float4 PS (PS_INPUT input) : SV_Target
 
 float4 PS1 (PS_INPUT input) : SV_Target
 {
- if (input.Tex.x < .01 || input.Tex.x > .99 || input.Tex.y < .04125 || input.Tex.y > .89625)
+ if (input.Tex.x < .01 || input.Tex.x > .99 || input.Tex.y < .01 || input.Tex.y > .99)
  {
      float4 r = {border_color.r * color, border_color.g * color, border_color.b * color, 1.0};
   return r;

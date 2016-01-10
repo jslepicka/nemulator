@@ -1,9 +1,9 @@
 #include "Game.h"
 #include <crtdbg.h>
-//#if defined(DEBUG) | defined(_DEBUG)
-//#define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
-//#define new DEBUG_NEW
-//#endif
+#if defined(DEBUG) | defined(_DEBUG)
+#define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
+#define new DEBUG_NEW
+#endif
 extern int pal[64 * 8];
 extern HANDLE g_start_event;
 
@@ -16,7 +16,7 @@ std::string Game::get_filename()
 	return filename;
 }
 
-Game::Game(std::string type, std::string path, std::string filename, std::string sram_path)
+Game::Game(GAME_TYPE type, std::string path, std::string filename, std::string sram_path)
 {
 	emulation_mode = c_nes::EMULATION_MODE_FAST;
 	limit_sprites = false;
@@ -37,6 +37,11 @@ Game::~Game(void)
 {
 	if (console)
 		delete console;
+	if (vertex_buffer)
+	{
+		vertex_buffer->Release();
+		vertex_buffer = NULL;
+	}
 }
 
 void Game::OnLoad()
@@ -44,9 +49,9 @@ void Game::OnLoad()
 	if (!console->is_loaded())
 	{
 		console->load();
-		if (console->is_loaded())
+		if (type == GAME_NES && console->is_loaded())
 		{
-			//nes->set_sprite_limit(limit_sprites);
+			console->set_sprite_limit(limit_sprites);
 		}
 	}
 }
@@ -57,13 +62,16 @@ void Game::OnActivate(bool load)
 	{
 		if (!console)
 		{
-			if (type == "nes")
+			switch (type)
 			{
+			case GAME_NES:
 				console = new c_nes();
-			}
-			else if (type == "sms")
-			{
+				break;
+			case GAME_SMS:
 				console = new c_sms();
+				break;
+			default:
+				break;
 			}
 			if (console)
 			{
@@ -95,7 +103,18 @@ void Game::OnDeactivate()
 			delete console;
 			console = 0;
 		}
+		if (vertex_buffer)
+		{
+			vertex_buffer->Release();
+			vertex_buffer = NULL;
+		}
+		if (stretched_vertex_buffer)
+		{
+			stretched_vertex_buffer->Release();
+			stretched_vertex_buffer = NULL;
+		}
 		is_active = 0;
+		played = 0;
 	}
 }
 
@@ -108,8 +127,9 @@ void Game::DrawToTexture(ID3D10Texture2D *tex)
 	if (console && console->is_loaded())
 	{
 		int *fb = console->get_video();
-		if (type == "nes")
+		switch (type)
 		{
+		case GAME_NES:
 			for (int y = 0; y < 240; ++y)
 			{
 				p = (int*)map.pData + (y)* (map.RowPitch / 4);
@@ -127,17 +147,17 @@ void Game::DrawToTexture(ID3D10Texture2D *tex)
 					}
 				}
 			}
-		}
-		else if (type == "sms")
+			break;
+		case GAME_SMS:
 		{
 			int y = 0;
-			for (; y < 24; y++)
-			{
-				p = (int*)map.pData + (y)* (map.RowPitch / 4);
-				for (int x = 0; x < 256; x++)
-					*p++ = 0xFF000000;
-			}
-			for (; y < 192+24; ++y)
+			//for (; y < 14; y++)
+			//{
+			//	p = (int*)map.pData + (y)* (map.RowPitch / 4);
+			//	for (int x = 0; x < 256; x++)
+			//		*p++ = overscan;
+			//}
+			for (y = 0; y < 192+14; ++y)
 			{
 				p = (int*)map.pData + (y)* (map.RowPitch / 4);
 				for (int x = 0; x < 256; ++x)
@@ -151,6 +171,10 @@ void Game::DrawToTexture(ID3D10Texture2D *tex)
 				for (int x = 0; x < 256; ++x)
 					*p++ = 0xFF000000;
 			}
+		}
+		break;
+		default:
+			break;
 		}
 
 	}
@@ -180,6 +204,11 @@ bool Game::Selectable()
 
 void Game::create_vertex_buffer()
 {
+	if (vertex_buffer)
+	{
+		vertex_buffer->Release();
+		vertex_buffer = NULL;
+	}
 	SimpleVertex vertices[] =
 	{
 		{ D3DXVECTOR3(-4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2(0.0f, 0.90625f) },
@@ -188,14 +217,12 @@ void Game::create_vertex_buffer()
 		{ D3DXVECTOR3(4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2(1.0f, 0.03125f) },
 	};
 
-	//if (type == "sms")
-	//{
-	//	vertices[0].tex = D3DXVECTOR2(0.0f, .805f);
-	//	vertices[1].tex = D3DXVECTOR2(0.0f, -.055f);
-	//	vertices[2].tex = D3DXVECTOR2(1.0f, .805f);
-	//	vertices[3].tex = D3DXVECTOR2(1.0f, -.055f);
-
-	//}
+	if (type == GAME_SMS)
+	{
+		vertices[0].tex.y = vertices[2].tex.y = (192.0 + 14.0) / 256.0;
+		vertices[1].tex.y = vertices[3].tex.y = -14.0 / 256.0;
+	}
+	memcpy(vertices2, vertices, sizeof(vertices2));
 
 	bd.Usage = D3D10_USAGE_DEFAULT;
 	bd.ByteWidth = sizeof(SimpleVertex) * 4;
@@ -206,4 +233,58 @@ void Game::create_vertex_buffer()
 	D3D10_SUBRESOURCE_DATA initData;
 	initData.pSysMem = vertices;
 	HRESULT hr = d3dDev->CreateBuffer(&bd, &initData, &vertex_buffer);
+}
+
+void Game::build_stretch_buffer(float ratio)
+{
+	if (stretched_vertex_buffer)
+	{
+		stretched_vertex_buffer->Release();
+		stretched_vertex_buffer = NULL;
+	}
+	vertices2[0].pos.x = -ratio;
+	vertices2[1].pos.x = -ratio;
+	vertices2[2].pos.x = ratio;
+	vertices2[3].pos.x = ratio;
+
+	D3D10_SUBRESOURCE_DATA initData;
+	initData.pSysMem = vertices2;
+	HRESULT hr = d3dDev->CreateBuffer(&bd, &initData, &stretched_vertex_buffer);
+}
+
+D3DXCOLOR Game::get_overscan_color()
+{
+	if (console->is_loaded())
+	{
+		float r, g, b, a;
+		switch (type)
+		{
+		case GAME_SMS:
+			r = (console->get_overscan_color() & 0xFF) / 255.0;
+			g = ((console->get_overscan_color() >> 8) & 0xFF) / 255.0;
+			b = ((console->get_overscan_color() >> 16) & 0xFF) / 255.0;
+			a = ((console->get_overscan_color() >> 24) & 0xFF) / 255.0;
+			return D3DXCOLOR(r, g, b, a);
+			break;
+		default:
+			return D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f);
+		}
+	}
+	else
+	{
+		return D3DXCOLOR(0.0f, 0.0f, 0.0f, 0.0f);
+	}
+}
+
+int Game::get_height()
+{
+	switch (type)
+	{
+	case GAME_NES:
+		return 224;
+	case GAME_SMS:
+		return 192 + 28;
+	default:
+		return 256;
+	}
 }

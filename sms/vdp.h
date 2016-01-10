@@ -1,4 +1,5 @@
 #pragma once
+#include <stdint.h>
 class c_sms;
 
 class c_vdp
@@ -15,6 +16,7 @@ public:
 	void draw_scanline();
 	int get_scanline();
 	void eval_sprites();
+	int get_overscan_color();
 private:
 	int sprite_count; //number of sprites on line
 	struct {
@@ -44,5 +46,8 @@ private:
 	int lookup_color(int palette_index);
 
 	void update_irq();
+	static long pal_built;
+	void generate_palette();
+	static uint32_t pal[256];
 };
 

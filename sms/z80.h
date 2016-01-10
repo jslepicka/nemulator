@@ -9,8 +9,12 @@ public:
 	int emulate_frame();
 	int reset();
 	void execute(int cycles);
-	unsigned short PC;
+	void end_frame();
+	int dispatched_cycles;
 private:
+	int needed_cycles;
+	unsigned short PC;
+	int prev_nmi;
 	int halted;
 	int instruction;
 	int pre_pc;
@@ -31,10 +35,6 @@ private:
 		int sp;
 	};
 	int pending_ei;
-	//s_log_entry pc_log[2000000];
-	int pc_log[4000000];
-	int pc_log_pos;
-	unsigned char valid_locations[8192];
 	int dd;
 	int fd;
 	c_sms *sms;
@@ -55,7 +55,7 @@ private:
 	unsigned short **rp, *rp_00[4], *rp_dd[4], *rp_fd[8];
 	unsigned short **rp2, *rp2_00[4], *rp2_dd[4], *rp2_fd[8];
 
-	static const int cycle_table[260];
+	static const int cycle_table[261];
 	static const int ed_cycle_table[256];
 	static const int dd_cycle_table[256];
 	static const int cb_cycle_table[256];

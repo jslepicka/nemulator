@@ -110,11 +110,6 @@ HWND D3d10App::GetWnd()
 
 void D3d10App::OnPause(bool paused)
 {
-	//for (std::list<c_task*>::iterator i = c_task::task_list->begin(); i != c_task::task_list->end(); ++i)
-	//{
-	//	c_task *task = ((c_task*)(*i));
-	//	task->on_pause(paused);
-	//}
 	for (auto &task : *c_task::task_list)
 	{
 		task->on_pause(paused);
@@ -142,16 +137,12 @@ int D3d10App::Run()
 				d3dDev->ClearDepthStencilView(depthStencilView, D3D10_CLEAR_DEPTH | D3D10_CLEAR_STENCIL, 1.0f, 0);
 				int r = 999;
 				int params = 0;
-				//std::vector<c_task*> task_list_copy(c_task::task_list->size());
-				//std::copy(c_task::task_list->begin(), c_task::task_list->end(), task_list_copy.begin());
 				for (auto i = c_task::task_list->begin(); i != c_task::task_list->end();/* ++i*/)
 				{
-					//c_task *task = ((c_task*)(*i));
 					auto task = *i;
 					if (resized)
 						task->resize();
 					r = task->update(dt, r, &params);
-					//new
 					if (task->dead)
 					{
 						delete task;
@@ -162,18 +153,11 @@ int D3d10App::Run()
 				}
 
 
-				//for (std::list<c_task*>::reverse_iterator i = c_task::task_list->rbegin(); i != c_task::task_list->rend(); ++i)
-				//{
-				//	c_task *task = ((c_task*)(*i));
-				//	task->draw();
-				//}
-
 				std::for_each(c_task::task_list->rbegin(), c_task::task_list->rend(), [](c_task* task) {
 					task->draw();
 				});
 
-			//	if (!fullscreen)
-					d3dDev->Flush();
+				d3dDev->Flush();
 				
 				swapChain->Present(vsync ? 1 : 0, 0);
 			}
@@ -208,7 +192,6 @@ int D3d10App::Run()
 			liPrev = liCurrent;
 			resized = false;
 
-
 		}
 	}
 	for (auto i = c_task::task_list->begin(); i != c_task::task_list->end();)
@@ -237,14 +220,10 @@ void D3d10App::Init(char *config_file_name, c_task *init_task, void *params)
 	timeBeginPeriod(1);
 	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
 
-	//Always set high priority - 12/17/12
-	//if (config->get_bool("app.high_priority", true))
-	//{
 	task_index = 0;
 
 	SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
 	avrt_handle = AvSetMmThreadCharacteristics("Pro Audio", &task_index);
-	//}
 	clientHeight = (int)(clientWidth / aspectRatio);
 
 	fullscreen = startFullscreen;
@@ -280,9 +259,6 @@ void D3d10App::OnResize()
 	ReleaseCOM(depthStencilView);
 	ReleaseCOM(depthStencilBuffer);
 	d3dDev->ClearState();
-	//TODO: error checking
-	//swapChain->ResizeBuffers(fullscreen ? 2 : 1, fullscreen ? matching_mode.Width : clientWidth, fullscreen ? matching_mode.Height : clientHeight, matching_mode.Format, 0);
-	//swapChain->ResizeBuffers(fullscreen ? 2 : 1, clientWidth, clientHeight, DXGI_FORMAT_UNKNOWN, 0);
 	swapChain->ResizeBuffers(0, 0, 0, DXGI_FORMAT_UNKNOWN, 0);
 	DXGI_MODE_DESC mode = { 0 };
 	mode.Width = clientWidth;
@@ -479,22 +455,6 @@ LRESULT D3d10App::MsgProc(UINT msg, WPARAM wParam, LPARAM lParam)
 			SendInput(1, &input, sizeof(INPUT));
 			return 0;
 		}
-	//case WM_SYSKEYUP:
-	//	switch (wParam)
-	//	{
-	//	case VK_RETURN:
-	//		fullscreen = !fullscreen;
-	//		if (fullscreen) //transitioning to fullscreen
-	//		{
-	//			swapChain->Release();
-	//			pFactory->CreateSwapChain(d3dDev, &sd, &swapChain);
-	//		}
-	//		swapChain->SetFullscreenState(fullscreen, 0);
-	//		//OnResize();
-	//		return 0;
-	//	default:
-	//		break;
-	//	}
 	}
 	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
@@ -586,18 +546,9 @@ int D3d10App::InitD3d()
 	target_mode.Height = output_desc.DesktopCoordinates.bottom - output_desc.DesktopCoordinates.top;
 	pOutput->FindClosestMatchingMode(&target_mode, &matching_mode, d3dDev);
 
-
-	//sd.BufferDesc.Width = matching_mode.Width;
-	//sd.BufferDesc.Height = matching_mode.Height;
-	//sd.BufferDesc.RefreshRate = matching_mode.RefreshRate;
-	//sd.BufferDesc.Format = matching_mode.Format;
-	//sd.BufferDesc.ScanlineOrdering = matching_mode.ScanlineOrdering;
-	//sd.BufferDesc.Scaling = matching_mode.Scaling;
 	sd.BufferDesc = matching_mode;
-	
 	sd.SampleDesc.Count = 1;
 	sd.SampleDesc.Quality = 0;
-
 	sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	sd.BufferCount = 1;
 	sd.OutputWindow = hWnd;
@@ -605,28 +556,6 @@ int D3d10App::InitD3d()
 	sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 	sd.Flags = 0;
 	hr2 = pFactory->CreateSwapChain(d3dDev, &sd, &swapChain);
-	//hr2 = pFactory->MakeWindowAssociation(hWnd, DXGI_MWA_NO_WINDOW_CHANGES);
-	//UINT createDeviceFlags = 0;
-	//#if defined(DEBUG) || defined(_DEBUG)  
-	//	createDeviceFlags |= D3D10_CREATE_DEVICE_DEBUG;
-	//#endif
-
-	//HRESULT hr = D3D10CreateDeviceAndSwapChain(
-	//	0,
-	//	d3dDriverType,
-	//	0,
-	//	createDeviceFlags,
-	//	D3D10_SDK_VERSION,
-	//	&sd,
-	//	&swapChain,
-	//	&d3dDev
-	//	);
-	//if (FAILED(hr))
-	//{
-	//	MessageBox(NULL, "D3D10CreateDeviceAndSwapChain failed.", 0, 0);
-	//	PostQuitMessage(0);
-	//	return 0;
-	//}
 	OnResize();
 	ReleaseCOM(pOutput);
 	ReleaseCOM(pAdapter);

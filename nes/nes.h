@@ -52,6 +52,7 @@ public:
 	int is_loaded() { return loaded; }
 	int get_emulation_mode() { return emulation_mode; }
 	void set_emulation_mode(int mode) { emulation_mode = mode; }
+	void set_input(int input);
 	enum modes
 	{
 		EMULATION_MODE_FAST,

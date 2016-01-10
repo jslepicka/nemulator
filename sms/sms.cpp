@@ -5,6 +5,16 @@
 #include "psg.h"
 #include <stdio.h>
 #include <Windows.h>
+#include "..\crc32.h"
+#include "crc.h"
+
+#include <crtdbg.h>
+#if defined(DEBUG) | defined(_DEBUG)
+#define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
+#define new DEBUG_NEW
+#endif
+
+void strip_extension(char *path);
 
 c_sms::c_sms(void)
 {
@@ -12,15 +22,26 @@ c_sms::c_sms(void)
 	vdp = new c_vdp(this);
 	psg = new c_psg();
 	ram = new unsigned char[8192];
+	memset(cart_ram, 0, 16384);
+	rom = 0;
 }
 
 
 c_sms::~c_sms(void)
 {
+	if (has_sram)
+		save_sram();
 	delete[] ram;
 	delete psg;
 	delete vdp;
 	delete z80;
+	if (rom)
+		delete rom;
+}
+
+int c_sms::get_overscan_color()
+{
+	return vdp->get_overscan_color();
 }
 
 int c_sms::load()
@@ -41,12 +62,75 @@ int c_sms::load()
 		file_length = file_length - offset;
 	}
 	file.seekg(offset, std::ios_base::beg);
-	rom = new unsigned char[file_length];
+	if (file_length == 0 || (file_length & (file_length - 1)) || file_length < 0x2000)
+	{
+		return 0;
+	}
+	int alloc_size = file_length < 0x4000 ? 0x4000 : file_length;
+	rom = new unsigned char[alloc_size];
 	file.read((char *)rom, file_length);
 	file.close();
+	crc = get_crc32(rom, file_length);
+
+	for (auto &c : crc_table)
+	{
+		if (c.crc == crc && c.has_sram)
+		{
+			has_sram = 1;
+			load_sram();
+		}
+	}
+
+	if (file_length == 0x2000)
+	{
+		memcpy(rom + 0x2000, rom, 0x2000);
+	}
 	loaded = 1;
 	reset();
 	return file_length;
+}
+
+void c_sms::get_sram_path(char *path)
+{
+	sprintf_s(path, MAX_PATH, "%s\\%s", sram_path, filename);
+	strip_extension(path);
+	
+}
+
+int c_sms::load_sram()
+{
+	char fn[MAX_PATH];
+	sprintf(fn, "%s\\%s", sram_path, filename);
+	strip_extension(fn);
+	sprintf(sram_file_name, "%s.ram", fn);
+
+	std::ifstream file;
+	file.open(sram_file_name, std::ios_base::in | std::ios_base::binary);
+	if (file.fail())
+		return 1;
+
+	file.seekg(0, std::ios_base::end);
+	int l  = (int)file.tellg();
+
+	if (l != 8192)
+		return 1;
+
+	file.seekg(0, std::ios_base::beg);
+
+	file.read((char*)cart_ram, 8192);
+	file.close();
+	return 1;
+}
+
+int c_sms::save_sram()
+{
+	std::ofstream file;
+	file.open(sram_file_name, std::ios_base::out | std::ios_base::binary);
+	if (file.fail())
+		return 1;
+	file.write((char*)cart_ram, 8192);
+	file.close();
+	return 0;
 }
 
 int c_sms::reset()
@@ -56,11 +140,14 @@ int c_sms::reset()
 	psg->reset();
 	memset(ram, 0x00, 8192);
 	irq = 0;
+	nmi = 0;
 	page[0] = rom;
-	page[1] = rom + (0x4000 % file_length);
-	page[2] = rom + (0x8000 % file_length);
+	page[1] = file_length > 0x4000 ? rom + 0x4000 : rom;
+	page[2] = file_length > 0x8000 ? rom + 0x8000 : rom;
 	nationalism = 0;
 	ram_select = 0;
+	joy = 0xFF;
+	psg_cycles = 0;
 	return 0;
 }
 
@@ -73,11 +160,18 @@ int c_sms::emulate_frame()
 			z80->execute(1);
 			psg->clock(1);
 		}
-		//cpu->execute(228);
-		//psg->clock(228);
 		vdp->eval_sprites();
 		vdp->draw_scanline();
 	}
+
+	//for (int i = 0; i < 262; i++)
+	//{
+	//	z80->execute(228);
+	//	vdp->eval_sprites();
+	//	vdp->draw_scanline();
+	//}
+	//z80->end_frame();
+	//catchup_psg(228*262);
 	return 0;
 }
 
@@ -152,6 +246,24 @@ void c_sms::write_word(unsigned short address, unsigned short value)
 	write_byte(address + 1, value >> 8);
 }
 
+void c_sms::catchup_psg(int end_frame)
+{
+	return;
+	int num_cycles = 0;
+	if (end_frame)
+	{
+		num_cycles = end_frame - psg_cycles;
+		psg_cycles = 0;
+	}
+	else
+	{
+		num_cycles = z80->dispatched_cycles;
+		psg_cycles += num_cycles;
+	}
+	psg->clock(num_cycles);
+	z80->dispatched_cycles = 0;
+}
+
 void c_sms::write_port(int port, unsigned char value)
 {
 	//printf("write %2X to port %2X\n", value, port);
@@ -168,6 +280,7 @@ void c_sms::write_port(int port, unsigned char value)
 		break;
 	case 1:
 		//printf("Port write to PSG\n");
+		catchup_psg(0);
 		psg->write(value);
 		break;
 	case 2:
@@ -201,7 +314,7 @@ unsigned char c_sms::read_port(int port)
 		return 0;
 	case 1:
 		//printf("Port read from PSG\n");
-		return vdp->get_scanline();
+		return vdp->get_scanline() - 1; //is this correct?  fixes earthworm jim
 	case 2:
 		//printf("Port read from VDP\n");
 		switch (port & 0x1)
@@ -218,32 +331,7 @@ unsigned char c_sms::read_port(int port)
 		//printf("Port read from joypad: %02X\n", port);
 		if (port == 0xDC)
 		{
-			int ret = 0xFF;
-			if (GetAsyncKeyState(0x5A) & 0x8000)
-			{
-				ret &= (~0x10);
-			}
-			if (GetAsyncKeyState(0x58) & 0x8000)
-			{
-				ret &= (~0x20);
-			}
-			if (GetAsyncKeyState(VK_UP) & 0x8000)
-			{
-				ret &= (~0x01);
-			}
-			if (GetAsyncKeyState(VK_DOWN) & 0x8000)
-			{
-				ret &= (~0x02);
-			}
-			if (GetAsyncKeyState(VK_LEFT) & 0x8000)
-			{
-				ret &= (~0x04);
-			}
-			if (GetAsyncKeyState(VK_RIGHT) & 0x8000)
-			{
-				ret &= (~0x08);
-			}
-			return ret;
+			return joy & 0xFF;
 		}
 		else if (port == 0xDD)
 		{
@@ -255,6 +343,12 @@ unsigned char c_sms::read_port(int port)
 		printf("Port read error\n");
 		return 0;
 	}
+}
+
+void c_sms::set_input(int input)
+{
+	nmi = input & 0x8000'0000;
+	joy = ~input;
 }
 
 int *c_sms::get_video()
