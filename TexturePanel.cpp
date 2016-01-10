@@ -138,10 +138,10 @@ void TexturePanel::Init()
 		{ TEXT("POSITION"), 0, DXGI_FORMAT_R32G32B32_FLOAT, 0,  0, D3D10_INPUT_PER_VERTEX_DATA, 0 },
 		{ TEXT("TEXCOORD"), 0, DXGI_FORMAT_R32G32_FLOAT,    0, 12, D3D10_INPUT_PER_VERTEX_DATA, 0 }
 	};
-	UINT numElements = sizeof(elementDesc)/sizeof(elementDesc[0]);
-	
-	hr = D3DX10CreateEffectFromFile("effect.fx", NULL, NULL, "fx_4_0", 0, 0, d3dDev, NULL, NULL, &effect, NULL, NULL);
-	//hr = D3DX10CreateEffectFromMemory((LPCVOID)g_effect1, sizeof(g_effect1), "effect1", NULL, NULL, "fx_4_0", 0, 0, d3dDev, NULL, NULL, &effect, NULL, NULL);
+	UINT numElements = sizeof(elementDesc) / sizeof(elementDesc[0]);
+
+	//hr = D3DX10CreateEffectFromFile("effect.fx", NULL, NULL, "fx_4_0", 0, 0, d3dDev, NULL, NULL, &effect, NULL, NULL);
+	hr = D3DX10CreateEffectFromMemory((LPCVOID)g_effect1, sizeof(g_effect1), "effect1", NULL, NULL, "fx_4_0", 0, 0, d3dDev, NULL, NULL, &effect, NULL, NULL);
 	if (FAILED(hr))
 	{
 		MessageBox(NULL, "D3DX10CreateEffectFromFile failed", 0, 0);
@@ -155,13 +155,10 @@ void TexturePanel::Init()
 	varProj = effect->GetVariableByName("Projection")->AsMatrix();
 	varTex = effect->GetVariableByName("txDiffuse")->AsShaderResource();
 	varColor = effect->GetVariableByName("color")->AsScalar();
-	//varBorder = effect->GetVariableByName("showBorder")->AsScalar();
-	varBorderR = effect->GetVariableByName("borderR")->AsScalar();
-	varBorderG = effect->GetVariableByName("borderG")->AsScalar();
-	varBorderB = effect->GetVariableByName("borderB")->AsScalar();
 	var_output_size = effect->GetVariableByName("output_size")->AsVector();
 	var_border_color = effect->GetVariableByName("border_color")->AsVector();
 	var_sharpness = effect->GetVariableByName("sharpness")->AsScalar();
+	var_max_y = effect->GetVariableByName("max_y")->AsScalar();
 
 	D3D10_PASS_DESC passDesc;
 	technique->GetPassByIndex(0)->GetDesc(&passDesc);
@@ -174,12 +171,12 @@ void TexturePanel::Init()
 		return;
 	}
 
-	SimpleVertex vertices[] = 
+	SimpleVertex vertices[] =
 	{
-		{ D3DXVECTOR3( -4.0f/3.0f, -1.0f, 0.0f ), D3DXVECTOR2(0.0f, 0.90625f) },
-		{ D3DXVECTOR3( -4.0f/3.0f, 1.0f, 0.0f ), D3DXVECTOR2(0.0f, 0.03125f) },
-		{ D3DXVECTOR3( 4.0f/3.0f, -1.0f, 0.0f ), D3DXVECTOR2(1.0f, 0.90625f) },
-		{ D3DXVECTOR3( 4.0f/3.0f, 1.0f, 0.0f ), D3DXVECTOR2(1.0f, 0.03125f) },
+		{ D3DXVECTOR3(-4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2(0.0f, 1.0f) },
+		{ D3DXVECTOR3(-4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2(0.0f, 0.0f) },
+		{ D3DXVECTOR3(4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2(1.0f, 1.0f) },
+		{ D3DXVECTOR3(4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2(1.0f, 0.0f) },
 	};
 
 	memcpy(vertices2, vertices, sizeof(SimpleVertex) * 4);
@@ -192,12 +189,12 @@ void TexturePanel::Init()
 	bd.CPUAccessFlags = 0;
 	bd.MiscFlags = 0;
 
-	build_stretch_buffer(4.0f/3.0f);
+	build_stretch_buffer(4.0f / 3.0f);
 
 	D3D10_SUBRESOURCE_DATA initData;
 	initData.pSysMem = vertices;
 	hr = d3dDev->CreateBuffer(&bd, &initData, &vertexBuffer);
-	
+
 	D3D10_TEXTURE2D_DESC texDesc;
 	texDesc.Width = 256;
 	texDesc.Height = 256;
@@ -360,21 +357,21 @@ void TexturePanel::Update(double dt)
 	{
 		if (borderDir == 0)
 		{
-			borderR = InterpolateCosine(borderR1, borderR2, (float)(borderTimer/borderDuration));
-			borderG = InterpolateCosine(borderG1, borderG2, (float)(borderTimer/borderDuration));
-			borderB = InterpolateCosine(borderB1, borderB2, (float)(borderTimer/borderDuration));
-			borderInvalidR = InterpolateCosine(borderInvalidR1, borderInvalidR2, (float)(borderTimer/borderDuration));
-			borderInvalidG = InterpolateCosine(borderInvalidG1, borderInvalidG2, (float)(borderTimer/borderDuration));
-			borderInvalidB = InterpolateCosine(borderInvalidB1, borderInvalidB2, (float)(borderTimer/borderDuration));
+			borderR = InterpolateCosine(borderR1, borderR2, (float)(borderTimer / borderDuration));
+			borderG = InterpolateCosine(borderG1, borderG2, (float)(borderTimer / borderDuration));
+			borderB = InterpolateCosine(borderB1, borderB2, (float)(borderTimer / borderDuration));
+			borderInvalidR = InterpolateCosine(borderInvalidR1, borderInvalidR2, (float)(borderTimer / borderDuration));
+			borderInvalidG = InterpolateCosine(borderInvalidG1, borderInvalidG2, (float)(borderTimer / borderDuration));
+			borderInvalidB = InterpolateCosine(borderInvalidB1, borderInvalidB2, (float)(borderTimer / borderDuration));
 		}
 		else if (borderDir == 1)
 		{
-			borderR = InterpolateCosine(borderR2, borderR1, (float)(borderTimer/borderDuration));
-			borderG = InterpolateCosine(borderG2, borderG1, (float)(borderTimer/borderDuration));
-			borderB = InterpolateCosine(borderB2, borderB1, (float)(borderTimer/borderDuration));
-			borderInvalidR = InterpolateCosine(borderInvalidR2, borderInvalidR1, (float)(borderTimer/borderDuration));
-			borderInvalidG = InterpolateCosine(borderInvalidG2, borderInvalidG1, (float)(borderTimer/borderDuration));
-			borderInvalidB = InterpolateCosine(borderInvalidB2, borderInvalidB1, (float)(borderTimer/borderDuration));
+			borderR = InterpolateCosine(borderR2, borderR1, (float)(borderTimer / borderDuration));
+			borderG = InterpolateCosine(borderG2, borderG1, (float)(borderTimer / borderDuration));
+			borderB = InterpolateCosine(borderB2, borderB1, (float)(borderTimer / borderDuration));
+			borderInvalidR = InterpolateCosine(borderInvalidR2, borderInvalidR1, (float)(borderTimer / borderDuration));
+			borderInvalidG = InterpolateCosine(borderInvalidG2, borderInvalidG1, (float)(borderTimer / borderDuration));
+			borderInvalidB = InterpolateCosine(borderInvalidB2, borderInvalidB1, (float)(borderTimer / borderDuration));
 		}
 	}
 
@@ -423,187 +420,187 @@ void TexturePanel::Update(double dt)
 		}
 		else
 			if (scrollDir)
-				scrollOffset = InterpolateCosine(tile_width, 0.0f, (float)(scrollTimer/scrollDuration));
+				scrollOffset = InterpolateCosine(tile_width, 0.0f, (float)(scrollTimer / scrollDuration));
 			else
-				scrollOffset = InterpolateCosine(-tile_width, 0.0f, (float)(scrollTimer/scrollDuration));
+				scrollOffset = InterpolateCosine(-tile_width, 0.0f, (float)(scrollTimer / scrollDuration));
 		if (scrollCleanup && scrollDir == 1)
 			scrollOffset -= tile_width;
 	case STATE_MENU:
+	{
+		if (state != prevState)
 		{
-			if (state != prevState)
+			changed = true;
+			prevState = state;
+		}
+		int p = on_first_page ? rows : 0;
+
+		for (int i = first_item; i < last_item; ++i, ++p)
+		{
+			float xx = x + scrollOffset + (p / rows) * tile_width;
+			float yy = y + (p % rows) * -2.04f;
+
+			float xxx = InterpolateLinear(xx, zoomDestX, .3f);
+			float yyy = InterpolateLinear(yy, zoomDestY, .3f);
+			float zzz = InterpolateLinear(0.0f, zoomDestZ, .3f);
+
+			if (item_containers[i]->selecting)
 			{
-				changed = true;
-				prevState = state;
-			}
-			int p = on_first_page ? rows : 0;
-
-			for (int i = first_item; i < last_item; ++i, ++p)
-			{
-				float xx = x + scrollOffset + (p / rows) * tile_width;
-				float yy = y + (p % rows) * -2.04f;
-
-				float xxx = InterpolateLinear(xx, zoomDestX, .3f);
-				float yyy = InterpolateLinear(yy, zoomDestY, .3f);
-				float zzz = InterpolateLinear(0.0f, zoomDestZ, .3f);
-
-				if (item_containers[i]->selecting)
+				item_containers[i]->selectTimer += dt;
+				if (item_containers[i]->selectTimer >= item_containers[i]->selectDuration)
 				{
-					item_containers[i]->selectTimer += dt;
-					if (item_containers[i]->selectTimer >= item_containers[i]->selectDuration)
+					item_containers[i]->selecting = false;
+					if (item_containers[i]->selectDir == 0)
 					{
-						item_containers[i]->selecting = false;
-						if (item_containers[i]->selectDir == 0)
-						{
-							item_containers[i]->selected = true;
-							item_containers[i]->x = xxx;
-							item_containers[i]->y = yyy;
-							item_containers[i]->z = zzz;
-						}
-						else
-						{
-							item_containers[i]->selected = false;
-							item_containers[i]->x = xx;
-							item_containers[i]->y = yy;
-							item_containers[i]->z = 0.0f;
-						}
-						item_containers[i]->selectTimer = 0.0f;
-
+						item_containers[i]->selected = true;
+						item_containers[i]->x = xxx;
+						item_containers[i]->y = yyy;
+						item_containers[i]->z = zzz;
 					}
 					else
-						if (item_containers[i]->selectDir == 0)
-						{
-							item_containers[i]->x = InterpolateCosine(xx, xxx, (float)(item_containers[i]->selectTimer / item_containers[i]->selectDuration));
-							item_containers[i]->y = InterpolateCosine(yy, yyy, (float)(item_containers[i]->selectTimer / item_containers[i]->selectDuration));
-							item_containers[i]->z = InterpolateCosine(0.0f, zzz, (float)(item_containers[i]->selectTimer / item_containers[i]->selectDuration));
-						}
-						else
-						{
-							item_containers[i]->x = InterpolateCosine(xxx, xx, (float)(item_containers[i]->selectTimer / item_containers[i]->selectDuration));
-							item_containers[i]->y = InterpolateCosine(yyy, yy, (float)(item_containers[i]->selectTimer / item_containers[i]->selectDuration));
-							item_containers[i]->z = InterpolateCosine(zzz, 0.0f, (float)(item_containers[i]->selectTimer / item_containers[i]->selectDuration));
-						}
-				}
-				else if (item_containers[i]->selected)
-				{
-					item_containers[i]->x = xxx;
-					item_containers[i]->y = yyy;
-					item_containers[i]->z = zzz;
-				}
-
-				else
-				{
-					item_containers[i]->x = xx;
-					item_containers[i]->y = yy;
-					item_containers[i]->z = 0.0f;
-				}
-
-			}
-		}
-		break;
-	case STATE_ZOOMING:
-		{
-			float zz = 0.0f;
-			if (state != prevState)
-			{
-				if (zoomDir == 0)
-				{
-					zoomStartX = item_containers[selected_item]->x;
-					zoomStartY = item_containers[selected_item]->y;
-					zoomStartZ = item_containers[selected_item]->z;
-				}
-				prevState = state;
-				changed = true;
-			}
-			zoomTimer += dt;
-			if (zoomTimer >= zoomDuration)
-			{
-				zoomTimer = 0.0f;
-				if (zoomDir == 0)
-				{
-					prevState = state;
-					state = STATE_ZOOMED;
-					if (selected)
 					{
-						item_containers[selected_item]->x = zoomDestX;
-						item_containers[selected_item]->y = zoomDestY;
-						item_containers[selected_item]->z = zoomDestZ;
+						item_containers[i]->selected = false;
+						item_containers[i]->x = xx;
+						item_containers[i]->y = yy;
+						item_containers[i]->z = 0.0f;
 					}
-					bgColor = D3DXCOLOR(zoomedR, zoomedG, zoomedB, 1.0f);
-					zz = 10.0f;
-					if (stretch_to_fit)
-					{
-						build_stretch_buffer((double)clientWidth/clientHeight);
-					}
+					item_containers[i]->selectTimer = 0.0f;
 
 				}
 				else
-				{
-					prevState = state;
-					state = STATE_MENU;
-					if (selected)
+					if (item_containers[i]->selectDir == 0)
 					{
-						item_containers[selected_item]->x = zoomStartX;
-						item_containers[selected_item]->y = zoomStartY;
-						item_containers[selected_item]->z = zoomStartZ;
+						item_containers[i]->x = InterpolateCosine(xx, xxx, (float)(item_containers[i]->selectTimer / item_containers[i]->selectDuration));
+						item_containers[i]->y = InterpolateCosine(yy, yyy, (float)(item_containers[i]->selectTimer / item_containers[i]->selectDuration));
+						item_containers[i]->z = InterpolateCosine(0.0f, zzz, (float)(item_containers[i]->selectTimer / item_containers[i]->selectDuration));
 					}
-					bgColor = D3DXCOLOR(r, g, b, 1.0f);
-					zz = 0.0f;
-					if (stretch_to_fit)
+					else
 					{
-						build_stretch_buffer(4.0f/3.0f);
+						item_containers[i]->x = InterpolateCosine(xxx, xx, (float)(item_containers[i]->selectTimer / item_containers[i]->selectDuration));
+						item_containers[i]->y = InterpolateCosine(yyy, yy, (float)(item_containers[i]->selectTimer / item_containers[i]->selectDuration));
+						item_containers[i]->z = InterpolateCosine(zzz, 0.0f, (float)(item_containers[i]->selectTimer / item_containers[i]->selectDuration));
 					}
-				}
-				changed = true;
+			}
+			else if (item_containers[i]->selected)
+			{
+				item_containers[i]->x = xxx;
+				item_containers[i]->y = yyy;
+				item_containers[i]->z = zzz;
+			}
 
-			} 
 			else
 			{
-				if (zoomDir == 0)
+				item_containers[i]->x = xx;
+				item_containers[i]->y = yy;
+				item_containers[i]->z = 0.0f;
+			}
+
+		}
+	}
+	break;
+	case STATE_ZOOMING:
+	{
+		float zz = 0.0f;
+		if (state != prevState)
+		{
+			if (zoomDir == 0)
+			{
+				zoomStartX = item_containers[selected_item]->x;
+				zoomStartY = item_containers[selected_item]->y;
+				zoomStartZ = item_containers[selected_item]->z;
+			}
+			prevState = state;
+			changed = true;
+		}
+		zoomTimer += dt;
+		if (zoomTimer >= zoomDuration)
+		{
+			zoomTimer = 0.0f;
+			if (zoomDir == 0)
+			{
+				prevState = state;
+				state = STATE_ZOOMED;
+				if (selected)
 				{
-					zz = InterpolateLinear(0.0f, 10.0f, (float)(zoomTimer/zoomDuration));
-					if (selected)
-					{
-						item_containers[selected_item]->x = InterpolateLinear(zoomStartX, zoomDestX, (float)(zoomTimer/zoomDuration));
-						item_containers[selected_item]->y = InterpolateLinear(zoomStartY, zoomDestY, (float)(zoomTimer/zoomDuration));
-						item_containers[selected_item]->z = InterpolateLinear(zoomStartZ, zoomDestZ, (float)(zoomTimer/zoomDuration));
-						if (stretch_to_fit)
-						{
-							//item_containers[selected_item]->ratio = InterpolateLinear(4.0f/3.0f, (double)clientWidth/clientHeight, (float)(zoomTimer/zoomDuration));
-							build_stretch_buffer(InterpolateLinear(4.0f/3.0f, (double)clientWidth/clientHeight, (float)(zoomTimer/zoomDuration)));
-						}
-					}
-					float rr = InterpolateLinear(r, zoomedR, (float)(zoomTimer/zoomDuration));
-					float gg = InterpolateLinear(g, zoomedG, (float)(zoomTimer/zoomDuration));
-					float bb = InterpolateLinear(b, zoomedB, (float)(zoomTimer/zoomDuration));
-					bgColor = D3DXCOLOR(rr, gg, bb, 1.0f);
+					item_containers[selected_item]->x = zoomDestX;
+					item_containers[selected_item]->y = zoomDestY;
+					item_containers[selected_item]->z = zoomDestZ;
 				}
-				else if (zoomDir == 1)
+				bgColor = D3DXCOLOR(zoomedR, zoomedG, zoomedB, 1.0f);
+				zz = 10.0f;
+				if (stretch_to_fit)
 				{
-					zz = InterpolateLinear(10.0f, 0.0f, (float)(zoomTimer/zoomDuration));
-					if (selected)
-					{
-						item_containers[selected_item]->x = InterpolateLinear(zoomDestX, zoomStartX, (float)(zoomTimer/zoomDuration));
-						item_containers[selected_item]->y = InterpolateLinear(zoomDestY, zoomStartY, (float)(zoomTimer/zoomDuration));
-						item_containers[selected_item]->z = InterpolateLinear(zoomDestZ, zoomStartZ, (float)(zoomTimer/zoomDuration));
-						if (stretch_to_fit)
-						{
-							//item_containers[selected_item]->ratio = InterpolateLinear((double)clientWidth/clientHeight, 4.0f/3.0f, (float)(zoomTimer/zoomDuration));
-							build_stretch_buffer(InterpolateLinear((double)clientWidth/clientHeight, 4.0f/3.0f, (float)(zoomTimer/zoomDuration)));
-						}
-					}
-					float rr = InterpolateLinear(zoomedR, r, (float)(zoomTimer/zoomDuration));
-					float gg = InterpolateLinear(zoomedG, g, (float)(zoomTimer/zoomDuration));
-					float bb = InterpolateLinear(zoomedB, b, (float)(zoomTimer/zoomDuration));
-					bgColor = D3DXCOLOR(rr, gg, bb, 1.0f);
+					build_stretch_buffer((double)clientWidth / clientHeight);
+				}
+
+			}
+			else
+			{
+				prevState = state;
+				state = STATE_MENU;
+				if (selected)
+				{
+					item_containers[selected_item]->x = zoomStartX;
+					item_containers[selected_item]->y = zoomStartY;
+					item_containers[selected_item]->z = zoomStartZ;
+				}
+				bgColor = D3DXCOLOR(r, g, b, 1.0f);
+				zz = 0.0f;
+				if (stretch_to_fit)
+				{
+					build_stretch_buffer(4.0f / 3.0f);
 				}
 			}
-			for (int i = first_item; i < last_item; ++i)
+			changed = true;
+
+		}
+		else
+		{
+			if (zoomDir == 0)
 			{
-				if (!(selected && i == selected_item))
-					item_containers[i]->z = zz;
+				zz = InterpolateLinear(0.0f, 10.0f, (float)(zoomTimer / zoomDuration));
+				if (selected)
+				{
+					item_containers[selected_item]->x = InterpolateLinear(zoomStartX, zoomDestX, (float)(zoomTimer / zoomDuration));
+					item_containers[selected_item]->y = InterpolateLinear(zoomStartY, zoomDestY, (float)(zoomTimer / zoomDuration));
+					item_containers[selected_item]->z = InterpolateLinear(zoomStartZ, zoomDestZ, (float)(zoomTimer / zoomDuration));
+					if (stretch_to_fit)
+					{
+						//item_containers[selected_item]->ratio = InterpolateLinear(4.0f/3.0f, (double)clientWidth/clientHeight, (float)(zoomTimer/zoomDuration));
+						build_stretch_buffer(InterpolateLinear(4.0f / 3.0f, (double)clientWidth / clientHeight, (float)(zoomTimer / zoomDuration)));
+					}
+				}
+				float rr = InterpolateLinear(r, zoomedR, (float)(zoomTimer / zoomDuration));
+				float gg = InterpolateLinear(g, zoomedG, (float)(zoomTimer / zoomDuration));
+				float bb = InterpolateLinear(b, zoomedB, (float)(zoomTimer / zoomDuration));
+				bgColor = D3DXCOLOR(rr, gg, bb, 1.0f);
+			}
+			else if (zoomDir == 1)
+			{
+				zz = InterpolateLinear(10.0f, 0.0f, (float)(zoomTimer / zoomDuration));
+				if (selected)
+				{
+					item_containers[selected_item]->x = InterpolateLinear(zoomDestX, zoomStartX, (float)(zoomTimer / zoomDuration));
+					item_containers[selected_item]->y = InterpolateLinear(zoomDestY, zoomStartY, (float)(zoomTimer / zoomDuration));
+					item_containers[selected_item]->z = InterpolateLinear(zoomDestZ, zoomStartZ, (float)(zoomTimer / zoomDuration));
+					if (stretch_to_fit)
+					{
+						//item_containers[selected_item]->ratio = InterpolateLinear((double)clientWidth/clientHeight, 4.0f/3.0f, (float)(zoomTimer/zoomDuration));
+						build_stretch_buffer(InterpolateLinear((double)clientWidth / clientHeight, 4.0f / 3.0f, (float)(zoomTimer / zoomDuration)));
+					}
+				}
+				float rr = InterpolateLinear(zoomedR, r, (float)(zoomTimer / zoomDuration));
+				float gg = InterpolateLinear(zoomedG, g, (float)(zoomTimer / zoomDuration));
+				float bb = InterpolateLinear(zoomedB, b, (float)(zoomTimer / zoomDuration));
+				bgColor = D3DXCOLOR(rr, gg, bb, 1.0f);
 			}
 		}
-		break;
+		for (int i = first_item; i < last_item; ++i)
+		{
+			if (!(selected && i == selected_item))
+				item_containers[i]->z = zz;
+		}
+	}
+	break;
 	}
 }
 
@@ -668,14 +665,14 @@ void TexturePanel::build_stretch_buffer(float ratio)
 		vertexBuffer2->Release();
 		vertexBuffer2 = NULL;
 	}
-		vertices2[0].pos.x = -ratio;
-		vertices2[1].pos.x = -ratio;
-		vertices2[2].pos.x = ratio;
-		vertices2[3].pos.x = ratio;
+	vertices2[0].pos.x = -ratio;
+	vertices2[1].pos.x = -ratio;
+	vertices2[2].pos.x = ratio;
+	vertices2[3].pos.x = ratio;
 
-		D3D10_SUBRESOURCE_DATA initData;
-		initData.pSysMem = vertices2;
-		hr = d3dDev->CreateBuffer(&bd, &initData, &vertexBuffer2);
+	D3D10_SUBRESOURCE_DATA initData;
+	initData.pSysMem = vertices2;
+	hr = d3dDev->CreateBuffer(&bd, &initData, &vertexBuffer2);
 }
 
 void TexturePanel::DrawItem(c_item_container *item, int draw_border, float x, float y, float z, float c)
@@ -683,15 +680,24 @@ void TexturePanel::DrawItem(c_item_container *item, int draw_border, float x, fl
 	UINT stride = sizeof(SimpleVertex);
 	UINT offset = 0;
 	d3dDev->IASetInputLayout(vertexLayout);
-	//if (stretch_to_fit && item->selected)
-	//{	
-	//	d3dDev->IASetVertexBuffers(0, 1, &vertexBuffer2, &stride, &offset);
-	//}
-	//else
-	//{
-	ID3D10Buffer *b = item->item->get_vertex_buffer();
+	//item->item->build_stretch_buffer((double)clientWidth / clientHeight);
+	ID3D10Buffer *b;
+	if (false && stretch_to_fit && item->selected)
+	{
+		double ratio = (double)clientWidth / clientHeight;
+		if (state == STATE_ZOOMING)
+		{
+			ratio = InterpolateLinear((double)clientWidth / clientHeight, 4.0f / 3.0f, (float)(zoomTimer / zoomDuration));
+		}
+		item->item->build_stretch_buffer(ratio);
+		b = item->item->get_vertex_buffer(1);
+	}
+	else
+	{
+		b = item->item->get_vertex_buffer(0);
+	}
+	
 	d3dDev->IASetVertexBuffers(0, 1, &b, &stride, &offset);
-	//}
 	d3dDev->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
 
@@ -708,7 +714,7 @@ void TexturePanel::DrawItem(c_item_container *item, int draw_border, float x, fl
 	//double xx = yy * (4.0/3.0);
 	//D3DXVECTOR2 o(xx, yy); 
 	//var_output_size->SetFloatVector((float*)&o);
-	
+
 	D3D10_VIEWPORT vp;
 	UINT num_vp = 1;
 	d3dDev->RSGetViewports(&num_vp, &vp);
@@ -720,7 +726,9 @@ void TexturePanel::DrawItem(c_item_container *item, int draw_border, float x, fl
 	double quad_width = bottomright.x - topleft.x;
 	double quad_height = topleft.y - bottomright.y;
 	var_output_size->SetFloatVector((float*)&D3DXVECTOR2(quad_width, quad_height));
-
+	//D3DXCOLOR oc = item->item->get_overscan_color();
+	//var_overscan_color->SetFloatVector((float*)&item->item->get_overscan_color());
+    var_max_y->SetFloat((double)item->item->get_height());
 
 	item->item->DrawToTexture(tex);
 	D3DXMatrixTranslation(&matrixWorld, x, y, z);
@@ -729,6 +737,8 @@ void TexturePanel::DrawItem(c_item_container *item, int draw_border, float x, fl
 	d3dDev->Draw(4, 0);
 	if (draw_border)
 	{
+		d3dDev->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+		d3dDev->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 		technique->GetPassByIndex(1)->Apply(0);
 		d3dDev->Draw(4, 0);
 	}
@@ -859,7 +869,7 @@ void TexturePanel::move_to_char(char c)
 		}
 	}
 
-		state = STATE_MENU;
+	state = STATE_MENU;
 
 	if (row_move > 0)
 	{
@@ -1037,14 +1047,14 @@ float TexturePanel::InterpolateLinear(float start, float end, float mu)
 {
 	if (mu > 1.0f)
 		mu = 1.0f;
-	return start*(1-mu) + end*mu;
+	return start*(1 - mu) + end*mu;
 }
 
 float TexturePanel::InterpolateCosine(float start, float end, float mu)
 {
 	if (mu > 1.0f)
 		mu = 1.0f;
-	float mu2 = (1-cos(mu*(float)D3DX_PI))/2.0f;
+	float mu2 = (1 - cos(mu*(float)D3DX_PI)) / 2.0f;
 	return InterpolateLinear(start, end, mu2);
 }
 

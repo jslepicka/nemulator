@@ -29,12 +29,12 @@
 
 #define KEYDOWN(key) GetAsyncKeyState(key) & 0x8000 ? 1 : 0
 
-class Nemulator :
+class c_nemulator :
 	public c_task
 {
 public:
-	Nemulator();
-	~Nemulator(void);
+	c_nemulator();
+	~c_nemulator(void);
 
 	void init(void *params);
 	void draw();

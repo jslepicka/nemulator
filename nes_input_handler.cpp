@@ -1,5 +1,11 @@
 #include "nes_input_handler.h"
 
+#include <crtdbg.h>
+#if defined(DEBUG) | defined(_DEBUG)
+#define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
+#define new DEBUG_NEW
+#endif
+
 c_nes_input_handler::c_nes_input_handler(int buttons)
 	: c_input_handler(buttons)
 {
@@ -18,6 +24,7 @@ c_nes_input_handler::c_nes_input_handler(int buttons)
 c_nes_input_handler::~c_nes_input_handler()
 {
 	delete[] turbo_state;
+	delete[] turbo_rate;
 }
 
 void c_nes_input_handler::set_turbo_state(int button, int turbo_enabled)
@@ -42,6 +49,40 @@ void c_nes_input_handler::set_turbo_rate(int button, int rate)
 int c_nes_input_handler::get_turbo_rate(int button)
 {
 	return turbo_rate[button % num_buttons];
+}
+
+int c_nes_input_handler::get_sms_input()
+{
+	struct s_keymap
+	{
+		int button;
+		int shift;
+	};
+	
+	s_keymap keymap[] =
+	{
+		{ BUTTON_1B,     4  }, //button 1
+		{ BUTTON_1A,     5  }, //button 2
+		{ BUTTON_1UP,    0  },
+		{ BUTTON_1DOWN,  1  },
+		{ BUTTON_1LEFT,  2  },
+		{ BUTTON_1RIGHT, 3  },
+		{ BUTTON_2B,     10 }, //button 1
+		{ BUTTON_2A,     11 }, //button 2
+		{ BUTTON_2UP,    6  },
+		{ BUTTON_2DOWN,  7  },
+		{ BUTTON_2LEFT,  8  },
+		{ BUTTON_2RIGHT, 9  },
+		{ BUTTON_SMS_PAUSE, 31}
+	};
+		
+	uint32_t ret = 0;
+	for (int i = 0; i < sizeof(keymap) / sizeof(s_keymap); i++)
+	{
+		s_keymap k = keymap[i];
+		ret |= state[k.button].ack ? 0 : (state[k.button].state_cur << k.shift);
+	}
+	return ret;
 }
 
 unsigned char c_nes_input_handler::get_nes_byte(int controller)

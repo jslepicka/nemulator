@@ -108,7 +108,7 @@ c_resampler::c_resampler(float m, const float *g, const float *b2, const float *
 
 	memset(sample_buf, 0, sizeof(sample_buf));
 
-	for (int i = 0; i < FILTERED_BUF_LEN; i++)
+	for (int i = 0; i < FILTERED_BUF_LEN * 2; i++)
 		filtered_buf[i] = 0.0f;
 }
 

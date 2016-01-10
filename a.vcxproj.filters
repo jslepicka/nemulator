@@ -51,9 +51,6 @@
     <ClCompile Include="menu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Nemulator.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="nes_input_handler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -345,6 +342,9 @@
     <ClCompile Include="console.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="nemulator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="a.h">
@@ -366,9 +366,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="menu.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Nemulator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="nes_input_handler.h">
@@ -688,6 +685,12 @@
     </ClInclude>
     <ClInclude Include="console.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="nemulator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sms\crc.h">
+      <Filter>Header Files\sms</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

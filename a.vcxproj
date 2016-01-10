@@ -223,7 +223,7 @@
     <ClCompile Include="input_handler.cpp" />
     <ClCompile Include="mem_viewer.cpp" />
     <ClCompile Include="menu.cpp" />
-    <ClCompile Include="Nemulator.cpp" />
+    <ClCompile Include="nemulator.cpp" />
     <ClCompile Include="nes\apu2.cpp" />
     <ClCompile Include="nes\mappers\mapper1.cpp" />
     <ClCompile Include="nes\mappers\mapper10.cpp" />
@@ -334,7 +334,7 @@
     <ClInclude Include="mem_access_log.h" />
     <ClInclude Include="mem_viewer.h" />
     <ClInclude Include="menu.h" />
-    <ClInclude Include="Nemulator.h" />
+    <ClInclude Include="nemulator.h" />
     <ClInclude Include="nes\apu2.h" />
     <ClInclude Include="nes\apu_luts.h" />
     <ClInclude Include="nes\cpu.h" />
@@ -418,6 +418,7 @@
     <ClInclude Include="nes_input_handler.h" />
     <ClInclude Include="qam.h" />
     <ClInclude Include="resampler.h" />
+    <ClInclude Include="sms\crc.h" />
     <ClInclude Include="sms\z80.h" />
     <ClInclude Include="sms\psg.h" />
     <ClInclude Include="sms\sms.h" />

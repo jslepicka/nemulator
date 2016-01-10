@@ -131,6 +131,8 @@ c_nes::~c_nes(void)
 		delete apu2;
 	if (joypad)
 		delete joypad;
+	if (resampler)
+		delete resampler;
 }
 
 void c_nes::enable_mixer()
@@ -909,4 +911,10 @@ const char *c_nes::get_mapper_name()
 		return mapper->mapperName;
 	else
 		return "Unknown mapper";
+}
+
+void c_nes::set_input(int input)
+{
+	joypad->joy1 = input & 0xFF;
+	joypad->joy2 = (input >> 8) & 0xFF;
 }

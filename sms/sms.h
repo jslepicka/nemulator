@@ -22,13 +22,20 @@ public:
 	int *get_video();
 	int get_sound_buf(const short **buf);
 	int irq;
+	int nmi;
 	void set_audio_freq(double freq);
 	int load();
 	int is_loaded() { return loaded; }
-	int get_crc() { return 0; }
+	int get_crc() { return crc; }
 	void enable_mixer();
 	void disable_mixer();
+	void set_input(int input);
+	int get_overscan_color();
 private:
+	int psg_cycles;
+	int has_sram = 0;
+	unsigned int crc = 0;
+	int joy = 0xFF;
 	int loaded = 0;
 	int ram_select;
 	int nationalism;
@@ -40,5 +47,10 @@ private:
 	int file_length;
 	unsigned char *page[3];
 	unsigned char cart_ram[16384];
+	int load_sram();
+	int save_sram();
+	void get_sram_path(char *path);
+	char sram_file_name[MAX_PATH];
+	void catchup_psg(int end_frame);
 };
 

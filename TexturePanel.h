@@ -7,6 +7,12 @@
 
 #define ReleaseCOM(x) { if(x) {x->Release(); x = 0; } }
 
+#include <crtdbg.h>
+#if defined(DEBUG) | defined(_DEBUG)
+#define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
+#define new DEBUG_NEW
+#endif
+
 class TexturePanel
 {
 public:
@@ -163,18 +169,17 @@ private:
 
 	ID3D10Effect *effect;
 	ID3D10Texture2D *tex;
+	ID3D10Texture2D *tex_blank;
 	ID3D10EffectTechnique *technique;
 	ID3D10EffectMatrixVariable *varWorld;
 	ID3D10EffectMatrixVariable *varView;
 	ID3D10EffectMatrixVariable *varProj;
 	ID3D10EffectScalarVariable *varColor;
-	//ID3D10EffectScalarVariable *varBorder;
-	ID3D10EffectScalarVariable *varBorderR;
-	ID3D10EffectScalarVariable *varBorderG;
-	ID3D10EffectScalarVariable *varBorderB;
 	ID3D10EffectVectorVariable *var_output_size;
 	ID3D10EffectVectorVariable *var_border_color;
+	ID3D10EffectVectorVariable *var_overscan_color;
 	ID3D10EffectScalarVariable *var_sharpness;
+	ID3D10EffectScalarVariable *var_max_y;
 
 	ID3D10EffectShaderResourceVariable *varTex;
 	//ID3D10EffectShaderResourceVariable *varTex2;

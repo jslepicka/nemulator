@@ -1,5 +1,6 @@
 #pragma once
 #include "d3d10.h"
+#include <d3dx10.h>
 #include <string>
 //#include "d3d10app.h"
 
@@ -16,7 +17,10 @@ public:
 	void set_description(std::string s) { description = s; }
 	std::string get_description() { return description; }
 	int is_active;
-	virtual ID3D10Buffer *get_vertex_buffer() = 0;
+	virtual ID3D10Buffer *get_vertex_buffer(int stretched) = 0;
+	virtual void build_stretch_buffer(float ratio) = 0;
+	virtual D3DXCOLOR get_overscan_color() = 0;
+	virtual int get_height() = 0;
 private:
 	virtual void OnActivate(bool load) {};
 	virtual void OnDeactivate() {};
