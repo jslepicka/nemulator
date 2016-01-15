@@ -9,8 +9,7 @@ public:
 	int emulate_frame();
 	int reset();
 	void execute(int cycles);
-	void end_frame();
-	int dispatched_cycles;
+	int pending_psg_cycles;
 private:
 	int needed_cycles;
 	unsigned short PC;

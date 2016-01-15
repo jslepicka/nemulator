@@ -76,7 +76,7 @@ c_psg::~c_psg()
 
 int c_psg::get_buffer(const short **buffer)
 {
-	int num_samples = resampler->get_sample_buf((const short**)buffer);
+	int num_samples = resampler->get_output_buf((const short**)buffer);
 	//printf("-- %d\n", num_samples);
 	return num_samples; //number of buffered samples
 }

@@ -9,7 +9,7 @@ public:
 	c_resampler(float m, const float *g, const float *b2, const float *a2, const float *a3);
 	virtual ~c_resampler();
 	void set_m(float m);
-	int get_sample_buf(const short **sample_buf);
+	int get_output_buf(const short **output_buf);
 	void process(float sample);
 private:
 	float input_rate;
@@ -17,26 +17,22 @@ private:
 	float m, mf;
 	int samples_required;
 	c_biquad8 *lpf;
-	//static float g[8];
-	//static float b2[8];
-	//static float a2[8];
-	//static float a3[8];
 
-	float blockdc(float sample);
+	float hpf(float sample);
 	float last_sample = 0.0f;
 	float last_out = 0.0f;
 
-	static const int SAMPLE_BUF_LEN = 1024;
+	static const int OUTPUT_BUF_LEN = 1024;
 	static const int FILTERED_BUF_LEN = 4;
-	int sample_buf_index;
+	int output_buf_index;
 	int filtered_buf_index;
-	short *sample_buf;
+	short *output_buf;
 	float *filtered_buf;
 };
 
 //1st order IIR highpass
 //a1 = exp(-2*pi*(Fc/Fs))
-__forceinline float c_resampler::blockdc(float sample)
+__forceinline float c_resampler::hpf(float sample)
 {
 	static const float a = 0.99608f; //Fc=~30Hz
 	float output = sample - last_sample + a * last_out;
@@ -47,7 +43,9 @@ __forceinline float c_resampler::blockdc(float sample)
 
 __forceinline void c_resampler::process(float sample)
 {
-	filtered_buf[filtered_buf_index] = filtered_buf[filtered_buf_index + FILTERED_BUF_LEN] = lpf->process_df2t(sample);
+	filtered_buf[filtered_buf_index] = 
+		filtered_buf[filtered_buf_index + FILTERED_BUF_LEN] = lpf->process_df2t(sample);
+
 	if (--samples_required == 0)
 	{
 		float y2 = filtered_buf[filtered_buf_index];
@@ -71,7 +69,7 @@ __forceinline void c_resampler::process(float sample)
 		static const float max_out = 32767.0f;
 		//int s = (int)(round(blockdc(j) * max_out));
 #if 1
-		int s = (int)round(blockdc(j) * max_out);
+		int s = (int)round(hpf(j) * max_out);
 		
 #else
 		float dither = (rand() / ((float)RAND_MAX * .5f) - 1.0f) / (1 << 16);
@@ -82,7 +80,7 @@ __forceinline void c_resampler::process(float sample)
 			s = 32767;
 		else if (s < -32768)
 			s = -32768;
-		sample_buf[sample_buf_index++] = (short)s;
+		output_buf[output_buf_index++] = (short)s;
 	}
 	filtered_buf_index = (filtered_buf_index - 1) & 0x3;
 }

@@ -887,7 +887,7 @@ unsigned char *c_nes::GetJoy4(void)
 int c_nes::get_sound_buf(const short **sound_buf)
 {
 	const short *s;
-	int x = resampler->get_sample_buf(&s);
+	int x = resampler->get_output_buf(&s);
 	*sound_buf = s;
 	return x;
 }
