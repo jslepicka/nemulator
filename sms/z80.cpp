@@ -44,7 +44,7 @@ c_z80::~c_z80(void)
 
 int c_z80::reset()
 {
-	dispatched_cycles = 0;
+	pending_psg_cycles = 0;
 	needed_cycles = 0;
 	prev_nmi = 0;
 	halted = 0;
@@ -386,22 +386,21 @@ void c_z80::execute(int cycles)
 			available_cycles -= required_cycles;
 
 			fetch_opcode = 1;
-			dispatched_cycles += needed_cycles ? needed_cycles : required_cycles;
+			//keep track of how many cycles since psg has run
+			//account for cycles that have run without retiring an opcode
+			//in the previous execute call
+			pending_psg_cycles += needed_cycles ? needed_cycles : required_cycles;
 			needed_cycles = 0;
 			required_cycles = 0;
 			execute_opcode();
 		}
 		else
 		{
+			//number of cycles that have run without retiring an opcode
 			needed_cycles = required_cycles - available_cycles;
 			break;
 		}
 	}
-}
-
-void c_z80::end_frame()
-{
-	needed_cycles = required_cycles - available_cycles;
 }
 
 void c_z80::execute_opcode()
