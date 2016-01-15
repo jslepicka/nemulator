@@ -1389,25 +1389,22 @@ void c_nemulator::DrawScene()
 		{
 			double dim = mainPanel2->dim ? .25 : 1.0;
 			DrawText(font1, .05f, .85f, g->title, D3DXCOLOR((float)(1.0f * dim), 0.0f, 0.0f, 1.0f));
-			
-			char subtitle[256];
-			if (g->console->is_loaded())
-			{
-				switch (g->type)
-				{
-				case GAME_NES:
-					sprintf(subtitle, "Nintendo NES");
-					break;
-				case GAME_SMS:
-					sprintf(subtitle, "Sega Master System");
-					break;
-				default:
-					sprintf(subtitle, "");
-					break;
-				}
 
-				DrawText(font2, .0525f, .925f, subtitle, D3DXCOLOR((float)(.5f * dim), (float)(.5f * dim), (float)(.5f * dim), 1.0f));
+			char subtitle[256];
+			switch (g->type)
+			{
+			case GAME_NES:
+				sprintf(subtitle, "Nintendo NES");
+				break;
+			case GAME_SMS:
+				sprintf(subtitle, "Sega Master System");
+				break;
+			default:
+				sprintf(subtitle, "");
+				break;
 			}
+
+			DrawText(font2, .0525f, .925f, subtitle, D3DXCOLOR((float)(.5f * dim), (float)(.5f * dim), (float)(.5f * dim), 1.0f));
 			RECT r = { 0, 0, clientWidth, (LONG)(clientHeight*1.95) };
 			ID3D10DepthStencilState *state;
 			int oldref;
