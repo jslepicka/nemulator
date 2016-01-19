@@ -92,6 +92,88 @@ const float c_nes::a3[8] = {
 
 };
 
+const std::map<int, std::function<c_mapper*()> > c_nes::mapper_factory = 
+{
+	{ 0, []() {return new c_mapper(); } },
+	{ 1, []() {return new c_mapper1(); } },
+	{ 2, []() {return new c_mapper2(); } },
+	{ 3, []() {return new c_mapper3(); } },
+	{ 4, []() {return new c_mapper4(); } },
+	{ 5, []() {return new c_mapper5(); } },
+	{ 7, []() {return new c_mapper7(); } },
+	{ 8, []() {return new c_mapper8(); } },
+	{ 9, []() {return new c_mapper9(); } },
+	{ 10, []() {return new c_mapper10(); } },
+	{ 11, []() {return new c_mapper11(); } },
+	{ 15, []() {return new c_mapper15(); } },
+	{ 16, []() {return new c_mapper16(); } },
+	{ 18, []() {return new c_mapper18(); } },
+	{ 19, []() {return new c_mapper19(); } },
+	{ 21, []() {return new c_mapper_vrc4(1); } },
+	{ 22, []() {return new c_mapper_vrc4(3); } },
+	{ 23, []() {return new c_mapper_vrc4(); } },
+	{ 24, []() {return new c_mapper24(); } },
+	{ 25, []() {return new c_mapper_vrc4(2); } },
+	{ 26, []() {return new c_mapper24(1); } },
+	{ 32, []() {return new c_mapper32(); } },
+	{ 33, []() {return new c_mapper33(); } },
+	{ 34, []() {return new c_mapper34(); } },
+	{ 40, []() {return new c_mapper40(); } },
+	{ 41, []() {return new c_mapper41(); } },
+	{ 42, []() {return new c_mapper42(); } },
+	{ 44, []() {return new c_mapper44(); } },
+	{ 47, []() {return new c_mapper47(); } },
+	{ 64, []() {return new c_mapper64(); } },
+	{ 65, []() {return new c_mapper65(); } },
+	{ 66, []() {return new c_mapper66(); } },
+	{ 67, []() {return new c_mapper67(); } },
+	{ 68, []() {return new c_mapper68(); } },
+	{ 69, []() {return new c_mapper69(); } },
+	{ 70, []() {return new c_mapper70(); } },
+	{ 71, []() {return new c_mapper71(); } },
+	{ 72, []() {return new c_mapper72(); } },
+	{ 73, []() {return new c_mapper73(); } },
+	{ 75, []() {return new c_mapper75(); } },
+	{ 76, []() {return new c_mapper76(); } },
+	{ 77, []() {return new c_mapper77(); } },
+	{ 78, []() {return new c_mapper78(); } },
+	{ 79, []() {return new c_mapper79(); } },
+	{ 80, []() {return new c_mapper80(); } },
+	{ 82, []() {return new c_mapper82(); } },
+	{ 85, []() {return new c_mapper85(); } },
+	{ 86, []() {return new c_mapper86(); } },
+	{ 87, []() {return new c_mapper87(); } },
+	{ 88, []() {return new c_mapper88(); } },
+	{ 89, []() {return new c_mapper89(); } },
+	{ 92, []() {return new c_mapper92(); } },
+	{ 93, []() {return new c_mapper93(); } },
+	{ 94, []() {return new c_mapper94(); } },
+	{ 95, []() {return new c_mapper95(); } },
+	{ 97, []() {return new c_mapper97(); } },
+	{ 103, []() {return new c_mapper103(); } },
+	{ 105, []() {return new c_mapper105(); } },
+	{ 112, []() {return new c_mapper112(); } },
+	{ 113, []() {return new c_mapper113(); } },
+	{ 115, []() {return new c_mapper115(); } },
+	{ 118, []() {return new c_mapper118(); } },
+	{ 119, []() {return new c_mapper119(); } },
+	{ 140, []() {return new c_mapper140(); } },
+	{ 146, []() {return new c_mapper146(); } },
+	{ 152, []() {return new c_mapper152(); } },
+	{ 159, []() {return new c_mapper16(1); } },
+	{ 180, []() {return new c_mapper180(); } },
+	{ 184, []() {return new c_mapper184(); } },
+	{ 185, []() {return new c_mapper185(); } },
+	{ 193, []() {return new c_mapper193(); } },
+	{ 220, []() {return new c_mapper4(); } },
+	{ 228, []() {return new c_mapper228(); } },
+	{ 232, []() {return new c_mapper232(); } },
+	{ 243, []() {return new c_mapper243(); } },
+	{ 0x100, []() {return new c_mapper_mmc6(); }},
+	{ 0x101, []() {return new c_mapper_mc_acc(); }}
+
+};
+
 
 c_nes::c_nes(void)
 {
@@ -356,268 +438,27 @@ int c_nes::load()
 		mapperNumber = 118;
 	}
 
+	if (crc32 == 0xA80A0F01 //|| //Incredible Crash Dummies
+		//crc32 == 0x018A8699 || //Roger Clemens' MVP Baseball
+		//crc32 == 0x982DFB38F //|| //Mickey's Safari in Letterland
+		//crc32 == 0xAF05F37E || //George Foreman's KO Boxing
+		//crc32 == 0x445DD134 //Bart vs. The World
+		)
+		mapperNumber = 0x101;
+
 	//if (crc32 == 0xedcf1b71) //solstice needs sprite limiting to prevent glitches in intro
 	//{
 	//	limit_sprites = true;
 	//}
 
-	switch (mapperNumber)
-	{
-	case 0:
-		mapper = new c_mapper();
-		break;
-	case 1:
-		mapper = new c_mapper1();
-		break;
-	case 2:
-		mapper = new c_mapper2();
-		break;
-	case 3:
-		mapper = new c_mapper3();
-		break;
-	case 4:
-		if (crc32 == 0xA80A0F01 || //Incredible Crash Dummies
-			//crc32 == 0x018A8699 || //Roger Clemens' MVP Baseball
-			crc32 == 0x982DFB38F //|| //Mickey's Safari in Letterland
-			//crc32 == 0xAF05F37E || //George Foreman's KO Boxing
-			//crc32 == 0x445DD134 //Bart vs. The World
-			) 
-		{
-			mapper = new c_mapper_mc_acc();
-		}
-		else
-		{
-			mapper = new c_mapper4();
-			if (crc32 == 0x93991433)	//Low G Man
-				mapper->set_submapper(1);
-		}
-		break;
-	case 5:
-		mapper = new c_mapper5();
-		break;
-	case 7:
-		mapper = new c_mapper7();
-		break;
-	case 8:
-		mapper = new c_mapper8();
-		break;
-	case 9:
-		mapper = new c_mapper9();
-		break;
-	case 10:
-		mapper = new c_mapper10();
-		break;
-	case 11:
-		mapper = new c_mapper11();
-		break;
-	case 15:
-		mapper = new c_mapper15();
-		break;
-	case 16:
-		mapper = new c_mapper16();
-		break;
-	case 18:
-		mapper = new c_mapper18();
-		break;
-	case 19:
-		mapper = new c_mapper19();
-		break;
-	case 21:
-		mapper = new c_mapper_vrc4();
-		mapper->set_submapper(1);
-		break;
-	case 22:
-		mapper = new c_mapper_vrc4();
-		mapper->set_submapper(3);
-		break;
-	case 23:
-		mapper = new c_mapper_vrc4();
-		break;
-	case 24:
-		mapper = new c_mapper24();
-		break;
-	case 25:
-		mapper = new c_mapper_vrc4();
-		mapper->set_submapper(2);
-		break;
-	case 26:
-		mapper = new c_mapper24();
-		mapper->set_submapper(1);
-		break;
-	case 32:
-		mapper = new c_mapper32();
-		break;
-	case 33:
-		mapper = new c_mapper33();
-		break;
-	case 34:
-		mapper = new c_mapper34();
-		break;
-	case 40:
-		mapper = new c_mapper40();
-		break;
-	case 41:
-		mapper = new c_mapper41();
-		break;
-	case 42:
-		mapper = new c_mapper42();
-		break;
-	case 44:
-		mapper = new c_mapper44();
-		break;
-	case 47:
-		mapper = new c_mapper47();
-		break;
-	case 64:
-		mapper = new c_mapper64();
-		break;
-	case 65:
-		mapper = new c_mapper65();
-		break;
-	case 66:
-		mapper = new c_mapper66();
-		break;
-	case 67:
-		mapper = new c_mapper67();
-		break;
-	case 68:
-		mapper = new c_mapper68();
-		break;
-	case 69:
-		mapper = new c_mapper69();
-		break;
-		//No DMC IRQ support -- mapper 71 games are broken
-	case 71:
-		mapper = new c_mapper71();
-		break;
-	case 70:
-		mapper = new c_mapper70();
-		break;
-	case 72:
-		mapper = new c_mapper72();
-		break;
-	case 73:
-		mapper = new c_mapper73();
-		break;
-	case 75:
-		mapper = new c_mapper75();
-		break;
-	case 76:
-		mapper = new c_mapper76();
-		break;
-	case 77:
-		mapper = new c_mapper77();
-		break;
-	case 78:
-		mapper = new c_mapper78();
-		break;
-	case 79:
-		mapper = new c_mapper79();
-		break;
-	case 80:
-		mapper = new c_mapper80();
-		break;
-	case 82:
-		mapper = new c_mapper82();
-		break;
-	case 85:
-		mapper = new c_mapper85();
-		break;
-	case 86:
-		mapper = new c_mapper86();
-		break;
-	case 87:
-		mapper = new c_mapper87();
-		break;
-	case 88:
-		mapper = new c_mapper88();
-		break;
-	case 89:
-		mapper = new c_mapper89();
-		break;
-	case 92:
-		mapper = new c_mapper92();
-		break;
-	case 93:
-		mapper = new c_mapper93();
-		break;
-	case 94:
-		mapper = new c_mapper94();
-		break;
-	case 95:
-		mapper = new c_mapper95();
-		break;
-	case 97:
-		mapper = new c_mapper97();
-		break;
-	case 103:
-		mapper = new c_mapper103();
-		break;
-	case 105:
-		mapper = new c_mapper105();
-		break;
-	case 112:
-		mapper = new c_mapper112();
-		break;
-	case 113:
-		mapper = new c_mapper113();
-		break;
-	case 115:
-		mapper = new c_mapper115();
-		break;
-	case 118:
-		mapper = new c_mapper118();
-		break;
-	case 119:
-		mapper = new c_mapper119();
-		break;
-	case 140:
-		mapper = new c_mapper140();
-		break;
-	case 146:
-		mapper = new c_mapper146();
-		break;
-	case 152:
-		mapper = new c_mapper152();
-		break;
-	case 159:
-		mapper = new c_mapper16();
-		mapper->set_submapper(1);
-		break;
-	case 180:
-		mapper = new c_mapper180();
-		break;
-	case 184:
-		mapper = new c_mapper184();
-		break;
-	case 185:
-		mapper = new c_mapper185();
-		break;
-	case 193:
-		mapper = new c_mapper193();
-		break;
-	case 220:
-		mapper = new c_mapper4();
-		break;
-	case 228:
-		mapper = new c_mapper228();
-		break;
-	case 232:
-		mapper = new c_mapper232();
-		break;
-	case 243:
-		mapper = new c_mapper243();
-		break;
-	case 0x100:
-		mapper = new c_mapper_mmc6();
-		break;
-		//case 0x101:
-		//	mapper = new c_mapper_fds();
-		//	break;
-	default:
-		sprintf_s(additionalInfo, 256, "Unsupported mapper [%d]", mapperNumber);
+	auto m = mapper_factory.find(mapperNumber);
+	if (m == mapper_factory.end())
 		return 0;
-	}
+	mapper = (m->second)();
+
+	if (crc32 == 0x93991433)	//Low G Man
+		mapper->set_submapper(1);
+
 	strcpy_s(mapper->filename, pathFile);
 	strcpy_s(mapper->sramFilename, sramFilename);
 	mapper->crc32 = crc32;

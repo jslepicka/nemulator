@@ -11,6 +11,7 @@ class c_mapper
 {
 public:
 	c_mapper(void);
+	c_mapper(int submapper);
 	virtual ~c_mapper(void);
 	virtual unsigned char ReadByte(unsigned short address);
 	virtual void WriteByte(unsigned short address, unsigned char value);

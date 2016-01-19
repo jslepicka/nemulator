@@ -5,7 +5,7 @@ class c_mapper_vrc4 :
 	public c_mapper
 {
 public:
-	c_mapper_vrc4();
+	c_mapper_vrc4(int submapper = 0);
 	~c_mapper_vrc4();
 	void WriteByte(unsigned short address, unsigned char value);
 	void reset(void);

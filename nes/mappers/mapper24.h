@@ -5,7 +5,7 @@ class c_mapper24 :
 	public c_mapper
 {
 public:
-	c_mapper24();
+	c_mapper24(int submapper = 0);
 	~c_mapper24() {};
 	void WriteByte(unsigned short address, unsigned char value);
 	void clock(int cycles);

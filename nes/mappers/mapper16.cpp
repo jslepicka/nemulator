@@ -2,11 +2,12 @@
 
 #include "..\cpu.h"
 
-c_mapper16::c_mapper16()
+c_mapper16::c_mapper16(int submapper)
 {
 	//Dragon Ball Z, etc.
 	//No EPROM support
 	mapperName = "Mapper 16";
+	this->submapper = submapper;
 }
 
 c_mapper16::~c_mapper16()

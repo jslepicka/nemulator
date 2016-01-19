@@ -2,10 +2,11 @@
 #include "..\cpu.h"
 #include "..\apu2.h"
 
-c_mapper24::c_mapper24()
+c_mapper24::c_mapper24(int submapper)
 {
 	//Akumajou Densetsu (J)
 	mapperName = "VRC6";
+	this->submapper = submapper;
 }
 
 void c_mapper24::reset()
