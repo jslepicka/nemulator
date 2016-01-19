@@ -444,7 +444,9 @@ void c_ppu::run_ppu(int cycles)
 			case 288:	case 296:	case 304:	case 312:
 				//tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
 				//dummy reads
-				mapper->ppu_read(0x2000);
+
+				//1/18/2016 - Commented out; breaks Mickey's Safari in Letterland
+				//mapper->ppu_read(0x2000);
 				break;
 			case 257:
 				vramAddress &= ~0x41F;
