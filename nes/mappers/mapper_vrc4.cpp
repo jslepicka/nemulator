@@ -2,9 +2,10 @@
 
 #include "..\cpu.h"
 
-c_mapper_vrc4::c_mapper_vrc4()
+c_mapper_vrc4::c_mapper_vrc4(int submapper)
 {
 	mapperName = "VRC4";
+	this->submapper = submapper;
 }
 
 c_mapper_vrc4::~c_mapper_vrc4(void)

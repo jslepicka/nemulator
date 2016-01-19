@@ -24,6 +24,8 @@
 //TODO: Remove this.  Only need it for a few defines and macros
 #include <windows.h>
 #include <map>
+#include <vector>
+#include <functional>
 #include "..\resampler.h"
 #include "..\console.h"
 
@@ -151,4 +153,7 @@ private:
 	int do_vblank_nmi;
 	int vblank_nmi_delay;
 	bool limit_sprites;
+
+
+	const static std::map<int, std::function<c_mapper*()> > mapper_factory;
 };
