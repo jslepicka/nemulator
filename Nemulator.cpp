@@ -484,7 +484,7 @@ void c_nemulator::configure_input()
 		int default_key = button_map[i].default_key;
 		int button = button_map[i].button;
 		std::string key = button_map[i].config_base + "." + button_map[i].config_name;
-		int d = key == "." ? default_key : config->get_int(key, default_key);
+		//int d = key == "." ? default_key : config->get_int(key, default_key);
 		if (default_key & button_mask)
 		{
 			default_key &= button_mask - 1;
@@ -499,13 +499,14 @@ void c_nemulator::configure_input()
 			}
 		}
 
-		std::string joy_base = button_map[j].config_base + "joy";
+		std::string joy_base = button_map[j].config_base + ".joy";
 		std::string joy_key = joy_base +  "." + button_map[j].config_name;
 		int repeat_mode = button_map[j].repeat_mode;
-		d = key == "." ? default_key : config->get_int(key, default_key);
+		int d = key == "." ? default_key : config->get_int(key, default_key);
 		g_ih->set_button_keymap(button, d);
 		g_ih->set_repeat_mode(button, repeat_mode);
 		g_ih->set_button_joymap(button, config->get_int(joy_base, -1), config->get_int(joy_key, -1));
+		g_ih->set_button_type(button, config->get_int(joy_key + ".type", 0));
 	}
 }
 
