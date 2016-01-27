@@ -794,40 +794,6 @@ void c_nemulator::ProcessInput(double dt)
 			status->add_message("set sharpness to " + std::string(buf));
 		}
 	}
-	else if (g_ih->get_result(BUTTON_DEC_SOUND_DELAY) &
-		(c_input_handler::RESULT_DOWN | c_input_handler::RESULT_REPEAT_SLOW | c_input_handler::RESULT_REPEAT_FAST | c_input_handler::RESULT_REPEAT_EXTRAFAST))
-	{
-		if (sound->get_delay() > 0)
-		{
-			int adj_amount = 1;
-			if (g_ih->get_result(BUTTON_DEC_SOUND_DELAY) &
-				(c_input_handler::RESULT_REPEAT_EXTRAFAST))
-			{
-				adj_amount = 10;
-			}
-			sound->set_delay(sound->get_delay() - adj_amount);
-			char buf[32];
-			sprintf_s(buf, sizeof(buf), "%d (%.2f ms)", sound->get_delay(), sound->get_delay() / 48000.0 * 1000.0);
-			status->add_message("set stereo delay to " + std::string(buf));
-		}
-	}
-	else if (g_ih->get_result(BUTTON_INC_SOUND_DELAY) &
-		(c_input_handler::RESULT_DOWN | c_input_handler::RESULT_REPEAT_SLOW | c_input_handler::RESULT_REPEAT_FAST | c_input_handler::RESULT_REPEAT_EXTRAFAST))
-	{
-		if (sound->get_delay() < (sound->get_delay_len() - 1))
-		{
-			int adj_amount = 1;
-			if (g_ih->get_result(BUTTON_INC_SOUND_DELAY) &
-				(c_input_handler::RESULT_REPEAT_EXTRAFAST))
-			{
-				adj_amount = 10;
-			}
-			sound->set_delay(sound->get_delay() + adj_amount);
-			char buf[32];
-			sprintf_s(buf, sizeof(buf), "%d (%.2f ms)", sound->get_delay(), sound->get_delay() / 48000.0 * 1000.0);
-			status->add_message("set stereo delay to " + std::string(buf));
-		}
-	}
 
 	//these keys work in the menu
 	if (!inGame && splash_done)

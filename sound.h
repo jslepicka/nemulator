@@ -44,14 +44,10 @@ public:
 	int Sync();
 	int resets;
 	void Clear();
-	void SetMaxFps(double fps);
 	int max_freq;
 	int min_freq;
 	double slope;
 	double get_requested_freq();
-	int get_delay() { return delay; }
-	int get_delay_len() { return delay_len; }
-	int set_delay(int delay);
 	void Reset();
 private:
 	double requested_freq;
@@ -69,9 +65,8 @@ private:
 	LPDIRECTSOUND lpDS;
 	LPDIRECTSOUNDBUFFER buffer, primaryBuffer;
 	DSBUFFERDESC bufferdesc, primaryBufferDesc;
-	DWORD bufferOffset;
+	DWORD write_cursor;
 	int GetMaxWrite(void);
-	int CopyBuffer(LPBYTE destBuffer, DWORD destBufferSize, const short *src, int srcCount);
 
 	int default_max_freq;
 	int default_min_freq;
@@ -81,9 +76,4 @@ private:
 	int values[num_values];
 	int freq_values[num_values];
 	int value_index;
-	short *delay_line;
-	static const int delay_len = 1024;
-	int delay_read;
-	int delay_write;
-	int delay;
 };
