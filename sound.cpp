@@ -34,8 +34,7 @@ Sound::Sound(HWND hWnd)
 
 	this->hWnd = hWnd;
 	resets = 0;
-	//freq = default_freq = 48300;
-	requested_freq = freq = default_freq = 48000;//44671;
+	requested_freq = freq = default_freq = 48000;
 	max_freq = default_max_freq = (int)(default_freq * 1.02);
 	min_freq = default_min_freq = (int)(default_freq * .98);
 	lpDS = NULL;
@@ -51,7 +50,6 @@ Sound::Sound(HWND hWnd)
 
 	ZeroMemory(&bufferdesc, sizeof(DSBUFFERDESC));
 	bufferdesc.dwSize = sizeof(DSBUFFERDESC); 
-	//bufferdesc.dwFlags = DSBCAPS_GLOBALFOCUS | DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_CTRLFREQUENCY | DSBCAPS_CTRLVOLUME; 
 	bufferdesc.dwFlags = DSBCAPS_GLOBALFOCUS | DSBCAPS_TRUEPLAYPOSITION | DSBCAPS_CTRLFREQUENCY | DSBCAPS_CTRLVOLUME; 
 	bufferdesc.dwBufferBytes = (wf.nAvgBytesPerSec * BUFFER_MSEC)/1000;
 	bufferdesc.lpwfxFormat = &wf;
@@ -61,32 +59,11 @@ Sound::Sound(HWND hWnd)
 	primaryBufferDesc.dwFlags = DSBCAPS_PRIMARYBUFFER;
 	primaryBufferDesc.dwBufferBytes = 0;
 
-	bufferOffset = 0;
-
-	////delay_len = wf.nSamplesPerSec * (5.0 / 1000.0);
-	//delay = config->get_int("sound.stereo_delay", 0);
-
-	//delay_line = new short[delay_len];
-	//for (int i = 0; i < delay_len; i++)
-	//	delay_line[i] = 0;
-	//delay_read = 0;
-	//set_delay(delay);
-}
-
-int Sound::set_delay(int delay)
-{
-	if (delay < 0)
-		delay = 0;
-	else if (delay >= delay_len)
-		delay = delay_len - 1;
-	delay_write = (delay_read + delay) & 0x3FF;
-	this->delay = delay;
-	return 0;
+	write_cursor = 0;
 }
 
 Sound::~Sound(void)
 {
-	//delete[] delay_line;
 	if (buffer)
 	{
 		Stop();
@@ -128,7 +105,7 @@ int Sound::Init(void)
 	primaryBuffer = NULL;
 	if (DS_OK != lpDS->CreateSoundBuffer(&bufferdesc, &buffer, NULL))
 	{
-		//MessageBox(NULL, "CreateSoundBuffer failed", "", MB_OK);
+		MessageBox(NULL, "CreateSoundBuffer failed", "", MB_OK);
 		return 0;
 	}
 	Clear();
@@ -139,13 +116,11 @@ int Sound::Init(void)
 void Sound::Play(void)
 {
 	buffer->Play(0, 0, DSBPLAY_LOOPING);
-
 }
 
 void Sound::Stop(void)
 {
 	buffer->Stop();
-
 }
 
 void Sound::SetVolume(long volume)
@@ -155,16 +130,8 @@ void Sound::SetVolume(long volume)
 
 void Sound::Reset()
 {
-	buffer->SetCurrentPosition((bufferOffset + target/* + 3200*/) % bufferdesc.dwBufferBytes );
-	//buffer->SetCurrentPosition(bufferOffset);
-	//DWORD play_pos, write_pos;
-	//buffer->GetCurrentPosition(&play_pos, &write_pos);
-	//buffer->SetCurrentPosition((write_pos - target) % bufferdesc.dwBufferBytes);
-
-
-	//resets++;
+	buffer->SetCurrentPosition((write_cursor + target/* + 3200*/) % bufferdesc.dwBufferBytes );
 	freq = default_freq;
-	//buffer->SetFrequency(freq);
 	max_freq = default_max_freq;
 	min_freq = default_min_freq;
 
@@ -217,23 +184,24 @@ int Sound::Sync()
 
 		double new_adj = 0.0;
 
-		if (b > 8000)
+		if (b > 8000) //near underflow
 		{
 			Reset();
 			resets++;
 		}
-		else if (dir * slope < -1.0)
+		else if (dir * slope < -1.0) //moving towards target at a slope > 1.0
 		{
 			new_adj = abs(slope)/4.0;
 			if (new_adj > 1.0)
 				new_adj = 1.0;
 		}
-		else if (dir * slope > 0.0 || b == 0)
+		else if (dir * slope > 0.0 || b == 0) //moving away from target or stuck behind play cursor
 		{
-				double skew = (abs(diff)/1600.0) * 10.0;
-				new_adj = -((abs(slope)+skew)/2.0);
-				if (new_adj < -2.0)
-					new_adj = -2.0;
+			//skew causes new_adj to increase faster when we're farther away from the target
+			double skew = (abs(diff) / 1600.0) * 10.0;
+			new_adj = -((abs(slope) + skew) / 2.0);
+			if (new_adj < -2.0)
+				new_adj = -2.0;
 		}
 		new_adj *= dir;
 		freq += -new_adj;
@@ -241,15 +209,9 @@ int Sound::Sync()
 			freq = min_freq;
 		if (freq > max_freq)
 			freq = max_freq;
-		//buffer->SetFrequency(freq);
 		requested_freq = freq;
 	}
 	return b;
-}
-
-void Sound::SetMaxFps(double fps)
-{
-	max_freq = (int)(fps / 60.0 * 48000 * 1.01);
 }
 
 void Sound::Clear()
@@ -264,8 +226,6 @@ void Sound::Clear()
 		lpbuf1[i] = 0;
 	}
 	buffer->Unlock(lpbuf1, dwsize1, NULL, NULL);
-
-
 }
 
 int Sound::Copy(const short *src, int numSamples)
@@ -277,64 +237,27 @@ int Sound::Copy(const short *src, int numSamples)
 	DWORD dwsize2 = 0;
 	DWORD dwbyteswritten1 = 0;
 	DWORD dwbyteswritten2 = 0;
+	int src_len = numSamples * wf.nBlockAlign;
 	//wait until there's enough room in the DirectSound buffer for the new samples
-	while ((GetMaxWrite() & ~1) < wf.nChannels * numSamples * 2);
+	while (GetMaxWrite() < src_len);
 
 	// Lock the sound buffer
-	hr = buffer->Lock(bufferOffset, (DWORD)(wf.nChannels * numSamples * 2), (LPVOID *)&lpbuf1, &dwsize1, (LPVOID *)&lpbuf2, &dwsize2, 0);
+	hr = buffer->Lock(write_cursor, (DWORD)src_len, (LPVOID *)&lpbuf1, &dwsize1, (LPVOID *)&lpbuf2, &dwsize2, 0);
 	if (hr == DS_OK)
 	{
-		if ((dwbyteswritten1 = CopyBuffer(lpbuf1, dwsize1, src, numSamples)) == dwsize1)
+		memcpy(lpbuf1, src, dwsize1);
+		dwbyteswritten1 = dwsize1;
+		if (lpbuf2)
 		{
-			if (lpbuf2)
-			{
-				dwbyteswritten2 = CopyBuffer(lpbuf2, dwsize2, src + dwbyteswritten1 / 2 / wf.nChannels, numSamples - dwbyteswritten1 / 2 / wf.nChannels);
-			}
-			// Update our buffer offset and unlock sound buffer
-			bufferOffset = (bufferOffset + dwbyteswritten1 + dwbyteswritten2) % bufferdesc.dwBufferBytes;
-			buffer->Unlock (lpbuf1, dwbyteswritten1, lpbuf2, dwbyteswritten2);
+			dwbyteswritten2 = src_len - dwsize1;
+			memcpy(lpbuf2, src + (dwsize1 / wf.nBlockAlign), dwbyteswritten2);
 		}
+
+		// Update our buffer offset and unlock sound buffer
+		write_cursor = (write_cursor + src_len) % bufferdesc.dwBufferBytes;
+		buffer->Unlock(lpbuf1, dwbyteswritten1, lpbuf2, dwbyteswritten2);
 	}
 	return 0;		
-}
-
-int Sound::CopyBuffer(LPBYTE destBuffer, DWORD destBufferSize, const short *src, int srcCount)
-{
-	int copy_size = 0;
-	destBufferSize &= ~1;
-	if (destBufferSize >= srcCount * 2 * wf.nChannels)
-		copy_size = srcCount * 2 * wf.nChannels;
-	else
-		copy_size = destBufferSize;
-	memcpy(destBuffer, src, copy_size);
-	return copy_size;
-
-	//copy_size = 0;
-	//short *s = (short*)src;
-	//short *d = (short*)destBuffer;
-	//for (int i = 0; i < ((destBufferSize >= srcCount * 2 * wf.nChannels) ? srcCount : (destBufferSize / 2 / wf.nChannels)); i++)
-	//{
-	//	if (wf.nChannels == 1)
-	//	{
-	//		*d++ = *s++;
-	//		copy_size += 2;
-	//	}
-	//	else if (wf.nChannels == 2)
-	//	{
-	//		*d++ = *s;
-	//		delay_line[delay_write] = *s;
-	//		*d++ = delay_line[delay_read];
-
-	//		s++;
-	//		//delay_read = (delay_read + 1) % delay_len;
-	//		//delay_write = (delay_write + 1) % delay_len;
-	//		delay_read = (delay_read + 1) & 0x3FF;
-	//		delay_write = (delay_write + 1) & 0x3FF;
-	//		copy_size += 4;
-
-	//	}
-	//}
-	//return copy_size;
 }
 
 int Sound::GetMaxWrite(void)
@@ -342,8 +265,8 @@ int Sound::GetMaxWrite(void)
 	DWORD playCursor;
 	buffer->GetCurrentPosition(&playCursor, NULL);
 
-	if (bufferOffset <= playCursor)
-		return playCursor - bufferOffset;
+	if (write_cursor <= playCursor)
+		return playCursor - write_cursor;
 	else
-		return bufferdesc.dwBufferBytes - bufferOffset + playCursor;
+		return bufferdesc.dwBufferBytes - write_cursor + playCursor;
 }
