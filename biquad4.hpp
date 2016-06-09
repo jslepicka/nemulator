@@ -64,7 +64,7 @@ inline c_biquad4::~c_biquad4(void)
 
 __forceinline float c_biquad4::process_df2t(float input)
 {
-	d = _mm_move_ss(d, _mm_load_ss(&input));
+	d = _mm_move_ss(d, _mm_set_ss(input));
 	__m128 post_gain1 = _mm_mul_ps(d, g);
 	__m128 out = _mm_add_ps(post_gain1, z1);
 	__m128 t_z1_1 = _mm_mul_ps(post_gain1, b2);
