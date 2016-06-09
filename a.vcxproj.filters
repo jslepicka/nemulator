@@ -635,12 +635,6 @@
     <ClInclude Include="nes\mappers\mapper193.h">
       <Filter>Header Files\nes\mappers</Filter>
     </ClInclude>
-    <ClInclude Include="effect.fxo.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="effect2.fxo.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="nes\mappers\mapper115.h">
       <Filter>Header Files\nes\mappers</Filter>
     </ClInclude>
@@ -692,5 +686,16 @@
     <ClInclude Include="sms\crc.h">
       <Filter>Header Files\sms</Filter>
     </ClInclude>
+    <ClInclude Include="biquad4.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="effect.fx">
+      <Filter>Source Files</Filter>
+    </FxCompile>
+    <FxCompile Include="effect2.fx">
+      <Filter>Source Files</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

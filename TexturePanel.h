@@ -2,6 +2,7 @@
 #include "TexturePanelItem.h"
 #include <vector>
 #include <list>
+#include "d3d10.h"
 #include "d3dx10.h"
 //#include "d3d10app.h"
 
