@@ -1,5 +1,5 @@
 #pragma once
-#include "biquad8.hpp"
+#include "biquad4.hpp"
 #include <cmath>
 #include <stdlib.h>
 
@@ -16,7 +16,7 @@ private:
 	float output_rate;
 	float m, mf;
 	int samples_required;
-	c_biquad8 *lpf;
+	c_biquad4 *lpf;
 
 	float hpf(float sample);
 	float last_sample = 0.0f;
