@@ -1,7 +1,7 @@
 #pragma once
 #include "task.h"
 #include <string>
-
+#include "d3d10.h"
 #include <d3dx10.h>
 
 class c_task1 :

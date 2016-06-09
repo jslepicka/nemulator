@@ -10,7 +10,8 @@ c_resampler::c_resampler(float m, const float *g, const float *b2, const float *
 
 	mf = m - (int)m;
 	samples_required = (int)m + 2;
-	lpf = new c_biquad8(g, b2, a2, a3);
+	lpf = (c_biquad4*)_aligned_malloc(sizeof(c_biquad4), 16);
+	lpf = new (lpf) c_biquad4(g, b2, a2, a3);
 
 	output_buf = new short[OUTPUT_BUF_LEN];
 	filtered_buf = new float[FILTERED_BUF_LEN * 2];
@@ -24,7 +25,9 @@ c_resampler::c_resampler(float m, const float *g, const float *b2, const float *
 
 c_resampler::~c_resampler()
 {
-	delete lpf;
+	lpf->~c_biquad4();
+	_aligned_free(lpf);
+	//delete lpf;
 	delete[] output_buf;
 	delete[] filtered_buf;
 }
