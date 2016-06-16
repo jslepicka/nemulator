@@ -29,17 +29,17 @@ class c_biquad4
 {
 public:
 	c_biquad4(const float *g, const float *b2, const float *a2, const float *a3);
-	~c_biquad4(void);
+	~c_biquad4(void) {};
 	float process_df2t(float input);
 
 private:
-	alignas(16) __m128 z1;
-	alignas(16) __m128 z2;
-	alignas(16) __m128 d;
-	alignas(16) __m128 g;
-	alignas(16) __m128 a2;
-	alignas(16) __m128 b2;
-	alignas(16) __m128 a3;
+	__m128 z1;
+	__m128 z2;
+	__m128 d;
+	__m128 g;
+	__m128 a2;
+	__m128 b2;
+	__m128 a3;
 };
 
 inline c_biquad4::c_biquad4(const float *g, const float *b2, const float *a2, const float *a3)
@@ -47,19 +47,11 @@ inline c_biquad4::c_biquad4(const float *g, const float *b2, const float *a2, co
 	d = _mm_setzero_ps();
 	z1 = _mm_setzero_ps();
 	z2 = _mm_setzero_ps();
-	this->g = _mm_setzero_ps();
-	this->a2 = _mm_setzero_ps();
-	this->a3 = _mm_setzero_ps();
-	this->b2 = _mm_setzero_ps();
 
-	this->g = _mm_setr_ps(g[0], g[1], g[2], g[3]);
-	this->b2 = _mm_setr_ps(b2[0], b2[1], b2[2], b2[3]);
-	this->a2 = _mm_setr_ps(a2[0], a2[1], a2[2], a2[3]);
-	this->a3 = _mm_setr_ps(a3[0], a3[1], a3[2], a3[3]);
-}
-
-inline c_biquad4::~c_biquad4(void)
-{
+	this->g = _mm_loadu_ps(g);
+	this->b2 = _mm_loadu_ps(b2);
+	this->a2 = _mm_loadu_ps(a2);
+	this->a3 = _mm_loadu_ps(a3);
 }
 
 __forceinline float c_biquad4::process_df2t(float input)
