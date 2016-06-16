@@ -27,7 +27,6 @@ c_resampler::~c_resampler()
 {
 	lpf->~c_biquad4();
 	_aligned_free(lpf);
-	//delete lpf;
 	delete[] output_buf;
 	delete[] filtered_buf;
 }
