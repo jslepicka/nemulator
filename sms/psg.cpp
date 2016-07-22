@@ -91,77 +91,92 @@ void c_psg::set_audio_rate(double freq)
 
 void c_psg::clock(int cycles)
 {
-	for (int i = 0; i < cycles; i++)
+	int x = 0;
+	while ((x = 16 - tick - cycles) <= 0)
 	{
-		if (++tick == 16)
+		if (x == 16)
 		{
+			int kfd = 1;
+		}
+		if (tick > 0)
+		{
+			cycles -= tick;
 			tick = 0;
-			float out = 0.0f;
-			//process 3 square channels
-			for (int s = 0; s < 3; s++)
+		}
+		else
+			cycles -= 16;
+		
+		float out = 0.0f;
+		//process 3 square channels
+		for (int s = 0; s < 3; s++)
+		{
+			counter[s] = (counter[s] - 1) & 0x3FF;
+			if (counter[s] == 0)
 			{
-				counter[s] = (counter[s] - 1) & 0x3FF;
-				if (counter[s] == 0)
-				{
-					output[s] ^= 1;
-					counter[s] = tone[s];
-					//counter[s] <<= 2;
-				}
-				if (output[s] || tone[s] < 2)
-					out += vol_table[vol[s]];
+				output[s] ^= 1;
+				counter[s] = tone[s];
+				//counter[s] <<= 2;
+			}
+			if (output[s] || tone[s] < 2)
+				out += vol_table[vol[s]];
 
-			}
-			//noise
-			counter[3] = (counter[3] - 1) & 0x3FF;
-			if (counter[3] == 0)
+		}
+		//noise
+		counter[3] = (counter[3] - 1) & 0x3FF;
+		if (counter[3] == 0)
+		{
+			output[3] ^= 1;
+			switch (tone[3] & 0x3)
 			{
-				output[3] ^= 1;
-				switch (tone[3] & 0x3)
-				{
-				case 0:
-					counter[3] = 0x10;
-					break;
-				case 1:
-					counter[3] = 0x20;
-					break;
-				case 2:
-					counter[3] = 0x40;
-					break;
-				case 3:
-					counter[3] = tone[2];
-					break;
-				}
-				//counter[3] <<= 2;
-				if (output[3] == 1) //clock lfsr
-				{
-					if (tone[3] & 0x4)
-					{
-						int in = ((lfsr & 0x1) << 15) ^ ((lfsr & 0x8) << 12);
-						lfsr_out = lfsr & 0x1;
-						lfsr >>= 1;
-						lfsr |= in;
-					}
-					else
-					{
-						lfsr_out = lfsr & 0x1;
-						int in = lfsr_out << 15;
-						lfsr >>= 1;
-						lfsr |= in;
-					}
-				}
-				//printf("%2X\n", lfsr);
+			case 0:
+				counter[3] = 0x10;
+				break;
+			case 1:
+				counter[3] = 0x20;
+				break;
+			case 2:
+				counter[3] = 0x40;
+				break;
+			case 3:
+				counter[3] = tone[2];
+				break;
 			}
-			if (lfsr & 0x1)
-				out += vol_table[vol[3]];
+			//counter[3] <<= 2;
+			if (output[3] == 1) //clock lfsr
+			{
+				if (tone[3] & 0x4)
+				{
+					int in = ((lfsr & 0x1) << 15) ^ ((lfsr & 0x8) << 12);
+					lfsr_out = lfsr & 0x1;
+					lfsr >>= 1;
+					lfsr |= in;
+				}
+				else
+				{
+					lfsr_out = lfsr & 0x1;
+					int in = lfsr_out << 15;
+					lfsr >>= 1;
+					lfsr |= in;
+				}
+			}
+			//printf("%2X\n", lfsr);
+		}
+		if (lfsr & 0x1)
+			out += vol_table[vol[3]];
 
-			//resample(out / 4.0f);
-			if (mixer_enabled)
-			{
-				for (int i = 0; i < 4; i++)
-					resampler->process(out / 4.0f);
-			}
+		//resample(out / 4.0f);
+		if (mixer_enabled)
+		{
+			for (int i = 0; i < 4; i++)
+				resampler->process(out / 4.0f);
 		}
 	}
+	if (x == 16)
+	{
+		int lasdfjklsd = 1;
+	}
+	tick = x;
+
 }
 
 void c_psg::write(int data)
