@@ -94,10 +94,6 @@ void c_psg::clock(int cycles)
 	int x = 0;
 	while ((x = 16 - tick - cycles) <= 0)
 	{
-		if (x == 16)
-		{
-			int kfd = 1;
-		}
 		if (tick > 0)
 		{
 			cycles -= tick;
@@ -171,12 +167,7 @@ void c_psg::clock(int cycles)
 				resampler->process(out / 4.0f);
 		}
 	}
-	if (x == 16)
-	{
-		int lasdfjklsd = 1;
-	}
 	tick = x;
-
 }
 
 void c_psg::write(int data)
