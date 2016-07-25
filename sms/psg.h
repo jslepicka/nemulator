@@ -13,6 +13,7 @@ public:
 	void enable_mixer() { mixer_enabled = 1; }
 	void disable_mixer() { mixer_enabled = 0; };
 private:
+	int available_cycles;
 	int mixer_enabled = 0;
 	static const float g[8];
 	static const float b2[8];

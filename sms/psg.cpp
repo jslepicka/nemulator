@@ -64,6 +64,7 @@ int c_psg::get_buffer(const short **buffer)
 
 void c_psg::reset()
 {
+	available_cycles = 0;
 	sample_count = 0;
 	tick = 0;
 	for (int i = 0; i < 4; i++)
@@ -91,16 +92,10 @@ void c_psg::set_audio_rate(double freq)
 
 void c_psg::clock(int cycles)
 {
-	int x = 0;
-	while ((x = 16 - tick - cycles) <= 0)
+	available_cycles += cycles;
+	while (available_cycles >= 16)
 	{
-		if (tick > 0)
-		{
-			cycles -= tick;
-			tick = 0;
-		}
-		else
-			cycles -= 16;
+		available_cycles -= 16;
 		
 		float out = 0.0f;
 		//process 3 square channels
@@ -167,7 +162,6 @@ void c_psg::clock(int cycles)
 				resampler->process(out / 4.0f);
 		}
 	}
-	tick = x;
 }
 
 void c_psg::write(int data)
