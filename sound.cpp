@@ -146,12 +146,8 @@ double Sound::get_requested_freq()
 	return requested_freq;
 }
 
-int Sound::Sync()
+double Sound::calc_slope()
 {
-	int b = GetMaxWrite();
-
-	values[value_index] = b;
-	value_index = (value_index + 1) % num_values;
 	int valid_values = 0;
 	int sx = 0;
 	int sy = 0;
@@ -172,10 +168,19 @@ int Sound::Sync()
 	}
 	double num = (double)(valid_values * sxy - sx*sy);
 	double den = (double)(valid_values * sxx - sx*sx);
-	slope = den == 0.0 ? 0.0 : num/den;
+	return den == 0.0 ? 0.0 : num / den;
+}
+
+int Sound::Sync()
+{
+	int b = GetMaxWrite();
+
+	values[value_index] = b;
+	value_index = (value_index + 1) % num_values;
 	
 	if (--adjustPeriod == 0)
 	{
+		slope = calc_slope();
 		adjustPeriod = adjustFrames;
 		int diff = b - target;
 		
