@@ -13,25 +13,11 @@
 #define new DEBUG_NEW
 #endif
 
-#define BYTETOBINARY(byte)  \
-  (byte & 0x80 ? 1 : 0), \
-  (byte & 0x40 ? 1 : 0), \
-  0, \
-  (byte & 0x10 ? 1 : 0), \
-  0, \
-  (byte & 0x04 ? 1 : 0), \
-  (byte & 0x02 ? 1 : 0), \
-  (byte & 0x01 ? 1 : 0) 
-
-int DEBUG = 0;
-#define dprintf(fmt, ...) do { if (DEBUG) printf(fmt, __VA_ARGS__); } while (0)
-
 using namespace std;
 
 c_z80::c_z80(c_sms *sms)
 {
 	pending_ei = 0;
-	instruction = 0;
 	pre_pc = 0;
 	int count = 0;
 	this->sms = sms;
@@ -190,26 +176,6 @@ const int c_z80::ed_cycle_table[256] = {
 };
 
 
-const int c_z80::fd_cycle_table[256] = {
-	//		0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
-	/*0*/	1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
-	/*1*/	1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
-	/*2*/	1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
-	/*3*/	1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
-	/*4*/	1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
-	/*5*/	1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
-	/*6*/	1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
-	/*7*/	1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
-	/*8*/	1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
-	/*9*/	1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
-	/*A*/	1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
-	/*B*/   1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
-	/*C*/	1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
-	/*D*/	1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
-	/*E*/	1, 14,  1,  1,  1, 15,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
-	/*F*/	1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
-};
-
 const int c_z80::ddcb_cycle_table[256] = {
 	//		0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
 	/*0*/  23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23,
@@ -261,14 +227,13 @@ void c_z80::execute(int cycles)
 			}
 			else if (sms->irq && IFF1)
 			{
-				//printf("IRQ at 0x%04X\n", PC);
 				IFF1 = IFF2 = 0;
 				halted = 0;
 				switch (IM)
 				{
 				case 0:
 				case 2:
-					printf("invalid interrupt!\n");
+					//Invalid interrupt mode
 					break;
 				case 1:
 					opcode = 0x101;
@@ -281,18 +246,6 @@ void c_z80::execute(int cycles)
 			}
 			else
 			{
-				dprintf("%04X ", PC);
-				if (instruction >= 0)
-				{
-					//printf("%08d PC:%04X AF:%04X BC:%04X DE:%04X HL:%04X IX:%04X IY:%04X SP:%04X\n", instruction, PC, AF.word & 0xFFD7, BC.word, DE.word, HL.word, IX.word, IY.word, SP);
-				}
-				instruction++;
-				//if ((instruction & 0xFFFF) == 0)
-				//{
-				//	char t[32];
-				//	sprintf(t, "%d\n", instruction);
-				//	fputs(t, stderr);
-				//}
 				opcode = sms->read_byte(PC++);
 				if (pending_ei)
 				{
@@ -377,8 +330,6 @@ void c_z80::execute(int cycles)
 				required_cycles += cycle_table[opcode];
 				break;
 			}
-			//some instruction counts 
-			dprintf("%06X %2d ", opcode, required_cycles);
 			fetch_opcode = 0;
 		}
 		if (required_cycles <= available_cycles)
@@ -430,26 +381,25 @@ void c_z80::execute_opcode()
 				switch (y)
 				{
 				case 0:
-					dprintf("NOP\n");
+					//NOP
 					break;
 				case 1:
-					dprintf("EX AF, AF'\n");
+					//EX AF, AF'
 					swap_register(&AF.word, &AF2.word);
 					break;
 				case 2:
+					//DJNZ
 					d = (signed char)sms->read_byte(PC++);
-					dprintf("DJNZ %d\n", PC);
 					BC.byte.hi--;
 					if (BC.byte.hi != 0)
 					{
-						//available_cycles -= 5;
 						required_cycles += 5;
 						PC += d;
 					}
 					break;
 				case 3:
+					//JR
 					d = (signed char)sms->read_byte(PC++);
-					dprintf("JR %d\n", d);
 					PC += d;
 					break;
 				case 4:
@@ -474,7 +424,6 @@ void c_z80::execute_opcode()
 					break;
 				case 1:
 					//ADD HL, rp[p]
-					//ADD16(&HL.word, *rp[p]);
 					ADD16(rp[2], *rp[p]);
 					break;
 				}
@@ -497,8 +446,6 @@ void c_z80::execute_opcode()
 						//LD (nn), HL
 						temp = sms->read_word(PC);
 						PC += 2;
-						//sms->write_word(temp, HL.word);
-						temp2 = *rp[2];
 						sms->write_word(temp, *rp[2]);
 						break;
 					case 3:
@@ -613,7 +560,6 @@ void c_z80::execute_opcode()
 				break;
 			case 6:
 				//LD r[y], n
-
 				if (y == 6)
 				{
 					if (dd)
@@ -747,7 +693,6 @@ void c_z80::execute_opcode()
 			else
 			{
 				//LD r[y], r[z]
-				//unsigned char src = z == 6 ? sms->read_byte(HL.word) : *r[z];
 				unsigned char src = 0;
 
 				int unmap_z = 0;
@@ -755,14 +700,6 @@ void c_z80::execute_opcode()
 
 				if (dd || fd)
 				{
-					//if (z == 6 || y == 6)
-					//{
-					//	if (z == 4 || z == 5 || y == 4 || y == 5)
-					//	{
-					//		printf("(HL) + H/L at %x\n", PC);
-					//		//exit(1);
-					//	}
-					//}
 					if (z == 6)
 					{
 						unmap_y = 1;
@@ -850,7 +787,6 @@ void c_z80::execute_opcode()
 					{
 						*r[y] = src;
 					}
-
 				}
 			}
 			break;
@@ -905,20 +841,10 @@ void c_z80::execute_opcode()
 						swap_register(&BC.word, &BC2.word);
 						swap_register(&DE.word, &DE2.word);
 						swap_register(&HL.word, &HL2.word);
-						//todo: should this be affected by dd?
-						if (dd || fd)
-						{
-							int x = 1;
-						}
 						break;
 					case 2:
 						//JP HL
-						//PC = sms->read_word(*rp[2]);
 						PC = *rp[2];
-						if (dd || fd)
-						{
-							int x = 1;
-						}
 						break;
 					case 3:
 						//LD SP, HL
@@ -945,10 +871,7 @@ void c_z80::execute_opcode()
 					PC = temp;
 					break;
 				case 1:
-					//(CB)
-					printf("How'd I reach CB?\n");
-					//getchar();
-					//exit(1);
+					//CB - should never get here?
 					break;
 				case 2:
 					//OUT (n), A
@@ -963,11 +886,6 @@ void c_z80::execute_opcode()
 				case 4:
 					//EX (SP), HL
 				{
-
-					if (dd || fd)
-					{
-						int x = 1;
-					}
 					int sp0 = sms->read_byte(SP);
 					int sp1 = sms->read_byte(SP + 1);
 					sms->write_byte(SP, *r[5]);
@@ -980,6 +898,7 @@ void c_z80::execute_opcode()
 					//EX DE, HL
 					if (fd || dd)
 					{
+						//EX DE, IX and EX DE, IY are invalid
 						int x = 1;
 					}
 					temp = DE.word;
@@ -988,17 +907,12 @@ void c_z80::execute_opcode()
 					break;
 				case 6:
 					//DI
-					dprintf("DI\n");
-					//printf("DI\n");
 					IFF1 = IFF2 = 0;
 					pending_ei = 0;
 					break;
 				case 7:
 					//EI
-					//printf("EI at %x\n", PC);
-					//printf("EI\n");
 					pending_ei = 1;
-					//IFF1 = IFF2 = 1;
 					break;
 				}
 				break;
@@ -1009,7 +923,6 @@ void c_z80::execute_opcode()
 				if (test_flag(y))
 				{
 					push_word(PC);
-					//available_cycles -= 7;
 					required_cycles += 7;
 					PC = temp;
 				}
@@ -1032,22 +945,13 @@ void c_z80::execute_opcode()
 						PC = temp;
 						break;
 					case 1:
-						//DD
-						printf("How'd I reach DD?\n");
-						//getchar();
-						//exit(1);
+						//DD - should not get here
 						break;
 					case 2:
-						//ED
-						printf("How'd I reach ED?\n");
-						//getchar();
-						//exit(1);
+						//ED - should not get here
 						break;
 					case 3:
-						//FD
-						printf("How'd I reach FD?\n");
-						//getchar();
-						//exit(1);
+						//FD - should not get here
 						break;
 					}
 					break;
@@ -1084,8 +988,6 @@ void c_z80::execute_opcode()
 			PC = 0x66;
 			break;
 		default:
-			//printf("invalid interrupt\n");
-			//exit(1);
 			break;
 		}
 		break;
@@ -1093,10 +995,6 @@ void c_z80::execute_opcode()
 	case 0xCB:
 		if (z == 6)
 		{
-			if (dd || fd)
-			{
-				int x = 1;
-			}
 			tchar = sms->read_byte(HL.word);
 		}
 		else
@@ -1124,10 +1022,6 @@ void c_z80::execute_opcode()
 		}
 		if (z == 6)
 		{
-			if (dd || fd)
-			{
-				int x = 1;
-			}
 			sms->write_byte(HL.word, tchar);
 		}
 		else
@@ -1135,15 +1029,6 @@ void c_z80::execute_opcode()
 			//todo: is this correct?
 			*r[z] = tchar;
 		}
-		break;
-
-	case 0xDD:
-		//ugh
-		//printf("DD\n");
-		//exit(1);
-	{
-		int x = 1;
-	}
 		break;
 
 	case 0xED:
@@ -1169,10 +1054,6 @@ void c_z80::execute_opcode()
 				}
 				else
 				{
-					if (dd || fd)
-					{
-						int x = 1;
-					}
 					//IN r[y], (C)
 					*r[y] = sms->read_port(BC.byte.lo);
 					set_n(0);
@@ -1190,10 +1071,6 @@ void c_z80::execute_opcode()
 				}
 				else
 				{
-					if (dd || fd)
-					{
-						int x = 1;
-					}
 					//OUT (C), r[y]
 					sms->write_port(BC.byte.lo, *r[y]);
 				}
@@ -1203,13 +1080,10 @@ void c_z80::execute_opcode()
 				{
 				case 0:
 					//SBC HL, rp[p]
-					//printf("SBC16\n");
 					SBC16(*rp[p]);
-					//exit(1);
 					break;
 				case 1:
 					//ADC HL, rp[p]
-					//printf("ADC16\n");
 					ADC16(*rp[p]);
 					break;
 				}
@@ -1239,9 +1113,7 @@ void c_z80::execute_opcode()
 				if (y == 1)
 				{
 					//RETI
-					//printf("RETI\n");
 					PC = pull_word();
-					//exit(1);
 				}
 				else
 				{
@@ -1258,9 +1130,8 @@ void c_z80::execute_opcode()
 					IM = 0;
 					break;
 				case 1:
+					//Undefined mode
 					IM = 0;
-					//printf("Undefined interrupt mode\n");
-					//exit(1);
 					break;
 				case 2:
 					IM = 1;
@@ -1280,7 +1151,6 @@ void c_z80::execute_opcode()
 				case 1:
 					//LD R, A
 					R = AF.byte.hi;
-					printf("LD R, A\n");
 					break;
 				case 2:
 					//LD A, I
@@ -1292,8 +1162,6 @@ void c_z80::execute_opcode()
 					break;
 				case 4:
 					//RRD
-					//printf("RRD\n");
-					//exit(1);
 				{
 					int x = sms->read_byte(HL.word);
 					int x_lo = x & 0xF;
@@ -1311,8 +1179,6 @@ void c_z80::execute_opcode()
 					break;
 				case 5:
 					//RLD
-					//printf("RLD\n");
-					//exit(1);
 				{
 					int x = sms->read_byte(HL.word);
 					int x_hi = x & 0xF0;
@@ -1443,7 +1309,6 @@ void c_z80::execute_opcode()
 						BC.word--;
 						if (BC.word != 0)
 						{
-							//available_cycles -= 5;
 							required_cycles += 5;
 							PC -= 2;
 							set_pv(1);
@@ -1453,16 +1318,10 @@ void c_z80::execute_opcode()
 							set_pv(0);
 						}
 						set_n(0);
-
 						set_h(0);
 						break;
 					case 1:
 						//CPIR
-						if (dd || fd)
-						{
-							//printf("CPIR dd/fd\n");
-							//exit(1);
-						}
 						tchar = sms->read_byte(HL.word);
 						CP(tchar);
 						HL.word++;
@@ -1470,7 +1329,6 @@ void c_z80::execute_opcode()
 						if (BC.word != 0 && AF.byte.hi != tchar)
 						{
 							PC -= 2;
-							//available_cycles -= 5;
 							required_cycles += 5;
 							set_pv(1);
 						}
@@ -1489,7 +1347,6 @@ void c_z80::execute_opcode()
 						if (BC.byte.hi != 0)
 						{
 							PC -= 2;
-							//available_cycles -= 5;
 							required_cycles += 5;
 						}
 						break;
@@ -1500,13 +1357,11 @@ void c_z80::execute_opcode()
 						BC.byte.hi--;
 						if (BC.byte.hi != 0)
 						{
-							//available_cycles -= 5;
 							required_cycles += 5;
 							PC -= 2;
 						}
 						set_n(1);
 						set_z(BC.byte.hi == 0);
-						//set_z(1);
 						break;
 					}
 					break;
@@ -1515,17 +1370,12 @@ void c_z80::execute_opcode()
 					{
 					case 0:
 						//LDDR
-						if (dd || fd)
-						{
-							int x = 1;
-						}
 						sms->write_byte(DE.word, sms->read_byte(HL.word));
 						DE.word--;
 						HL.word--;
 						BC.word--;
 						if (BC.word != 0)
 						{
-							//available_cycles -= 5;
 							required_cycles += 5;
 							PC -= 2;
 							set_pv(1);
@@ -1539,11 +1389,6 @@ void c_z80::execute_opcode()
 						break;
 					case 1:
 						//CPDR
-						if (dd || fd)
-						{
-							//printf("CPDR dd/fd\n");
-							//exit(1);
-						}
 						tchar = sms->read_byte(HL.word);
 						CP(tchar);
 						HL.word--;
@@ -1551,7 +1396,6 @@ void c_z80::execute_opcode()
 						if (BC.word != 0 && AF.byte.hi != tchar)
 						{
 							PC -= 2;
-							//available_cycles -= 5;
 							required_cycles += 5;
 							set_pv(1);
 						}
@@ -1571,7 +1415,6 @@ void c_z80::execute_opcode()
 						if (BC.byte.hi != 0)
 						{
 							PC -= 2;
-							//available_cycles -= 5;
 							required_cycles += 5;
 						}
 						break;
@@ -1585,7 +1428,6 @@ void c_z80::execute_opcode()
 						if (BC.byte.hi != 0)
 						{
 							PC -= 2;
-							//available_cycles -= 5;
 							required_cycles += 5;
 						}
 						break;
@@ -1596,9 +1438,6 @@ void c_z80::execute_opcode()
 			else
 			{
 				//NOP
-				//printf("NOP\n");
-				//getchar();
-				//exit(1);
 			}
 			break;
 		}
@@ -1611,9 +1450,8 @@ void c_z80::execute_opcode()
 		case 0:
 			if (z != 6)
 			{
+				//undocumented
 				//LD r[z], rot[y] (IX+d)
-				printf("LD r[z], rot[y] (IX+d)\n");
-				//exit(1);
 			}
 			else
 			{
@@ -1633,9 +1471,8 @@ void c_z80::execute_opcode()
 		case 2:
 			if (z != 6)
 			{
+				//undocumented
 				//LD r[z], RES y, (IX+d)
-				printf("LD r[z], RES y, (IX+d)\n");
-				//exit(1);
 			}
 			else
 			{
@@ -1649,9 +1486,8 @@ void c_z80::execute_opcode()
 		case 3:
 			if (z != 6)
 			{
+				//undocumented
 				//LD r[z], SET y, (IX+d)
-				printf("LD r[z], SET y, (IX+d)\n");
-				//exit(1);
 			}
 			else
 			{
@@ -1667,18 +1503,9 @@ void c_z80::execute_opcode()
 		break;
 
 	default:
-		printf("crap\n");
-		//exit(1);
+		//shouldn't reach here
 		break;
-
 	}
-
-	dprintf(" PC: %04X SP: %04X I: %02X R: %02X\n", PC, SP, I, R);
-	//dprintf(" A: %02X B: %02X C: %02X D: %02X E: %02X F: %02X H: %02X L: %02X I: %02X R: %02X IXH: %02X IXL: %02X IYH: %02X IYL: %02X\n",
-	//	AF.byte.hi, BC.byte.hi, BC.byte.lo, DE.byte.hi, DE.byte.lo, AF.byte.lo, HL.byte.hi, HL.byte.lo, I, R, IX.byte.hi, IX.byte.lo,
-	//	IY.byte.hi, IY.byte.lo);
-	dprintf(" AF: %04X BC: %04X DE: %04X HL: %04X IX: %04X IY: %04X\n", AF.word, BC.word, DE.word, HL.word, IX.word, IY.word);
-	dprintf("\n");
 }
 
 void c_z80::push_word(unsigned short value)
@@ -1788,7 +1615,6 @@ void c_z80::DEC(unsigned char *operand)
 	set_pv((*operand ^ result) & (temp ^ *operand) & 0x80);
 	signed char s = *operand;
 	signed char s1 = *operand - 1;
-	//set_pv((s ^ s1) & 0x80);
 	set_n(1);
 	*operand = result & 0xFF;
 }
@@ -1937,21 +1763,10 @@ void c_z80::BIT(int bit, unsigned char operand)
 
 void c_z80::ADD8(unsigned char operand, int carry)
 {
-	//unsigned short result = AF.byte.hi + operand + carry;
-	//signed char c_result = AF.byte.hi + operand + carry;
-	//set_c(result > 0xFF);
-	//set_s(result & 0x80);
-	//set_z(result == 0);
-	//set_h((AF.byte.hi & 0xF) + (operand & 0xF) > 0xF);
-	//set_pv((AF.byte.hi ^ c_result) & (operand ^ c_result) & 0x80);
-	//set_n(0);
-	//AF.byte.hi = result & 0xFF;
 	int c = operand + carry;
 	int result = AF.byte.hi + operand + carry;
 	unsigned int uresult = (unsigned int) result;
-	//set_pv(result < -128 || result > 127);
 	set_pv((AF.byte.hi ^ result) & (operand ^ result) & 0x80);
-	//set_pv((AF.byte.hi ^ result) & (operand ^ result) & 0x80);
 	set_c(uresult < 0 || uresult > 255);
 	set_s(result & 0x80);
 	set_n(0);
@@ -1978,15 +1793,6 @@ void c_z80::AND(unsigned char operand)
 
 void c_z80::CP(unsigned char operand)
 {
-	//unsigned short result = AF.byte.hi - operand;
-	//signed char c_result = AF.byte.hi - operand;
-	//set_s(result & 0x80);
-	//set_z(result == 0);
-	//set_h(((unsigned char)operand & 0xF) > (AF.byte.hi & 0xF));
-	//set_pv((AF.byte.hi ^ c_result) & (operand ^ AF.byte.hi) & 0x80);
-	//set_n(1);
-	//set_c(operand > AF.byte.hi);
-
 	int c = operand;
 	int result = (int)AF.byte.hi - (int)c;
 	unsigned int uresult = (unsigned int)result;
@@ -1996,58 +1802,34 @@ void c_z80::CP(unsigned char operand)
 	set_z((result & 0xFF) == 0);
 	set_s(result & 0x80);
 	set_h((AF.byte.hi & 0xF) - (c & 0xF) < 0);
-	//AF.byte.hi = uresult & 0xFF;
 }
 
 void c_z80::SBC16(unsigned short operand)
 {
-	//int x = operand + (AF.byte.lo & 1);
-	//set_h((x & 0xFFF) > (HL.word & 0xFFF));
-	//set_c(x > HL.word);
-	//set_n(1);
-	////TODO:handle p/v flag
-
-	//HL.word -= x;
-	//set_s(HL.word & 0x8000);
-	//set_z(HL.word == 0);
-
-	if (HL.word != 1 || operand != 1)
-	{
-		int xdsfsd = 1;
-	}
 	int x = operand + (AF.byte.lo & 1);
 	int result = HL.word - x;
 	unsigned int uresult = (unsigned int)result;
 	set_h(((HL.word & 0xFFF) - (x & 0xFFF) - (AF.byte.lo & 0x1)) < 0);
-	//set_pv(result < -32768 || result > 32767);
 	set_pv((HL.word ^ result) & (x ^ HL.word) & 0x8000);
 	set_c(result < 0);
 	set_n(1);
-	//TODO:handle p/v flag
 	set_s(result & 0x8000);
 	HL.word = result & 0xFFFF;
 	set_z(HL.word == 0);
-	if (result != 0)
-	{
-		int skjdhfkds = 1;
-	}
 }
 
 void c_z80::SUB8(unsigned char operand, int carry)
 {
-
 	int c = operand + carry;
 	int result = (int)AF.byte.hi - (int)c;
 	unsigned int uresult = (unsigned int)result;
 	set_pv((AF.byte.hi ^ result) & (operand ^ AF.byte.hi) & 0x80);
 	set_c(result < 0);
 	set_n(1);
-
 	set_s(result & 0x80);
 	set_h(((AF.byte.hi & 0xF) - (operand & 0xF) - (carry & 0xF)) < 0);
 	AF.byte.hi = result & 0xFF;
 	set_z(AF.byte.hi == 0);
-
 }
 
 void c_z80::NEG()
@@ -2061,7 +1843,6 @@ void c_z80::NEG()
 	set_n(1);
 	set_z(AF.byte.hi == 0);
 	set_s(AF.byte.hi & 0x80);
-
 }
 
 void c_z80::XOR(unsigned char operand)
@@ -2091,8 +1872,6 @@ void c_z80::ADC16(unsigned short operand)
 	set_h(((operand & 0xFFF) + (HL.word & 0xFFF) + (AF.byte.lo & 0x1)) > 0xFFF);
 	set_c((HL.word + x) > 0xFFFF);
 	set_n(0);
-	//TODO:handle p/v flag
-	//set_pv(result < -32768 || result > 32767);
 	set_pv((HL.word ^ result) & (operand ^ result) & 0x8000);
 	set_s(result & 0x8000);
 	HL.word = result & 0xFFFF;

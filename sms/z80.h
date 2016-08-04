@@ -15,7 +15,6 @@ private:
 	unsigned short PC;
 	int prev_nmi;
 	int halted;
-	int instruction;
 	int pre_pc;
 	struct s_log_entry
 	{
@@ -55,11 +54,9 @@ private:
 	unsigned short **rp2, *rp2_00[4], *rp2_dd[4], *rp2_fd[8];
 
 	static const int cycle_table[261];
-	static const int ed_cycle_table[256];
-	static const int dd_cycle_table[256];
 	static const int cb_cycle_table[256];
-	static const int fd_cycle_table[256];
-
+	static const int dd_cycle_table[256];
+	static const int ed_cycle_table[256];
 	static const int ddcb_cycle_table[256];
 
 	void execute_opcode();
@@ -99,8 +96,6 @@ private:
 	int test_flag(int f);
 
 	void swap_register(unsigned short *first, unsigned short *second);
-
-
 
 	int IFF1; //user accessible
 	//on interrupt, IFF1 is copied to IFF2, then IFF1 is set.
