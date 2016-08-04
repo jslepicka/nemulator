@@ -67,6 +67,7 @@ private:
 	DSBUFFERDESC bufferdesc, primaryBufferDesc;
 	DWORD write_cursor;
 	int GetMaxWrite(void);
+	double calc_slope();
 
 	int default_max_freq;
 	int default_min_freq;
