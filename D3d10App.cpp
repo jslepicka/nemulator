@@ -544,9 +544,21 @@ int D3d10App::InitD3d()
 	DXGI_MODE_DESC target_mode = { 0 };
 	target_mode.Width = output_desc.DesktopCoordinates.right - output_desc.DesktopCoordinates.left;
 	target_mode.Height = output_desc.DesktopCoordinates.bottom - output_desc.DesktopCoordinates.top;
-	pOutput->FindClosestMatchingMode(&target_mode, &matching_mode, d3dDev);
-
-	sd.BufferDesc = matching_mode;
+	hr2 = pOutput->FindClosestMatchingMode(&target_mode, &matching_mode, d3dDev);
+	if (hr2 == DXGI_ERROR_NOT_CURRENTLY_AVAILABLE)
+	{
+		sd.BufferDesc.Width = clientWidth;
+		sd.BufferDesc.Height = clientHeight;
+		sd.BufferDesc.RefreshRate.Numerator = 60;
+		sd.BufferDesc.RefreshRate.Denominator = 1;
+		sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		sd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+		sd.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
+	}
+	else
+	{
+		sd.BufferDesc = matching_mode;
+	}
 	sd.SampleDesc.Count = 1;
 	sd.SampleDesc.Quality = 0;
 	sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
@@ -555,6 +567,7 @@ int D3d10App::InitD3d()
 	sd.Windowed = true;
 	sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 	sd.Flags = 0;
+
 	hr2 = pFactory->CreateSwapChain(d3dDev, &sd, &swapChain);
 	OnResize();
 	ReleaseCOM(pOutput);
