@@ -109,9 +109,6 @@ private:
 
 	//void InitPalette();
 	void generate_palette();
-	int wave(int p, int color);
-	int clamp(int v, int min, int max);
-	double gammafix(double f);
 	void RunGames();
 	void ProcessInput(double dt);
 	int selectedPanel;
@@ -165,22 +162,9 @@ private:
 	//static const unsigned char Palette[64*3];
 	bool paused;
 
-	static DWORD WINAPI NesThread(LPVOID lpParam);
-
 	c_audio_info *audio_info;
 	c_mem_viewer *mem_viewer;
 	c_qam *qam;
-
-	bool disable_throttle;
-	bool changed_power_scheme;
-	GUID *power_scheme;
-	GUID duplicate_scheme;
-	GUID *dup_scheme;
-	DWORD prev_throttle_ac;
-	DWORD prev_throttle_dc;
-
-	void change_power_scheme();
-	void revert_power_scheme();
 
 	int dir_exists(char *path);
 

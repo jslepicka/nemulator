@@ -471,8 +471,8 @@ void c_nemulator::configure_input()
 		{ BUTTON_RIGHT_SHIFT,    "",        "",        VK_RSHIFT,                   0 },
 		{ BUTTON_ESCAPE,         "",        "",        VK_ESCAPE,                   0 },
 		{ BUTTON_RETURN,         "",        "",        VK_RETURN,                   0 },
-		{ BUTTON_DEC_SHARPNESS,  "",        "",        0x39,                        0 },
-		{ BUTTON_INC_SHARPNESS,  "",        "",        0x30,                        0 },
+		{ BUTTON_DEC_SHARPNESS,  "",        "",        0x39,                        1 },
+		{ BUTTON_INC_SHARPNESS,  "",        "",        0x30,                        1 },
 	};
 
 	int num_buttons = sizeof(button_map) / sizeof(s_button_map);
@@ -549,6 +549,7 @@ void c_nemulator::RunGames()
 				(((c_nes_input_handler*)g_ih)->get_nes_byte(1) << 8));
 			break;
 		case GAME_SMS:
+		case GAME_GG:
 			g->console->set_input(((c_nes_input_handler*)g_ih)->get_sms_input());
 			break;
 		default:
@@ -1366,6 +1367,9 @@ void c_nemulator::DrawScene()
 			case GAME_SMS:
 				sprintf(subtitle, "Sega Master System");
 				break;
+			case GAME_GG:
+				sprintf(subtitle, "Sega Game Gear");
+				break;
 			default:
 				sprintf(subtitle, "");
 				break;
@@ -1481,6 +1485,8 @@ void c_nemulator::LoadGames()
 	char nes_save_path[MAX_PATH];
 	char sms_rom_path[MAX_PATH];
 	char sms_save_path[MAX_PATH];
+	char gg_rom_path[MAX_PATH];
+	char gg_save_path[MAX_PATH];
 	
 	strcpy_s(nes_rom_path, MAX_PATH, config->get_string("nes.rom_path", "c:\\roms\\nes").c_str());
 	strcpy_s(nes_save_path, MAX_PATH, config->get_string("nes.save_path", nes_rom_path).c_str());
@@ -1488,10 +1494,14 @@ void c_nemulator::LoadGames()
 	strcpy_s(sms_rom_path, MAX_PATH, config->get_string("sms.rom_path", "c:\\roms\\sms").c_str());
 	strcpy_s(sms_save_path, MAX_PATH, config->get_string("sms.save_path", sms_rom_path).c_str());
 
+	strcpy_s(gg_rom_path, MAX_PATH, config->get_string("gg.rom_path", "c:\\roms\\gg").c_str());
+	strcpy_s(gg_save_path, MAX_PATH, config->get_string("gg.save_path", gg_rom_path).c_str());
+
 	s_loadinfo loadinfo[] = 
 	{
 		{ GAME_NES, "nes", nes_rom_path, nes_save_path },
-		{ GAME_SMS, "sms", sms_rom_path, sms_save_path }
+		{ GAME_SMS, "sms", sms_rom_path, sms_save_path },
+		{ GAME_GG,   "gg",  gg_rom_path,  gg_save_path }
 	};
 
 //	char *extensions[] = { "nes", "sms" };
@@ -1651,6 +1661,7 @@ int c_nemulator::take_screenshot()
 						col = pal[*fb++ & 0x1FF];
 						break;
 					case GAME_SMS:
+					case GAME_GG:
 						col = *fb++;
 						break;
 					}
@@ -1675,6 +1686,7 @@ int c_nemulator::take_screenshot()
 			ret = c_bmp_writer::write_bmp(buf + 256 * 8, 256, 224, filename);
 			break;
 		case GAME_SMS:
+		case GAME_GG:
 			ret = c_bmp_writer::write_bmp(buf + 256 * 8, 256, 192, filename);
 			break;
 		}

@@ -21,6 +21,7 @@ public:
 	virtual void build_stretch_buffer(float ratio) = 0;
 	virtual D3DXCOLOR get_overscan_color() = 0;
 	virtual int get_height() = 0;
+	virtual int get_width() = 0;
 private:
 	virtual void OnActivate(bool load) {};
 	virtual void OnDeactivate() {};

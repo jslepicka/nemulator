@@ -16,6 +16,7 @@ bool showBorder;
 float3 border_color;
 float time;
 float2 output_size;
+float max_x;
 float max_y;
 
 //0 = bilinear
@@ -47,10 +48,10 @@ PS_INPUT VS (VS_INPUT input)
 
 float4 PS (PS_INPUT input) : SV_Target
 {
- float2 scale = {output_size.x / 256.0, output_size.y / max_y};
+ float2 scale = {output_size.x / max_x, output_size.y / max_y};
  float2 interp = (scale - lerp(scale, 1.0, sharpness))/(scale * 2.0);
  //interp *= sharpness;
- saturate(interp);
+ //saturate(interp);
 
  float2 p = input.Tex.xy;
 
@@ -68,6 +69,35 @@ float4 PS (PS_INPUT input) : SV_Target
  r.w = 1.0;
 
  return r;
+}
+
+float4 PSx(PS_INPUT input) : SV_Target
+{
+	float2 scale = { output_size.x / max_x, output_size.y / max_y };
+	float2 interp = (scale - 1.0) / (scale * 2.0) / 2.0;
+	interp = max(1.0, .5 / interp);
+
+	float2 p = input.Tex.xy;
+
+	p = p * 256.0;
+	float2 i = floor(p);
+	float2 f = p - i;
+
+	float2 f2 = min(0.5, -abs(f * interp - interp/2.0) + interp/2.0);
+	float2 dir = f2 - .5;
+	float2 s = sign(f - .5);
+	float2 c = s*dir;
+	f = .5 - c;
+
+
+
+	p = (i + f) / 256.0;
+	float4 r = txDiffuse.Sample(samLinear, p) * color;
+	r = pow(r, 1.0 / 2.2);
+	r.w = 1.0;
+
+	return r;
+
 }
 
 float4 PS1 (PS_INPUT input) : SV_Target

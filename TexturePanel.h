@@ -181,6 +181,7 @@ private:
 	ID3D10EffectVectorVariable *var_overscan_color;
 	ID3D10EffectScalarVariable *var_sharpness;
 	ID3D10EffectScalarVariable *var_max_y;
+	ID3D10EffectScalarVariable *var_max_x;
 
 	ID3D10EffectShaderResourceVariable *varTex;
 	//ID3D10EffectShaderResourceVariable *varTex2;

@@ -159,6 +159,7 @@ void TexturePanel::Init()
 	var_border_color = effect->GetVariableByName("border_color")->AsVector();
 	var_sharpness = effect->GetVariableByName("sharpness")->AsScalar();
 	var_max_y = effect->GetVariableByName("max_y")->AsScalar();
+	var_max_x = effect->GetVariableByName("max_x")->AsScalar();
 
 	D3D10_PASS_DESC passDesc;
 	technique->GetPassByIndex(0)->GetDesc(&passDesc);
@@ -729,6 +730,7 @@ void TexturePanel::DrawItem(c_item_container *item, int draw_border, float x, fl
 	//D3DXCOLOR oc = item->item->get_overscan_color();
 	//var_overscan_color->SetFloatVector((float*)&item->item->get_overscan_color());
     var_max_y->SetFloat((double)item->item->get_height());
+	var_max_x->SetFloat((double)item->item->get_width());
 
 	item->item->DrawToTexture(tex);
 	D3DXMatrixTranslation(&matrixWorld, x, y, z);

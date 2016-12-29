@@ -5,7 +5,7 @@ class c_sms;
 class c_vdp
 {
 public:
-	c_vdp(c_sms *sms);
+	c_vdp(c_sms *sms, int type);
 	~c_vdp(void);
 	void write_data(unsigned char value);
 	void write_control(unsigned char value);
@@ -39,7 +39,7 @@ private:
 	int registers[16];
 	int vram_write;
 	unsigned char *vram;
-	unsigned char cram[32];
+	unsigned char cram[64];
 	unsigned char read_buffer;
 	int *frame_buffer;
 
@@ -48,6 +48,14 @@ private:
 	void update_irq();
 	static long pal_built;
 	void generate_palette();
-	static uint32_t pal[256];
+	static uint32_t pal_sms[256];
+	static uint32_t pal_gg[4096];
+
+	enum VDP_MODE {
+		MODE_SMS = 0,
+		MODE_GG
+	};
+
+	int mode = VDP_MODE::MODE_SMS;
 };
 

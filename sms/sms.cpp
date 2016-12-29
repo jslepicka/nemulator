@@ -16,16 +16,16 @@
 
 void strip_extension(char *path);
 
-c_sms::c_sms(void)
+c_sms::c_sms(int type)
 {
+	this->type = type;
 	z80 = new c_z80(this);
-	vdp = new c_vdp(this);
+	vdp = new c_vdp(this, type);
 	psg = new c_psg();
 	ram = new unsigned char[8192];
 	memset(cart_ram, 0, 16384);
 	rom = 0;
 }
-
 
 c_sms::~c_sms(void)
 {
@@ -311,6 +311,10 @@ unsigned char c_sms::read_port(int port)
 	{
 	case 0:
 		//printf("Port read from I/O or memory %2X\n", port);
+		if (type == 1)
+		{
+			return joy >> 31;
+		}
 		return 0;
 	case 1:
 		//printf("Port read from PSG\n");
@@ -347,7 +351,8 @@ unsigned char c_sms::read_port(int port)
 
 void c_sms::set_input(int input)
 {
-	nmi = input & 0x8000'0000;
+	if (type == 0)
+		nmi = input & 0x8000'0000;
 	joy = ~input;
 }
 

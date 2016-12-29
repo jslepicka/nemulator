@@ -68,7 +68,10 @@ void Game::OnActivate(bool load)
 				console = new c_nes();
 				break;
 			case GAME_SMS:
-				console = new c_sms();
+				console = new c_sms(0);
+				break;
+			case GAME_GG:
+				console = new c_sms(1);
 				break;
 			default:
 				break;
@@ -149,6 +152,7 @@ void Game::DrawToTexture(ID3D10Texture2D *tex)
 			}
 			break;
 		case GAME_SMS:
+		case GAME_GG:
 		{
 			int y = 0;
 			//for (; y < 14; y++)
@@ -222,6 +226,16 @@ void Game::create_vertex_buffer()
 		vertices[0].tex.y = vertices[2].tex.y = (192.0 + 14.0) / 256.0;
 		vertices[1].tex.y = vertices[3].tex.y = -14.0 / 256.0;
 	}
+	else if (type == GAME_GG)
+	{
+		vertices[0].tex.y = vertices[2].tex.y = (144.0 + 24.0) / 256.0;
+		vertices[1].tex.y = vertices[3].tex.y = 24.0 / 256.0;
+
+		vertices[0].tex.x = vertices[1].tex.x = 48.0 / 256.0;
+		vertices[2].tex.x = vertices[3].tex.x = (256.0 - 48.0) / 256.0;
+	}
+
+
 	memcpy(vertices2, vertices, sizeof(vertices2));
 
 	bd.Usage = D3D10_USAGE_DEFAULT;
@@ -260,6 +274,7 @@ D3DXCOLOR Game::get_overscan_color()
 		switch (type)
 		{
 		case GAME_SMS:
+		case GAME_GG:
 			r = (console->get_overscan_color() & 0xFF) / 255.0;
 			g = ((console->get_overscan_color() >> 8) & 0xFF) / 255.0;
 			b = ((console->get_overscan_color() >> 16) & 0xFF) / 255.0;
@@ -276,6 +291,21 @@ D3DXCOLOR Game::get_overscan_color()
 	}
 }
 
+int Game::get_width()
+{
+	switch (type)
+	{
+	case GAME_NES:
+		return 256;
+	case GAME_SMS:
+		return 256;
+	case GAME_GG:
+		return 160;
+	default:
+		return 256;
+	}
+}
+
 int Game::get_height()
 {
 	switch (type)
@@ -284,6 +314,8 @@ int Game::get_height()
 		return 224;
 	case GAME_SMS:
 		return 192 + 28;
+	case GAME_GG:
+		return 144;
 	default:
 		return 256;
 	}
