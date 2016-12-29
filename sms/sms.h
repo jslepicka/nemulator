@@ -8,7 +8,8 @@ class c_psg;
 class c_sms : public c_console
 {
 public:
-	c_sms(void);
+	//c_sms(void);
+	c_sms(int variant);
 	~c_sms(void);
 	int load_rom(char *filename);
 	int emulate_frame();
@@ -32,6 +33,7 @@ public:
 	void set_input(int input);
 	int get_overscan_color();
 private:
+	int type = 0;
 	int psg_cycles;
 	int has_sram = 0;
 	unsigned int crc = 0;

@@ -10,6 +10,7 @@ enum GAME_TYPE
 {
 	GAME_NES,
 	GAME_SMS,
+	GAME_GG,
 	GAME_NONE
 };
 
@@ -41,6 +42,7 @@ public:
 	int played = 0;
 	D3DXCOLOR get_overscan_color();
 	int get_height();
+	int get_width();
 private:
 	void OnActivate(bool load);
 	void OnDeactivate();

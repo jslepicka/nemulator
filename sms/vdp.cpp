@@ -9,11 +9,13 @@
 #endif
 
 long c_vdp::pal_built = 0;
-uint32_t c_vdp::pal[256];
+uint32_t c_vdp::pal_sms[256];
+uint32_t c_vdp::pal_gg[4096];
 
-c_vdp::c_vdp(c_sms *sms)
+c_vdp::c_vdp(c_sms *sms, int type)
 {
 	this->sms = sms;
+	mode = type;
 	vram = new unsigned char[16384];
 	frame_buffer = new int[256 * 256];
 	generate_palette();
@@ -54,10 +56,11 @@ void c_vdp::write_data(unsigned char value)
 {
 	int a = 1;
 	read_buffer = value;
+	int cram_mask = mode == MODE_GG ? 0x3F : 0x1F;
 	switch (control)
 	{
 	case 0x03: //CRAM
-		cram[address & 0x1F] = value;
+		cram[address & cram_mask] = value;
 		break;
 	default: //VRAM
 		vram[address & 0x3FFF] = value;
@@ -158,7 +161,7 @@ void c_vdp::eval_sprites()
 		if (sprite_y == 0xD0)
 			break;
 		int sprite_y_adjusted = 0;
-		
+
 		//y values >= 0xF1 are treated as negative
 		if (sprite_y >= 0xF1)
 			sprite_y_adjusted = (char)sprite_y;
@@ -172,12 +175,12 @@ void c_vdp::eval_sprites()
 		{
 			//printf("big sprite\n");
 		}
-		if (l >= (sprite_y_adjusted) && l < (sprite_y_adjusted) + sprite_height)
+		if (l >= (sprite_y_adjusted) && l < (sprite_y_adjusted)+sprite_height)
 		{
 			//sprite is in range
-			int sprite_x = *(sat + 128 + i*2);
+			int sprite_x = *(sat + 128 + i * 2);
 			sprite_x -= registers[0] & 0x8;
-			int sprite_pattern = *(sat + 129 + i*2);
+			int sprite_pattern = *(sat + 129 + i * 2);
 			if (registers[0x1] & 0x2)
 			{
 				sprite_pattern &= ~0x1;
@@ -337,7 +340,11 @@ void c_vdp::draw_scanline()
 						}
 					}
 
-					if (x < 8 && (registers[0] & 0x20))
+					if (mode == MODE_GG && (y < 24 || y >= 168 || x < 48 || x >= 208))
+					{
+						color = 0;
+					}
+					else if (x < 8 && (registers[0] & 0x20))
 					{
 						color = background_color;
 					}
@@ -389,9 +396,22 @@ int *c_vdp::get_frame_buffer()
 	return frame_buffer;
 }
 
-int c_vdp::lookup_color(int palette_index)
+__forceinline int c_vdp::lookup_color(int palette_index)
 {
-	return pal[cram[palette_index]];
+	switch (mode)
+	{
+	case MODE_SMS:
+		return pal_sms[cram[palette_index]];
+	case MODE_GG:
+		palette_index <<= 1;
+		return pal_gg[
+			(cram[palette_index] & 0xFF) |
+				((cram[palette_index + 1] & 0xF) << 8)
+		];
+	default:
+		return 0;
+	}
+
 }
 
 void c_vdp::generate_palette()
@@ -413,7 +433,22 @@ void c_vdp::generate_palette()
 			double g = pow(d_clamp(g_bits * (1.0 / 3.0), 0.0, 1.0), 2.2);
 			double b = pow(d_clamp(b_bits * (1.0 / 3.0), 0.0, 1.0), 2.2);
 
-			pal[i] = (int)(255.0 * r)
+			pal_sms[i] = (int)(255.0 * r)
+				| ((int)(255.0 * g) << 8)
+				| ((int)(255.0 * b) << 16)
+				| 0xFF000000;
+		}
+		for (int i = 0; i < 4096; i++)
+		{
+			int r_bits = i & 0xF;
+			int g_bits = (i >> 4) & 0xF;
+			int b_bits = (i >> 8) & 0xF;
+
+			double r = pow(d_clamp(r_bits * (1.0 / 15.0), 0.0, 1.0), 2.2);
+			double g = pow(d_clamp(g_bits * (1.0 / 15.0), 0.0, 1.0), 2.2);
+			double b = pow(d_clamp(b_bits * (1.0 / 15.0), 0.0, 1.0), 2.2);
+
+			pal_gg[i] = (int)(255.0 * r)
 				| ((int)(255.0 * g) << 8)
 				| ((int)(255.0 * b) << 16)
 				| 0xFF000000;
@@ -423,5 +458,14 @@ void c_vdp::generate_palette()
 
 int c_vdp::get_overscan_color()
 {
-	return pal[cram[0x10 | (registers[7] & 0xF)]];
+	switch (mode)
+	{
+	case MODE_SMS:
+		return pal_sms[cram[0x10 | (registers[7] & 0xF)]];
+	case MODE_GG:
+		//this is wrong
+		return pal_gg[cram[0x10 | (registers[7] & 0xF)]];
+	default:
+		return 0;
+	}
 }

@@ -4,6 +4,7 @@ class c_console
 {
 public:
 	c_console();
+	c_console(int variant);
 	virtual ~c_console();
 	virtual int load() = 0;
 	virtual int is_loaded() = 0;
