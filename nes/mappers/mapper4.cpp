@@ -255,6 +255,9 @@ void c_mapper4::reset(void)
 	prg_mask = 0xFF;
 	chr_mask = 0xFF;
 
+	if (crc32 == 0x97B6CB19) //Aladdin (SuperGame) (Mapper 4)
+		irq_mode = 0;
+
 	//TODO: Not sure if these are the correct initialization values
 
 	prg[0] = 0;
