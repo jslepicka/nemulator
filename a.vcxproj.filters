@@ -345,6 +345,9 @@
     <ClCompile Include="nemulator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="nes\mappers\mapper190.cpp">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="a.h">
