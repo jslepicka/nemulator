@@ -21,6 +21,6 @@ private:
 	int latch1FD;
 	int latch1FE;
 	int latch_buffer[2];
-	int latch_buffer_head;
-	int latch_buffer_tail;
+	unsigned int latch_buffer_head;
+	unsigned int latch_buffer_tail;
 };
