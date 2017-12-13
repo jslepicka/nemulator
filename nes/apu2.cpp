@@ -126,7 +126,19 @@ void c_apu2::write_byte(unsigned short address, unsigned char value)
 	case 0x17:
 		{
 			frame_irq_enable = !(value & 0x40);
-
+			if (!frame_irq_enable && frame_irq_flag)
+			{
+				nes->cpu->clear_irq();
+				frame_irq_asserted = 0;
+			}
+			else if (frame_irq_enable && frame_irq_flag)
+			{
+				if (!frame_irq_asserted)
+				{
+					nes->cpu->execute_irq();
+					frame_irq_asserted = 1;
+				}
+			}
 			frame_seq_step = 0;
 			frame_seq_counter = CLOCKS_PER_FRAME_SEQ;
 			if (value & 0x80)
@@ -299,7 +311,7 @@ void c_apu2::clock_frame_seq()
 			clock_length_sweep();
 			//if irq flag, and !irq disable, execute interrupt
 			frame_irq_flag = 1;
-			if (frame_irq_flag && frame_irq_enable && !frame_irq_asserted)
+			if (frame_irq_enable && !frame_irq_asserted)
 			{
 				frame_irq_asserted = 1;
 				nes->cpu->execute_irq();

@@ -244,6 +244,7 @@
     <ClCompile Include="nes\mappers\mapper180.cpp" />
     <ClCompile Include="nes\mappers\mapper184.cpp" />
     <ClCompile Include="nes\mappers\mapper185.cpp" />
+    <ClCompile Include="nes\mappers\mapper189.cpp" />
     <ClCompile Include="nes\mappers\mapper19.cpp" />
     <ClCompile Include="nes\mappers\mapper190.cpp" />
     <ClCompile Include="nes\mappers\mapper193.cpp" />
@@ -361,6 +362,7 @@
     <ClInclude Include="nes\mappers\mapper180.h" />
     <ClInclude Include="nes\mappers\mapper184.h" />
     <ClInclude Include="nes\mappers\mapper185.h" />
+    <ClInclude Include="nes\mappers\mapper189.h" />
     <ClInclude Include="nes\mappers\mapper19.h" />
     <ClInclude Include="nes\mappers\mapper193.h" />
     <ClInclude Include="nes\mappers\mapper2.h" />
