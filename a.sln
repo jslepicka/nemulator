@@ -1,13 +1,14 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26730.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nemulator", "a.vcxproj", "{082B52AB-87BC-410E-B46D-039E9E38DDF1}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1690EC75-24FA-48C7-9D3A-F9F55D56B8B1}"
 	ProjectSection(SolutionItems) = preProject
 		Performance1.psess = Performance1.psess
+		Performance3.psess = Performance3.psess
 		Performance4.psess = Performance4.psess
 	EndProjectSection
 EndProject
@@ -36,5 +37,9 @@ Global
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		AMDCaProjectFile = C:\dev\nemulator 2.1.2\CodeAnalyst\a.caw
+		SolutionGuid = {D6548671-FE62-4AED-A78E-F64BC92BF89F}
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
 	EndGlobalSection
 EndGlobal
