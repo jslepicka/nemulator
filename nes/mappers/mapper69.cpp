@@ -94,6 +94,7 @@ void c_mapper69::WriteByte(unsigned short address, unsigned char value)
 		case 0x0D:
 			irq_control = value & 0x81;
 			//if ((irq_control & 0x01) == 0)
+			//All writes should ACK IRQ: https://forums.nesdev.com/viewtopic.php?f=2&t=12436
 			cpu->clear_irq();
 			break;
 		case 0x0E:
