@@ -93,8 +93,8 @@ void c_mapper69::WriteByte(unsigned short address, unsigned char value)
 			break;
 		case 0x0D:
 			irq_control = value & 0x81;
-			if ((irq_control & 0x01) == 0)
-				cpu->clear_irq();
+			//if ((irq_control & 0x01) == 0)
+			cpu->clear_irq();
 			break;
 		case 0x0E:
 			irq_counter = (irq_counter & 0xFF00) | value;
