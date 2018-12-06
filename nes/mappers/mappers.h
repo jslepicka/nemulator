@@ -65,6 +65,7 @@
 #include "mapper105.h"
 #include "mapper115.h"
 #include "mapper180.h"
+#include "mapper189.h"
 #include "mapper190.h"
 #include "mapper193.h"
 #include "mapper_mmc6.h" 

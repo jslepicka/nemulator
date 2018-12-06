@@ -144,6 +144,7 @@ const std::map<int, std::function<c_mapper*()> > c_nes::mapper_factory =
 	{ 180, []() {return new c_mapper180(); } },
 	{ 184, []() {return new c_mapper184(); } },
 	{ 185, []() {return new c_mapper185(); } },
+	{ 189, []() {return new c_mapper189(); } },
 	{ 190, []() {return new c_mapper190(); } },
 	{ 193, []() {return new c_mapper193(); } },
 	{ 220, []() {return new c_mapper4(); } },
@@ -391,6 +392,9 @@ int c_nes::load()
 	joy2 = &joypad->joy4;
 
 	mapperNumber = LoadImage(pathFile);
+
+	if (crc32 == 0x96ce586e)
+		mapperNumber = 189;
 
 	if (crc32 == 0x889129CB ||	//Startropics (U) [!].nes
 		crc32 == 0xD054FFB0)	//Startropics II - Zoda's Revenge (U) [!].nes
