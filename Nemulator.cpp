@@ -8,6 +8,7 @@
 #include <xmmintrin.h>
 #include "console.h"
 #include <algorithm>
+#include <pmmintrin.h>
 
 extern ID3D10Device *d3dDev;
 extern D3DXMATRIX matrixView;
@@ -1270,18 +1271,44 @@ void c_nemulator::UpdateScene(double dt)
 		{
 			c_console *console = ((Game*)texturePanels[selectedPanel]->GetSelected())->console;
 			stats->report_stat("fps", fps);
-			//stats->report_stat("mapper #", nes->get_mapper_number());
-			//stats->report_stat("mapper name", nes->get_mapper_name());
 			stats->report_stat("freq", sound->GetFreq());
 			stats->report_stat("audio position", s);
 			stats->report_stat("audio resets", sound->resets);
 			stats->report_stat("emulation mode", console->get_emulation_mode() == c_nes::EMULATION_MODE_ACCURATE ? "accurate" : "fast");
-			//stats->report_stat("sprite limit", nes->get_sprite_limit() ? "limited" : "unlimited");
 			stats->report_stat("audio.slope", sound->slope);
 			std::ostringstream s;
 			s << std::hex << std::uppercase << console->get_crc();
 			stats->report_stat("CRC", s.str());
 
+			if (dynamic_cast<c_nes*>(console))
+			{
+				c_nes *n = (c_nes*)console;
+				stats->report_stat("mapper #", n->get_mapper_number());
+				stats->report_stat("mapper name", n->get_mapper_name());
+				stats->report_stat("sprite limit", n->get_sprite_limit() ? "limited" : "unlimited");
+				switch (n->get_mirroring_mode())
+				{
+				case 0:
+					stats->report_stat("mirroring", "horizontal");
+					break;
+				case 1:
+					stats->report_stat("mirroring", "vertical");
+					break;
+				case 2:
+				case 3:
+					stats->report_stat("mirroring", "one screen");
+					break;
+				case 4:
+					stats->report_stat("mirroring", "four screen");
+					break;
+				default:
+					break;
+				}
+
+			}
+			//stats->report_stat("mapper #", nes->get_mapper_number());
+			//stats->report_stat("mapper name", nes->get_mapper_name());
+			//stats->report_stat("sprite limit", nes->get_sprite_limit() ? "limited" : "unlimited");
 			//switch (nes->get_mirroring_mode())
 			//{
 			//case 0:
