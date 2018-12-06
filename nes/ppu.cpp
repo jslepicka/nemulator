@@ -352,7 +352,7 @@ void c_ppu::run_ppu(int cycles)
 				attribute = mapper->ppu_read(attribute_address);
 				attribute >>= attribute_shift;
 				attribute &= 0x03;
-				attribute <<= 2;
+				//attribute <<= 2;
 
 				if ((vramAddress & 0x1F) == 0x1F)
 					vramAddress ^= 0x41F;
@@ -425,8 +425,11 @@ void c_ppu::run_ppu(int cycles)
 				pattern2 = mapper->ppu_read(pattern_address + 8);
 
 #ifdef WIN64
-				__int64 *ib64 = (__int64*)&index_buffer[(current_cycle+9) % 336];
-				__int64 c = interleave_bits_64(pattern1, pattern2) | (attribute * 0x0101010101010101ULL);
+				unsigned int l = current_cycle + 9;
+				if (l > 335)
+					l -= 336;
+				__int64 *ib64 = (__int64*)&index_buffer[l];
+				__int64 c = interleave_bits_64(pattern1, pattern2) | (attribute * 0x0404040404040404ULL);
 				*ib64 = c;
 #else
 				attribute *= 0x01010101;

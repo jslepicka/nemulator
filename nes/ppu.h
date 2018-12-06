@@ -36,7 +36,7 @@ public:
 	void run_ppu_new(int cycles);
 	int eval_sprites();
 	int executed_cycles;
-	int current_cycle;
+	unsigned int current_cycle;
 	int current_scanline;
 	bool limit_sprites;
 	//int get_mirroring_mode();
@@ -67,12 +67,12 @@ private:
 	int pattern_address;
 	int attribute_address;
 	int attribute_shift;
-	int attribute;
+	unsigned int attribute;
 	unsigned char index_buffer[272];
 	int tick;
 
-	int pattern1;
-	int pattern2;
+	unsigned int pattern1;
+	unsigned int pattern2;
 
 	int InterleaveBits(unsigned char odd, unsigned char even);
 
