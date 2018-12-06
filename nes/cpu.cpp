@@ -550,9 +550,12 @@ INLINE void c_cpu::Branch(int Condition)
 
 INLINE void c_cpu::ADC(void)
 {
-	unsigned short temp = A + M +(SR.C ? 1 : 0);
+	unsigned int temp = A + M + (SR.C ? 1 : 0);
 	SR.C = temp > 0xFF ? true : false;
 	//SR.V = (((~(A^M)) & 0x80) & ((A^temp) & 0x80)) ? true : false;
+	//if A and result have different sign and M and result have different sign, set overflow
+	//127 + 1 = -128 or -1 - -3 = 2 will overflow
+	//127 + -128
 	SR.V = (A^temp) & (M^temp) & 0x80 ? true : false;
 	A = temp & 0xFF;
 	SETN(A);
@@ -851,6 +854,7 @@ INLINE void c_cpu::RTS(void)
 }
 INLINE void c_cpu::SBC(void)
 {
+	/*
 	unsigned short temp = A - M - (SR.C ? 0 : 1);
 	SR.C = temp < 0x100 ? true : false;
 	//SR.V = (((A^temp) & 0x80) & ((A^M) & 0x80)) ? true : false;
@@ -858,6 +862,9 @@ INLINE void c_cpu::SBC(void)
 	A = temp & 0xFF;
 	SETN(A);
 	SETZ(A);
+	*/
+	M ^= 0xFF;
+	ADC();
 }
 INLINE void c_cpu::SEC(void)
 {
