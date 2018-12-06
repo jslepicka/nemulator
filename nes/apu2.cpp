@@ -277,20 +277,26 @@ void c_apu2::clock_frame_seq()
 		case 0:
 			clock_envelopes();
 			clock_length_sweep();
+			frame_seq_step = 1;
 			break;
 		case 1:
 			clock_envelopes();
+			frame_seq_step = 2;
 			break;
 		case 2:
 			clock_envelopes();
 			clock_length_sweep();
+			frame_seq_step = 3;
 			break;
 		case 3:
 			clock_envelopes();
+			frame_seq_step = 4;
 			break;
 		case 4:
+			frame_seq_step = 0;
 			break;
 		}
+		//frame_seq_step = ++frame_seq_step % 5;
 	}
 	else
 	{
@@ -298,13 +304,16 @@ void c_apu2::clock_frame_seq()
 		{
 		case 0:
 			clock_envelopes();
+			frame_seq_step = 1;
 			break;
 		case 1:
 			clock_envelopes();
 			clock_length_sweep();
+			frame_seq_step = 2;
 			break;
 		case 2:
 			clock_envelopes();
+			frame_seq_step = 3;
 			break;
 		case 3:
 			clock_envelopes();
@@ -316,10 +325,12 @@ void c_apu2::clock_frame_seq()
 				frame_irq_asserted = 1;
 				nes->cpu->execute_irq();
 			}
+			frame_seq_step = 0;
 			break;
 		}
+		//frame_seq_step = ++frame_seq_step & 0x3;
 	}
-	frame_seq_step = ++frame_seq_step % frame_seq_steps;
+	
 }
 
 c_apu2::c_envelope::c_envelope()
@@ -759,7 +770,7 @@ void c_apu2::c_triangle::clock_timer()
 		if (length.get_output() && linear_counter)
 		{
 			output = sequence[sequence_pos];
-			sequence_pos = ++sequence_pos % 32;
+			sequence_pos = ++sequence_pos & 0x1F;
 			//need this for crappy output filter otherwise freq is too high
 			//and causes aliasing
 			//if (timer.get_period() < 2)
