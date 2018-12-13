@@ -274,9 +274,6 @@ void c_mapper64::clock_irq_counter()
 
 void c_mapper64::fire_irq()
 {
-	if (odd_frame)
-		irq_delay = 6;
-	else
 		irq_delay = 6;
 }
 

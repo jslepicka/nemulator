@@ -62,12 +62,12 @@ __forceinline float c_biquad4::process_df2t(float input)
 	__m128 post_gain1 = _mm_mul_ps(d, g);
 	__m128 out = _mm_add_ps(post_gain1, z1);
 	__m128 t_z1_1 = _mm_mul_ps(post_gain1, b2);
+	__m128 t_z2 = _mm_mul_ps(out, a3);
 	t_z1_1 = _mm_add_ps(t_z1_1, z2);
 	__m128 t_z1_2 = _mm_mul_ps(out, a2);
-	z1 = _mm_sub_ps(t_z1_1, t_z1_2);
-	__m128 t_z2 = _mm_mul_ps(out, a3);
-	z2 = _mm_sub_ps(post_gain1, t_z2);
 	d = _mm_shuffle_ps(out, out, 0x93);
+	z2 = _mm_sub_ps(post_gain1, t_z2);
+	z1 = _mm_sub_ps(t_z1_1, t_z1_2);
 	return _mm_cvtss_f32(d);
 }
 

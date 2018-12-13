@@ -173,7 +173,7 @@ void c_mapper4::clock(int cycles)
 			low_count = 0;
 	}
 	else
-		low_count = 15;
+		low_count = 8;
 }
 
 void c_mapper4::check_a12(int address)

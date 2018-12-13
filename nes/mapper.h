@@ -46,7 +46,6 @@ public:
 	int in_sprite_eval;
 	c_nes *nes;
 	int get_mirroring();
-	int odd_frame;
 protected:
 	int expansion_audio;
 	static const int MIRRORING_HORIZONTAL = 0;
