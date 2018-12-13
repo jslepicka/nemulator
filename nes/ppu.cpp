@@ -432,7 +432,7 @@ void c_ppu::run_ppu(int cycles)
 				__int64 c = interleave_bits_64(pattern1, pattern2) | (attribute * 0x0404040404040404ULL);
 				*ib64 = c;
 #else
-				attribute *= 0x01010101;
+				attribute *= 0x04040404;
 				int *ib = (int*)&index_buffer[l];
 				int *p1 = (int*)morton_odd_64 + pattern1 * 2;
 				int *p2 = (int*)morton_even_64 + pattern2 * 2;
