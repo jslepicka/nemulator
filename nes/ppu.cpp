@@ -428,9 +428,6 @@ void c_ppu::run_ppu(int cycles)
 					l -= 336;
 
 #ifdef WIN64
-				unsigned int l = current_cycle + 9;
-				if (l > 335)
-					l -= 336;
 				__int64 *ib64 = (__int64*)&index_buffer[l];
 				__int64 c = interleave_bits_64(pattern1, pattern2) | (attribute * 0x0404040404040404ULL);
 				*ib64 = c;
