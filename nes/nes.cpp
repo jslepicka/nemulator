@@ -423,9 +423,9 @@ int c_nes::load()
 		mapperNumber = 118;
 	}
 
-	if (crc32 == 0xA80A0F01 //|| //Incredible Crash Dummies
+	if (crc32 == 0xA80A0F01 || //Incredible Crash Dummies
 		//crc32 == 0x018A8699 || //Roger Clemens' MVP Baseball
-		//crc32 == 0x982DFB38F //|| //Mickey's Safari in Letterland
+		crc32 == 0x982DFB38 //|| //Mickey's Safari in Letterland
 		//crc32 == 0xAF05F37E || //George Foreman's KO Boxing
 		//crc32 == 0x445DD134 //Bart vs. The World
 		)

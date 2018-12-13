@@ -162,7 +162,7 @@ unsigned char c_ppu::ReadByte(int address)
 	{
 		unsigned char temp = readValue;
 		if (!rendering)
-			readValue = mapper->ppu_read(get_bus_address(vramAddress));
+			readValue = mapper->ppu_read(vramAddress);
 
 		//palette reads are returned immediately
 		if ((vramAddress & 0x3FFF) >= 0x3F00)
@@ -423,6 +423,9 @@ void c_ppu::run_ppu(int cycles)
 			case 327:   case 335:
 			{
 				pattern2 = mapper->ppu_read(pattern_address + 8);
+				unsigned int l = current_cycle + 9;
+				if (l > 335)
+					l -= 336;
 
 #ifdef WIN64
 				unsigned int l = current_cycle + 9;
@@ -433,7 +436,7 @@ void c_ppu::run_ppu(int cycles)
 				*ib64 = c;
 #else
 				attribute *= 0x01010101;
-				int *ib = (int*)&index_buffer[(current_cycle + 9) % 336];
+				int *ib = (int*)&index_buffer[l];
 				int *p1 = (int*)morton_odd_64 + pattern1 * 2;
 				int *p2 = (int*)morton_even_64 + pattern2 * 2;
 				for (int i = 0; i < 2; i++)
@@ -447,9 +450,7 @@ void c_ppu::run_ppu(int cycles)
 			case 288:	case 296:	case 304:	case 312:
 				//tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
 				//dummy reads
-
-				//1/18/2016 - Commented out; breaks Mickey's Safari in Letterland
-				//mapper->ppu_read(0x2000);
+				mapper->ppu_read(0x2000);
 				break;
 			case 257:
 				vramAddress &= ~0x41F;
@@ -457,6 +458,7 @@ void c_ppu::run_ppu(int cycles)
 				break;
 			case 258:	case 266:	case 274:	case 282:
 			case 290:	case 298:	case 306:	case 314:
+				mapper->ppu_read(0x2000);
 				break;
 			case 265:	case 273:	case 281:	case 289:
 			case 297:	case 305:	case 313:
@@ -466,6 +468,7 @@ void c_ppu::run_ppu(int cycles)
 				break;
 			case 260:	case 268:	case 276:	case 284:
 			case 292:	case 300:	case 308:	case 316:
+
 				if (ppuControl1.spriteSize)
 				{
 					int sprite_tile = sprite_buffer[(((current_cycle - 260) / 8) * 4) + 1];
@@ -479,8 +482,18 @@ void c_ppu::run_ppu(int cycles)
 			case 261:	case 269:	case 277:	case 285:
 			case 293:	case 301:	case 309:	case 317:
 				break;
+
 			case 262:	case 270:	case 278:	case 286:
 			case 294:	case 302:	case 310:	case 318:
+				if (ppuControl1.spriteSize)
+				{
+					int sprite_tile = sprite_buffer[(((current_cycle - 260) / 8) * 4) + 1];
+					mapper->ppu_read((sprite_tile & 0x1) * 0x1000);
+				}
+				else
+				{
+					mapper->ppu_read(ppuControl1.spritePatternTableAddress * 0x1000);
+				}
 				break;
 			case 263:	case 271:	case 279:	case 287:
 			case 295:	case 303:	case 311:	case 319:
@@ -574,7 +587,6 @@ void c_ppu::run_ppu(int cycles)
 				current_scanline = 0;
 			current_cycle = 0;
 			odd_frame ^= 1;
-			mapper->odd_frame = odd_frame;
 		}
 	}
 }
@@ -1061,7 +1073,7 @@ void c_ppu::WriteByte(int address, unsigned char value)
 				vramAddress = vramAddressLatch;
 				if (!rendering)
 				{
-				mapper->ppu_read(get_bus_address(vramAddress));
+				mapper->ppu_read(vramAddress);
 			}
 		}
 		hi = !hi;
@@ -1079,12 +1091,12 @@ void c_ppu::WriteByte(int address, unsigned char value)
 				image_palette[pal_address ^ 0x10] = value;
 			}
 			if (!rendering)
-				mapper->ppu_read(get_bus_address(vramAddress));
+				mapper->ppu_read(vramAddress);
 		}
 		else
 		{
 			if (!rendering)
-				mapper->ppu_write(get_bus_address(vramAddress), value);
+				mapper->ppu_write(vramAddress, value);
 		}
 		update_vram_address();
 	}
@@ -1103,21 +1115,6 @@ void c_ppu::EndVBlank(void)
 	ppuStatus.hitFlag = false;
 	sprite0_hit_location = -1;
 	ppuStatus.spriteCount = false;
-}
-
-int c_ppu::get_bus_address(int address)
-{
-	return (address & 0x3FFF);
-	//Mirror $3xxx to $2xxx
-	//If A13 is high, A12 must be low
-	//Burai Fighter relies on this behavior
-	//address &= 0x3FFF;
-	//if (address > 0x2FFF)
-	//	return address & 0x2FFF;
-	//else
-	//	return address;
-	int a12_mask = ~((address & 0x2000) >> 1);
-	return (address & a12_mask) & 0x3FFF;
 }
 
 void c_ppu::update_vram_address()
@@ -1154,6 +1151,6 @@ void c_ppu::update_vram_address()
 	{
 		//update bus when not rendering
 		vramAddress = (vramAddress + addressIncrement) & 0x7FFF;
-		mapper->ppu_read(get_bus_address(vramAddress));
+		mapper->ppu_read(vramAddress);
 	}
 }

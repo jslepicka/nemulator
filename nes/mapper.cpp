@@ -50,7 +50,6 @@ c_mapper::c_mapper(void)
 	in_sprite_eval = 0;
 	mirroring_mode = 0;
 	expansion_audio = 0;
-	odd_frame = 0;
 }
 
 int c_mapper::has_expansion_audio()

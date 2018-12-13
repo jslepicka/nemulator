@@ -1574,10 +1574,14 @@ void c_z80::set_c(int set)
 int c_z80::get_parity(unsigned char value)
 {
 	int sum = 0;
-	for (int i = 0; i < 8; i++)
+	//for (int i = 0; i < 8; i++)
+	//{
+	//	sum += value & 0x1;
+	//	value >>= 1;
+	//}
+	for (; value; value >>= 1)
 	{
 		sum += value & 0x1;
-		value >>= 1;
 	}
 	return !(sum & 0x1);
 }

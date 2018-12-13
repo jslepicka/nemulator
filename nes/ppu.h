@@ -42,7 +42,6 @@ public:
 	//int get_mirroring_mode();
 private:
 	int rendering_state;
-	int get_bus_address(int address);
 	static const int FB_TRANSPARENTBG = 0x1000;
 	static const int FB_CLIPPED = 0x200;
 	static const int FB_DONOTDRAW = 0x400;
@@ -146,4 +145,5 @@ private:
 
 	int *p_frame;
 	int sprites_visible;
+	int reversed[256];
 };

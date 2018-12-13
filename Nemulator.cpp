@@ -73,6 +73,7 @@ c_nemulator::c_nemulator()
 	splash_stage = 0;
 	loaded = 0;
 	num_games = 0;
+	rom_count = 0;
 	preload = false;
 	load_thread_handle = 0;
 	input_buffer_index = 0;
@@ -1259,12 +1260,12 @@ void c_nemulator::UpdateScene(double dt)
 	{
 		double fps = framesDrawn / (elapsed / 1000.0);
 		fps_history[fps_index++ % fps_records] = fps;
-		max_fps = 60.0;
+		//max_fps = 60.0;
 		for (int i = 0; i < fps_records; i++)
 			if (fps_history[i] > 60.0 && fps_history[i] > max_fps)
 				max_fps = fps_history[i];
-		//char x[32];
-		//sprintf(x, "%.2f %.2f", fps, 1.0/fps*1000.0);
+		//char x[64];
+		//sprintf(x, "%.2f [%.2f] %.2f", fps, max_fps, 1.0/fps*1000.0);
 		//SetWindowText(hWnd, x);
 
 		if (stats)
@@ -1363,11 +1364,11 @@ void c_nemulator::DrawScene()
 		int oldref;
 		d3dDev->OMGetDepthStencilState(&state, (UINT *)&oldref);
 		font1->DrawText(NULL, "nemulator", -1, &r, DT_NOCLIP | DT_CENTER | DT_VCENTER, D3DXCOLOR(1.0f, 1.0f, 1.0f, (float)alpha));
-		if (!loaded && preload)
+		if (!loaded && preload && rom_count)
 		{
 			RECT r2 = {0, 0, clientWidth, (long)(clientHeight * 1.95)};
 			char buf[256];
-			sprintf_s(buf, 256, "Loading: %d", num_games);
+			sprintf_s(buf, 256, "Loading: %d%%", (int)((double)num_games / rom_count * 100.0));
 			font2->DrawText(NULL, buf, -1, &r2, DT_NOCLIP | DT_CENTER | DT_VCENTER, D3DXCOLOR(.7f, .7f, .7f, 1.0));
 		}
 		d3dDev->OMSetDepthStencilState(state, oldref);
@@ -1385,24 +1386,9 @@ void c_nemulator::DrawScene()
 			double dim = mainPanel2->dim ? .25 : 1.0;
 			DrawText(font1, .05f, .85f, g->title, D3DXCOLOR((float)(1.0f * dim), 0.0f, 0.0f, 1.0f));
 
-			char subtitle[256];
-			switch (g->type)
-			{
-			case GAME_NES:
-				sprintf(subtitle, "Nintendo NES");
-				break;
-			case GAME_SMS:
-				sprintf(subtitle, "Sega Master System");
-				break;
-			case GAME_GG:
-				sprintf(subtitle, "Sega Game Gear");
-				break;
-			default:
-				sprintf(subtitle, "");
-				break;
-			}
+			char *subtitle[] = { "Nintendo NES", "Sega Master System", "Sega Game Gear", "" };
 
-			DrawText(font2, .0525f, .925f, subtitle, D3DXCOLOR((float)(.5f * dim), (float)(.5f * dim), (float)(.5f * dim), 1.0f));
+			DrawText(font2, .0525f, .925f, subtitle[g->type], D3DXCOLOR((float)(.5f * dim), (float)(.5f * dim), (float)(.5f * dim), 1.0f));
 			RECT r = { 0, 0, clientWidth, (LONG)(clientHeight*1.95) };
 			ID3D10DepthStencilState *state;
 			int oldref;
@@ -1503,97 +1489,81 @@ void c_nemulator::LoadGames()
 	struct s_loadinfo
 	{
 		GAME_TYPE type;
-		char *extension;
-		char *rom_path;
-		char *save_path;
+		std::string extension;
+		std::string rom_path_key;
+		std::string save_path_key;
+		std::string rom_path_default;
+		std::string rom_path;
+		std::string save_path;
+		std::vector<std::string> file_list;
+	} loadinfo[] = 
+	{
+		{ GAME_NES, "nes", "nes.rom_path", "nes.save_path", "c:\\roms\\nes" },
+		{ GAME_SMS, "sms", "sms.rom_path", "sms.save_path", "c:\\roms\\sms" },
+		{ GAME_GG,   "gg",  "gg.rom_path",  "gg.save_path",  "c:\\roms\\gg" }
 	};
-
-	char nes_rom_path[MAX_PATH];
-	char nes_save_path[MAX_PATH];
-	char sms_rom_path[MAX_PATH];
-	char sms_save_path[MAX_PATH];
-	char gg_rom_path[MAX_PATH];
-	char gg_save_path[MAX_PATH];
-	
-	strcpy_s(nes_rom_path, MAX_PATH, config->get_string("nes.rom_path", "c:\\roms\\nes").c_str());
-	strcpy_s(nes_save_path, MAX_PATH, config->get_string("nes.save_path", nes_rom_path).c_str());
-
-	strcpy_s(sms_rom_path, MAX_PATH, config->get_string("sms.rom_path", "c:\\roms\\sms").c_str());
-	strcpy_s(sms_save_path, MAX_PATH, config->get_string("sms.save_path", sms_rom_path).c_str());
-
-	strcpy_s(gg_rom_path, MAX_PATH, config->get_string("gg.rom_path", "c:\\roms\\gg").c_str());
-	strcpy_s(gg_save_path, MAX_PATH, config->get_string("gg.save_path", gg_rom_path).c_str());
-
-	s_loadinfo loadinfo[] = 
-	{
-		{ GAME_NES, "nes", nes_rom_path, nes_save_path },
-		{ GAME_SMS, "sms", sms_rom_path, sms_save_path },
-		{ GAME_GG,   "gg",  gg_rom_path,  gg_save_path }
-	};
-
-//	char *extensions[] = { "nes", "sms" };
-	_finddata64i32_t fd;
-	intptr_t f;
-
-
-	if (!dir_exists(nes_save_path))
-	{
-		strcpy_s(nes_save_path, MAX_PATH, nes_rom_path);
-	}
-	if (!dir_exists(sms_save_path))
-	{
-		strcpy_s(sms_save_path, MAX_PATH, sms_rom_path);
-	}
 
 	bool global_mask_sides = config->get_bool("mask_sides", false);
 	bool global_limit_sprites = config->get_bool("limit_sprites", false);
 
 	for (auto &li : loadinfo)
 	{
-		char searchPath[MAX_PATH];
-		sprintf_s(searchPath, MAX_PATH, "%s\\*.%s", li.rom_path, li.extension);
-		if ((f = _findfirst(searchPath, &fd)) != -1)
+		li.rom_path = config->get_string(li.rom_path_key, li.rom_path_default);
+		li.save_path = config->get_string(li.save_path_key, li.rom_path_default);
+		if (!dir_exists(li.save_path))
+			li.save_path = li.rom_path;
+
+		_finddata64i32_t fd;
+		intptr_t f;
+		//char searchPath[MAX_PATH];
+		//sprintf_s(searchPath, MAX_PATH, "%s\\*.%s", li.rom_path, li.extension);
+		std::string searchPath = li.rom_path + "\\*." + li.extension;
+		if ((f = _findfirst(searchPath.c_str(), &fd)) != -1)
 		{
 			int find_result = 0;
 			while (find_result == 0)
 			{
-				num_games++;
-				char filename[MAX_PATH];
-				sprintf_s(filename, MAX_PATH, "%s\\%s", li.rom_path, fd.name);
-
-				if (preload)
-				{
-					char *buf = new char[65536];
-					std::ifstream file;
-					file.open(filename, std::ios_base::in | std::ios_base::binary);
-					if (file.is_open())
-					{
-						while (file.read(buf, 65536));
-						file.close();
-					}
-					delete[] buf;
-				}
-
-				Game *g = new Game(li.type, li.rom_path, fd.name, li.save_path);
-				g->set_description(fd.name);
-				g->emulation_mode = emulation_mode_menu;
-				std::string s;
-				s += "\"";
-				s += fd.name;
-				s += "\".";
-				bool mask_sides = config->get_bool(s + "mask_sides", global_mask_sides);
-				bool limit_sprites = config->get_bool(s + "limit_sprites", global_limit_sprites);
-				int submapper = config->get_int(s + "mapper_variant", 0);
-				g->submapper = submapper;
-				g->mask_sides = mask_sides;
-				g->limit_sprites = limit_sprites;
-				gameList.push_back(g);
+				rom_count++;
+				li.file_list.push_back(fd.name);
 				find_result = _findnext(f, &fd);
 			}
 		}
-
-		_findclose(f);
 	}
+
+	for (auto &li : loadinfo)
+	{
+		for (auto &fn : li.file_list)
+		{
+			num_games++;
+			std::string filename = li.rom_path + "\\" + fn;
+
+			if (preload)
+			{
+				char *buf = new char[65536];
+				std::ifstream file;
+				file.open(filename, std::ios_base::in | std::ios_base::binary);
+				if (file.is_open())
+				{
+					while (file.read(buf, 65536));
+					file.close();
+				}
+				delete[] buf;
+			}
+
+			Game *g = new Game(li.type, li.rom_path, fn, li.save_path);
+			g->set_description(fn);
+			g->emulation_mode = emulation_mode_menu;
+			std::string s = "\"" + fn + "\".";
+			bool mask_sides = config->get_bool(s + "mask_sides", global_mask_sides);
+			bool limit_sprites = config->get_bool(s + "limit_sprites", global_limit_sprites);
+			int submapper = config->get_int(s + "mapper_variant", 0);
+			g->submapper = submapper;
+			g->mask_sides = mask_sides;
+			g->limit_sprites = limit_sprites;
+			gameList.push_back(g);
+		}
+	}
+
 	std::sort(gameList.begin(), gameList.end(), [](const Game* a, const Game* b) {
 		std::string aa = a->filename;
 		std::string bb = b->filename;
@@ -1605,26 +1575,17 @@ void c_nemulator::LoadGames()
 	{
 		mainPanel2->AddItem(game);
 	}
-
 	loaded = 1;
-	
 }
 
-int c_nemulator::dir_exists(char *path)
+int c_nemulator::dir_exists(const std::string &path)
 {
-	char temp[MAX_PATH];
-	strcpy_s(temp, MAX_PATH, path);
-	int len = strlen(temp);
-	char *c = temp + len - 1;
-	while (*c == '\\')
-		*c-- = 0;
-
+	std::string p = path;
+	p.erase(p.find_last_not_of('\\') + 1);
 	struct stat s;
-
-	if (0 == stat(path, &s))
+	if (0 == stat(p.c_str(), &s))
 		return 1;
-	else
-		return 0;
+	return 0;
 }
 
 int c_nemulator::take_screenshot()
@@ -1636,12 +1597,12 @@ int c_nemulator::take_screenshot()
 	{
 		std::string screenshot_path = config->get_string("screenshot_path", "c:\\roms\\screenshots");
 		_finddata64i32_t fd;
-		int f;
+		intptr_t f;
 		char search_path[MAX_PATH];
 		sprintf_s(search_path, MAX_PATH, (screenshot_path + "\\" + n->filename + ".???.bmp").c_str());
 
 		int file_number;
-		if ((f=(int)_findfirst(search_path, &fd)) != -1)
+		if ((f=_findfirst(search_path, &fd)) != -1)
 		{
 			int find_result = 0;
 			std::list<std::string> file_list;

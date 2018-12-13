@@ -25,7 +25,14 @@ void c_mapper_mc_acc::clock(int cycles)
 			c_mapper4::fire_irq();
 		}
 	}
-	c_mapper4::clock(cycles);
+	if (!(current_address & 0x1000))
+	{
+		low_count -= cycles;
+		if (low_count < 0)
+			low_count = 0;
+	}
+	else
+		low_count = 35;
 }
 
 void c_mapper_mc_acc::reset()

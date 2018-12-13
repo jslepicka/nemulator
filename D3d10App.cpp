@@ -536,7 +536,7 @@ int D3d10App::InitD3d()
 	IDXGIDevice1 * pDXGIDevice;
 	hr2 = d3dDev->QueryInterface(__uuidof(IDXGIDevice1), (void **)&pDXGIDevice);
 
-	pDXGIDevice->SetMaximumFrameLatency(1);
+	hr2 = pDXGIDevice->SetMaximumFrameLatency(1);
 
 	DXGI_OUTPUT_DESC output_desc;
 	pOutput->GetDesc(&output_desc);
@@ -569,6 +569,7 @@ int D3d10App::InitD3d()
 	sd.Flags = 0;
 
 	hr2 = pFactory->CreateSwapChain(d3dDev, &sd, &swapChain);
+
 	OnResize();
 	ReleaseCOM(pOutput);
 	ReleaseCOM(pAdapter);

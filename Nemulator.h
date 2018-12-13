@@ -75,6 +75,7 @@ private:
 
 	int loaded;
 	int num_games;
+	int rom_count;
 
 	bool preload;
 
@@ -166,7 +167,7 @@ private:
 	c_mem_viewer *mem_viewer;
 	c_qam *qam;
 
-	int dir_exists(char *path);
+	int dir_exists(const std::string &path);
 
 	struct s_game_thread
 	{

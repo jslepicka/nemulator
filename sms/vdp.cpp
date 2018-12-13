@@ -303,8 +303,10 @@ void c_vdp::draw_scanline()
 
 				int pat = *((int*)pattern);
 
+				int *fb = &frame_buffer[y * 256 + x];
 				for (int p = 0; p < 8 && x < 256; p++, x++)
 				{
+					
 					//int pal_index = 0;
 					int p2 = p;
 					if (h_flip)
@@ -314,6 +316,7 @@ void c_vdp::draw_scanline()
 					pat2 &= 0b00000001'00000001'00000001'00000001;
 					int pal_index = pat2 | (pat2 >> 7) | (pat2 >> 14) | (pat2 >> 21);
 					pal_index &= 0xF;
+					//int pal_index = _pext_u32(pat2, 0b00000001'00000001'00000001'00000001);
 
 					//sprites
 					int color = 0;
@@ -355,7 +358,8 @@ void c_vdp::draw_scanline()
 					else
 						color = lookup_color(color | 0x10);
 
-					frame_buffer[y * 256 + x] = color;
+					//frame_buffer[y * 256 + x] = color;
+					*fb++ = color;
 				}
 			}
 		}
