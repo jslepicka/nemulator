@@ -5,9 +5,9 @@
 #pragma comment (lib, "dxerr.lib")
 #pragma comment (lib, "dxgi.lib")
 
-//compile for Vista+
+//compile for 7+
 #ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0600
+#define _WIN32_WINNT 0x0601
 #endif
 
 #if defined(DEBUG) || defined(_DEBUG)
@@ -65,6 +65,7 @@ protected:
 	virtual void OnPause(bool paused);
 	void add_task(c_task *task, void *params);
 	bool resized;
+	void disable_screensaver();
 
 	HINSTANCE hInstance;
 
@@ -104,4 +105,6 @@ protected:
 	DXGI_MODE_DESC matching_mode;
 	DXGI_SWAP_CHAIN_DESC sd;
 	IDXGIFactory * pFactory;
+
+	HANDLE power_request;
 };
