@@ -68,6 +68,8 @@ D3d10App::D3d10App(HINSTANCE hInstance)
 
 	config = NULL;
 	g_ih = NULL;
+
+	power_request = NULL;
 }
 
 D3d10App::~D3d10App(void)
@@ -82,7 +84,7 @@ D3d10App::~D3d10App(void)
 	if (swapChain)
 		swapChain->SetFullscreenState(false, NULL);
 
-	KillTimer(hWnd, 0);
+	//KillTimer(hWnd, 0);
 	if (d3dDev)
 		d3dDev->ClearState();
 
@@ -96,6 +98,8 @@ D3d10App::~D3d10App(void)
 		delete config;
 	if (g_ih)
 		delete g_ih;
+	if (power_request)
+		CloseHandle(power_request);
 }
 
 HINSTANCE D3d10App::GetInstance()
@@ -243,13 +247,27 @@ void D3d10App::Init(char *config_file_name, c_task *init_task, void *params)
 	if (fullscreen)
 		ShowCursor(FALSE);
 
-	SetTimer(hWnd, 0, 30000, NULL);
+	//SetTimer(hWnd, 0, 30000, NULL);
+
+	disable_screensaver();
 
 	c_task::add_task(init_task, params);
 
 	QueryPerformanceFrequency(&liFreq);
 	QueryPerformanceCounter(&liPrev);
 	QueryPerformanceCounter(&liCurrent);
+}
+
+void D3d10App::disable_screensaver()
+{
+	REASON_CONTEXT rc = { 0 };
+	rc.Version = POWER_REQUEST_CONTEXT_VERSION;
+	rc.Flags = POWER_REQUEST_CONTEXT_SIMPLE_STRING;
+	rc.Reason.SimpleReasonString = L"NoDoz";
+	if (power_request = PowerCreateRequest(&rc)) {
+		PowerSetRequest(power_request, PowerRequestDisplayRequired);
+		PowerSetRequest(power_request, PowerRequestExecutionRequired);
+	}
 }
 
 void D3d10App::OnResize()
@@ -444,17 +462,17 @@ LRESULT D3d10App::MsgProc(UINT msg, WPARAM wParam, LPARAM lParam)
 		OnKeyUp(wParam);
 		return 0;
 
-	case WM_TIMER:
-		switch (wParam)
-		{
-		case 0:
-			INPUT input;
-			input.type = INPUT_KEYBOARD;
-			input.ki.wVk = 0x88; //Unassigned virtual keycode
-			input.ki.dwFlags = KEYEVENTF_KEYUP;
-			SendInput(1, &input, sizeof(INPUT));
-			return 0;
-		}
+	//case WM_TIMER:
+	//	switch (wParam)
+	//	{
+	//	case 0:
+	//		INPUT input;
+	//		input.type = INPUT_KEYBOARD;
+	//		input.ki.wVk = 0x88; //Unassigned virtual keycode
+	//		input.ki.dwFlags = KEYEVENTF_KEYUP;
+	//		SendInput(1, &input, sizeof(INPUT));
+	//		return 0;
+	//	}
 	}
 	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
