@@ -77,4 +77,7 @@ private:
 	int values[num_values];
 	int freq_values[num_values];
 	int value_index;
+
+	double ema;
+	int first_b;
 };
