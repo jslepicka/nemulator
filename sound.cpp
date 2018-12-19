@@ -60,6 +60,9 @@ Sound::Sound(HWND hWnd)
 	primaryBufferDesc.dwBufferBytes = 0;
 
 	write_cursor = 0;
+
+	ema = 0.0;
+	first_b = 1;
 }
 
 Sound::~Sound(void)
@@ -139,6 +142,9 @@ void Sound::Reset()
 	value_index = 0;
 	for (int i = 0; i < num_values; i++)
 		values[i] = -1;
+
+	ema = 0.0;
+	first_b = 1;
 }
 
 double Sound::get_requested_freq()
@@ -175,6 +181,16 @@ int Sound::Sync()
 {
 	int b = GetMaxWrite();
 
+	const double alpha = 2.0 / (15 + 1);
+
+	if (first_b) {
+		ema = b;
+		first_b = 0;
+	}
+	else {
+		ema = (b - ema) * alpha + ema;
+		b = ema;
+	}
 	values[value_index] = b;
 	value_index = (value_index + 1) % num_values;
 	
