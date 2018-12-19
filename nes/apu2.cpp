@@ -128,8 +128,12 @@ void c_apu2::write_byte(unsigned short address, unsigned char value)
 			frame_irq_enable = !(value & 0x40);
 			if (!frame_irq_enable && frame_irq_flag)
 			{
-				nes->cpu->clear_irq();
-				frame_irq_asserted = 0;
+				if (frame_irq_asserted)
+				{
+					MessageBox(NULL, "sgdf", "fdsgfds", MB_OK);
+					nes->cpu->clear_irq();
+					frame_irq_asserted = 0;
+				}
 			}
 			else if (frame_irq_enable && frame_irq_flag)
 			{
