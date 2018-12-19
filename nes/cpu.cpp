@@ -135,20 +135,21 @@ __forceinline void c_cpu::execute()
 			{
 				opcode = 0x102;
 			}
-			else if (doNmi && nmi_delay-- == 0)
+			else if (doNmi && nmi_delay == 0)
 			{
 				opcode = 0x100;
 				doNmi = false;
 				nmi_delay = 0;
 			}
-			else if (doIrq && irq_delay-- == 0 && !SR.I)
+			else if (doIrq && irq_delay == 0 && !SR.I)
 			{
 				opcode = 0x101;
 				irq_delay = 0;
 			}
 			else
 				opcode = nes->ReadByte(PC++);
-
+			irq_delay = 0;
+			nmi_delay = 0;
 			requiredCycles += cycleTable[opcode];
 			fetchOpcode = false;
 		}
