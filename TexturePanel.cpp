@@ -113,7 +113,7 @@ TexturePanel::~TexturePanel(void)
 
 int TexturePanel::get_num_items()
 {
-	return item_containers.size();
+	return (int)item_containers.size();
 }
 
 void TexturePanel::Init()
@@ -335,13 +335,13 @@ void TexturePanel::Update(double dt)
 	{
 		if (borderDir == 0)
 		{
-			border_color = interpolate_cosine3(&border_color_start, &border_color_end, (float)(borderTimer / borderDuration));
-			invalid_border_color = interpolate_cosine3(&invalid_border_color_start, &invalid_border_color_end, (float)(borderTimer / borderDuration));
+			border_color = interpolate_cosine3(border_color_start, border_color_end, (float)(borderTimer / borderDuration));
+			invalid_border_color = interpolate_cosine3(invalid_border_color_start, invalid_border_color_end, (float)(borderTimer / borderDuration));
 		}
 		else if (borderDir == 1)
 		{
-			border_color = interpolate_cosine3(&border_color_end, &border_color_start, (float)(borderTimer / borderDuration));
-			invalid_border_color = interpolate_cosine3(&invalid_border_color_end, &invalid_border_color_start, (float)(borderTimer / borderDuration));
+			border_color = interpolate_cosine3(border_color_end, border_color_start, (float)(borderTimer / borderDuration));
+			invalid_border_color = interpolate_cosine3(invalid_border_color_end, invalid_border_color_start, (float)(borderTimer / borderDuration));
 		}
 	}
 
@@ -438,14 +438,14 @@ void TexturePanel::Update(double dt)
 						D3DXVECTOR3 start = { xx, yy, 0.0f };
 						D3DXVECTOR3 end = { xxx, yyy, zzz };
 						float mu = (float)(item_containers[i]->selectTimer / item_containers[i]->selectDuration);
-						item_containers[i]->pos = interpolate_cosine3(&start, &end, mu);
+						item_containers[i]->pos = interpolate_cosine3(start, end, mu);
 					}
 					else
 					{
 						D3DXVECTOR3 end = { xx, yy, 0.0f };
 						D3DXVECTOR3 start = { xxx, yyy, zzz };
 						float mu = (float)(item_containers[i]->selectTimer / item_containers[i]->selectDuration);
-						item_containers[i]->pos = interpolate_cosine3(&start, &end, mu);
+						item_containers[i]->pos = interpolate_cosine3(start, end, mu);
 					}
 			}
 			else if (item_containers[i]->selected)
@@ -521,7 +521,7 @@ void TexturePanel::Update(double dt)
 					D3DXVECTOR3 start = { zoomStartX, zoomStartY, zoomStartZ };
 					D3DXVECTOR3 end = { zoomDestX, zoomDestY, zoomDestZ };
 					float mu = (float)(zoomTimer / zoomDuration);
-					item_containers[selected_item]->pos = interpolate_linear3(&start, &end, mu);
+					item_containers[selected_item]->pos = interpolate_linear3(start, end, mu);
 					if (stretch_to_fit)
 					{
 						build_stretch_buffer(InterpolateLinear(4.0f / 3.0f, (double)clientWidth / clientHeight, (float)(zoomTimer / zoomDuration)));
@@ -536,7 +536,7 @@ void TexturePanel::Update(double dt)
 					D3DXVECTOR3 end = { zoomStartX, zoomStartY, zoomStartZ };
 					D3DXVECTOR3 start = { zoomDestX, zoomDestY, zoomDestZ };
 					float mu = (float)(zoomTimer / zoomDuration);
-					item_containers[selected_item]->pos = interpolate_linear3(&start, &end, mu);
+					item_containers[selected_item]->pos = interpolate_linear3(start, end, mu);
 					if (stretch_to_fit)
 					{
 						build_stretch_buffer(InterpolateLinear((double)clientWidth / clientHeight, 4.0f / 3.0f, (float)(zoomTimer / zoomDuration)));
@@ -990,19 +990,19 @@ float TexturePanel::InterpolateCosine(float start, float end, float mu)
 	return InterpolateLinear(start, end, mu2);
 }
 
-D3DXVECTOR3 TexturePanel::interpolate_linear3(D3DXVECTOR3 *start, D3DXVECTOR3 *end, float mu)
+D3DXVECTOR3 TexturePanel::interpolate_linear3(D3DXVECTOR3 &start, D3DXVECTOR3 &end, float mu)
 {
 	if (mu > 1.0f)
 		mu = 1.0f;
 	D3DXVECTOR3 ret;
 	for (int i = 0; i < 3; i++)
 	{
-		*((float*)&ret + i) = *((float*)start + i) * (1 - mu) + *((float*)end + i) * mu;
+		*((float*)&ret + i) = *((float*)&start + i) * (1 - mu) + *((float*)&end + i) * mu;
 	}
 	return ret;
 }
 
-D3DXVECTOR3 TexturePanel::interpolate_cosine3(D3DXVECTOR3 *start, D3DXVECTOR3 *end, float mu)
+D3DXVECTOR3 TexturePanel::interpolate_cosine3(D3DXVECTOR3 &start, D3DXVECTOR3 &end, float mu)
 {
 	if (mu > 1.0f)
 		mu = 1.0f;

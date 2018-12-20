@@ -196,8 +196,8 @@ private:
 		float z;
 	};
 
-	static D3DXVECTOR3 interpolate_linear3(D3DXVECTOR3 *start, D3DXVECTOR3 *end, float mu);
-	static D3DXVECTOR3 interpolate_cosine3(D3DXVECTOR3 *start, D3DXVECTOR3 *end, float mu);
+	static D3DXVECTOR3 interpolate_linear3(D3DXVECTOR3 &start, D3DXVECTOR3 &end, float mu);
+	static D3DXVECTOR3 interpolate_cosine3(D3DXVECTOR3 &start, D3DXVECTOR3 &end, float mu);
 
 	int valid_chars[27];
 
