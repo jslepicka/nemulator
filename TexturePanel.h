@@ -51,13 +51,10 @@ public:
 	void Suspend();
 	void Resume();
 	void OnResize();
-	float r;
-	float g;
-	float b;
 	float zoomedR;
 	float zoomedG;
 	float zoomedB;
-	D3DXCOLOR bgColor;
+
 	static const int STATE_NULL = 0;
 	static const int STATE_MENU = 1;
 	static const int STATE_SCROLLING = 2;
@@ -70,7 +67,6 @@ public:
 	float camera_distance;
 	int *get_valid_chars();
 	bool stretch_to_fit;
-	void set_technique(int index);
 	void set_sharpness(float factor);
 
 private:
@@ -85,11 +81,8 @@ private:
 	public:
 		c_item_container(TexturePanelItem *item);
 		~c_item_container();
-		float x;
-		float y;
-		float z;
+		D3DXVECTOR3 pos;
 		float ratio;
-		//bool zooming;
 		bool selecting;
 		bool selected;
 		void Select();
@@ -197,10 +190,28 @@ private:
 	static float InterpolateLinear(float start, float end, float mu);
 	static float InterpolateCosine(float start, float end, float mu);
 
+	struct float3 {
+		float x;
+		float y;
+		float z;
+	};
+
+	static D3DXVECTOR3 interpolate_linear3(D3DXVECTOR3 *start, D3DXVECTOR3 *end, float mu);
+	static D3DXVECTOR3 interpolate_cosine3(D3DXVECTOR3 *start, D3DXVECTOR3 *end, float mu);
+
 	int valid_chars[27];
 
 	D3D10_BUFFER_DESC bd;
 	SimpleVertex vertices2[4];
 
 	void build_stretch_buffer(float ratio);
+
+
+
+	/*std::vector<float> border_color(3);
+	std::vector<float> border_color_start(3);
+	std::vector<float> border_color_end(3);*/
+
+	D3DXVECTOR3 border_color, border_color_start, border_color_end;
+	D3DXVECTOR3 invalid_border_color, invalid_border_color_start, invalid_border_color_end;
 };
