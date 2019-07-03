@@ -206,7 +206,11 @@ void c_mapper1::reset(void)
 		crc32 == 0x97F8C475 ||	//Dragon Warrior IV (U) [o6].nes
 		crc32 == 0x44544B8A ||	//Final Fantasy 99 (DQ3 Hack) [a1].nes
 		crc32 == 0xB8F8D911 ||	//Final Fantasy 99 (DQ3 Hack) [a1][o1].nes
-		crc32 == 0x70FA1880		//Final Fantasy 99 (DQ3 Hack).nes
+		crc32 == 0x70FA1880	||	//Final Fantasy 99 (DQ3 Hack).nes
+		crc32 == 0xCEE5857B ||  //Ninjara Hoi! (J) [!].nes
+		crc32 == 0xCB8F9273 ||  //Ninjara Hoi! (J) [b1].nes
+		crc32 == 0xFFBC61C5 ||  //Ninjara Hoi! (J) [b2].nes
+		crc32 == 0xB061F6E2     //Ninjara Hoi! (J) [o1].nes
 		)
 	{
 		submapper = 1;
