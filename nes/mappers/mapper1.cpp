@@ -60,8 +60,6 @@ void c_mapper1::WriteByte(unsigned short address, unsigned char value)
 	}
 	else
 		c_mapper::WriteByte(address, value);
-
-	return;
 }
 
 void c_mapper1::Sync()
@@ -93,7 +91,7 @@ void c_mapper1::sync_prg()
 			else
 			{
 				SetPrgBank16k(PRG_8000, regs[3] & 0x0F);
-				SetPrgBank16k(PRG_C000, 0x0F);
+				SetPrgBank16k(PRG_C000, prgRomPageCount16k-1);
 			}
 
 			//SUROM

@@ -182,6 +182,7 @@ unsigned char c_ppu::ReadByte(int address)
 
 void c_ppu::Reset(void)
 {
+	warmed_up = 0;
 	rendering_state = 0;
 	odd_frame = 0;
 	intensity = 0;
@@ -258,11 +259,13 @@ void c_ppu::run_ppu(int cycles)
 			{
 			case 0:
 				//start vblank
-				ppuStatus.vBlank = true;
-				if (ppuControl1.vBlankNmi)
-				{
-					nmi_pending = true;
-					cpu->execute_nmi();
+				if (warmed_up) {
+					ppuStatus.vBlank = true;
+					if (ppuControl1.vBlankNmi)
+					{
+						nmi_pending = true;
+						cpu->execute_nmi();
+					}
 				}
 				break;
 			case 20:
@@ -581,7 +584,10 @@ void c_ppu::run_ppu(int cycles)
 		{
 			current_scanline++;
 			if (current_scanline == 262)
+			{
 				current_scanline = 0;
+				warmed_up = 1;
+			}
 			current_cycle = 0;
 			odd_frame ^= 1;
 		}
@@ -601,6 +607,7 @@ void c_ppu::DrawScanline(void)
 	if (linenumber == 239) //do it all over again
 	{
 		linenumber = 0;
+		warmed_up = 1;
 	}
 	else
 		linenumber++;
@@ -988,7 +995,12 @@ void c_ppu::WriteByte(int address, unsigned char value)
 	{
 	case 0x2000:    //PPU Control Register 1
 	{
-		if (((*control1 ^ value) & 0x80 & value) && ppuStatus.vBlank)
+		//if (((*control1 ^ value) & 0x80 & value) && ppuStatus.vBlank)
+		//	cpu->execute_nmi();
+
+		//if nmi enabled is false and incoming value enables it
+		//AND if currently in NMI, then execute_nmi
+		if (!(*control1 & 0x80) && (value & 0x80) && ppuStatus.vBlank)
 			cpu->execute_nmi();
 
 		*control1 = value;
@@ -1102,8 +1114,10 @@ void c_ppu::WriteByte(int address, unsigned char value)
 
 int c_ppu::BeginVBlank(void)
 {
-	ppuStatus.vBlank = true;
-	return ppuControl1.vBlankNmi;
+	if (warmed_up) {
+		ppuStatus.vBlank = true;
+	}
+	return ppuControl1.vBlankNmi & ppuStatus.vBlank;
 }
 
 void c_ppu::EndVBlank(void)

@@ -146,4 +146,6 @@ private:
 	int *p_frame;
 	int sprites_visible;
 	int reversed[256];
+
+	int warmed_up;
 };
