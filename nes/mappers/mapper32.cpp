@@ -79,13 +79,13 @@ void c_mapper32::sync()
 	SetPrgBank8k(PRG_A000, prg_reg1);
 	if (prg_mode)
 	{
-		SetPrgBank8k(PRG_8000, 0);
-		SetPrgBank8k(PRG_E000, prgRomPageCount8k - 1);
+		SetPrgBank8k(PRG_8000, prgRomPageCount8k - 2);
 		SetPrgBank8k(PRG_C000, prg_reg0);
+		SetPrgBank8k(PRG_E000, prgRomPageCount8k - 1);
 	}
 	else
 	{
-		SetPrgBank16k(PRG_C000, prgRomPageCount16k - 1);
 		SetPrgBank8k(PRG_8000, prg_reg0);
+		SetPrgBank16k(PRG_C000, prgRomPageCount16k - 1);
 	}
 }
