@@ -431,6 +431,9 @@ int c_nes::load()
 		)
 		mapperNumber = 0x101;
 
+	if (crc32 == 0x6BC65D7E)
+		mapperNumber = 140;
+
 	//if (crc32 == 0xedcf1b71) //solstice needs sprite limiting to prevent glitches in intro
 	//{
 	//	limit_sprites = true;
