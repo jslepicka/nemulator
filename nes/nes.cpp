@@ -431,13 +431,18 @@ int c_nes::load()
 		)
 		mapperNumber = 0x101;
 
-	if (crc32 == 0x6BC65D7E)
+	if (crc32 == 0x6BC65D7E) //Youkai Kuraba
 		mapperNumber = 140;
 
 	//if (crc32 == 0xedcf1b71) //solstice needs sprite limiting to prevent glitches in intro
 	//{
 	//	limit_sprites = true;
 	//}
+
+	if (crc32 == 0x5B4C6146) //Family Boxing (J) - Ring King
+	{
+		header->Rcb1.Mirroring = 1; //incorrect mirroring in header
+	}
 
 	auto m = mapper_factory.find(mapperNumber);
 	if (m == mapper_factory.end())
