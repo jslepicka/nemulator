@@ -85,6 +85,7 @@ const std::map<int, std::function<c_mapper*()> > c_nes::mapper_factory =
 	{ 9, []() {return new c_mapper9(); } },
 	{ 10, []() {return new c_mapper10(); } },
 	{ 11, []() {return new c_mapper11(); } },
+	{ 13, []() {return new c_mapper13(); } },
 	{ 15, []() {return new c_mapper15(); } },
 	{ 16, []() {return new c_mapper16(); } },
 	{ 18, []() {return new c_mapper18(); } },
@@ -440,6 +441,11 @@ int c_nes::load()
 	//}
 
 	if (crc32 == 0x5B4C6146) //Family Boxing (J) - Ring King
+	{
+		header->Rcb1.Mirroring = 1; //incorrect mirroring in header
+	}
+
+	if (crc32 == 0x4F2F1846) //Damista '89 - Kaimaku Han!!
 	{
 		header->Rcb1.Mirroring = 1; //incorrect mirroring in header
 	}

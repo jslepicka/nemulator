@@ -1,6 +1,7 @@
 #include "mapper_mc_acc.h"
 #include "mapper1.h" 
 #include "mapper10.h" 
+#include "mapper13.h"
 #include "mapper103.h" 
 #include "mapper11.h" 
 #include "mapper112.h" 
