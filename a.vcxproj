@@ -31,30 +31,30 @@
     </SccLocalPath>
     <SccProvider>
     </SccProvider>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -236,6 +236,7 @@
     <ClCompile Include="nes\mappers\mapper115.cpp" />
     <ClCompile Include="nes\mappers\mapper118.cpp" />
     <ClCompile Include="nes\mappers\mapper119.cpp" />
+    <ClCompile Include="nes\mappers\mapper13.cpp" />
     <ClCompile Include="nes\mappers\mapper140.cpp" />
     <ClCompile Include="nes\mappers\mapper146.cpp" />
     <ClCompile Include="nes\mappers\mapper15.cpp" />
@@ -354,6 +355,7 @@
     <ClInclude Include="nes\mappers\mapper115.h" />
     <ClInclude Include="nes\mappers\mapper118.h" />
     <ClInclude Include="nes\mappers\mapper119.h" />
+    <ClInclude Include="nes\mappers\mapper13.h" />
     <ClInclude Include="nes\mappers\mapper140.h" />
     <ClInclude Include="nes\mappers\mapper146.h" />
     <ClInclude Include="nes\mappers\mapper15.h" />
