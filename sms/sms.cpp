@@ -274,8 +274,7 @@ void c_sms::write_port(int port, unsigned char value)
 		if (port == 0x3F)
 		{
 			//printf("write %02X to nationalism\n", value);
-			nationalism = value & 0x80;
-			nationalism |= ((value & 0x20) << 1);
+			nationalism = value;
 		}
 		break;
 	case 1:
@@ -339,8 +338,14 @@ unsigned char c_sms::read_port(int port)
 		}
 		else if (port == 0xDD)
 		{
-			int val = 0x3F | nationalism;
-			return val;
+			//invert and select TH output enable bits
+			int out = (nationalism ^ 0xFF) & 0xA;
+			//and TH bits with TH values
+			out = nationalism & (out << 4);
+			//shift bits into position
+			out = (out & 0x80) | ((out << 1) & 0x40);
+			out = 0x3F | out;
+			return out;
 		}
 		return 0xFF;
 	default:
