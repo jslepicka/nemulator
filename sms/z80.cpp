@@ -94,7 +94,7 @@ int c_z80::emulate_frame()
 	return 1;
 }
 
-const int c_z80::cycle_table[261] = {
+const int c_z80::cycle_table[262] = {
 	//		0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
 	/*0*/	4, 10,  7,  6,  4,  4,  7,  4,  4, 11,  7,  6,  4,  4,  7,  4,
 	/*1*/	8, 10,  7,  6,  4,  4,  7,  4, 12, 11,  7,  6,  4,  4,  7,  4, //check 18
@@ -112,7 +112,7 @@ const int c_z80::cycle_table[261] = {
 	/*D*/	5, 10, 10, 11, 10, 11,  7, 11,  5,  4, 10, 11, 10, 99,  7, 11,
 	/*E*/	5, 10, 10, 19, 10, 11,  7, 11,  5,  4, 10,  4, 10, 99,  7, 11,
 	/*F*/	5, 10, 10,  4, 10, 11,  7, 11,  5,  6, 10,  4, 10, 99,  7, 11,
-	/*10*/  1, 13,  1,  4, 11
+	/*10*/  1, 13,  1,  4, 11, 13 //check value
 };
 
 const int c_z80::cb_cycle_table[256] = {
@@ -224,6 +224,7 @@ void c_z80::execute(int cycles)
 			if (sms->nmi && prev_nmi == 0)
 			{
 				opcode = 0x104;
+				halted = 0;
 			}
 			else if (sms->irq && IFF1)
 			{
@@ -232,6 +233,8 @@ void c_z80::execute(int cycles)
 				switch (IM)
 				{
 				case 0:
+					opcode = 0x105;
+					break;
 				case 2:
 					//Invalid interrupt mode
 					break;
@@ -323,7 +326,7 @@ void c_z80::execute(int cycles)
 				}
 				break;
 			default:
-				if (opcode == 0x101 || opcode == 0x103 || opcode == 0x104)
+				if (opcode == 0x101 || opcode == 0x103 || opcode == 0x104 || opcode == 0x105)
 					prefix = 0x01;
 				else
 					prefix = 0;
@@ -986,6 +989,13 @@ void c_z80::execute_opcode()
 		case 4: //nmi
 			push_word(PC);
 			PC = 0x66;
+			break;
+		case 5: //IM 0
+			push_word(PC);
+			opcode = 0xFF;
+			prefix = 0;
+			required_cycles += cycle_table[0xFF];
+			fetch_opcode = 0;
 			break;
 		default:
 			break;

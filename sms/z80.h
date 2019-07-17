@@ -53,7 +53,7 @@ private:
 	unsigned short **rp, *rp_00[4], *rp_dd[4], *rp_fd[8];
 	unsigned short **rp2, *rp2_00[4], *rp2_dd[4], *rp2_fd[8];
 
-	static const int cycle_table[261];
+	static const int cycle_table[262];
 	static const int cb_cycle_table[256];
 	static const int dd_cycle_table[256];
 	static const int ed_cycle_table[256];
