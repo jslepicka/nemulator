@@ -1332,20 +1332,21 @@ void c_z80::execute_opcode()
 						break;
 					case 1:
 						//CPIR
+					{
 						tchar = sms->read_byte(HL.word);
+						int z = AF.byte.hi == tchar;
+						int c = AF.byte.lo & 0x1;
 						CP(tchar);
 						HL.word++;
 						BC.word--;
-						if (BC.word != 0 && AF.byte.hi != tchar)
-						{
+						set_pv(BC.word != 0);
+						set_z(z);
+						set_c(c);
+						if (BC.word != 0 && AF.byte.hi != tchar) {
 							PC -= 2;
 							required_cycles += 5;
-							set_pv(1);
 						}
-						else
-						{
-							set_pv(0);
-						}
+					}
 						break;
 					case 2:
 						//INIR
@@ -1399,21 +1400,21 @@ void c_z80::execute_opcode()
 						break;
 					case 1:
 						//CPDR
+					{
 						tchar = sms->read_byte(HL.word);
+						int z = AF.byte.hi == tchar;
+						int c = AF.byte.lo & 0x1;
 						CP(tchar);
 						HL.word--;
 						BC.word--;
-						if (BC.word != 0 && AF.byte.hi != tchar)
-						{
+						set_pv(BC.word != 0);
+						set_z(z);
+						set_c(c);
+						if (BC.word != 0 && AF.byte.hi != tchar) {
 							PC -= 2;
 							required_cycles += 5;
-							set_pv(1);
 						}
-						else
-						{
-							set_pv(0);
-						}
-
+					}
 						break;
 					case 2:
 						//INDR
