@@ -1155,10 +1155,20 @@ void c_z80::execute_opcode()
 				case 2:
 					//LD A, I
 					AF.byte.hi = I;
+					set_z(AF.byte.hi == 0);
+					set_s(AF.byte.hi & 0x80);
+					set_h(0);
+					set_n(0);
+					set_pv(IFF2);
 					break;
 				case 3:
 					//LD A, R
 					AF.byte.hi = R;
+					set_z(AF.byte.hi == 0);
+					set_s(AF.byte.hi & 0x80);
+					set_h(0);
+					set_n(0);
+					set_pv(IFF2);
 					break;
 				case 4:
 					//RRD
