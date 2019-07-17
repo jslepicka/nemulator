@@ -146,7 +146,7 @@ int c_sms::reset()
 	page[2] = file_length > 0x8000 ? rom + 0x8000 : rom;
 	nationalism = 0;
 	ram_select = 0;
-	joy = 0xFF;
+	joy = 0xFFFF;
 	psg_cycles = 0;
 	return 0;
 }
@@ -344,7 +344,7 @@ unsigned char c_sms::read_port(int port)
 			out = nationalism & (out << 4);
 			//shift bits into position
 			out = (out & 0x80) | ((out << 1) & 0x40);
-			out = 0x3F | out;
+			out = ((joy >> 8) & 0x3F) | out;
 			return out;
 		}
 		return 0xFF;
