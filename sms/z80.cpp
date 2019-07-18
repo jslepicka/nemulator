@@ -911,6 +911,10 @@ void c_z80::execute_opcode()
 				case 6:
 					//DI
 					IFF1 = IFF2 = 0;
+					if (pending_ei != 0)
+					{
+						int x = 1;
+					}
 					pending_ei = 0;
 					break;
 				case 7:
@@ -991,7 +995,7 @@ void c_z80::execute_opcode()
 			PC = 0x66;
 			break;
 		case 5: //IM 0
-			push_word(PC);
+			//push_word(PC);
 			opcode = 0xFF;
 			prefix = 0;
 			required_cycles += cycle_table[0xFF];
