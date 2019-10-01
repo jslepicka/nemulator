@@ -75,11 +75,7 @@ __forceinline void c_resampler::process(float sample)
 		float dither = (rand() / ((float)RAND_MAX * .5f) - 1.0f) / (1 << 16);
 		int s = (int)round(blockdc(j) * max_out + dither);
 #endif
-		
-		if (s > 32767)
-			s = 32767;
-		else if (s < -32768)
-			s = -32768;
+		s = s < -32768 ? -32768 : s > 32767 ? 32767 : s;
 		output_buf[output_buf_index++] = (short)s;
 	}
 	filtered_buf_index = (filtered_buf_index - 1) & 0x3;
