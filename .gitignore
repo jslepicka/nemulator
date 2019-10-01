@@ -158,3 +158,6 @@ $RECYCLE.BIN/
 /a.VC.db
 /.vs/a/v15
 /.vs/a/v15
+/.vs
+*.fxo.h
+
