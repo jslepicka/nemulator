@@ -213,11 +213,7 @@ void c_nemulator::generate_palette()
 		i *= saturation;
 		q *= saturation;
 
-		auto clamp = [](int v, int min, int max){
-			return v < min ? min : v > max ? max : v;
-		};
-
-		auto d_clamp = [](double v, double min, double max)
+		auto clamp = [](auto v, auto min, auto max)
 		{
 			return v < min ? min : v > max ? max : v;
 		};
@@ -236,9 +232,9 @@ void c_nemulator::generate_palette()
 		double ntsc_b = y + -1.108 * i +  1.705 * q;
 
 		//NTSC R'G'B' -> linear NTSC RGB
-		ntsc_r = pow(d_clamp(ntsc_r, 0.0, 1.0), 2.2);
-		ntsc_g = pow(d_clamp(ntsc_g, 0.0, 1.0), 2.2);
-		ntsc_b = pow(d_clamp(ntsc_b, 0.0, 1.0), 2.2);
+		ntsc_r = pow(clamp(ntsc_r, 0.0, 1.0), 2.2);
+		ntsc_g = pow(clamp(ntsc_g, 0.0, 1.0), 2.2);
+		ntsc_b = pow(clamp(ntsc_b, 0.0, 1.0), 2.2);
 
 		//NTSC RGB (SMPTE-C) -> CIE XYZ
 		//conversion matrix from http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
@@ -257,9 +253,9 @@ void c_nemulator::generate_palette()
 		double srgb_g = ntsc_r * 0.0177757796807600 + ntsc_g * 0.965792853854560 + ntsc_b * 0.0164314174435600;
 		double srgb_b = ntsc_r * -0.00162232670898000 + ntsc_g * -0.00437074564609001 + ntsc_b * 1.00599294870830;
 
-		srgb_r = d_clamp(srgb_r, 0.0, 1.0);
-		srgb_g = d_clamp(srgb_g, 0.0, 1.0);
-		srgb_b = d_clamp(srgb_b, 0.0, 1.0);
+		srgb_r = clamp(srgb_r, 0.0, 1.0);
+		srgb_g = clamp(srgb_g, 0.0, 1.0);
+		srgb_b = clamp(srgb_b, 0.0, 1.0);
 
 		auto gammafix = [](double f){
 			float gamma = 2.2;
