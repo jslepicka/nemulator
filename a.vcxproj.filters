@@ -351,6 +351,9 @@
     <ClCompile Include="nes\mappers\mapper189.cpp">
       <Filter>Source Files\nes\mappers</Filter>
     </ClCompile>
+    <ClCompile Include="nes\mappers\mapper13.cpp">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="a.h">
@@ -696,6 +699,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="nes\mappers\mapper189.h">
+      <Filter>Header Files\nes\mappers</Filter>
+    </ClInclude>
+    <ClInclude Include="nes\mappers\mapper13.h">
       <Filter>Header Files\nes\mappers</Filter>
     </ClInclude>
   </ItemGroup>
