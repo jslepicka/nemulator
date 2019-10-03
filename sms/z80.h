@@ -33,8 +33,6 @@ private:
 		int sp;
 	};
 	int pending_ei;
-	int dd;
-	int fd;
 	c_sms *sms;
 	int available_cycles;
 	int fetch_opcode;
@@ -116,5 +114,5 @@ private:
 	} AF, AF2, BC, BC2, DE, DE2, HL, HL2, IX, IY;
 
 	unsigned char I, R;
-
+	unsigned short* ddfd_ptr;
 };
