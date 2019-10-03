@@ -83,6 +83,7 @@ int c_z80::reset()
 	rp2_00[3] = rp2_dd[3] = rp2_fd[3] = &AF.word;
 	rp2 = rp2_00;
 
+	ddfd_ptr = 0;
 
 	return 1;
 }
@@ -215,8 +216,9 @@ void c_z80::execute(int cycles)
 		{
 			inc_r();
 			pre_pc = PC;
-			dd = 0;
-			fd = 0;
+			ddfd_ptr = 0;
+			//dd = 0;
+			//fd = 0;
 			r = r_00;
 			rp = rp_00;
 			rp2 = rp2_00;
@@ -270,7 +272,7 @@ void c_z80::execute(int cycles)
 				break;
 			case 0xDD:
 				inc_r();
-				dd = 1;
+				ddfd_ptr = &IX.word;
 				opcode <<= 8;
 				opcode |= sms->read_byte(PC++);
 				if ((opcode & 0xFF) == 0xCB)
@@ -303,7 +305,7 @@ void c_z80::execute(int cycles)
 			case 0xFD:
 				inc_r();
 				opcode <<= 8;
-				fd = 1;
+				ddfd_ptr = &IY.word;
 				opcode |= sms->read_byte(PC++);
 				if ((opcode & 0xFF) == 0xCB)
 				{
@@ -366,11 +368,6 @@ void c_z80::execute_opcode()
 	x = (opcode >> 6) & 0x3;
 	q = y & 0x1;
 	p = (y >> 1) & 0x3;
-
-	if (fd && (y == 6 || z == 6))
-	{
-		int x = 1;
-	}
 
 	switch (prefix)
 	{
@@ -504,19 +501,12 @@ void c_z80::execute_opcode()
 				if (y == 6)
 				{
 					unsigned char temp;
-					if (dd)
-					{
+					if (ddfd_ptr) {
 						d = (signed char)sms->read_byte(PC++);
-						temp = sms->read_byte(IX.word + d);
+						unsigned short loc = *ddfd_ptr + d;
+						temp = sms->read_byte(loc);
 						INC(&temp);
-						sms->write_byte(IX.word + d, temp);
-					}
-					else if (fd)
-					{
-						d = (signed char)sms->read_byte(PC++);
-						temp = sms->read_byte(IY.word + d);
-						INC(&temp);
-						sms->write_byte(IY.word + d, temp);
+						sms->write_byte(loc, temp);
 					}
 					else
 					{
@@ -535,19 +525,13 @@ void c_z80::execute_opcode()
 				if (y == 6)
 				{
 					unsigned char temp;
-					if (dd)
-					{
+					if (ddfd_ptr) {
 						d = (signed char)sms->read_byte(PC++);
-						temp = sms->read_byte(IX.word + d);
+						unsigned short loc = *ddfd_ptr + d;
+						temp = sms->read_byte(loc);
 						DEC(&temp);
-						sms->write_byte(IX.word + d, temp);
-					}
-					else if (fd)
-					{
-						d = (signed char)sms->read_byte(PC++);
-						temp = sms->read_byte(IY.word + d);
-						DEC(&temp);
-						sms->write_byte(IY.word + d, temp);
+						sms->write_byte(loc, temp);
+
 					}
 					else
 					{
@@ -565,19 +549,10 @@ void c_z80::execute_opcode()
 				//LD r[y], n
 				if (y == 6)
 				{
-					if (dd)
-					{
-
+					if (ddfd_ptr) {
 						d = (signed char)sms->read_byte(PC++);
 						temp = sms->read_byte(PC++);
-						sms->write_byte(IX.word + d, temp);
-					}
-					else if (fd)
-					{
-
-						d = (signed char)sms->read_byte(PC++);
-						temp = sms->read_byte(PC++);
-						sms->write_byte(IY.word + d, temp);
+						sms->write_byte(*ddfd_ptr + d, temp);
 					}
 					else
 					{
@@ -638,8 +613,7 @@ void c_z80::execute_opcode()
 					int carry = AF.byte.lo & 0x1;
 					int n_flag = AF.byte.lo & 0x2;
 					int half_carry = AF.byte.lo & 0x10;
-					if (AF.byte.hi > 0x99 || carry)
-					{
+					if (AF.byte.hi > 0x99 || carry)	{
 						correction = 0x60;
 						set_c(1);
 					}
@@ -698,31 +672,11 @@ void c_z80::execute_opcode()
 				//LD r[y], r[z]
 				unsigned char src = 0;
 
-				int unmap_z = 0;
-				int unmap_y = 0;
-
-				if (dd || fd)
-				{
-					if (z == 6)
-					{
-						unmap_y = 1;
-					}
-					else if (y == 6)
-					{
-						unmap_z = 1;
-					}
-				}
 				if (z == 6)
 				{
-					if (dd)
-					{
+					if (ddfd_ptr) {
 						d = (signed char)sms->read_byte(PC++);
-						src = sms->read_byte(IX.word + d);
-					}
-					else if (fd)
-					{
-						d = (signed char)sms->read_byte(PC++);
-						src = sms->read_byte(IY.word + d);
+						src = sms->read_byte(*ddfd_ptr + d);
 					}
 					else
 					{
@@ -731,7 +685,7 @@ void c_z80::execute_opcode()
 				}
 				else
 				{
-					if (unmap_z)
+					if (ddfd_ptr && y == 6)
 					{
 						if (z == 4)
 						{
@@ -754,15 +708,9 @@ void c_z80::execute_opcode()
 
 				if (y == 6) //HL
 				{
-					if (dd)
-					{
+					if (ddfd_ptr) {
 						d = (signed char)sms->read_byte(PC++);
-						sms->write_byte(IX.word + d, src);
-					}
-					else if (fd)
-					{
-						d = (signed char)sms->read_byte(PC++);
-						sms->write_byte(IY.word + d, src);
+						sms->write_byte(*ddfd_ptr + d, src);
 					}
 					else
 					{
@@ -771,7 +719,7 @@ void c_z80::execute_opcode()
 				}
 				else
 				{
-					if (unmap_y)
+					if (ddfd_ptr && z == 6)
 					{
 						if (y == 4)
 						{
@@ -797,15 +745,9 @@ void c_z80::execute_opcode()
 			//alu[y] r[z]
 			if (z == 6)
 			{
-				if (dd)
-				{
+				if (ddfd_ptr) {
 					d = (signed char)sms->read_byte(PC++);
-					alu(y, sms->read_byte(IX.word + d));
-				}
-				else if (fd)
-				{
-					d = (signed char)sms->read_byte(PC++);
-					alu(y, sms->read_byte(IY.word + d));
+					alu(y, sms->read_byte(*ddfd_ptr + d));
 				}
 				else
 				{
@@ -899,7 +841,7 @@ void c_z80::execute_opcode()
 				break;
 				case 5:
 					//EX DE, HL
-					if (fd || dd)
+					if (ddfd_ptr)
 					{
 						//EX DE, IX and EX DE, IY are invalid
 						int x = 1;
@@ -1481,17 +1423,16 @@ void c_z80::execute_opcode()
 			else
 			{
 				//rot[y] (IX+d)
-				temp = dd ? IX.word : IY.word;
-				tchar = sms->read_byte(temp + d);
+				//temp = dd ? IX.word : IY.word;
+				unsigned short loc = *ddfd_ptr + d;
+				tchar = sms->read_byte(loc);
 				ROT(y, &tchar);
-				sms->write_byte(temp + d, tchar);
+				sms->write_byte(loc, tchar);
 			}
 			break;
 		case 1:
 			//BIT y, r[z]
-			temp = dd ? IX.word : IY.word;
-			temp2 = sms->read_byte(temp + d);
-			BIT(y, temp2);
+			BIT(y, sms->read_byte(*ddfd_ptr + d));
 			break;
 		case 2:
 			if (z != 6)
@@ -1502,10 +1443,11 @@ void c_z80::execute_opcode()
 			else
 			{
 				//RES y, (IX+d)
-				temp = dd ? IX.word : IY.word;
-				temp2 = sms->read_byte(temp + d);
+				//temp = dd ? IX.word : IY.word;
+				unsigned short loc = *ddfd_ptr + d;
+				temp2 = sms->read_byte(loc);
 				temp2 &= ~(1 << y);
-				sms->write_byte(temp + d, temp2);
+				sms->write_byte(loc, temp2);
 			}
 			break;
 		case 3:
@@ -1516,10 +1458,11 @@ void c_z80::execute_opcode()
 			}
 			else
 			{
-				temp = dd ? IX.word : IY.word;
-				tchar = sms->read_byte(temp + d);
+				//temp = dd ? IX.word : IY.word;
+				unsigned short loc = *ddfd_ptr + d;
+				tchar = sms->read_byte(loc);
 				tchar = tchar | (1 << y);
-				sms->write_byte(temp + d, tchar);
+				sms->write_byte(loc, tchar);
 			}
 			break;
 		default:
