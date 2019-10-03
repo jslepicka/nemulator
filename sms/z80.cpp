@@ -84,6 +84,7 @@ int c_z80::reset()
 	rp2 = rp2_00;
 
 	ddfd_ptr = 0;
+	flag_s = flag_z = flag_h = flag_pv = flag_n = flag_c = 0;
 
 	return 1;
 }
@@ -359,6 +360,27 @@ void c_z80::execute(int cycles)
 	}
 }
 
+__forceinline void c_z80::update_f()
+{
+	AF.byte.lo =
+		(flag_s ? 0x80 : 0) |
+		(flag_z ? 0x40 : 0) |
+		(flag_h ? 0x10 : 0) |
+		(flag_pv ? 0x4 : 0) |
+		(flag_n ? 0x2 : 0) |
+		(flag_c ? 0x1 : 0);
+}
+
+__forceinline void c_z80::update_flags()
+{
+	flag_s = AF.byte.lo & 0x80;
+	flag_z = AF.byte.lo & 0x40;
+	flag_h = AF.byte.lo & 0x10;
+	flag_pv = AF.byte.lo & 0x4;
+	flag_n = AF.byte.lo & 0x2;
+	flag_c = AF.byte.lo & 0x1;
+}
+
 void c_z80::execute_opcode()
 {
 	//decode per http://www.z80.info/decoding.htm
@@ -385,7 +407,9 @@ void c_z80::execute_opcode()
 					break;
 				case 1:
 					//EX AF, AF'
+					update_f();
 					swap_register(&AF.word, &AF2.word);
+					update_flags();
 					break;
 				case 2:
 					//DJNZ
@@ -591,7 +615,7 @@ void c_z80::execute_opcode()
 					//RLA
 					temp = (AF.byte.hi & 0x80) >> 7;
 					AF.byte.hi <<= 1;
-					AF.byte.hi |= (AF.byte.lo & 0x1);
+					AF.byte.hi |= (flag_c ? 1 : 0);
 					set_c(temp);
 					set_n(0);
 					set_h(0);
@@ -600,7 +624,7 @@ void c_z80::execute_opcode()
 					//RRA
 					temp = AF.byte.hi & 0x1;
 					AF.byte.hi >>= 1;
-					AF.byte.hi |= ((AF.byte.lo & 0x1) << 7);
+					AF.byte.hi |= ((flag_c ? 1 : 0) << 7);
 					set_c(temp);
 					set_n(0);
 					set_h(0);
@@ -610,10 +634,7 @@ void c_z80::execute_opcode()
 				{
 					int a_before = AF.byte.hi;
 					int correction = 0;
-					int carry = AF.byte.lo & 0x1;
-					int n_flag = AF.byte.lo & 0x2;
-					int half_carry = AF.byte.lo & 0x10;
-					if (AF.byte.hi > 0x99 || carry)	{
+					if (AF.byte.hi > 0x99 || flag_c)	{
 						correction = 0x60;
 						set_c(1);
 					}
@@ -621,11 +642,11 @@ void c_z80::execute_opcode()
 					{
 						set_c(0);
 					}
-					if ((AF.byte.hi & 0xF) > 0x9 || half_carry)
+					if ((AF.byte.hi & 0xF) > 0x9 || flag_h)
 					{
 						correction |= 0x06;
 					}
-					if (n_flag)
+					if (flag_n)
 					{
 						AF.byte.hi -= correction;
 					}
@@ -654,8 +675,8 @@ void c_z80::execute_opcode()
 				case 7:
 					//CCF
 					set_n(0);
-					set_h(AF.byte.lo & 1);
-					set_c(!(AF.byte.lo & 0x1));
+					set_h(flag_c);
+					set_c(!flag_c);
 					break;
 				}
 				break;
@@ -773,6 +794,8 @@ void c_z80::execute_opcode()
 				case 0:
 					//POP rp2[p]
 					*rp2[p] = pull_word();
+					if (p == 3)
+						update_flags();
 					break;
 				case 1:
 					switch (p)
@@ -881,6 +904,8 @@ void c_z80::execute_opcode()
 				{
 				case 0:
 					//PUSH rp2[p]
+					if (p == 3)
+						update_f();
 					push_word(*rp2[p]);
 					break;
 				case 1:
@@ -1192,7 +1217,7 @@ void c_z80::execute_opcode()
 					{
 						unsigned short s = sms->read_byte(HL.word);
 						int z = AF.byte.hi == s;
-						int c = AF.byte.lo & 0x1;
+						int c = flag_c;
 						CP(s);
 						HL.word++;
 						BC.word--;
@@ -1237,7 +1262,7 @@ void c_z80::execute_opcode()
 					{
 						unsigned short s = sms->read_byte(HL.word);
 						int z = AF.byte.hi == s;
-						int c = AF.byte.lo & 0x1;
+						int c = flag_c;
 						CP(s);
 						HL.word--;
 						BC.word--;
@@ -1291,7 +1316,7 @@ void c_z80::execute_opcode()
 					{
 						tchar = sms->read_byte(HL.word);
 						int z = AF.byte.hi == tchar;
-						int c = AF.byte.lo & 0x1;
+						int c = flag_c;
 						CP(tchar);
 						HL.word++;
 						BC.word--;
@@ -1359,7 +1384,7 @@ void c_z80::execute_opcode()
 					{
 						tchar = sms->read_byte(HL.word);
 						int z = AF.byte.hi == tchar;
-						int c = AF.byte.lo & 0x1;
+						int c = flag_c;
 						CP(tchar);
 						HL.word--;
 						BC.word--;
@@ -1490,63 +1515,34 @@ unsigned short c_z80::pull_word()
 }
 
 
-void c_z80::set_s(int set)
+__forceinline void c_z80::set_s(int set)
 {
-	int bit = 1 << 7;
-	if (set)
-		AF.byte.lo |= bit;
-	else
-		AF.byte.lo &= (~bit);
+	flag_s = set;
 }
-void c_z80::set_z(int set)
+__forceinline void c_z80::set_z(int set)
 {
-	int bit = 1 << 6;
-	if (set)
-		AF.byte.lo |= bit;
-	else
-		AF.byte.lo &= (~bit);
+	flag_z = set;
 }
-void c_z80::set_h(int set)
+__forceinline void c_z80::set_h(int set)
 {
-	int bit = 1 << 4;
-	if (set)
-		AF.byte.lo |= bit;
-	else
-		AF.byte.lo &= (~bit);
+	flag_h = set;
 }
-void c_z80::set_pv(int set)
+__forceinline void c_z80::set_pv(int set)
 {
-	int bit = 1 << 2;
-	if (set)
-		AF.byte.lo |= bit;
-	else
-		AF.byte.lo &= (~bit);
+	flag_pv = set;
 }
-void c_z80::set_n(int set)
+__forceinline void c_z80::set_n(int set)
 {
-	int bit = 1 << 1;
-	if (set)
-		AF.byte.lo |= bit;
-	else
-		AF.byte.lo &= (~bit);
+	flag_n = set;
 }
-void c_z80::set_c(int set)
+__forceinline void c_z80::set_c(int set)
 {
-	int bit = 1 << 0;
-	if (set)
-		AF.byte.lo |= bit;
-	else
-		AF.byte.lo &= (~bit);
+	flag_c = set;
 }
 
 int c_z80::get_parity(unsigned char value)
 {
 	int sum = 0;
-	//for (int i = 0; i < 8; i++)
-	//{
-	//	sum += value & 0x1;
-	//	value >>= 1;
-	//}
 	for (; value; value >>= 1)
 	{
 		sum += value & 0x1;
@@ -1603,7 +1599,7 @@ void c_z80::ROT(int y, unsigned char *operand)
 		tchar = *operand;
 		set_c(tchar & 0x1);
 		tchar >>= 1;
-		tchar |= ((AF.byte.lo & 0x1) << 7);
+		tchar |= ((flag_c ? 1 : 0) << 7);
 		set_s(tchar & 0x80);
 		set_z(tchar == 0);
 		set_h(0);
@@ -1699,7 +1695,7 @@ void c_z80::RL(unsigned char *operand)
 {
 	int carry = (*operand & 0x80);
 	*operand <<= 1;
-	if (AF.byte.lo & 0x1)
+	if (flag_c)
 		*operand |= 0x1;
 	set_c(carry);
 	set_n(0);
@@ -1711,7 +1707,7 @@ void c_z80::RL(unsigned char *operand)
 
 void c_z80::RR(unsigned char *operand)
 {
-	int carry = AF.byte.lo & 0x1;
+	int carry = flag_c;
 	set_c(*operand & 0x1);
 	*operand >>= 1;
 	if (carry)
@@ -1728,8 +1724,8 @@ void c_z80::BIT(int bit, unsigned char operand)
 	set_n(0);
 	set_h(1);
 	set_z((operand & (1 << bit)) == 0);
-	set_pv(AF.byte.lo & 0x40);
-	set_s(bit == 7 ? !(AF.byte.lo & 0x40) : 0);
+	set_pv(flag_z);
+	set_s(bit == 7 ? !(flag_z) : 0);
 
 }
 
@@ -1749,7 +1745,7 @@ void c_z80::ADD8(unsigned char operand, int carry)
 
 void c_z80::ADC8(unsigned char operand)
 {
-	ADD8(operand, AF.byte.lo & 0x1);
+	ADD8(operand, flag_c ? 1 : 0);
 }
 
 void c_z80::AND(unsigned char operand)
@@ -1778,10 +1774,10 @@ void c_z80::CP(unsigned char operand)
 
 void c_z80::SBC16(unsigned short operand)
 {
-	int x = operand + (AF.byte.lo & 1);
+	int x = operand + (flag_c ? 1 : 0);
 	int result = HL.word - x;
 	unsigned int uresult = (unsigned int)result;
-	set_h(((HL.word & 0xFFF) - (x & 0xFFF) - (AF.byte.lo & 0x1)) < 0);
+	set_h(((HL.word & 0xFFF) - (x & 0xFFF) - (flag_c ? 1 : 0)) < 0);
 	set_pv((HL.word ^ result) & (x ^ HL.word) & 0x8000);
 	set_c(result < 0);
 	set_n(1);
@@ -1839,9 +1835,9 @@ void c_z80::ADD16(unsigned short *dest, unsigned short operand)
 
 void c_z80::ADC16(unsigned short operand)
 {
-	int x = operand + (AF.byte.lo & 1);
+	int x = operand + (flag_c ? 1 : 0);
 	int result = HL.word + x;
-	set_h(((operand & 0xFFF) + (HL.word & 0xFFF) + (AF.byte.lo & 0x1)) > 0xFFF);
+	set_h(((operand & 0xFFF) + (HL.word & 0xFFF) + (flag_c ? 1 : 0)) > 0xFFF);
 	set_c((HL.word + x) > 0xFFFF);
 	set_n(0);
 	set_pv((HL.word ^ result) & (operand ^ result) & 0x8000);
@@ -1859,13 +1855,13 @@ void c_z80::alu(int op, unsigned char operand)
 		ADD8(operand);
 		break;
 	case 1: //ADC
-		ADD8(operand, AF.byte.lo & 0x1);
+		ADD8(operand, flag_c ? 1 : 0);
 		break;
 	case 2: //SUB
 		SUB8(operand);
 		break;
 	case 3: //SBC
-		SUB8(operand, AF.byte.lo & 0x1);
+		SUB8(operand, flag_c ? 1 : 0);
 		break;
 	case 4: //AND
 		AND(operand);
@@ -1884,7 +1880,7 @@ void c_z80::alu(int op, unsigned char operand)
 
 int c_z80::test_flag(int f)
 {
-	int t = AF.byte.lo & cc[f];
+	int t = *flag_ptrs[f];
 	//if bit 0 of c is set, check for positive condition
 	if (f & 1)
 	{

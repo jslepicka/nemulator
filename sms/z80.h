@@ -67,6 +67,9 @@ private:
 	void set_pv(int set);
 	void set_n(int set);
 	void set_c(int set);
+
+	int flag_s, flag_z, flag_h, flag_pv, flag_n, flag_c;
+
 	int get_parity(unsigned char value);
 
 	void OR(unsigned char operand);
@@ -115,4 +118,7 @@ private:
 
 	unsigned char I, R;
 	unsigned short* ddfd_ptr;
+	void update_f();
+	void update_flags();
+	int* flag_ptrs[8] = { &flag_z, &flag_z, &flag_c, &flag_c, &flag_pv, &flag_pv, &flag_s, &flag_s };
 };
