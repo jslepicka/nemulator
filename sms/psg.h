@@ -1,5 +1,8 @@
 #pragma once
 #include "..\resampler.h"
+#include "..\biquad4.hpp"
+#include "..\biquad.hpp"
+
 class c_psg
 {
 public:
@@ -15,10 +18,6 @@ public:
 private:
 	int available_cycles;
 	int mixer_enabled = 0;
-	static const float g[8];
-	static const float b2[8];
-	static const float a2[8];
-	static const float a3[8];
 	c_resampler *resampler;
 	int tick;
 	int sample_count;
@@ -42,5 +41,7 @@ private:
 		TYPE_TONE = 0,
 		TYPE_VOLUME = 0x10
 	};
+	c_biquad4* lpf;
+	c_biquad* post_filter;
 };
 

@@ -3,36 +3,10 @@
 #include <stdio.h>
 
 #include <crtdbg.h>
-#if defined(DEBUG) | defined(_DEBUG)
-#define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
-#define new DEBUG_NEW
-#endif
-
-const float c_psg::g[8] = {
-	0.361560523509979f,
-	0.222417041659355f,
-	0.0714186578989029f,
-	0.00309817981906235f,
-};
-const float c_psg::b2[8] = {
-	-1.95306515693665f,
-	-1.90443754196167f,
-	-1.37055253982544f,
-	-1.96420431137085f,
-};
-const float c_psg::a2[8] = {
-	-1.95503556728363f,
-	-1.93484497070313f,
-	-1.92062354087830f,
-	-1.97571694850922f,
-};
-const float c_psg::a3[8] = {
-	0.965465605258942f,
-	0.940786004066467f,
-	0.922847032546997f,
-	0.988919317722321f,
-};
-
+//#if defined(DEBUG) | defined(_DEBUG)
+//#define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
+//#define new DEBUG_NEW
+//#endif
 
 c_psg::c_psg()
 {
@@ -45,7 +19,28 @@ c_psg::c_psg()
 	int jdghkdjf = 1;
 	sample_accumulator = 0.0f;
 	resampler_count = 0;
-	resampler = new c_resampler(((228.0*262.0*60.0) / 4.0) / 48000.0, g, b2, a2, a3);
+	/*
+	lowpass 20kHz
+	d = fdesign.lowpass('N,Fp,Ap,Ast', 8, 20000, .1, 80, 896040);
+	Hd = design(d, 'ellip', 'FilterStructure', 'df2tsos');
+	set(Hd, 'Arithmetic', 'single');
+	g = regexprep(num2str(reshape(Hd.ScaleValues(1:4), [1 4]), '%.16ff '), '\s+', ',')
+	b2 = regexprep(num2str(Hd.sosMatrix(5:8), '%.16ff '), '\s+', ',')
+	a2 = regexprep(num2str(Hd.sosMatrix(17:20), '%.16ff '), '\s+', ',')
+	a3 = regexprep(num2str(Hd.sosMatrix(21:24), '%.16ff '), '\s+', ',')
+	*/
+	lpf = new c_biquad4(
+		{ 0.5068508386611939f,0.3307863473892212f,0.1168005615472794f,0.0055816280655563f },
+		{ -1.9496889114379883f,-1.9021773338317871f,-1.3770858049392700f,-1.9604763984680176f },
+		{ -1.9442052841186523f,-1.9171522855758667f,-1.8950747251510620f,-1.9676681756973267f },
+		{ 0.9609073400497437f,0.9271715879440308f,0.8989855647087097f,0.9881398081779480f }
+	);
+	post_filter = new c_biquad(
+		0.5648277401924133f,
+		{ 1.0000000000000000f,0.0000000000000000f,-1.0000000000000000f },
+		{ 1.0000000000000000f,-0.8659016489982605f,-0.1296554803848267f }
+	);
+	resampler = new c_resampler(((228.0 * 262.0 * 60.0) / 4.0) / 48000.0, lpf, post_filter);
 }
 
 
@@ -53,6 +48,10 @@ c_psg::~c_psg()
 {
 	if (resampler)
 		delete resampler;
+	if (lpf)
+		delete lpf;
+	if (post_filter)
+		delete post_filter;
 }
 
 int c_psg::get_buffer(const short **buffer)

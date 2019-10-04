@@ -28,6 +28,8 @@
 #include <functional>
 #include "..\resampler.h"
 #include "..\console.h"
+#include "..\biquad4.hpp"
+#include "..\biquad.hpp"
 
 class c_cpu;
 class c_ppu;
@@ -44,7 +46,6 @@ public:
 	c_nes(void);
 	~c_nes(void);
 	int reset(void);
-	int EmulateFrame(void);
 	int emulate_frame();
 	int emulate_frame_accurate(void);
 	int emulate_frame_fast(void);
@@ -61,7 +62,6 @@ public:
 		EMULATION_MODE_ACCURATE
 	};
 
-	int emulate_frame2();
 	int *get_video(void);
 	int get_sound_buf(const short **sound_buf);
 	unsigned char *GetJoy1(void);
@@ -96,10 +96,6 @@ public:
 	void disable_mixer();
 
 private:
-	static const float g[8];
-	static const float b2[8];
-	static const float a2[8];
-	static const float a3[8];
 	static const float NES_AUDIO_RATE;
 	c_resampler *resampler;
 	int num_apu_samples;
@@ -110,9 +106,6 @@ private:
 	int crc32;
 	int mapperNumber;
 	char sramFilename[MAX_PATH];
-	unsigned char *OpenSram(void);
-	int CloseSram();
-
 
 	unsigned char *image;
 	unsigned char *cpuRam;
@@ -122,8 +115,6 @@ private:
 
 
 	typedef void (c_nes::*line_event)(int);
-	void run_cpu(int);
-	void run_apu(int);
 	void run_mmc3(int);
 	void run_sprite0(int);
 	void run_start_frame(int);
@@ -154,6 +145,8 @@ private:
 	int vblank_nmi_delay;
 	bool limit_sprites;
 
+	c_biquad4* lpf;
+	c_biquad* post_filter;
 
 	const static std::map<int, std::function<c_mapper*()> > mapper_factory;
 };

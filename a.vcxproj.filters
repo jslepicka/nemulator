@@ -704,6 +704,12 @@
     <ClInclude Include="nes\mappers\mapper13.h">
       <Filter>Header Files\nes\mappers</Filter>
     </ClInclude>
+    <ClInclude Include="audio_filter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="biquad.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="effect.fx">

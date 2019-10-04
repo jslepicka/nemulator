@@ -26,8 +26,6 @@
 #include "apu.h"
 #include "apu2.h"
 #include "joypad.h"
-//#include "boost/crc.hpp"
-//#include "boost/cstdint.hpp"
 #include "mappers\mappers.h"
 #include "ines.h"
 #include "..\mem_access_log.h"
@@ -36,41 +34,16 @@
 #include <fstream>
 
 #include <crtdbg.h>
-#if defined(DEBUG) | defined(_DEBUG)
-#define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
-#define new DEBUG_NEW
-#endif
+//#if defined(DEBUG) | defined(_DEBUG)
+//#define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
+//#define new DEBUG_NEW
+//#endif
 
 extern int mem_viewer_active;
 
 void strip_extension(char *path);
 
 const float c_nes::NES_AUDIO_RATE = 341.0f / 3.0f * 262.0f * 60.0f/* / 3.0f*/;
-
-const float c_nes::g[8] = {
-	0.362211048603058f,
-	0.221963167190552f,
-	0.0642654523253441f,
-	0.00309361424297094f,
-};
-const float c_nes::b2[8] = {
-	-1.98811137676239f,
-	-1.97556972503662f,
-	-1.82084906101227f,
-	-1.99095201492310f,
-};
-const float c_nes::a2[8] = {
-	-1.97986423969269f,
-	-1.96833491325378f,
-	-1.95999586582184f,
-	-1.99108636379242f,
-};
-const float c_nes::a3[8] = {
-	0.982510983943939f,
-	0.969850599765778f,
-	0.960565388202667f,
-	0.994418561458588f,
-};
 
 const std::map<int, std::function<c_mapper*()> > c_nes::mapper_factory = 
 {
@@ -173,7 +146,37 @@ c_nes::c_nes(void)
 	limit_sprites = false;
 	mem_access_log = new c_mem_access_log[256*256];
 	crc32 = 0;
-	resampler = new c_resampler(NES_AUDIO_RATE / 48000.0f, g, b2, a2, a3);
+	/*
+	lowpass elliptical, 20kHz
+	d = fdesign.lowpass('N,Fp,Ap,Ast', 8, 20000, .1, 80, 1786840);
+	Hd = design(d, 'ellip', 'FilterStructure', 'df2tsos');
+	set(Hd, 'Arithmetic', 'single');
+	g = regexprep(num2str(reshape(Hd.ScaleValues(1:4), [1 4]), '%.16ff '), '\s+', ',')
+	b2 = regexprep(num2str(Hd.sosMatrix(5:8), '%.16ff '), '\s+', ',')
+	a2 = regexprep(num2str(Hd.sosMatrix(17:20), '%.16ff '), '\s+', ',')
+	a3 = regexprep(num2str(Hd.sosMatrix(21:24), '%.16ff '), '\s+', ',')
+	*/
+	lpf = new c_biquad4(
+		{ 0.5086284279823303f,0.3313708603382111f,0.1059221103787422f,0.0055782101117074f },
+		{ -1.9872593879699707f,-1.9750031232833862f,-1.8231037855148315f,-1.9900115728378296f },
+		{ -1.9759204387664795f,-1.9602127075195313f,-1.9470522403717041f,-1.9888486862182617f },
+		{ 0.9801648259162903f,0.9627774357795715f,0.9480593800544739f,0.9940192103385925f }
+	);
+	/*
+	post-filter is butterworth bandpass, 30Hz - 14kHz
+	d = fdesign.bandpass('N,F3dB1,F3dB2', 2, 30, 14000, 48000);
+	Hd = design(d,'butter', 'FilterStructure', 'df2tsos');
+	set(Hd, 'Arithmetic', 'single');
+	g = num2str(Hd.ScaleValues(1), '%.16ff ')
+	b = regexprep(num2str(Hd.sosMatrix(1:3), '%.16ff '), '\s+', ',')
+	a = regexprep(num2str(Hd.sosMatrix(4:6), '%.16ff '), '\s+', ',')
+	*/
+	post_filter = new c_biquad(
+		0.5648277401924133f,
+		{ 1.0000000000000000f,0.0000000000000000f,-1.0000000000000000f },
+		{ 1.0000000000000000f,-0.8659016489982605f,-0.1296554803848267f }
+	);
+	resampler = new c_resampler(NES_AUDIO_RATE / 48000.0f, lpf, post_filter);
 }
 
 c_nes::~c_nes(void)
@@ -198,6 +201,10 @@ c_nes::~c_nes(void)
 		delete joypad;
 	if (resampler)
 		delete resampler;
+	if (lpf)
+		delete lpf;
+	if (post_filter)
+		delete post_filter;
 }
 
 void c_nes::enable_mixer()
