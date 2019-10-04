@@ -188,7 +188,7 @@ public:
 		c_length length;
 		c_envelope envelope;
 		c_timer timer;
-		int short_mode;
+		int lfsr_shift;
 		int random_period;
 		int random_counter;
 		int length_enabled;
