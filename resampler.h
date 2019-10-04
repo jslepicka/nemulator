@@ -2,8 +2,7 @@
 //#include "biquad4.hpp"
 #include <cmath>
 #include <stdlib.h>
-
-extern int lpf_active;
+#include "audio_filter.h"
 
 class c_resampler
 {
