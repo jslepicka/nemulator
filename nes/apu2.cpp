@@ -859,7 +859,7 @@ c_apu2::c_noise::~c_noise()
 void c_apu2::c_noise::reset()
 {
 	output = 0;
-	short_mode = 0;
+	lfsr_shift = 1;
 	random_period = 0;
 	random_counter = 0;
 	length_enabled = 0;
@@ -886,7 +886,7 @@ void c_apu2::c_noise::write(unsigned short address, unsigned char value)
 		envelope.write(value);
 		break;
 	case 0xE:
-		short_mode = (value & 0x80) ? 6: 0; //1 = short
+		lfsr_shift = (value & 0x80) ? 6: 1;
 		random_period = random_period_table[value & 0xF];
 		timer.set_period(random_period);
 		break;
@@ -902,7 +902,7 @@ void c_apu2::c_noise::clock_timer()
 	//timer.clock(0);
 	if (timer.clock())
 	{
-		int	feedback = (lfsr & 0x1) ^ ((lfsr >> short_mode) & 0x1);
+		int	feedback = (lfsr & 0x1) ^ ((lfsr >> lfsr_shift) & 0x1);
 		feedback <<= 14;
 		lfsr = (lfsr >> 1) | feedback;
 	}
