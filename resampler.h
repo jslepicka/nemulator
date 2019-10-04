@@ -31,7 +31,6 @@ private:
 
 	i_audio_filter* pre_filter;
 	i_audio_filter* post_filter;
-
 };
 
 __forceinline void c_resampler::process(float sample)
@@ -44,32 +43,26 @@ __forceinline void c_resampler::process(float sample)
 		float y2 = filtered_buf[filtered_buf_index];
 		float y1 = filtered_buf[filtered_buf_index + 1];
 		float y0 = filtered_buf[filtered_buf_index + 2];
-		float ym = filtered_buf[filtered_buf_index + 3];
+		float ym1 = filtered_buf[filtered_buf_index + 3];
 
 		//4-point, 3rd-order B-spline (x-form)
 		//see deip.pdf
-		float ym1py1 = ym + y1;
+		float ym1py1 = ym1 + y1;
 		float c0 = 1.0f / 6.0f*ym1py1 + 2.0f / 3.0f*y0;
-		float c1 = 1.0f / 2.0f*(y1 - ym);
+		float c1 = 1.0f / 2.0f*(y1 - ym1);
 		float c2 = 1.0f / 2.0f*ym1py1 - y0;
-		float c3 = 1.0f / 2.0f*(y0 - y1) + 1.0f / 6.0f*(y2 - ym);
+		float c3 = 1.0f / 2.0f*(y0 - y1) + 1.0f / 6.0f*(y2 - ym1);
 		float j = ((c3*mf + c2)*mf + c1)*mf + c0;
 
 		float extra = 2.0f - mf;
 		float n = m - extra;
 		mf = n - (int)n;
 		samples_required = (int)n + 2;
+
 		static const float max_out = 32767.0f;
-		//int s = (int)(round(blockdc(j) * max_out));
-#if 1
-		//int s = (int)round(df2(hpf(j)) * max_out);
 		int s = (int)round(post_filter->process(j) * max_out);
-		
-#else
-		float dither = (rand() / ((float)RAND_MAX * .5f) - 1.0f) / (1 << 16);
-		int s = (int)round(blockdc(j) * max_out + dither);
-#endif
 		s = s < -32768 ? -32768 : s > 32767 ? 32767 : s;
+
 		output_buf[output_buf_index++] = (short)s;
 	}
 	filtered_buf_index = (filtered_buf_index - 1) & 0x3;
