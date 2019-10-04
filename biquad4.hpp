@@ -24,13 +24,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #pragma once
 #include <xmmintrin.h>
+#include <vector>
+#include "audio_filter.h"
 
-class c_biquad4
+class c_biquad4 : public i_audio_filter
 {
 public:
-	c_biquad4(const float *g, const float *b2, const float *a2, const float *a3);
+	//c_biquad4(const float *g, const float *b2, const float *a2, const float *a3);
+	c_biquad4(std::vector<float> g, std::vector<float> b2, std::vector<float> a2, std::vector<float> a3);
 	~c_biquad4(void) {};
-	float process_df2t(float input);
+	float process(float input);
 	void *operator new (size_t size) { return _aligned_malloc(size, 16); }
 	void operator delete(void *p) { _aligned_free((c_biquad4*)p); }
 
@@ -44,19 +47,19 @@ private:
 	__m128 a3;
 };
 
-inline c_biquad4::c_biquad4(const float *g, const float *b2, const float *a2, const float *a3)
+inline c_biquad4::c_biquad4(std::vector<float> g, std::vector<float> b2, std::vector<float> a2, std::vector<float> a3)
 {
 	d = _mm_setzero_ps();
 	z1 = _mm_setzero_ps();
 	z2 = _mm_setzero_ps();
 
-	this->g = _mm_loadu_ps(g);
-	this->b2 = _mm_loadu_ps(b2);
-	this->a2 = _mm_loadu_ps(a2);
-	this->a3 = _mm_loadu_ps(a3);
+	this->g = _mm_loadu_ps(&g[0]);
+	this->b2 = _mm_loadu_ps(&b2[0]);
+	this->a2 = _mm_loadu_ps(&a2[0]);
+	this->a3 = _mm_loadu_ps(&a3[0]);
 }
 
-__forceinline float c_biquad4::process_df2t(float input)
+__forceinline float c_biquad4::process(float input)
 {
 	d = _mm_move_ss(d, _mm_load_ss(&input));
 	__m128 post_gain1 = _mm_mul_ps(d, g);

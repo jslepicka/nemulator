@@ -1,12 +1,15 @@
 #pragma once
-#include "biquad4.hpp"
+//#include "biquad4.hpp"
 #include <cmath>
 #include <stdlib.h>
+
+extern int lpf_active;
 
 class c_resampler
 {
 public:
-	c_resampler(float m, const float *g, const float *b2, const float *a2, const float *a3);
+	c_resampler(float m, i_audio_filter *pre_filter, i_audio_filter *post_filter);
+
 	virtual ~c_resampler();
 	void set_m(float m);
 	int get_output_buf(const short **output_buf);
@@ -16,9 +19,7 @@ private:
 	float output_rate;
 	float m, mf;
 	int samples_required;
-	c_biquad4 *lpf;
 
-	float hpf(float sample);
 	float last_sample = 0.0f;
 	float last_out = 0.0f;
 
@@ -28,23 +29,16 @@ private:
 	int filtered_buf_index;
 	short *output_buf;
 	float *filtered_buf;
-};
 
-//1st order IIR highpass
-//a1 = exp(-2*pi*(Fc/Fs))
-__forceinline float c_resampler::hpf(float sample)
-{
-	static const float a = 0.99608f; //Fc=~30Hz
-	float output = sample - last_sample + a * last_out;
-	last_sample = sample;
-	last_out = output;
-	return output;
-}
+	i_audio_filter* pre_filter;
+	i_audio_filter* post_filter;
+
+};
 
 __forceinline void c_resampler::process(float sample)
 {
 	filtered_buf[filtered_buf_index] = 
-		filtered_buf[filtered_buf_index + FILTERED_BUF_LEN] = lpf->process_df2t(sample);
+		filtered_buf[filtered_buf_index + FILTERED_BUF_LEN] = pre_filter->process(sample);
 
 	if (--samples_required == 0)
 	{
@@ -69,7 +63,8 @@ __forceinline void c_resampler::process(float sample)
 		static const float max_out = 32767.0f;
 		//int s = (int)(round(blockdc(j) * max_out));
 #if 1
-		int s = (int)round(hpf(j) * max_out);
+		//int s = (int)round(df2(hpf(j)) * max_out);
+		int s = (int)round(post_filter->process(j) * max_out);
 		
 #else
 		float dither = (rand() / ((float)RAND_MAX * .5f) - 1.0f) / (1 << 16);
