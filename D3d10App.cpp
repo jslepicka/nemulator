@@ -220,6 +220,7 @@ void D3d10App::Init(char *config_file_name, c_task *init_task, void *params)
 	startFullscreen = config->get_bool("app.fullscreen", true);
 	vsync = config->get_bool("app.vsync", true);
 	timer_sync = config->get_bool("app.timer_sync", false);
+	pause_on_lost_focus = config->get_bool("app.pause_on_lost_focus", true);
 	avrt_handle = 0;
 	timeBeginPeriod(1);
 	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
@@ -333,15 +334,17 @@ LRESULT D3d10App::MsgProc(UINT msg, WPARAM wParam, LPARAM lParam)
 	switch (msg)
 	{
 	case WM_ACTIVATE:
-		if (LOWORD(wParam) == WA_INACTIVE)
-		{
-			paused = true;
-			OnPause(paused);
-		}
-		else
-		{
-			paused = false;
-			OnPause(paused);
+		if (pause_on_lost_focus) {
+			if (LOWORD(wParam) == WA_INACTIVE)
+			{
+				paused = true;
+				OnPause(paused);
+			}
+			else
+			{
+				paused = false;
+				OnPause(paused);
+			}
 		}
 		return 0;
 	case WM_SIZE:
