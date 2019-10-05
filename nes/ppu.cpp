@@ -180,6 +180,37 @@ unsigned char c_ppu::ReadByte(int address)
 	return return_value;
 }
 
+void c_ppu::inc_horizontal_address()
+{
+	if ((vramAddress & 0x1F) == 0x1F)
+		vramAddress ^= 0x41F;
+	else
+		vramAddress++;
+}
+
+void c_ppu::inc_vertical_address()
+{
+
+	if ((vramAddress & 0x7000) == 0x7000)
+	{
+		int t = vramAddress & 0x3E0;
+		vramAddress &= 0xFFF;
+		switch (t)
+		{
+		case 0x3A0:
+			vramAddress ^= 0xBA0;
+			break;
+		case 0x3E0:
+			vramAddress ^= 0x3E0;
+			break;
+		default:
+			vramAddress += 0x20;
+		}
+	}
+	else
+		vramAddress += 0x1000;
+}
+
 void c_ppu::Reset(void)
 {
 	warmed_up = 0;
@@ -214,9 +245,6 @@ void c_ppu::Reset(void)
 	spriteMemAddress = 0;
 	linenumber = 0;
 	addressIncrement = 1;
-	//background must be disabled for crystal mines intro to work
-	//not sure why it was previously set to true
-	//ppuControl2.backgroundSwitch = true;
 	vramAddress = vramAddressLatch = fineX = 0;
 	bgPatternTableAddress = 0;
 	drawingBg = 0;
@@ -236,11 +264,6 @@ void c_ppu::Reset(void)
 	sprites_visible = 0;
 
 }
-
-//int c_ppu::get_mirroring_mode()
-//{
-//	return mirroring_mode;
-//}
 
 void c_ppu::StartFrame(void)
 {
@@ -356,32 +379,6 @@ void c_ppu::run_ppu(int cycles)
 				attribute >>= attribute_shift;
 				attribute &= 0x03;
 				//attribute <<= 2;
-
-				if ((vramAddress & 0x1F) == 0x1F)
-					vramAddress ^= 0x41F;
-				else
-					vramAddress++;
-				if (current_cycle == 251)
-				{
-					if ((vramAddress & 0x7000) == 0x7000)
-					{
-						int t = vramAddress & 0x3E0;
-						vramAddress &= 0xFFF;
-						switch (t)
-						{
-						case 0x3A0:
-							vramAddress ^= 0xBA0;
-							break;
-						case 0x3E0:
-							vramAddress ^= 0x3E0;
-							break;
-						default:
-							vramAddress += 0x20;
-						}
-					}
-					else
-						vramAddress += 0x1000;
-				}
 				break;
 			case   4:	case  12:	case  20:	case  28:
 			case  36:	case  44:	case  52:	case  60:
@@ -445,11 +442,14 @@ void c_ppu::run_ppu(int cycles)
 				drawingBg = false;
 			}
 				mapper->mmc5_inc_tile();
+				inc_horizontal_address();
 				break;
 			case 256:	case 264:	case 272:   case 280:
 			case 288:	case 296:	case 304:	case 312:
 				//tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
 				//dummy reads
+				if (current_cycle == 256)
+					inc_vertical_address();
 				mapper->ppu_read(0x2000);
 				break;
 			case 257:
@@ -1132,31 +1132,8 @@ void c_ppu::update_vram_address()
 {
 	if (rendering)
 	{
-		if (true || addressIncrement == 32)
-		{
-			if ((vramAddress & 0x7000) == 0x7000)
-			{
-				// Set FV to 0
-				vramAddress &= 0x0FFF;
-
-				// Check VT
-				switch (vramAddress & 0x03E0)
-				{
-				case 0x03A0:
-					vramAddress ^= 0x0800;
-				case 0x03E0:
-					vramAddress &= 0xFC1F;
-					break;
-				default:
-					vramAddress += 0x0020;
-				}
-			}
-			else
-				//increment FV
-				vramAddress += 0x1000;
-		}
-		else
-			vramAddress = (vramAddress + addressIncrement) & 0x7FFF;
+		inc_horizontal_address();
+		inc_vertical_address();
 	}
 	else
 	{

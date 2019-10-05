@@ -120,9 +120,6 @@ private:
 
 	void DrawBackgroundLine(void);
 	void DrawSpriteLine(void);
-	int GetMirrorAddress(int address);
-	void DrawSpriteLinePixel(const int pixel);
-	void DrawBackgroundLinePixel(const int pixel);
 
 	static int mortonOdd[];
 	static int mortonEven[];
@@ -148,4 +145,7 @@ private:
 	int reversed[256];
 
 	int warmed_up;
+
+	void inc_horizontal_address();
+	void inc_vertical_address();
 };
