@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <atomic>
 class c_sms;
 
 class c_vdp
@@ -46,7 +47,8 @@ private:
 	int lookup_color(int palette_index);
 
 	void update_irq();
-	static long pal_built;
+	//static long pal_built;
+	static std::atomic<int> pal_built;
 	void generate_palette();
 	static uint32_t pal_sms[256];
 	static uint32_t pal_gg[4096];

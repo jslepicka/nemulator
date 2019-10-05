@@ -8,7 +8,7 @@
 #define new DEBUG_NEW
 #endif
 
-long c_vdp::pal_built = 0;
+std::atomic<int> c_vdp::pal_built = 0;
 uint32_t c_vdp::pal_sms[256];
 uint32_t c_vdp::pal_gg[4096];
 
@@ -425,7 +425,8 @@ void c_vdp::generate_palette()
 		return v < min ? min : v > max ? max : v;
 	};
 
-	if (InterlockedCompareExchange(&pal_built, 1, 0) == 0)
+	int expected = 0;
+	if (pal_built.compare_exchange_strong(expected, 1))
 	{
 		for (int i = 0; i < 256; i++)
 		{

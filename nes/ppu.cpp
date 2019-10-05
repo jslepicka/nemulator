@@ -28,13 +28,14 @@
 #include "mapper.h"
 #include "apu2.h"
 
+
 #include <crtdbg.h>
 #if defined(DEBUG) | defined(_DEBUG)
 #define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
 #define new DEBUG_NEW
 #endif
 
-long c_ppu::lookup_tables_built = 0;
+std::atomic<int> c_ppu::lookup_tables_built = 0;
 int c_ppu::attr_shift_table[0x400];
 int c_ppu::attr_loc[0x400];
 int c_ppu::mortonOdd[256];
@@ -54,7 +55,8 @@ c_ppu::c_ppu(void)
 
 void c_ppu::build_lookup_tables()
 {
-	if (InterlockedCompareExchange(&lookup_tables_built, 1, 0) == 0)
+	int expected = 0;
+	if (lookup_tables_built.compare_exchange_strong(expected, 1))
 	{
 		for (int i = 0; i < 0x400; ++i)
 		{
