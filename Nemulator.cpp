@@ -1266,7 +1266,8 @@ void c_nemulator::UpdateScene(double dt)
 
 		if (stats)
 		{
-			c_console *console = ((Game*)texturePanels[selectedPanel]->GetSelected())->console;
+			Game* game = (Game*)texturePanels[selectedPanel]->GetSelected();
+			c_console *console = game->console;
 			stats->report_stat("fps", fps);
 			stats->report_stat("freq", sound->GetFreq());
 			stats->report_stat("audio position", s);
@@ -1277,7 +1278,7 @@ void c_nemulator::UpdateScene(double dt)
 			s << std::hex << std::uppercase << console->get_crc();
 			stats->report_stat("CRC", s.str());
 
-			if (dynamic_cast<c_nes*>(console))
+			if (game->type == GAME_NES)
 			{
 				c_nes *n = (c_nes*)console;
 				stats->report_stat("mapper #", n->get_mapper_number());
