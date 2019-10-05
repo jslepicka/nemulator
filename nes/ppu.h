@@ -1,5 +1,6 @@
 #pragma once
 #include "nes.h"
+#include <atomic>
 
 class c_ppu
 {
@@ -14,7 +15,6 @@ public:
 	int BeginVBlank(void);
 	void EndVBlank(void);
 	void DrawScanline(void);
-	void ClearFrameBuffer(void);
 	bool DrawingEnabled(void);
 	void StartFrame(void);
 	void StartScanline(void);
@@ -22,7 +22,6 @@ public:
 	bool limitSprites;
 	unsigned char *pSpriteMemory;
 	bool DoA12(void);
-	bool Run(int numCycles);
 	c_mapper *mapper;
 	c_cpu *cpu;
 	c_apu *apu;
@@ -33,13 +32,11 @@ public:
 	int sprite0_hit_location;
 	void set_sprite0_hit() {ppuStatus.hitFlag = true; sprite0_hit_location = -1;};
 	void run_ppu(int cycles);
-	void run_ppu_new(int cycles);
 	int eval_sprites();
 	int executed_cycles;
 	unsigned int current_cycle;
 	int current_scanline;
 	bool limit_sprites;
-	//int get_mirroring_mode();
 private:
 	int rendering_state;
 	static const int FB_TRANSPARENTBG = 0x1000;
@@ -137,7 +134,6 @@ private:
 
 	void build_lookup_tables();
 
-	static long lookup_tables_built;
 	unsigned char image_palette[32];
 
 	int *p_frame;
@@ -148,4 +144,6 @@ private:
 
 	void inc_horizontal_address();
 	void inc_vertical_address();
+
+	static std::atomic<int> lookup_tables_built;
 };
