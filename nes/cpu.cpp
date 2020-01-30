@@ -368,11 +368,18 @@ void c_cpu::ExecuteOpcode(void)
 		PC = MAKEWORD(nes->ReadByte(0xFFFE), nes->ReadByte(0xFFFF));
 		break;
 	case 0x102: //Sprite DMA
-		*(dmaDst++) = nes->ReadByte(dmaSrc++);
+	{
+		*dmaDst = nes->ReadByte(dmaSrc++);
+		intptr_t temp = (intptr_t)dmaDst;
+		intptr_t mask = ~((intptr_t)0xFF);
+		intptr_t h = temp & ~((intptr_t)0xFF);
+		intptr_t l = ++temp & 0xFF;
+		dmaDst = (unsigned char*)(h | l);
 		dmaPos--;
 		//Sprite DMA burns 513 CPU cycles, so after the last DMA, burn another one.
 		if (dmaPos == 0)
 			requiredCycles += 3;
+	}
 		break;
 	case 0x103: //APU DMA
 		{int a = 1;}
@@ -422,6 +429,11 @@ void c_cpu::execute_irq(void)
 void c_cpu::clear_irq()
 {
 	doIrq = false;
+}
+
+void c_cpu::clear_nmi()
+{
+	doNmi = false;
 }
 
 INLINE void c_cpu::Immediate(void)

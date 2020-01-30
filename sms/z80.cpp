@@ -1731,7 +1731,7 @@ void c_z80::BIT(int bit, unsigned char operand)
 
 void c_z80::ADD8(unsigned char operand, int carry)
 {
-	int c = operand + carry;
+	//int c = operand + carry;
 	int result = AF.byte.hi + operand + carry;
 	unsigned int uresult = (unsigned int) result;
 	set_pv((AF.byte.hi ^ result) & (operand ^ result) & 0x80);

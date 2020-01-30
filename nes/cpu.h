@@ -18,6 +18,7 @@ public:
 	void clear_irq();
 	void ExecuteApuDMA();
 	int executed_cycles;
+	void clear_nmi();
 
 private:
 	bool check_page_cross;

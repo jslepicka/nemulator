@@ -37,6 +37,7 @@ public:
 	unsigned int current_cycle;
 	int current_scanline;
 	bool limit_sprites;
+	int spriteMemAddress;
 private:
 	int rendering_state;
 	static const int FB_TRANSPARENTBG = 0x1000;
@@ -108,7 +109,7 @@ private:
 	unsigned char imagePalette[32];
 	int addressIncrement;
 	bool hi;
-	int spriteMemAddress;
+
 	int linenumber;
 	unsigned char readValue;
 	unsigned char *nameTable[4];

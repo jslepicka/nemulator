@@ -85,6 +85,42 @@ int c_nes_input_handler::get_sms_input()
 	return ret;
 }
 
+int c_nes_input_handler::get_gb_input()
+{
+	uint32_t ret = -1;
+	struct s_keymap
+	{
+		int button;
+		int mask;
+	};
+
+	s_keymap keymap[] =
+	{
+		{ BUTTON_1RIGHT,  0x01},
+		{ BUTTON_1LEFT,   0x02},
+		{ BUTTON_1UP,     0x04},
+		{ BUTTON_1DOWN,   0x08},
+		{ BUTTON_1A,      0x10},
+		{ BUTTON_1B,      0x20},
+		{ BUTTON_1SELECT, 0x40},
+		{ BUTTON_1START,  0x80}
+	};
+
+	/*uint32_t ret = 0;
+	for (int i = 0; i < sizeof(keymap) / sizeof(s_keymap); i++)
+	{
+		s_keymap k = keymap[i];
+		ret |= state[k.button].ack ? 0 : (state[k.button].state_cur << k.shift);
+	}*/
+
+	for (auto& k : keymap) {
+		if (!state[k.button].ack && state[k.button].state_cur) {
+			ret &= ~k.mask;
+		}
+	}
+	return ret;
+}
+
 unsigned char c_nes_input_handler::get_nes_byte(int controller)
 {
 	controller = controller % 2;

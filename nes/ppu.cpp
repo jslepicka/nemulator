@@ -27,13 +27,14 @@
 #include "memory.h"
 #include "mapper.h"
 #include "apu2.h"
+#include <new>
 
 
 #include <crtdbg.h>
-#if defined(DEBUG) | defined(_DEBUG)
-#define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
-#define new DEBUG_NEW
-#endif
+//#if defined(DEBUG) | defined(_DEBUG)
+//#define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
+//#define new DEBUG_NEW
+//#endif
 
 std::atomic<int> c_ppu::lookup_tables_built = 0;
 int c_ppu::attr_shift_table[0x400];
@@ -93,8 +94,8 @@ void c_ppu::build_lookup_tables()
 
 c_ppu::~c_ppu(void)
 {
-	if (pSpriteMemory)
-		delete[] pSpriteMemory;
+	//if (pSpriteMemory)
+	//	delete[] pSpriteMemory;
 }
 
 __forceinline int c_ppu::InterleaveBits(unsigned char odd, unsigned char even)
@@ -233,7 +234,7 @@ void c_ppu::Reset(void)
 	control2 = (unsigned char *)&ppuControl2;
 	status = (unsigned char *)&ppuStatus;
 	if (!pSpriteMemory)
-		pSpriteMemory = new unsigned char[256];
+		pSpriteMemory = (unsigned char*) operator new[](sizeof(unsigned char) * 256, std::align_val_t{ 256 });
 	memset(pSpriteMemory, 0, 256);
 	pFrameBuffer = (int *)&frameBuffer;
 	memset(pFrameBuffer, 0, 256 * 256 * sizeof(int));
@@ -284,20 +285,20 @@ void c_ppu::run_ppu(int cycles)
 			{
 			case 0:
 				//start vblank
-				if (warmed_up) {
-					ppuStatus.vBlank = true;
-					if (ppuControl1.vBlankNmi)
-					{
-						nmi_pending = true;
-						cpu->execute_nmi();
-					}
-				}
+				//if (warmed_up) {
+				//	ppuStatus.vBlank = true;
+				//	if (ppuControl1.vBlankNmi)
+				//	{
+				//		nmi_pending = true;
+				//		cpu->execute_nmi();
+				//	}
+				//}
 				break;
 			case 20:
 				//begin renderring
 				rendering = DrawingEnabled();
 				ppuStatus.spriteCount = false;
-				ppuStatus.vBlank = false;
+				/*ppuStatus.vBlank = false;*/
 				ppuStatus.hitFlag = false;
 				p_frame = pFrameBuffer;
 				//end vblank
@@ -309,6 +310,21 @@ void c_ppu::run_ppu(int cycles)
 					on_screen = 1;
 				}
 				break;
+			}
+			break;
+		case 1:
+			if (current_scanline == 0) {
+				if (warmed_up) {
+					ppuStatus.vBlank = true;
+					if (ppuControl1.vBlankNmi)
+					{
+						nmi_pending = true;
+						cpu->execute_nmi();
+					}
+				}
+			}
+			else if (current_scanline == 20) {
+				ppuStatus.vBlank = false;
 			}
 			break;
 		case 256:
@@ -340,8 +356,7 @@ void c_ppu::run_ppu(int cycles)
 			case 192:	case 200:	case 208:	case 216:
 			case 224:	case 232:	case 240:	case 248:
 			case 320:	case 328:
-				drawingBg = true;
-				tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
+
 				break;
 			case   1:	case   9:	case  17:	case  25:
 			case  33:	case  41:	case  49:	case  57:
@@ -352,6 +367,8 @@ void c_ppu::run_ppu(int cycles)
 			case 193:	case 201:	case 209:	case 217:
 			case 225:	case 233:	case 241:	case 249:
 			case 321:	case 329:
+				drawingBg = true;
+				tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
 				pattern_address = (tile << 4) + ((vramAddress & 0x7000) >> 12) + (ppuControl1.screenPatternTableAddress * 0x1000);
 				break;
 			case   2:	case  10:	case  18:	case  26:
@@ -448,11 +465,11 @@ void c_ppu::run_ppu(int cycles)
 				break;
 			case 256:	case 264:	case 272:   case 280:
 			case 288:	case 296:	case 304:	case 312:
-				//tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
+				tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
 				//dummy reads
 				if (current_cycle == 256)
 					inc_vertical_address();
-				mapper->ppu_read(0x2000);
+				//mapper->ppu_read(0x2000);
 				break;
 			case 257:
 				vramAddress &= ~0x41F;
@@ -474,11 +491,11 @@ void c_ppu::run_ppu(int cycles)
 				if (ppuControl1.spriteSize)
 				{
 					int sprite_tile = sprite_buffer[(((current_cycle - 260) / 8) * 4) + 1];
-					mapper->ppu_read((sprite_tile & 0x1) * 0x1000);
+					//mapper->ppu_read((sprite_tile & 0x1) * 0x1000);
 				}
 				else
 				{
-					mapper->ppu_read(ppuControl1.spritePatternTableAddress * 0x1000);
+					//mapper->ppu_read(ppuControl1.spritePatternTableAddress * 0x1000);
 				}
 				break;
 			case 261:	case 269:	case 277:	case 285:
@@ -490,11 +507,11 @@ void c_ppu::run_ppu(int cycles)
 				if (ppuControl1.spriteSize)
 				{
 					int sprite_tile = sprite_buffer[(((current_cycle - 260) / 8) * 4) + 1];
-					mapper->ppu_read((sprite_tile & 0x1) * 0x1000);
+					//mapper->ppu_read((sprite_tile & 0x1) * 0x1000);
 				}
 				else
 				{
-					mapper->ppu_read(ppuControl1.spritePatternTableAddress * 0x1000);
+					//mapper->ppu_read(ppuControl1.spritePatternTableAddress * 0x1000);
 				}
 				break;
 			case 263:	case 271:	case 279:	case 287:
@@ -545,8 +562,9 @@ void c_ppu::run_ppu(int cycles)
 								if (i == sprite0_index &&
 									ppuControl2.backgroundSwitch &&
 									(bg_index & 0x03) != 0 &&
-									current_cycle < 255)
+									current_cycle < 255) {
 									ppuStatus.hitFlag = true;
+								}
 
 								if (!(priority && (bg_index & 0x03)))
 									pixel = (image_palette[16 + sprite_color] & palette_mask) | intensity;
@@ -591,7 +609,7 @@ void c_ppu::run_ppu(int cycles)
 				warmed_up = 1;
 			}
 			current_cycle = 0;
-			odd_frame ^= 1;
+			//odd_frame ^= 1;
 		}
 	}
 }
@@ -1004,6 +1022,9 @@ void c_ppu::WriteByte(int address, unsigned char value)
 		//AND if currently in NMI, then execute_nmi
 		if (!(*control1 & 0x80) && (value & 0x80) && ppuStatus.vBlank)
 			cpu->execute_nmi();
+		if (current_scanline == 0 && (*control1 & 0x80) && current_cycle < 4) {
+			cpu->clear_nmi();
+		}
 
 		*control1 = value;
 		if (ppuControl1.verticalWrite)

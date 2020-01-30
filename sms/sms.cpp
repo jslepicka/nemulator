@@ -57,7 +57,7 @@ int c_sms::load()
 	int offset = 0;
 	if (has_header)
 	{
-		printf("has header\n");
+		//printf("has header\n");
 		offset = file_length - ((file_length / 1024) * 1024);
 		file_length = file_length - offset;
 	}
@@ -299,7 +299,7 @@ void c_sms::write_port(int port, unsigned char value)
 		//printf("Port write to joypad: %02X\n", port);
 		break;
 	default:
-		printf("Port write error\n");
+		//printf("Port write error\n");
 		break;
 	}
 }
@@ -349,7 +349,7 @@ unsigned char c_sms::read_port(int port)
 		}
 		return 0xFF;
 	default:
-		printf("Port read error\n");
+		//printf("Port read error\n");
 		return 0;
 	}
 }
