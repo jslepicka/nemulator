@@ -550,6 +550,9 @@ void c_nemulator::RunGames()
 		case GAME_GG:
 			g->console->set_input(((c_nes_input_handler*)g_ih)->get_sms_input());
 			break;
+		case GAME_GB:
+			g->console->set_input(((c_nes_input_handler*)g_ih)->get_gb_input());
+			break;
 		default:
 			break;
 		}
@@ -1497,7 +1500,8 @@ void c_nemulator::LoadGames()
 	{
 		{ GAME_NES, "nes", "nes.rom_path", "nes.save_path", "c:\\roms\\nes" },
 		{ GAME_SMS, "sms", "sms.rom_path", "sms.save_path", "c:\\roms\\sms" },
-		{ GAME_GG,   "gg",  "gg.rom_path",  "gg.save_path",  "c:\\roms\\gg" }
+		{ GAME_GG,   "gg",  "gg.rom_path",  "gg.save_path",  "c:\\roms\\gg" },
+		{ GAME_GB,   "gb",  "gb.rom_path",  "gb.save_path",  "c:\\roms\\gb" },
 	};
 
 	bool global_mask_sides = config->get_bool("mask_sides", false);

@@ -31,6 +31,12 @@
     <Filter Include="Source Files\sms">
       <UniqueIdentifier>{3b66f9ea-2dfd-4e43-8f7a-e2954d0405f2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\gb">
+      <UniqueIdentifier>{2d949fa6-175d-42a4-a58e-1f52c0c4d807}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\gb">
+      <UniqueIdentifier>{4afd6606-abc9-437f-bee7-24c26e86b3ac}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="a.cpp">
@@ -353,6 +359,24 @@
     </ClCompile>
     <ClCompile Include="nes\mappers\mapper13.cpp">
       <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="gb\gb.cpp">
+      <Filter>Source Files\gb</Filter>
+    </ClCompile>
+    <ClCompile Include="gb\gbmapper.cpp">
+      <Filter>Source Files\gb</Filter>
+    </ClCompile>
+    <ClCompile Include="gb\gbppu.cpp">
+      <Filter>Source Files\gb</Filter>
+    </ClCompile>
+    <ClCompile Include="gb\lr35902.cpp">
+      <Filter>Source Files\gb</Filter>
+    </ClCompile>
+    <ClCompile Include="gb\mbc1.cpp">
+      <Filter>Source Files\gb</Filter>
+    </ClCompile>
+    <ClCompile Include="gb\mbc3.cpp">
+      <Filter>Source Files\gb</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -710,6 +734,27 @@
     <ClInclude Include="biquad.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="gb\gb.h">
+      <Filter>Header Files\gb</Filter>
+    </ClInclude>
+    <ClInclude Include="gb\gbmapper.h">
+      <Filter>Header Files\gb</Filter>
+    </ClInclude>
+    <ClInclude Include="gb\gbppu.h">
+      <Filter>Header Files\gb</Filter>
+    </ClInclude>
+    <ClInclude Include="gb\lr35902.h">
+      <Filter>Header Files\gb</Filter>
+    </ClInclude>
+    <ClInclude Include="gb\mbc1.h">
+      <Filter>Header Files\gb</Filter>
+    </ClInclude>
+    <ClInclude Include="gb\mbc3.h">
+      <Filter>Header Files\gb</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="effect.fx">
@@ -718,5 +763,21 @@
     <FxCompile Include="effect2.fx">
       <Filter>Source Files</Filter>
     </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="nemulator.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\..\Users\james\Desktop\nes.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="icon1.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="..\..\Users\james\Desktop\nes_ELf_icon.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

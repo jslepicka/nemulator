@@ -2,6 +2,7 @@
 #include "console.h"
 #include "nes\nes.h"
 #include "sms\sms.h"
+#include "gb\gb.h"
 #include <string>
 #include "TexturePanelItem.h"
 #include "d3dx10.h"
@@ -11,6 +12,7 @@ enum GAME_TYPE
 	GAME_NES,
 	GAME_SMS,
 	GAME_GG,
+	GAME_GB,
 	GAME_NONE
 };
 

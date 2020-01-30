@@ -3,6 +3,7 @@
 #include "nes\nes.h"
 #include "nes\palette.h"
 #include "sms\sms.h"
+#include "gb\gb.h"
 #include "game.h"
 #include <vector>
 #include <list>

@@ -299,7 +299,7 @@ void c_nes::WriteByte(unsigned short address, unsigned char value)
 	case 4:
 		if (address == 0x4014)
 		{
-			cpu->DoSpriteDMA(ppu->pSpriteMemory, (value & 0xFF) << 8);
+			cpu->DoSpriteDMA(ppu->pSpriteMemory + ppu->spriteMemAddress, (value & 0xFF) << 8);
 		}
 		else if (address == 0x4016)
 		{

@@ -73,6 +73,9 @@ void Game::OnActivate(bool load)
 			case GAME_GG:
 				console = new c_sms(1);
 				break;
+			case GAME_GB:
+				console = new c_gb();
+				break;
 			default:
 				break;
 			}
@@ -177,6 +180,27 @@ void Game::DrawToTexture(ID3D10Texture2D *tex)
 			}
 		}
 		break;
+		case GAME_GB:
+		{
+			int y = 0;
+			for (y = 0; y < 144; ++y) {
+				int x = 0;
+				p = (int*)map.pData + (y) * (map.RowPitch / 4);
+				for (x = 0; x < 160; ++x) {
+					*p++ = *fb++;
+				}
+				for (; x < 256; ++x) {
+					*p++ = 0xFF000000;
+				}
+			}
+			for (; y < 256; y++) {
+				p = (int*)map.pData + (y) * (map.RowPitch / 4);
+				for (int x = 0; x < 256; ++x) {
+					*p++ = 0xFF000000;
+				}
+			}
+		}
+		break;
 		default:
 			break;
 		}
@@ -233,6 +257,18 @@ void Game::create_vertex_buffer()
 
 		vertices[0].tex.x = vertices[1].tex.x = 48.0 / 256.0;
 		vertices[2].tex.x = vertices[3].tex.x = (256.0 - 48.0) / 256.0;
+	}
+	else if (type == GAME_GB)
+	{
+		vertices[0].tex.y = vertices[2].tex.y = 144.0 / 256.0;
+		vertices[1].tex.y = vertices[3].tex.y = 0.0 / 256.0;
+
+		//aspect ratio adjustment
+		//gb ratio = 4.7f/4.3f
+		//(((1.3333 / 1.093) * 160) - 160) / 2
+		auto adjust = (((4.0 / 3.0) / (4.7 / 4.3) * 160.0) - 160.0) / 2.0;
+		vertices[0].tex.x = vertices[1].tex.x = -adjust / 256.0;
+		vertices[2].tex.x = vertices[3].tex.x = (256.0 - 96.0 + adjust) / 256.0;
 	}
 
 
@@ -291,6 +327,8 @@ D3DXCOLOR Game::get_overscan_color()
 	}
 }
 
+//TODO: this should probably be handled by console
+
 int Game::get_width()
 {
 	switch (type)
@@ -300,6 +338,8 @@ int Game::get_width()
 	case GAME_SMS:
 		return 256;
 	case GAME_GG:
+		return 160;
+	case GAME_GB:
 		return 160;
 	default:
 		return 256;
@@ -315,6 +355,8 @@ int Game::get_height()
 	case GAME_SMS:
 		return 192 + 28;
 	case GAME_GG:
+		return 144;
+	case GAME_GB:
 		return 144;
 	default:
 		return 256;

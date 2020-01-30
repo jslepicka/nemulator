@@ -3,6 +3,7 @@
 #include "avrt.h"
 #include "dwmapi.h"
 #include <algorithm>
+#include "resource.h"
 
 #pragma comment (lib, "PowrProf.lib")
 #pragma comment (lib, "avrt.lib")
@@ -488,7 +489,7 @@ void D3d10App::InitWnd()
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
 	wc.hInstance = hInstance;
-	wc.hIcon = LoadIcon(0, IDI_APPLICATION);
+	wc.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
 	wc.hCursor = LoadCursor(0, IDC_ARROW);
 	wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
 	wc.lpszMenuName = 0;
@@ -525,6 +526,8 @@ void D3d10App::InitWnd()
 		MessageBox(0, "CreateWindow failed", 0, 0);
 		PostQuitMessage(0);
 	}
+
+
 
 	ShowWindow(hWnd, SW_SHOW);
 	UpdateWindow(hWnd);
