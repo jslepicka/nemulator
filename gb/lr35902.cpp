@@ -123,8 +123,10 @@ void c_lr35902::execute(int cycles)
 			dprintf("A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X\n", AF.b.h, AF.b.l, BC.b.h, BC.b.l, DE.b.h, DE.b.l, HL.b.h, HL.b.l);
 			//dprintf("fetched opcode %02X, requires %d cycles\n", opcode, required_cycles);
 			if (required_cycles == 0) {
-				//printf("Missing cycle count for opcode %s%02X at %04X\n", prefix == 0xCB ? "CB" : "", opcode, ins_start);
-				exit(0);
+				//char txt[256];
+				//sprintf(txt, "Missing cycle count for opcode %s%02X at %04X\n", prefix == 0xCB ? "CB" : "", opcode, ins_start);
+				//MessageBox(NULL, txt, "oops", MB_OK);
+				//exit(0);
 			}
 			if (pending_ei) {
 				pending_ei = 0;
