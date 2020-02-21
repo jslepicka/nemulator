@@ -113,6 +113,10 @@ int c_gb::load()
 	rom_size = *(rom + 0x148);
 	ram_size = *(rom + 0x149);
 
+	if (file_length != (32768 << rom_size)) {
+		return 0;
+	}
+
 
 	//printf("title: %s\n", title);
 	//printf("cart_type: %d\n", cart_type);
@@ -315,7 +319,8 @@ void c_gb::write_byte(uint16_t address, uint8_t data)
 			return;
 		}
 	}
-	exit(0);
+	//MessageBox(NULL, "blah", "blah", MB_OK);
+	//exit(0);
 }
 
 void c_gb::clock_timer()
