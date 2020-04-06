@@ -487,15 +487,15 @@ void c_ppu::run_ppu(int cycles)
 				break;
 			case 260:	case 268:	case 276:	case 284:
 			case 292:	case 300:	case 308:	case 316:
-
+				//reads here and/or at 262 are required for isolated warrior
 				if (ppuControl1.spriteSize)
 				{
 					int sprite_tile = sprite_buffer[(((current_cycle - 260) / 8) * 4) + 1];
-					//mapper->ppu_read((sprite_tile & 0x1) * 0x1000);
+					mapper->ppu_read((sprite_tile & 0x1) * 0x1000);
 				}
 				else
 				{
-					//mapper->ppu_read(ppuControl1.spritePatternTableAddress * 0x1000);
+					mapper->ppu_read(ppuControl1.spritePatternTableAddress * 0x1000);
 				}
 				break;
 			case 261:	case 269:	case 277:	case 285:
@@ -507,11 +507,11 @@ void c_ppu::run_ppu(int cycles)
 				if (ppuControl1.spriteSize)
 				{
 					int sprite_tile = sprite_buffer[(((current_cycle - 260) / 8) * 4) + 1];
-					//mapper->ppu_read((sprite_tile & 0x1) * 0x1000);
+					mapper->ppu_read((sprite_tile & 0x1) * 0x1000);
 				}
 				else
 				{
-					//mapper->ppu_read(ppuControl1.spritePatternTableAddress * 0x1000);
+					mapper->ppu_read(ppuControl1.spritePatternTableAddress * 0x1000);
 				}
 				break;
 			case 263:	case 271:	case 279:	case 287:
