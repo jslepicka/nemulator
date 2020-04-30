@@ -227,27 +227,7 @@ void c_vdp::draw_scanline()
 	//Bock's Birthday 2006
 	int sprite_width = registers[0x1] & 0x1 ? 16 : 8;
 
-	if (/*line_number == 0 || */line_number > 192)
-	{
-		line_counter = registers[10];
-	}
-	else
-	{
-		line_counter--;
-		if (line_counter == 0xFF)
-		{
-			line_counter = registers[10];
-			line_irq = 1;
-			update_irq();
-		}
-	}
 
-	if (line_number == 193)
-	{
-		status |= 0x80;
-		update_irq();
-
-	}
 
 
 	int y = line_number;
@@ -380,11 +360,32 @@ void c_vdp::draw_scanline()
 		}
 	}
 
-
 	if (line_number == 261)
 		line_number = 0;
 	else
 		line_number++;
+
+	if (/*line_number == 0 || */line_number > 192)
+	{
+		line_counter = registers[10];
+	}
+	else
+	{
+		line_counter--;
+		if (line_counter == 0xFF)
+		{
+			line_counter = registers[10];
+			line_irq = 1;
+			update_irq();
+		}
+	}
+
+	if (line_number == 193)
+	{
+		status |= 0x80;
+		update_irq();
+
+	}
 }
 
 int c_vdp::get_scanline()

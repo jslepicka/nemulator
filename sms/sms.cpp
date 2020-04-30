@@ -317,7 +317,7 @@ unsigned char c_sms::read_port(int port)
 		return 0;
 	case 1:
 		//printf("Port read from PSG\n");
-		return vdp->get_scanline() - 1; //is this correct?  fixes earthworm jim
+		return vdp->get_scanline();
 	case 2:
 		//printf("Port read from VDP\n");
 		switch (port & 0x1)
