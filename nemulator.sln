@@ -28,8 +28,8 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {D6548671-FE62-4AED-A78E-F64BC92BF89F}
 		AMDCaProjectFile = C:\dev\nemulator 2.1.2\CodeAnalyst\a.caw
+		SolutionGuid = {D6548671-FE62-4AED-A78E-F64BC92BF89F}
 	EndGlobalSection
 	GlobalSection(Performance) = preSolution
 		HasPerformanceSessions = true
