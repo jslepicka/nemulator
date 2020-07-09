@@ -216,7 +216,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="a.cpp" />
+    <ClCompile Include="main.cpp" />
     <ClCompile Include="audio_info.cpp" />
     <ClCompile Include="bmp_writer.cpp" />
     <ClCompile Include="config.cpp" />
@@ -331,7 +331,6 @@
     <ClCompile Include="nes\ppu.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="a.h" />
     <ClInclude Include="audio_filter.h" />
     <ClInclude Include="audio_info.h" />
     <ClInclude Include="biquad.hpp" />

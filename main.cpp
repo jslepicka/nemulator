@@ -1,4 +1,4 @@
-#include "a.h"
+#include "D3d10App.h"
 #include "nemulator.h"
 
 D3d10App *app;
