@@ -11,7 +11,7 @@ private:
 	c_bmp_writer(void) {};
 	virtual ~c_bmp_writer(void) {};
 
-	static const unsigned char magic[2];
+	inline static const unsigned char magic[2] = { 'B', 'M' };
 
 	struct s_header
 	{
