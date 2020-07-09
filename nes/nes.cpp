@@ -171,11 +171,19 @@ c_nes::c_nes(void)
 	b = regexprep(num2str(Hd.sosMatrix(1:3), '%.16ff '), '\s+', ',')
 	a = regexprep(num2str(Hd.sosMatrix(4:6), '%.16ff '), '\s+', ',')
 	*/
-	post_filter = new c_biquad(
+	/*post_filter = new c_biquad(
 		0.5648277401924133f,
 		{ 1.0000000000000000f,0.0000000000000000f,-1.0000000000000000f },
 		{ 1.0000000000000000f,-0.8659016489982605f,-0.1296554803848267f }
+	);*/
+
+	//12kHz
+	post_filter = new c_biquad(
+		0.4990182518959045f,
+		{ 1.0000000000000000f,0.0000000000000000f,-1.0000000000000000f },
+		{ 1.0000000000000000f,-0.9980365037918091f,0.0019634978380054f }
 	);
+
 	resampler = new c_resampler(NES_AUDIO_RATE / 48000.0f, lpf, post_filter);
 }
 
