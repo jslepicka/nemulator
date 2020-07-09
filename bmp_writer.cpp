@@ -1,7 +1,5 @@
 #include "bmp_writer.h"
 
-const unsigned char c_bmp_writer::magic[] = { 'B', 'M' };
-
 int c_bmp_writer::write_bmp(int *source, int x, int y, std::string filename)
 {
 	s_header header = {0};
