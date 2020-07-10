@@ -248,11 +248,7 @@ public:
 private:
 	c_resampler *resampler;
 	static const int CLOCKS_PER_FRAME_SEQ = 89489;
-	static const int PRE_DECIMATE_M = 3;
 	static const float tnd_lut[203];
-	static const float fir511_cheb[512];
-	//static float fir[4][512];
-	//float fir3[3];
 	int mixer_enabled;
 	c_nes *nes;
 	int frame_irq_enable;
@@ -284,7 +280,6 @@ private:
 	c_noise noise;
 	c_dmc dmc;
 
-	int pre_decimate;
 	int square_clock;
 };
 

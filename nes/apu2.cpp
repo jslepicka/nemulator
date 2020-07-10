@@ -47,7 +47,6 @@ void c_apu2::set_nes(c_nes *nes)
 
 void c_apu2::reset()
 {
-	pre_decimate = PRE_DECIMATE_M;
 	ticks = 0;
 	frame_seq_counter = CLOCKS_PER_FRAME_SEQ;
 	int x = sizeof(reg);
@@ -200,12 +199,6 @@ void c_apu2::clock_once()
 	clock_timers();
 	if (mixer_enabled)
 	{
-		////Only process every 3rd sample, effecively reducing APU freq. to 595613Hz
-		//if (--pre_decimate == 0)
-		//{
-		//	pre_decimate = PRE_DECIMATE_M;
-		//	mix();
-		//}
 		mix();
 	}
 }
