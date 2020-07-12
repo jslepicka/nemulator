@@ -253,6 +253,9 @@ void c_gbapu::power_off()
 //this is called every 4 cycles, so ~1MHz
 void c_gbapu::clock()
 {
+	//For efficiency, we can clock everything at half rate
+	//All timer periods need to be divided by 2
+	//CLOCKS_PER_FRAME_SEQ also needs to be divided by 2
 	for (int i = 0; i < 2; i++) {
 		int x = 1;
 		//clock timers
@@ -299,14 +302,10 @@ void c_gbapu::clock()
 
 void c_gbapu::mix()
 {
-	auto dac = [](auto a) { return (a / 15.0) * 2.0 - 1.0; };
 	float left_sample = 0.0f;
 	float right_sample = 0.0f;
-	//float square1_out = dac(square1.get_output());
-	//float square2_out = dac(square2.get_output());
-	//float wave_out = dac(wave.get_output());
-	//float noise_out = dac(noise.get_output());
 
+	//output range of each channel is 0 - 15
 	float square1_out = square1.get_output();
 	float square2_out = square2.get_output();
 	float wave_out = wave.get_output();
@@ -322,9 +321,9 @@ void c_gbapu::mix()
 		wave_out * enable_w_r +
 		noise_out * enable_n_r;
 
+	//divide by 60 (max 15/channel * 4), then normalize to -1..1
 	left_sample = (left_sample / 60.0) * 2.0 - 1.0;
 	right_sample = (right_sample / 60.0) * 2.0 - 1.0;
-	
 	
 	right_sample /= 16.0f;
 	left_sample /= 16.0f;
