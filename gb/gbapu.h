@@ -19,6 +19,7 @@ public:
 	void enable_mixer();
 	void disable_mixer();
 	int get_buffer(const short** buffer);
+	void set_audio_rate(double freq);
 private:
 	c_gb* gb;
 	c_resampler* resampler;
@@ -47,6 +48,8 @@ private:
 
 	void power_on();
 	void power_off();
+
+	static const double GB_AUDIO_RATE;
 
 	class c_timer
 	{
