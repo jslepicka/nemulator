@@ -66,7 +66,7 @@ int c_gb::reset()
 	last_TAC_out = 0;
 	input = -1;
 
-	JOY = 0;
+	JOY = 0xFF;
 	return 0;
 }
 
@@ -181,7 +181,7 @@ uint8_t c_gb::read_byte(uint16_t address)
 					return ((input >> 4) & 0xF);// | (JOY & 0x30);
 				}
 				else {
-					return 0xF;
+					return 0xFF;
 				}
 				//return 0xF;
 			}
@@ -255,7 +255,7 @@ void c_gb::write_byte(uint16_t address, uint8_t data)
 			//OAM, unusable, IO Ports
 			//printf("write to io area\n");
 			if (address == 0xFF00) {
-				JOY = data;
+				JOY = (JOY & (~0x30)) | (data & 0x30);
 				return;
 			}
 			if (address == 0xFF01) {
