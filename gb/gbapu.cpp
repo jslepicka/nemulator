@@ -42,7 +42,7 @@ void c_gbapu::reset()
 		{ 1.0000000000000000f,-0.9980365037918091f,0.0019634978380054f }
 	);
 
-	resampler = new c_resampler((456.0 * 154.0 * 60.0) / 48000.0, lpf, post_filter);
+	resampler = new c_resampler((456.0 * 154.0 * 60.0) / 48000.0 / 2.0, lpf, post_filter);
 }
 
 void c_gbapu::enable_mixer()
@@ -243,17 +243,16 @@ void c_gbapu::power_off()
 }
 
 //this is called every 4 cycles, so ~1MHz
-void c_gbapu::clock(int cycles)
+void c_gbapu::clock()
 {
-	//this will always get called with 4 cycles, so can be optimized
-	for (; cycles > 0; cycles--) {
+	for (int i = 0; i < 2; i++) {
 		int x = 1;
 		//clock timers
 		square1.clock_timer();
 		square2.clock_timer();
 		noise.clock_timer();
 		wave.clock_timer();
-		//every 8192 cycles, clock frame sequencer
+
 		frame_seq_counter--;
 		if (frame_seq_counter <= 0) {
 			frame_seq_counter = CLOCKS_PER_FRAME_SEQ;
@@ -556,7 +555,7 @@ void c_gbapu::c_square::reset()
 	length.counter = 64;
 	period_hi = 0;
 	period_lo = 0;
-	timer.set_period(2048 * 4);
+	timer.set_period(2048 * (4/2));
 	envelope_period = 0;
 	sweep_period = 0;
 	sweep_counter = 0;
@@ -603,11 +602,11 @@ void c_gbapu::c_square::write(int reg, uint8_t data)
 		break;
 	case 3:
 		period_lo = data;
-		timer.set_period((2048 - ((period_hi << 8) | period_lo)) * 4);
+		timer.set_period((2048 - ((period_hi << 8) | period_lo)) * (4/2));
 		break;
 	case 4:
 		period_hi = data & 0x7;
-		timer.set_period((2048 - ((period_hi << 8) | period_lo)) * 4);
+		timer.set_period((2048 - ((period_hi << 8) | period_lo)) * (4/2));
 		length.set_enable(data & 0x40);
 		if (data & 0x80) {
 			trigger();
@@ -622,7 +621,7 @@ void c_gbapu::c_square::trigger()
 		length.counter = 64;
 	}
 	int p = (period_hi << 8) | period_lo;
-	int freq = (2048 - p) * 4;
+	int freq = (2048 - p) * (4/2);
 	timer.set_period(freq);
 	sweep_shadow = p;
 	sweep_counter = sweep_period;
@@ -659,7 +658,7 @@ void c_gbapu::c_square::clock_sweep()
 			int f = calc_sweep();
 			if (f < 2048 && sweep_shift) {
 				sweep_shadow = f;
-				timer.set_period((2048-f) * 4);
+				timer.set_period((2048-f) * (4/2));
 				calc_sweep();
 			}
 		}
@@ -699,11 +698,11 @@ void c_gbapu::c_noise::reset()
 	envelope.reset();
 	length.reset();
 	length.counter = 64;
-	timer.set_period(8);
+	timer.set_period((8/2));
 	dac_power = 0;
 }
 
-const int c_gbapu::c_noise::divisor_table[8] = { 8, 16, 32, 48, 64, 80, 96, 112 };
+const int c_gbapu::c_noise::divisor_table[8] = { (8/2), (16/2), (32/2), (48/2), (64/2), (80/2), (96/2), (112/2) };
 
 void c_gbapu::c_noise::write(uint16_t address, uint8_t data)
 {
@@ -817,7 +816,7 @@ void c_gbapu::c_wave::reset()
 	length.counter = 256;
 	period_hi = 0;
 	period_lo = 0;
-	timer.set_period(2048 * 2);
+	timer.set_period(2048 * (2/2));
 	memset(wave_table, 0, sizeof(wave_table));
 	volume_shift = 4;
 	dac_power = 0;
@@ -887,11 +886,11 @@ void c_gbapu::c_wave::write(uint16_t address, uint8_t data)
 			break;
 		case 3:
 			period_lo = data;
-			timer.set_period((2048 - ((period_hi << 8) | period_lo)) * 2);
+			timer.set_period((2048 - ((period_hi << 8) | period_lo)) * (2/2));
 			break;
 		case 4:
 			period_hi = data & 0x7;
-			timer.set_period((2048 - ((period_hi << 8) | period_lo)) * 2);
+			timer.set_period((2048 - ((period_hi << 8) | period_lo)) * (2/2));
 			length.set_enable(data & 0x40);
 			if (data & 0x80) {
 				trigger();
@@ -906,7 +905,7 @@ void c_gbapu::c_wave::trigger()
 	if (length.counter == 0) {
 		length.counter = 256;
 	}
-	timer.set_period((2048 - ((period_hi << 8) | period_lo)) * 2);
+	timer.set_period((2048 - ((period_hi << 8) | period_lo)) * (2/2));
 	wave_pos = 0;
 	enabled = dac_power ? 1 : 0;
 }
