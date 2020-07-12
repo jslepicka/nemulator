@@ -14,7 +14,6 @@ public:
 	void clock();
 	void write_byte(uint16_t address, uint8_t data);
 	uint8_t read_byte(uint16_t data);
-	void set_resampler(c_resampler* resampler);
 	void mix();
 	void enable_mixer();
 	void disable_mixer();
@@ -119,7 +118,7 @@ private:
 	class c_square
 	{
 	public:
-		c_square(int has_sweep);
+		c_square();
 		~c_square();
 		void clock_timer();
 		void clock_length();
@@ -129,14 +128,12 @@ private:
 		void write(int reg, uint8_t data);
 		void reset();
 		void power_on();
-		void power_off();
 		void trigger();
 	private:
 		c_timer timer;
 		c_duty duty;
 		c_length length;
 		c_envelope envelope;
-		int has_sweep;
 		int sweep_period;
 		int sweep_negate;
 		int sweep_shift;
@@ -144,13 +141,7 @@ private:
 		int sweep_counter;
 		int sweep_enabled;
 		int sweep_freq;
-		int _duty;
-		int length_load;
 		int starting_volume;
-		int evelope_add_mode;
-		int period;
-		int frequency;
-		int length_enable;
 		int period_hi;
 		int period_lo;
 		int enabled;
@@ -165,7 +156,6 @@ private:
 		c_noise();
 		~c_noise();
 		void reset();
-		void clock();
 		int get_output();
 		void trigger();
 		void write(uint16_t address, uint8_t data);
@@ -200,7 +190,6 @@ private:
 		void write(uint16_t address, uint8_t data);
 		void clock_timer();
 		void clock_length();
-		void clock_envelope();
 		void power_on();
 	private:
 
