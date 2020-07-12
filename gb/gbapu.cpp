@@ -21,6 +21,7 @@ c_gbapu::~c_gbapu()
 		delete lpf;
 }
 
+const double c_gbapu::GB_AUDIO_RATE = (456.0f * 154.0f * 60.0f) / 2.0f;
 void c_gbapu::reset()
 {
 	frame_seq_counter = CLOCKS_PER_FRAME_SEQ;
@@ -42,7 +43,13 @@ void c_gbapu::reset()
 		{ 1.0000000000000000f,-0.9980365037918091f,0.0019634978380054f }
 	);
 
-	resampler = new c_resampler((456.0 * 154.0 * 60.0) / 48000.0 / 2.0, lpf, post_filter);
+	resampler = new c_resampler(GB_AUDIO_RATE / 48000.0, lpf, post_filter);
+}
+
+void c_gbapu::set_audio_rate(double freq)
+{
+	double x = GB_AUDIO_RATE / freq;
+	resampler->set_m(x);
 }
 
 void c_gbapu::enable_mixer()

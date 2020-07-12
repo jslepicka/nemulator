@@ -77,7 +77,7 @@ int *c_gb::get_video()
 
 void c_gb::set_audio_freq(double freq)
 {
-	
+	apu->set_audio_rate(freq);
 }
 
 int c_gb::get_sound_buf(const short** buf)
