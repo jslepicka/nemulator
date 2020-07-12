@@ -11,7 +11,7 @@ public:
 	c_gbapu(c_gb* gb);
 	~c_gbapu();
 	void reset();
-	void clock(int cycles);
+	void clock();
 	void write_byte(uint16_t address, uint8_t data);
 	uint8_t read_byte(uint16_t data);
 	void set_resampler(c_resampler* resampler);
@@ -28,7 +28,7 @@ private:
 	int ticks;
 	int frame_seq_counter;
 	int frame_seq_step;
-	static const int CLOCKS_PER_FRAME_SEQ = 8192;
+	static const int CLOCKS_PER_FRAME_SEQ = 8192/2;
 	uint8_t NR50;
 	uint8_t NR51;
 	uint8_t NR52;
