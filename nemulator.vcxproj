@@ -216,6 +216,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="gb\gbapu.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="audio_info.cpp" />
     <ClCompile Include="bmp_writer.cpp" />
@@ -344,6 +345,7 @@
     <ClInclude Include="D3d10App.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="gb\gb.h" />
+    <ClInclude Include="gb\gbapu.h" />
     <ClInclude Include="gb\gbmapper.h" />
     <ClInclude Include="gb\gbppu.h" />
     <ClInclude Include="gb\lr35902.h" />
@@ -357,7 +359,6 @@
     <ClInclude Include="nes\apu2.h" />
     <ClInclude Include="nes\apu_luts.h" />
     <ClInclude Include="nes\cpu.h" />
-    <ClInclude Include="nes\fir_coefs.h" />
     <ClInclude Include="nes\ines.h" />
     <ClInclude Include="nes\joypad.h" />
     <ClInclude Include="nes\mapper.h" />

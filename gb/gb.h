@@ -8,6 +8,7 @@
 class c_lr35902;
 class c_gbmapper;
 class c_gbppu;
+class c_gbapu;
 
 class c_gb : public c_console
 {
@@ -25,6 +26,7 @@ public:
 	int IE; //interrput enable register
 	int IF; //interrupt flag register
 	c_lr35902* cpu;
+	c_gbapu* apu;
 	uint32_t* get_fb();
 	void clock_timer();
 	void set_vblank_irq(int status);
@@ -37,6 +39,9 @@ public:
 
 	int get_sound_buf(const short** buf);
 	void set_audio_freq(double freq);
+
+	void enable_mixer();
+	void disable_mixer();
 
 private:
 

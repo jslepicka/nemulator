@@ -103,8 +103,6 @@ private:
 
 	int current_sprite;
 
-	uint8_t interleave_bits(uint8_t a, uint8_t b);
-
 	//int fetching_sprites;
 	uint8_t sprite_tile;
 	int pixels_out = 0;
