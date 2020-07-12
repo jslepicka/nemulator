@@ -3,9 +3,7 @@
 
 extern HWND hWnd;
 
-c_gbapu::c_gbapu(c_gb* gb) :
-	square1(1),
-	square2(0)
+c_gbapu::c_gbapu(c_gb* gb)
 {
 	this->gb = gb;
 	mixer_enabled = 1;
@@ -514,9 +512,8 @@ void c_gbapu::c_envelope::clock()
 	}
 }
 
-c_gbapu::c_square::c_square(int has_sweep)
+c_gbapu::c_square::c_square()
 {
-	this->has_sweep = has_sweep;
 	reset();
 }
 
@@ -549,13 +546,7 @@ void c_gbapu::c_square::reset()
 	sweep_period = 0;
 	sweep_negate = 1;
 	sweep_shift = 0;
-	_duty = 0;
-	length_load = 0;
 	starting_volume = 0;
-	evelope_add_mode = 0;
-	period = 0;
-	frequency = 0;
-	length_enable = 0;
 	timer.reset();
 	duty.reset();
 	length.reset();
@@ -824,7 +815,12 @@ void c_gbapu::c_wave::reset()
 	period_hi = 0;
 	period_lo = 0;
 	timer.set_period(2048 * (2/2));
-	memset(wave_table, 0, sizeof(wave_table));
+	int startup_values[] = { 0x84, 0x40, 0x43, 0xAA, 0x2D, 0x78, 0x92, 0x3C, 0x60, 0x59, 0x59, 0xB0, 0x34, 0xB8, 0x2E, 0xDA };
+	auto w = wave_table;
+	for (auto v : startup_values) {
+		*w++ = (v >> 4) & 0xF;
+		*w++ = v & 0xF;
+	}
 	volume_shift = 4;
 	dac_power = 0;
 }
