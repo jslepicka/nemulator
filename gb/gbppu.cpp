@@ -470,7 +470,8 @@ void c_gbppu::execute(int cycles)
 			}
 			gb->clock_timer();
 			gb->cpu->execute(4);
-			gb->apu->clock();
+			//apu should probably run every cycle...
+			gb->apu->clock(4);
 			cpu_divider = 0;
 		}
 
