@@ -621,13 +621,17 @@ void c_gbapu::c_square::trigger()
 	if (length.counter == 0) {
 		length.counter = 64;
 	}
-	int freq = (2048 - ((period_hi << 8) | period_lo)) * 4;
+	int p = (period_hi << 8) | period_lo;
+	int freq = (2048 - p) * 4;
 	timer.set_period(freq);
-	sweep_shadow = freq;
+	sweep_shadow = p;
 	sweep_counter = sweep_period;
 	if (sweep_period || sweep_shift) {
 		sweep_enabled = 1;
 		calc_sweep();
+	}
+	else {
+		sweep_enabled = 0;
 	}
 	envelope.set_period(envelope_period);
 	envelope.set_volume(starting_volume);
@@ -646,15 +650,16 @@ int c_gbapu::c_square::calc_sweep()
 
 void c_gbapu::c_square::clock_sweep()
 {
-	int prev = sweep_counter;
-	sweep_counter = (sweep_counter - 1) & 0x7;
-	if (sweep_counter == 0 && prev) {
-		sweep_counter = sweep_period;
-		if (sweep_enabled && sweep_period) {
+	if (sweep_enabled && sweep_period)
+	{
+		int prev = sweep_counter;
+		sweep_counter = (sweep_counter - 1) & 0x7;
+		if (sweep_counter == 0 && prev) {
+			sweep_counter = sweep_period;
 			int f = calc_sweep();
 			if (f < 2048 && sweep_shift) {
 				sweep_shadow = f;
-				timer.set_period(f);
+				timer.set_period((2048-f) * 4);
 				calc_sweep();
 			}
 		}
