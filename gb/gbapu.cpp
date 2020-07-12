@@ -1,33 +1,12 @@
 #include "gbapu.h"
 #include "gb.h"
 
-extern HWND hWnd;
+const double c_gbapu::GB_AUDIO_RATE = (456.0f * 154.0f * 60.0f) / 2.0f;
 
 c_gbapu::c_gbapu(c_gb* gb)
 {
 	this->gb = gb;
 	mixer_enabled = 1;
-}
-
-c_gbapu::~c_gbapu()
-{
-	if (resampler)
-		delete resampler;
-	if (post_filter)
-		delete post_filter;
-	if (lpf)
-		delete lpf;
-}
-
-const double c_gbapu::GB_AUDIO_RATE = (456.0f * 154.0f * 60.0f) / 2.0f;
-void c_gbapu::reset()
-{
-	frame_seq_counter = CLOCKS_PER_FRAME_SEQ;
-	frame_seq_step = 0;
-	NR50 = 0;
-	NR51 = 0;
-	NR52 = 0;
-
 	lpf = new c_biquad4(
 		{ 0.5090923309326172f,0.3317873477935791f,0.1050286665558815f,0.0055788583122194f },
 		{ -1.9908285140991211f,-1.9819903373718262f,-1.8711743354797363f,-1.9928110837936401f },
@@ -43,6 +22,26 @@ void c_gbapu::reset()
 	);
 
 	resampler = new c_resampler(GB_AUDIO_RATE / 48000.0, lpf, post_filter);
+}
+
+c_gbapu::~c_gbapu()
+{
+	if (resampler)
+		delete resampler;
+	if (post_filter)
+		delete post_filter;
+	if (lpf)
+		delete lpf;
+}
+
+
+void c_gbapu::reset()
+{
+	frame_seq_counter = CLOCKS_PER_FRAME_SEQ;
+	frame_seq_step = 0;
+	NR50 = 0;
+	NR51 = 0;
+	NR52 = 0;
 }
 
 void c_gbapu::set_audio_rate(double freq)
