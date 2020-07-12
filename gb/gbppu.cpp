@@ -1,6 +1,7 @@
 #include "gbppu.h"
 #include "gb.h"
 #include "lr35902.h"
+#include "gbapu.h"
 #include <iostream>
 #include <assert.h>
 #include <utility>
@@ -98,11 +99,6 @@ void c_gbppu::eval_sprites(int y)
 		}
 		s++;
 	}
-}
-
-uint8_t c_gbppu::interleave_bits(uint8_t a, uint8_t b)
-{
-	return uint8_t();
 }
 
 void c_gbppu::update_stat()
@@ -463,6 +459,7 @@ void c_gbppu::execute(int cycles)
 				}
 			}
 		}
+		//this is an optimization.  All cpu cycles are mutliple of 4
 		if (++cpu_divider == 4) {
 			if (dma_count) {
 				if (dma_count < 161) {
@@ -473,6 +470,8 @@ void c_gbppu::execute(int cycles)
 			}
 			gb->clock_timer();
 			gb->cpu->execute(4);
+			//apu should probably run every cycle...
+			gb->apu->clock(4);
 			cpu_divider = 0;
 		}
 

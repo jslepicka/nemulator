@@ -6,6 +6,7 @@
 #include "mbc1.h"
 #include "mbc3.h"
 #include "gbppu.h"
+#include "gbapu.h"
 #include <algorithm>
 
 const std::map<int, c_gb::s_mapper> c_gb::mapper_factory =
@@ -21,6 +22,7 @@ c_gb::c_gb()
 {
 	cpu = new c_lr35902(this);
 	ppu = new c_gbppu(this);
+	apu = new c_gbapu(this);
 	ram = new uint8_t[8192];
 	hram = new uint8_t[128];
 	loaded = 0;
@@ -37,6 +39,8 @@ c_gb::~c_gb()
 		delete mapper;
 	if (cpu)
 		delete cpu;
+	if (apu)
+		delete apu;
 	if (ppu)
 		delete ppu;
 	if (rom)
@@ -48,6 +52,7 @@ int c_gb::reset()
 	cpu->reset(0x100);
 	mapper->reset();
 	ppu->reset();
+	apu->reset();
 	IE = 0;
 	IF = 0;
 	SB = 0;
@@ -77,7 +82,7 @@ void c_gb::set_audio_freq(double freq)
 
 int c_gb::get_sound_buf(const short** buf)
 {
-	return 0;
+	return apu->get_buffer(buf);
 }
 
 int c_gb::load()
@@ -198,7 +203,7 @@ uint8_t c_gb::read_byte(uint16_t address)
 			}
 			if (address >= 0xFF10 && address < 0xFF40) {
 				//sound
-				return 0;
+				return apu->read_byte(address);
 			}
 			if ((address & 0xFF40) == 0xFF40) {
 				return ppu->read_byte(address);
@@ -288,6 +293,7 @@ void c_gb::write_byte(uint16_t address, uint8_t data)
 			}
 			if (address >= 0xFF10 && address < 0xFF40) {
 				//sound
+				apu->write_byte(address, data);
 				return;
 			}
 			if (address >= 0xFF40 && address < 0xFF50) {
@@ -387,4 +393,14 @@ void c_gb::set_stat_irq(int status) {
 void c_gb::set_input(int input)
 {
 	this->input = input;
+}
+
+void c_gb::enable_mixer()
+{
+	apu->enable_mixer();
+}
+
+void c_gb::disable_mixer()
+{
+	apu->disable_mixer();
 }

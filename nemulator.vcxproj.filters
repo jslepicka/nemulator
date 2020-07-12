@@ -378,6 +378,9 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="gb\gbapu.cpp">
+      <Filter>Source Files\gb</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="config.h">
@@ -671,9 +674,6 @@
     <ClInclude Include="nes\apu2.h">
       <Filter>Header Files\nes</Filter>
     </ClInclude>
-    <ClInclude Include="nes\fir_coefs.h">
-      <Filter>Header Files\nes</Filter>
-    </ClInclude>
     <ClInclude Include="nes\apu_luts.h">
       <Filter>Header Files\nes</Filter>
     </ClInclude>
@@ -751,6 +751,9 @@
     </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gb\gbapu.h">
+      <Filter>Header Files\gb</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
