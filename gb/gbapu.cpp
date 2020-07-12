@@ -129,6 +129,7 @@ void c_gbapu::write_byte(uint16_t address, uint8_t data)
 	case 0xFF24:
 		left_vol = (data >> 4) & 0x7;
 		right_vol = data & 0x7;
+		NR50 = data;
 		break;
 	case 0xFF25:
 		enable_1_l = data & 0x1 ? 1 : 0;
@@ -140,6 +141,7 @@ void c_gbapu::write_byte(uint16_t address, uint8_t data)
 		enable_2_r = data & 0x20 ? 1 : 0;
 		enable_w_r = data & 0x40 ? 1 : 0;
 		enable_n_r = data & 0x80 ? 1 : 0;
+		NR51 = data;
 		break;
 	case 0xFF26:
 		if ((NR52 ^ data) & 0x80) { //power state change
@@ -208,8 +210,10 @@ uint8_t c_gbapu::read_byte(uint16_t address)
 		break;
 
 	case 0xFF24:
+		return NR50;
 		break;
 	case 0xFF25:
+		return NR51;
 		break;
 	case 0xFF26:
 		//need to return channel length statuses
@@ -480,6 +484,7 @@ void c_gbapu::c_envelope::set_volume(int volume)
 void c_gbapu::c_envelope::set_period(int period)
 {
 	this->period = period;
+	counter = period;
 }
 
 void c_gbapu::c_envelope::set_mode(int mode)
@@ -493,6 +498,7 @@ void c_gbapu::c_envelope::clock()
 		int prev = counter;
 		counter--;
 		if (prev && counter == 0) {
+			counter = period;
 			int new_vol = output + (mode ? 1 : -1);
 			if (new_vol >= 0 && new_vol < 16) {
 				output = new_vol;
@@ -523,7 +529,6 @@ void c_gbapu::c_square::clock_length()
 {
 	if (length.clock() == 0) {
 		enabled = 0;
-		OutputDebugString("disabled channel\n");
 	}
 }
 
@@ -613,7 +618,6 @@ void c_gbapu::c_square::write(int reg, uint8_t data)
 
 void c_gbapu::c_square::trigger()
 {
-	enabled = 1;
 	if (length.counter == 0) {
 		length.counter = 64;
 	}
@@ -627,6 +631,7 @@ void c_gbapu::c_square::trigger()
 	}
 	envelope.set_period(envelope_period);
 	envelope.set_volume(starting_volume);
+	enabled = dac_power ? 1 : 0;
 }
 
 int c_gbapu::c_square::calc_sweep()
@@ -698,7 +703,6 @@ const int c_gbapu::c_noise::divisor_table[8] = { 8, 16, 32, 48, 64, 80, 96, 112 
 void c_gbapu::c_noise::write(uint16_t address, uint8_t data)
 {
 	/*
-    FF1F ---- ---- Not used
 	NR41 FF20 --LL LLLL Length load (64-L)
 	NR42 FF21 VVVV APPP Starting volume, Envelope add mode, period
 	NR43 FF22 SSSS WDDD Clock shift, Width mode of LFSR, Divisor code
@@ -739,12 +743,12 @@ void c_gbapu::c_noise::trigger()
 {
 	lfsr = ~1;
 	lfsr &= 0x7FFF;
-	enabled = 1;
 	if (length.counter == 0) {
 		length.counter = 64;
 	}
 	envelope.set_period(envelope_period);
 	envelope.set_volume(starting_volume);
+	enabled = dac_power ? 1 : 0;
 
 }
 
@@ -894,10 +898,10 @@ void c_gbapu::c_wave::write(uint16_t address, uint8_t data)
 
 void c_gbapu::c_wave::trigger()
 {
-	enabled = 1;
 	if (length.counter == 0) {
 		length.counter = 256;
 	}
 	timer.set_period((2048 - ((period_hi << 8) | period_lo)) * 2);
 	wave_pos = 0;
+	enabled = dac_power ? 1 : 0;
 }
