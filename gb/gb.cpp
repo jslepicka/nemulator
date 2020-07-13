@@ -9,6 +9,8 @@
 #include "gbapu.h"
 #include <algorithm>
 
+void strip_extension(char* path);
+
 const std::map<int, c_gb::s_mapper> c_gb::mapper_factory =
 {
 	{0, {[]() {return new c_gbmapper(); }, 0, 0}},
@@ -27,10 +29,14 @@ c_gb::c_gb()
 	hram = new uint8_t[128];
 	loaded = 0;
 	mapper = 0;
+	ram_size = 0;
 }
 
 c_gb::~c_gb()
 {
+	if (m->has_battery) {
+		save_sram();
+	}
 	if (ram)
 		delete[] ram;
 	if (hram)
@@ -49,6 +55,10 @@ c_gb::~c_gb()
 
 int c_gb::reset()
 {
+	//if (m->has_battery)
+	//{
+	//	save_sram();
+	//}
 	cpu->reset(0x100);
 	mapper->reset();
 	ppu->reset();
@@ -89,6 +99,10 @@ int c_gb::load()
 {
 
 	sprintf_s(pathFile, "%s\\%s", path, filename);
+	char temp[MAX_PATH];
+	sprintf_s(temp, "%s\\%s", sram_path, filename);
+	strip_extension(temp);
+	sprintf_s(sramPath, "%s.sav", temp);
 
 	//uint8_t logo[] = {
 	//0xCE,0xED,0x66,0x66,0xCC,0x0D,0x00,0x0B,
@@ -116,7 +130,7 @@ int c_gb::load()
 	memcpy(title, rom + 0x134, 16);
 	cart_type = *(rom + 0x147);
 	rom_size = *(rom + 0x148);
-	ram_size = *(rom + 0x149);
+	header_ram_size = *(rom + 0x149);
 
 	if (file_length != (32768 << rom_size)) {
 		return 0;
@@ -131,23 +145,63 @@ int c_gb::load()
 	if (i == mapper_factory.end()) {
 		return false;
 	}
-	auto m = i->second;
-	mapper = m.mapper();
+	m = (s_mapper*)&(i->second);
+	mapper = m->mapper();
 
 	mapper->rom = rom;
 
-	if (m.has_ram && ram_size && ram_size < 6) {
+	if (m->has_ram && header_ram_size && header_ram_size < 6) {
 		const int size[] = { 0, 2 * 1024, 8 * 1024, 32 * 1024, 128 * 1024, 64 * 1024 };
 		//int s = size[ram_size];
 		//cart_ram = new uint8_t[s];
 		//memset(cart_ram, 0, s);
 		//mapper->ram = cart_ram;
-		mapper->config_ram(size[ram_size]);
+		ram_size = size[header_ram_size];
+		mapper->config_ram(ram_size);
+		if (m->has_battery) {
+			load_sram();
+		}
+	}
+	else {
+		//disable battery save if anything is invalid
+		m->has_battery = 0;
 	}
 	
 	reset();
 	loaded = 1;
 	return file_length;
+}
+
+int c_gb::load_sram()
+{
+	std::ifstream file;
+	file.open(sramPath, std::fstream::in | std::fstream::binary);
+	if (file.fail()) {
+		return 0;
+	}
+	file.seekg(0, std::ios_base::end);
+	int file_length = (int)file.tellg();
+	file.seekg(0, std::ios_base::beg);
+
+	if (file_length != ram_size) {
+		return 0;
+	}
+
+	file.read((char*)mapper->ram, ram_size);
+	file.close();
+	return 1;
+}
+
+int c_gb::save_sram()
+{
+	std::ofstream file;
+	file.open(sramPath, std::fstream::trunc | std::fstream::binary);
+	if (file.fail()) {
+		return 0;
+	}
+
+	file.write((char*)mapper->ram, ram_size);
+	file.close();
 }
 
 uint16_t c_gb::read_word(uint16_t address)
