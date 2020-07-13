@@ -34,7 +34,7 @@ c_gb::c_gb()
 
 c_gb::~c_gb()
 {
-	if (m->has_battery) {
+	if (loaded && m->has_battery) {
 		save_sram();
 	}
 	if (ram)
