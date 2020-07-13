@@ -65,7 +65,8 @@ private:
 
 	uint8_t cart_type;
 	uint8_t rom_size;
-	uint8_t ram_size;
+	uint8_t header_ram_size;
+	int ram_size;
 	char title[17] = { 0 };
 	
 	struct s_mapper {
@@ -74,8 +75,12 @@ private:
 		int has_battery;
 	};
 
-	const static std::map <int, s_mapper> mapper_factory;
+	int load_sram();
+	int save_sram();
 
+	const static std::map <int, s_mapper> mapper_factory;
+	s_mapper *m;
 	int loaded;
+	char sramPath[MAX_PATH];
 };
 
