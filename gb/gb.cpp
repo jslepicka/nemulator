@@ -244,12 +244,15 @@ uint8_t c_gb::read_byte(uint16_t address)
 			}
 			if (address == 0xFF05) {
 				int x = 1;
+				return TIMA;
 			}
 			if (address == 0xFF06) {
 				int x = 1;
+				return TMA;
 			}
 			if (address == 0xFF07) {
 				int x = 1;
+				return TAC;
 			}
 			//OAM, unusable, IO Ports
 			if (address == 0xFF0F) {
@@ -385,18 +388,24 @@ void c_gb::write_byte(uint16_t address, uint8_t data)
 
 void c_gb::clock_timer()
 {
-	divider += 4;
-	int TAC_out;
-	int divisors[] = { 0x200, 0x08, 0x20, 0x80 };
-	TAC_out = divider & divisors[TAC & 0x3];
-	if (TAC & 0x4) {
-		if (TAC_out && !last_TAC_out) {
+	//might need to do this in a loop 4 times instead of simply adding 4
+	for (int i = 0; i < 4; i++) {
+		int TAC_out;
+		int divisors[] = { 0x200, 0x08, 0x20, 0x80 };
+		TAC_out = ++divider & divisors[TAC & 0x3];
+		if (TAC_out && (TAC & 0x4)) {
+			TAC_out = 1;
+		}
+		else {
+			TAC_out = 0;
+		}
+		if (last_TAC_out && (!TAC_out)) {
 			if (TIMA == 0xFF) {
 				TIMA = TMA;
 				IF |= 0x4;
 			}
 			else {
-				TIMA++;
+				TIMA = (TIMA + 1) & 0xFF;
 			}
 		}
 		last_TAC_out = TAC_out;
