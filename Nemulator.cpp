@@ -249,13 +249,19 @@ void c_nemulator::generate_palette()
 		double srgb_g2 = cie_x * -0.9692660 + cie_y * 1.8760108 + cie_z * 0.0415560;
 		double srgb_b2 = cie_x * 0.0556434 + cie_y * -0.2040259 + cie_z * 1.0572252;
 
-		double srgb_r = ntsc_r * 0.939555319482800 + ntsc_g * 0.0501723952684700 + ntsc_b * 0.0102725646454400;
-		double srgb_g = ntsc_r * 0.0177757796807600 + ntsc_g * 0.965792853854560 + ntsc_b * 0.0164314174435600;
-		double srgb_b = ntsc_r * -0.00162232670898000 + ntsc_g * -0.00437074564609001 + ntsc_b * 1.00599294870830;
+		//linear RGB -> sRGB
+		srgb_r2 = clamp(pow(srgb_r2, 1.0 / 2.2), 0.0, 1.0);
+		srgb_g2 = clamp(pow(srgb_g2, 1.0 / 2.2), 0.0, 1.0);
+		srgb_b2 = clamp(pow(srgb_b2, 1.0 / 2.2), 0.0, 1.0);
 
-		srgb_r = clamp(srgb_r, 0.0, 1.0);
-		srgb_g = clamp(srgb_g, 0.0, 1.0);
-		srgb_b = clamp(srgb_b, 0.0, 1.0);
+
+		//double srgb_r = ntsc_r * 0.939555319482800 + ntsc_g * 0.0501723952684700 + ntsc_b * 0.0102725646454400;
+		//double srgb_g = ntsc_r * 0.0177757796807600 + ntsc_g * 0.965792853854560 + ntsc_b * 0.0164314174435600;
+		//double srgb_b = ntsc_r * -0.00162232670898000 + ntsc_g * -0.00437074564609001 + ntsc_b * 1.00599294870830;
+
+		//srgb_r = clamp(srgb_r, 0.0, 1.0);
+		//srgb_g = clamp(srgb_g, 0.0, 1.0);
+		//srgb_b = clamp(srgb_b, 0.0, 1.0);
 
 		auto gammafix = [](double f){
 			float gamma = 2.2;
@@ -265,9 +271,9 @@ void c_nemulator::generate_palette()
 		};
 
 
-		int rgb = 0x000001 * (int)(255.0 * srgb_r)
-				+ 0x000100 * (int)(255.0 * srgb_g)
-				+ 0x010000 * (int)(255.0 * srgb_b);
+		int rgb = 0x000001 * (int)(255.0 * srgb_r2)
+				+ 0x000100 * (int)(255.0 * srgb_g2)
+				+ 0x010000 * (int)(255.0 * srgb_b2);
 
 		pal[pixel] = rgb | 0xFF000000;
 	}

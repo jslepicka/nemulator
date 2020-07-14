@@ -74,10 +74,10 @@ TexturePanel::TexturePanel(int rows, int columns)
 	zoomDestY = -7.14f;
 	zoomDestZ = -25.0f + 2.414f;
 	
-	border_color = border_color_start = { .31f, .34f, .44f };
-	border_color_end = { .71f, .78f, 1.0f };
+	border_color = border_color_start = { .71f * .05f, .78f * .05f, 1.0f * .05f };
+	border_color_end = { .71f * .9f, .78f * .9f, 1.0f * .9f };
 
-	invalid_border_color = invalid_border_color_start = { .40f, 0.0f, 0.0f };
+	invalid_border_color = invalid_border_color_start = { .05f, 0.0f, 0.0f };
 	invalid_border_color_end = { 1.0f, 0.0f, 0.0f };
 
 	scrollDuration = 180.0f;
@@ -186,7 +186,7 @@ void TexturePanel::Init()
 	texDesc.Height = 256;
 	texDesc.MipLevels = 1;
 	texDesc.ArraySize = 1;
-	texDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	texDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 	texDesc.SampleDesc.Count = 1;
 	texDesc.SampleDesc.Quality = 0;
 	texDesc.Usage = D3D10_USAGE_DYNAMIC;
