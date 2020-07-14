@@ -116,7 +116,7 @@ void c_gbppu::update_stat()
 	else {
 		stat_irq = 0;
 		if (prev_stat_irq == 1) {
-			gb->set_stat_irq(0);
+			//gb->set_stat_irq(0);
 		}
 		prev_stat_irq = 0;
 	}
@@ -383,11 +383,18 @@ void c_gbppu::execute(int cycles)
 					}
 					obj_fifo_index = (obj_fifo_index + 1) & 0x7;
 
+					//int shades[] = {
+					//	0xFFFFFFFF,
+					//	0xFFAAAAAA,
+					//	0xFF555555,
+					//	0xFF000000
+					//};
+
 					int shades[] = {
-						0xFFFFFFFF,
-						0xFFAAAAAA,
-						0xFF555555,
-						0xFF000000
+						0xFF0FBC9B,
+						0xFF0FAC8B,
+						0xFF306230,
+						0xFF0F380F
 					};
 
 					int pal = BGP;
