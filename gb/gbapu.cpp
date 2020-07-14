@@ -42,6 +42,10 @@ void c_gbapu::reset()
 	NR50 = 0;
 	NR51 = 0;
 	NR52 = 0;
+	square1.reset();
+	square2.reset();
+	wave.reset();
+	noise.reset();
 }
 
 void c_gbapu::set_audio_rate(double freq)
