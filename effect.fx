@@ -65,7 +65,7 @@ float4 PS (PS_INPUT input) : SV_Target
  p = i + f;
  p = (p - .5) / 256.0;
  float4 r = txDiffuse.Sample(samLinear, p) * color;
- r = pow(r, 1.0/2.2);
+ //r = pow(r, 1.0/2.2);
  r.w = 1.0;
 
  return r;

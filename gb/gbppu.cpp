@@ -6,6 +6,15 @@
 #include <assert.h>
 #include <utility>
 
+
+int c_gbppu::shades[] = {
+	0xFF0FBC9B,
+	0xFF0FAC8B,
+	0xFF306230,
+	0xFF0F380F
+};
+
+
 c_gbppu::c_gbppu(c_gb* gb)
 {
 	this->gb = gb;
@@ -124,6 +133,8 @@ void c_gbppu::update_stat()
 
 void c_gbppu::set_ly(int line)
 {
+	if (LY == line)
+		return;
 	LY = line;
 	if (LY == LYC) {
 		STAT |= 0x4;
@@ -390,12 +401,6 @@ void c_gbppu::execute(int cycles)
 					//	0xFF000000
 					//};
 
-					int shades[] = {
-						0xFF0FBC9B,
-						0xFF0FAC8B,
-						0xFF306230,
-						0xFF0F380F
-					};
 
 					int pal = BGP;
 					if (p & 0x80000000) {

@@ -286,7 +286,7 @@ void D3d10App::OnResize()
 
 	swapChain->ResizeTarget(&mode);
 
-	ID3D10Texture2D *backBuffer;
+	ID3D10Texture2D* backBuffer;
 	swapChain->GetBuffer(0, __uuidof(ID3D10Texture2D), (void **)(&backBuffer));
 	d3dDev->CreateRenderTargetView(backBuffer, 0, &renderTargetView);
 	ReleaseCOM(backBuffer);
@@ -575,7 +575,7 @@ int D3d10App::InitD3d()
 		sd.BufferDesc.Height = clientHeight;
 		sd.BufferDesc.RefreshRate.Numerator = 60;
 		sd.BufferDesc.RefreshRate.Denominator = 1;
-		sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 		sd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 		sd.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
 	}
@@ -586,6 +586,7 @@ int D3d10App::InitD3d()
 	sd.SampleDesc.Count = 1;
 	sd.SampleDesc.Quality = 0;
 	sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 	sd.BufferCount = 1;
 	sd.OutputWindow = hWnd;
 	sd.Windowed = true;
