@@ -118,6 +118,7 @@ private:
 	int in_window;
 
 	int fetching_sprites;
+	int SCX_latch;
 
 	static int shades[4];
 };

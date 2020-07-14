@@ -86,6 +86,8 @@ void c_gbppu::reset()
 
 	memset(fb, 0xFF, 160 * 144 * sizeof(uint32_t));
 	memset(fb_back, 0xFF, 160 * 144 * sizeof(uint32_t));
+
+	SCX_latch = 0;
 }
 
 void c_gbppu::eval_sprites(int y)
