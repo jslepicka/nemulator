@@ -120,6 +120,7 @@ private:
 	int fetching_sprites;
 	int SCX_latch;
 
-	static int shades[4];
+	static const int pal[][4];
+	const int* shades;
 };
 
