@@ -1,8 +1,9 @@
 #pragma once
 
 #include <fstream>
-//#include "..\biquad8.h"
 #include "..\resampler.h"
+#include "..\biquad.hpp"
+#include "..\biquad4.hpp"
 
 class c_nes;
 
@@ -19,8 +20,8 @@ public:
 	void set_nes(c_nes *nes);
 	void enable_mixer();
 	void disable_mixer();
-	void set_resampler(c_resampler *resampler);
-	int get_sample_buf(const float **sample_buf);
+	int get_buffer(const int32_t** buf);
+	void set_audio_rate(double freq);
 
 	class c_envelope
 	{
@@ -246,7 +247,10 @@ public:
 	};
 	static const float square_lut[31];
 private:
-	c_resampler *resampler;
+	static const float NES_AUDIO_RATE;
+	c_resampler* resampler;
+	c_biquad4* lpf;
+	c_biquad* post_filter;
 	static const int CLOCKS_PER_FRAME_SEQ = 89489;
 	static const float tnd_lut[203];
 	int mixer_enabled;
@@ -256,6 +260,7 @@ private:
 	int frame_irq_asserted;
 	int mix_external_audio;
 	float *external_audio;
+	int32_t* sound_buffer;
 
 	
 

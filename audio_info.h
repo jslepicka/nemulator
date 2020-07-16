@@ -46,4 +46,5 @@ private:
 	int min_freq[tex_size];
 	int stable;
 	int read_pointer;
+	static const int MAX = 26680;
 };

@@ -27,6 +27,7 @@
 #pragma comment (lib, "dsound.lib")
 #include <Audioclient.h>
 #include <mmdeviceapi.h>
+#include <cstdint>
 
 class Sound
 {
@@ -36,7 +37,7 @@ public:
 	int Init(void);
 	void Play(void);
 	void Stop(void);
-	int Copy(const short *src, int numSamples);
+	int Copy(const int32_t *src, int numSamples);
 	double GetFreq(void) { return freq; }
 	int GetMaxFreq(void) { return max_freq; }
 	int rate;
@@ -60,7 +61,7 @@ private:
 	int nSamples;
 	static const int BUFFER_MSEC=140;
 	static const int adjustFrames=3;
-	static const int target=48000*2/60*3;//1600*3;
+	static const int target=48000*2/60*3*2;//1600*3;
 	WAVEFORMATEX wf;
 	LPDIRECTSOUND lpDS;
 	LPDIRECTSOUNDBUFFER buffer, primaryBuffer;

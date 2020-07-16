@@ -7,31 +7,42 @@ c_gbapu::c_gbapu(c_gb* gb)
 {
 	this->gb = gb;
 	mixer_enabled = 1;
-	lpf = new c_biquad4(
-		{ 0.5090923309326172f,0.3317873477935791f,0.1050286665558815f,0.0055788583122194f },
-		{ -1.9908285140991211f,-1.9819903373718262f,-1.8711743354797363f,-1.9928110837936401f },
-		{ -1.9800899028778076f,-1.9664875268936157f,-1.9550460577011108f,-1.9912019968032837f },
-		{ 0.9831480979919434f,0.9683376550674439f,0.9557733535766602f,0.9949237704277039f }
-	);
+	std::vector<float> lpf_g = { 0.5090923309326172f,0.3317873477935791f,0.1050286665558815f,0.0055788583122194f };
+	std::vector<float> lpf_b2 = { -1.9908285140991211f,-1.9819903373718262f,-1.8711743354797363f,-1.9928110837936401f };
+	std::vector<float> lpf_a2 = { -1.9800899028778076f,-1.9664875268936157f,-1.9550460577011108f,-1.9912019968032837f };
+	std::vector<float> lpf_a3 = { 0.9831480979919434f,0.9683376550674439f,0.9557733535766602f,0.9949237704277039f };
+	lpf_l = new c_biquad4(lpf_g, lpf_b2, lpf_a2, lpf_a3);
+	lpf_r = new c_biquad4(lpf_g, lpf_b2, lpf_a2, lpf_a3);
 
+	float post_g = 0.4990182518959045f;
+	std::vector<float> post_b = { 1.0000000000000000f,0.0000000000000000f,-1.0000000000000000f };
+	std::vector<float> post_a = { 1.0000000000000000f,-0.9980365037918091f,0.0019634978380054f };
 	//30Hz - 12kHz
-	post_filter = new c_biquad(
-		0.4990182518959045f,
-		{ 1.0000000000000000f,0.0000000000000000f,-1.0000000000000000f },
-		{ 1.0000000000000000f,-0.9980365037918091f,0.0019634978380054f }
-	);
+	post_filter_l = new c_biquad(post_g, post_b, post_a);
+	post_filter_r = new c_biquad(post_g, post_b, post_a);
 
-	resampler = new c_resampler(GB_AUDIO_RATE / 48000.0, lpf, post_filter);
+
+	resampler_l = new c_resampler(GB_AUDIO_RATE / 48000.0, lpf_l, post_filter_l);
+	resampler_r = new c_resampler(GB_AUDIO_RATE / 48000.0, lpf_r, post_filter_r);
+	sound_buffer = new int32_t[1024];
 }
 
 c_gbapu::~c_gbapu()
 {
-	if (resampler)
-		delete resampler;
-	if (post_filter)
-		delete post_filter;
-	if (lpf)
-		delete lpf;
+	if (resampler_l)
+		delete resampler_l;
+	if (resampler_r)
+		delete resampler_r;
+	if (post_filter_l)
+		delete post_filter_l;
+	if (post_filter_r)
+		delete post_filter_r;
+	if (lpf_l)
+		delete lpf_l;
+	if (lpf_r)
+		delete lpf_r;
+	if (sound_buffer)
+		delete[] sound_buffer;
 }
 
 
@@ -46,12 +57,14 @@ void c_gbapu::reset()
 	square2.reset();
 	wave.reset();
 	noise.reset();
+	memset(sound_buffer, 0, sizeof(uint32_t) * 1024);
 }
 
 void c_gbapu::set_audio_rate(double freq)
 {
 	double x = GB_AUDIO_RATE / freq;
-	resampler->set_m(x);
+	resampler_l->set_m(x);
+	resampler_r->set_m(x);
 }
 
 void c_gbapu::enable_mixer()
@@ -64,9 +77,18 @@ void c_gbapu::disable_mixer()
 	mixer_enabled = 0;
 }
 
-int c_gbapu::get_buffer(const short** buffer)
+int c_gbapu::get_buffer(const int32_t** buffer)
 {
-	int num_samples = resampler->get_output_buf((const short**)buffer);
+	const short* left_source;
+	const short* right_source;
+	short* stereo_dest = (short*)sound_buffer;
+	int num_samples = resampler_l->get_output_buf(&left_source);
+	resampler_r->get_output_buf(&right_source);
+	for (int i = 0; i < num_samples; i++) {
+		*stereo_dest++ = *left_source++;
+		*stereo_dest++ = *right_source++;
+	}
+	*buffer = sound_buffer;
 	return num_samples;
 }
 
@@ -322,6 +344,9 @@ void c_gbapu::mix()
 		wave_out * enable_w_r +
 		noise_out * enable_n_r;
 
+	//left_sample = square1_out;
+	//right_sample = 0;
+
 	//divide by 60 (max 15/channel * 4), then normalize to -1..1
 	left_sample = (left_sample / 60.0) * 2.0 - 1.0;
 	right_sample = (right_sample / 60.0) * 2.0 - 1.0;
@@ -332,7 +357,8 @@ void c_gbapu::mix()
 	right_sample *= (right_vol + 1);
 	left_sample *= (left_vol + 1);
 
-	resampler->process((right_sample + left_sample) / 2.0f);
+	resampler_l->process(left_sample);
+	resampler_r->process(right_sample);
 
 }
 

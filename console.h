@@ -1,5 +1,6 @@
 #pragma once
 #include <Windows.h>
+#include <cstdint>
 class c_console
 {
 public:
@@ -11,7 +12,7 @@ public:
 	virtual int emulate_frame() = 0;
 	virtual int reset() = 0;
 	virtual int get_crc() = 0;
-	virtual int get_sound_buf(const short **sound_buf) = 0;
+	virtual int get_sound_buf(const int32_t **sound_buf) = 0;
 	virtual void set_audio_freq(double freq) = 0;
 	virtual void set_input(int input) = 0;
 	virtual void enable_mixer() {};
