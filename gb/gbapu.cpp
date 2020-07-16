@@ -77,18 +77,10 @@ void c_gbapu::disable_mixer()
 	mixer_enabled = 0;
 }
 
-int c_gbapu::get_buffer(const int32_t** buffer)
+int c_gbapu::get_buffers(const short** buf_l, const short** buf_r)
 {
-	const short* left_source;
-	const short* right_source;
-	short* stereo_dest = (short*)sound_buffer;
-	int num_samples = resampler_l->get_output_buf(&left_source);
-	resampler_r->get_output_buf(&right_source);
-	for (int i = 0; i < num_samples; i++) {
-		*stereo_dest++ = *left_source++;
-		*stereo_dest++ = *right_source++;
-	}
-	*buffer = sound_buffer;
+	int num_samples = resampler_l->get_output_buf(buf_l);
+	resampler_r->get_output_buf(buf_r);
 	return num_samples;
 }
 

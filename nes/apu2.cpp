@@ -117,16 +117,9 @@ void c_apu2::reset()
 	resampler = new c_resampler(NES_AUDIO_RATE / 48000.0f, lpf, post_filter);
 }
 
-int c_apu2::get_buffer(const int32_t** buffer)
+int c_apu2::get_buffer(const short** buf)
 {
-	const short* source;
-	short* stereo_dest = (short*)sound_buffer;
-	int num_samples = resampler->get_output_buf(&source);
-	for (int i = 0; i < num_samples; i++) {
-		*stereo_dest++ = *source;
-		*stereo_dest++ = *source++;
-	}
-	*buffer = sound_buffer;
+	int num_samples = resampler->get_output_buf(buf);
 	return num_samples;
 }
 

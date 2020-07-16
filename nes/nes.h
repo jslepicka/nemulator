@@ -63,7 +63,7 @@ public:
 	};
 
 	int *get_video(void);
-	int get_sound_buf(const int32_t **sound_buf);
+	int get_sound_bufs(const short **buf_l, const short **buf_r);
 	unsigned char *GetJoy1(void);
 	unsigned char *GetJoy2(void);
 	unsigned char *GetJoy3(void);
