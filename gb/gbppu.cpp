@@ -7,12 +7,94 @@
 #include <utility>
 
 
-int c_gbppu::shades[] = {
-	0xFF0FBC9B,
-	0xFF0FAC8B,
-	0xFF306230,
-	0xFF0F380F
+
+const int c_gbppu::pal[][4] = {
+	{
+		//lime green
+		//https://www.color-hex.com/color-palette/26401
+		0xFF0FBC9B,
+		0xFF0FAC8B,
+		0xFF306230,
+		0xFF0F380F
+	},
+	{
+		//green-yellow from libretro
+		//https://docs.libretro.com/library/gambatte/
+		0xFF10827B,
+		0xFF42795A,
+		0xFF4A5939,
+		0xFF394129
+	},
+	{
+		//green
+		//https://www.deviantart.com/thewolfbunny/art/Game-Boy-Palette-Greenscale-Ver-A-classic-808011585
+		0xFF0CBE9C,
+		0xFF0A876E,
+		0xFF34622C,
+		0xFF0C360C
+	},
+	{
+		//brightened green-yellow libretro
+		0xFF24968F,
+		0xFF568D6E,
+		0xFF5A6949,
+		0xFF474F37
+	},
+	{
+		//gameboy pocket
+		//https://www.deviantart.com/thewolfbunny/art/Game-Boy-Palette-Pocket-Ver-808181843
+		0xFFA1CFC4,
+		0xFF6D958B,
+		0xFF3C534D,
+		0xFF1F1F1F
+		
+	},
+	{
+		//yellow-green
+		//https://lospec.com/palette-list/nostalgia
+		0xFF58D0D0,
+		0xFF40A8A0,
+		0xFF288070,
+		0xFF105040
+	},
+	{
+		//https://www.deviantart.com/thewolfbunny/art/Game-Boy-Palette-DMG-Ver-808181265
+		0xFF0F867F,
+		0xFF447C57,
+		0xFF485D36,
+		0xFF3B452A
+	},
+	{
+		//black zero
+		//http://www.emutalk.net/threads/55441-Game-Boy-Mono-quot-True-quot-colors
+		0xFF0F867F,
+		0xFF457C57,
+		0xFF485D36,
+		0xFF3B452A
+	}
 };
+
+//const int c_gbppu::pal1[] = {
+//	0xFF0FBC9B,
+//	0xFF0FAC8B,
+//	0xFF306230,
+//	0xFF0F380F
+//};
+//
+//const int c_gbppu::pal2[] = {
+//	0xFF10827B,
+//	0xFF42795A,
+//	0xFF4A5939,
+//	0xFF394129
+//};
+//
+//
+//const int c_gbppu::pal3[] = {
+//	0xFF0CBE9C,
+//	0xFF0A876E,
+//	0xFF34622C,
+//	0xFF0C360C
+//};
 
 
 c_gbppu::c_gbppu(c_gb* gb)
@@ -22,6 +104,7 @@ c_gbppu::c_gbppu(c_gb* gb)
 	oam = new uint8_t[160];
 	fb = new uint32_t[160 * 144];
 	fb_back = new uint32_t[160 * 144];
+	shades = pal[7];
 }
 
 c_gbppu::~c_gbppu()
