@@ -8,7 +8,7 @@ class c_psg
 public:
 	c_psg();
 	~c_psg();
-	int get_buffer(const int32_t **buffer);
+	int get_buffer(const short** buf);
 	void clock(int cycles);
 	void write(int data);
 	void reset();

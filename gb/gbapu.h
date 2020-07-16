@@ -17,7 +17,7 @@ public:
 	void mix();
 	void enable_mixer();
 	void disable_mixer();
-	int get_buffer(const int32_t** buffer);
+	int get_buffers(const short** buf_l, const short** buf_r);
 	void set_audio_rate(double freq);
 private:
 	c_gb* gb;

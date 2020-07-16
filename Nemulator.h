@@ -184,4 +184,6 @@ private:
 	int num_items_this_frame;
 
 	bool show_suspend;
+	static const int SOUND_BUF_LEN = 1024;
+	int32_t* sound_buf;
 };

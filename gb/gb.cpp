@@ -90,9 +90,9 @@ void c_gb::set_audio_freq(double freq)
 	apu->set_audio_rate(freq);
 }
 
-int c_gb::get_sound_buf(const int32_t** buf)
+int c_gb::get_sound_bufs(const short** buf_l, const short** buf_r)
 {
-	return apu->get_buffer(buf);
+	return apu->get_buffers(buf_l, buf_r);
 }
 
 int c_gb::load()

@@ -20,7 +20,7 @@ public:
 	void set_nes(c_nes *nes);
 	void enable_mixer();
 	void disable_mixer();
-	int get_buffer(const int32_t** buf);
+	int get_buffer(const short** buf);
 	void set_audio_rate(double freq);
 
 	class c_envelope

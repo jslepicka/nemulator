@@ -37,7 +37,7 @@ public:
 	int get_crc() { return 0; }
 	int* get_video();
 
-	int get_sound_buf(const int32_t** buf);
+	int get_sound_bufs(const short** buf_l, const short** buf_r);
 	void set_audio_freq(double freq);
 
 	void enable_mixer();

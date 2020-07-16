@@ -690,9 +690,11 @@ unsigned char *c_nes::GetJoy4(void)
 	return &joypad->joy2;
 }
 
-int c_nes::get_sound_buf(const int32_t **sound_buf)
+int c_nes::get_sound_bufs(const short **buf_l, const short **buf_r)
 {
-	return apu2->get_buffer(sound_buf);
+	int num_samples = apu2->get_buffer(buf_l);
+	*buf_r = NULL;
+	return num_samples;
 }
 
 int c_nes::get_mapper_number()

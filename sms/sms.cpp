@@ -366,11 +366,12 @@ int *c_sms::get_video()
 	return vdp->get_frame_buffer();
 }
 
-int c_sms::get_sound_buf(const int32_t **buffer)
+int c_sms::get_sound_bufs(const short** buf_l, const short** buf_r)
 {
-	return psg->get_buffer(buffer);
+	int num_samples = psg->get_buffer(buf_l);
+	*buf_r = NULL;
+	return num_samples;
 }
-
 void c_sms::set_audio_freq(double freq)
 {
 	psg->set_audio_rate(freq);

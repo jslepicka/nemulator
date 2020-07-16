@@ -21,7 +21,7 @@ public:
 	unsigned char read_port(int port);
 	int reset();
 	int *get_video();
-	int get_sound_buf(const int32_t **buf);
+	int get_sound_bufs(const short **buf_l, const short **buf_r);
 	int irq;
 	int nmi;
 	void set_audio_freq(double freq);

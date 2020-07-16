@@ -84,6 +84,9 @@ c_nemulator::c_nemulator()
 	_MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
 	_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
 
+	sound_buf = new int32_t[SOUND_BUF_LEN];
+	memset(sound_buf, 0, sizeof(int32_t) * SOUND_BUF_LEN);
+
 }
 
 void c_nemulator::kill_threads()
@@ -120,6 +123,8 @@ c_nemulator::~c_nemulator(void)
 	{
 		delete game;
 	}
+	if (sound_buf)
+		delete[] sound_buf;
 }
 
 void c_nemulator::LoadFonts()
@@ -1225,13 +1230,35 @@ void c_nemulator::UpdateScene(double dt)
 	{
 		if (inGame)
 		{
-			c_console *nes = ((Game*)texturePanels[selectedPanel]->GetSelected())->console;
-			//sound->Copy(nes->GetSoundBuf(), nes->GetSoundSamples());
-			const int32_t *sound_buf;
-			int x = nes->get_sound_buf(&sound_buf);
-			sound->Copy((int32_t*)sound_buf, x);
+			c_console *console = ((Game*)texturePanels[selectedPanel]->GetSelected())->console;
+
+			const short* buf_l;
+			const short* buf_r;
+
+			int num_samples = console->get_sound_bufs(&buf_l, &buf_r);
+			
+			if (buf_r == NULL) {
+				//mono
+				short* sb = (short*)sound_buf;
+				for (int i = 0; i < num_samples; i++)
+				{
+					*sb++ = *buf_l;
+					*sb++ = *buf_l++;
+				}
+			}
+			else {
+				//stereo
+				short* sb = (short*)sound_buf;
+				for (int i = 0; i < num_samples; i++)
+				{
+					*sb++ = *buf_l++;
+					*sb++ = *buf_r++;
+				}
+			}
+
+			sound->Copy(sound_buf, num_samples);
 			s = sound->Sync();
-			nes->set_audio_freq(sound->get_requested_freq());
+			console->set_audio_freq(sound->get_requested_freq());
 		}
 		RunGames();
 
