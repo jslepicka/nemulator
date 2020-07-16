@@ -381,6 +381,9 @@
     <ClCompile Include="gb\gbapu.cpp">
       <Filter>Source Files\gb</Filter>
     </ClCompile>
+    <ClCompile Include="gb\mbc2.cpp">
+      <Filter>Source Files\gb</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="config.h">
@@ -753,6 +756,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="gb\gbapu.h">
+      <Filter>Header Files\gb</Filter>
+    </ClInclude>
+    <ClInclude Include="gb\mbc2.h">
       <Filter>Header Files\gb</Filter>
     </ClInclude>
   </ItemGroup>

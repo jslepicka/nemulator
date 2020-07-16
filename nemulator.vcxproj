@@ -217,6 +217,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="gb\gbapu.cpp" />
+    <ClCompile Include="gb\mbc2.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="audio_info.cpp" />
     <ClCompile Include="bmp_writer.cpp" />
@@ -350,6 +351,7 @@
     <ClInclude Include="gb\gbppu.h" />
     <ClInclude Include="gb\lr35902.h" />
     <ClInclude Include="gb\mbc1.h" />
+    <ClInclude Include="gb\mbc2.h" />
     <ClInclude Include="gb\mbc3.h" />
     <ClInclude Include="input_handler.h" />
     <ClInclude Include="mem_access_log.h" />
