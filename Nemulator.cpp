@@ -1402,7 +1402,7 @@ void c_nemulator::DrawScene()
 			RECT r2 = {0, 0, clientWidth, (long)(clientHeight * 1.95)};
 			char buf[256];
 			sprintf_s(buf, 256, "Loading: %d%%", (int)((double)num_games / rom_count * 100.0));
-			font2->DrawText(NULL, buf, -1, &r2, DT_NOCLIP | DT_CENTER | DT_VCENTER, D3DXCOLOR(.7f, .7f, .7f, 1.0));
+			font2->DrawText(NULL, buf, -1, &r2, DT_NOCLIP | DT_CENTER | DT_VCENTER, D3DXCOLOR(.46f, .46f, .46f, 1.0));
 		}
 		d3dDev->OMSetDepthStencilState(state, oldref);
 		return;
@@ -1419,14 +1419,14 @@ void c_nemulator::DrawScene()
 			double dim = mainPanel2->dim ? .25 : 1.0;
 			DrawText(font1, .05f, .85f, g->title, D3DXCOLOR((float)(1.0f * dim), 0.0f, 0.0f, 1.0f));
 
-			char *subtitle[] = { "Nintendo NES", "Sega Master System", "Sega Game Gear", "" };
+			char *subtitle[] = { "Nintendo NES", "Sega Master System", "Sega Game Gear", "Nintendo Game Boy" };
 
-			DrawText(font2, .0525f, .925f, subtitle[g->type], D3DXCOLOR((float)(.5f * dim), (float)(.5f * dim), (float)(.5f * dim), 1.0f));
+			DrawText(font2, .0525f, .925f, subtitle[g->type], D3DXCOLOR((float)(.22f * dim), (float)(.22f * dim), (float)(.22f * dim), 1.0f));
 			RECT r = { 0, 0, clientWidth, (LONG)(clientHeight*1.95) };
 			ID3D10DepthStencilState *state;
 			int oldref;
 			d3dDev->OMGetDepthStencilState(&state, (UINT *)&oldref);
-			font2->DrawText(NULL, "www.nemulator.com", -1, &r, DT_NOCLIP | DT_CENTER | DT_VCENTER, D3DXCOLOR((float)(.1f*dim), (float)(.1f*dim), (float)(.1f*dim), 1.0f));
+			font2->DrawText(NULL, "www.nemulator.com", -1, &r, DT_NOCLIP | DT_CENTER | DT_VCENTER, D3DXCOLOR((float)(.006f*dim), (float)(.006f*dim), (float)(.006f*dim), 1.0f));
 			d3dDev->OMSetDepthStencilState(state, oldref);
 		}
 

@@ -189,7 +189,7 @@ void c_qam::draw()
 		r.right = (clientWidth / 29.0) * (i + 2);
 		D3DXCOLOR color;
 		font->DrawText(NULL, j, -1, &r, DT_NOCLIP | DT_CENTER | DT_SINGLELINE | DT_VCENTER, 
-			i == selected ? D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f) : valid_chars[i] ? D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f) : D3DXCOLOR(.4f, .4f, .4f, 1.0f));
+			i == selected ? D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f) : valid_chars[i] ? D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f) : D3DXCOLOR(.13f, .13f, .13f, 1.0f));
 	}
 	d3dDev->OMSetDepthStencilState(state, oldref);
 }
