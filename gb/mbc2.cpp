@@ -11,12 +11,14 @@ void c_mbc2::write_byte(uint16_t address, uint8_t data)
 	switch (address >> 12) {
 	case 0:
 	case 1: //0000-1FFF ram enable
-		if (address & 0x0100) //least significant bit of upper address byte must be clear
+		if (address & 0x0100) //least significant bit of upper address byte must be zero
 			return;
 		ram_enable = data;
 		break;
 	case 2:
 	case 3: //2000-3FFF rom bank
+		if (!(address & 0x0100)) //least significant bit of upper address byte must be one
+			return;
 		bank = data & 0x1F;
 		if (bank == 0)
 			bank = 1;
