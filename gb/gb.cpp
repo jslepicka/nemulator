@@ -4,6 +4,7 @@
 #include "lr35902.h"
 #include "gbmapper.h"
 #include "mbc1.h"
+#include "mbc2.h"
 #include "mbc3.h"
 #include "gbppu.h"
 #include "gbapu.h"
@@ -16,7 +17,9 @@ const std::map<int, c_gb::s_mapper> c_gb::mapper_factory =
 	{0, {[]() {return new c_gbmapper(); }, 0, 0}},
 	{1, {[]() {return new c_mbc1(); }, 0, 0}},
 	{2, {[]() {return new c_mbc1(); }, 1, 0}},
-	{3, {[]() {return new c_mbc1(); }, 1, 1}}
+	{3, {[]() {return new c_mbc1(); }, 1, 1}},
+	{5, {[]() {return new c_mbc2(); }, 0, 0}},
+	{6, {[]() {return new c_mbc2(); }, 0, 1}}
 };
 
 
@@ -161,6 +164,13 @@ int c_gb::load()
 		if (m->has_battery) {
 			load_sram();
 		}
+	}
+	else if (cart_type == 5 || cart_type == 6) {
+		//mbc2 has 512x4bits of RAM
+		ram_size = 512;
+		mapper->config_ram(ram_size);
+		if (cart_type == 6)
+			load_sram();
 	}
 	else {
 		//disable battery save if anything is invalid
