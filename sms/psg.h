@@ -8,7 +8,7 @@ class c_psg
 public:
 	c_psg();
 	~c_psg();
-	int get_buffer(const short **buffer);
+	int get_buffer(const int32_t **buffer);
 	void clock(int cycles);
 	void write(int data);
 	void reset();
@@ -43,5 +43,6 @@ private:
 	};
 	c_biquad4* lpf;
 	c_biquad* post_filter;
+	int32_t* sound_buffer;
 };
 

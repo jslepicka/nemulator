@@ -63,7 +63,7 @@ public:
 	};
 
 	int *get_video(void);
-	int get_sound_buf(const short **sound_buf);
+	int get_sound_buf(const int32_t **sound_buf);
 	unsigned char *GetJoy1(void);
 	unsigned char *GetJoy2(void);
 	unsigned char *GetJoy3(void);
@@ -96,8 +96,6 @@ public:
 	void disable_mixer();
 
 private:
-	static const float NES_AUDIO_RATE;
-	c_resampler *resampler;
 	int num_apu_samples;
 	c_ppu *ppu;
 
@@ -144,9 +142,5 @@ private:
 	int do_vblank_nmi;
 	int vblank_nmi_delay;
 	bool limit_sprites;
-
-	c_biquad4* lpf;
-	c_biquad* post_filter;
-
 	const static std::map<int, std::function<c_mapper*()> > mapper_factory;
 };

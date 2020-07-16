@@ -41,6 +41,7 @@ c_psg::c_psg()
 		{ 1.0000000000000000f,-0.8659016489982605f,-0.1296554803848267f }
 	);
 	resampler = new c_resampler(((228.0 * 262.0 * 60.0) / 4.0) / 48000.0, lpf, post_filter);
+	sound_buffer = new int32_t[1024];
 }
 
 
@@ -52,13 +53,21 @@ c_psg::~c_psg()
 		delete lpf;
 	if (post_filter)
 		delete post_filter;
+	if (sound_buffer)
+		delete[] sound_buffer;
 }
 
-int c_psg::get_buffer(const short **buffer)
+int c_psg::get_buffer(const int32_t **buffer)
 {
-	int num_samples = resampler->get_output_buf((const short**)buffer);
-	//printf("-- %d\n", num_samples);
-	return num_samples; //number of buffered samples
+	const short* source;
+	short* stereo_dest = (short*)sound_buffer;
+	int num_samples = resampler->get_output_buf(&source);
+	for (int i = 0; i < num_samples; i++) {
+		*stereo_dest++ = *source;
+		*stereo_dest++ = *source++;
+	}
+	*buffer = sound_buffer;
+	return num_samples;
 }
 
 void c_psg::reset()
@@ -80,6 +89,7 @@ void c_psg::reset()
 	lfsr_out = 0;
 	channel = 0;
 	type = 0;
+	memset(sound_buffer, 0, sizeof(int32_t) * 1024);
 }
 
 void c_psg::set_audio_rate(double freq)

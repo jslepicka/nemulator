@@ -12,6 +12,8 @@
 std::ofstream file;
 #endif
 
+const float c_apu2::NES_AUDIO_RATE = 341.0f / 3.0f * 262.0f * 60.0f/* / 3.0f*/;
+
 c_apu2::c_apu2(void)
 {
 	squares[0] = &square1;
@@ -20,6 +22,7 @@ c_apu2::c_apu2(void)
 #ifdef AUDIO_LOG
 	file.open("c:\\log\\audio.out", std::ios_base::trunc | std::ios_base::binary);
 #endif
+	sound_buffer = new int32_t[1024];
 }
 
 c_apu2::~c_apu2(void)
@@ -27,6 +30,14 @@ c_apu2::~c_apu2(void)
 #ifdef AUDIO_LOG
 	file.close();
 #endif
+	if (sound_buffer)
+		delete[] sound_buffer;
+	if (resampler)
+		delete resampler;
+	if (lpf)
+		delete lpf;
+	if (post_filter)
+		delete post_filter;
 }
 
 void c_apu2::enable_mixer()
@@ -39,7 +50,7 @@ void c_apu2::disable_mixer()
 	mixer_enabled = 0;
 }
 
-void c_apu2::set_nes(c_nes *nes)
+void c_apu2::set_nes(c_nes* nes)
 {
 	this->nes = nes;
 	dmc.set_nes(nes);
@@ -64,11 +75,70 @@ void c_apu2::reset()
 	noise.reset();
 	dmc.reset();
 	square_clock = 0;
+	memset(sound_buffer, 0, sizeof(int32_t) * 1024);
+	/*
+	lowpass elliptical, 20kHz
+	d = fdesign.lowpass('N,Fp,Ap,Ast', 8, 20000, .1, 80, 1786840);
+	Hd = design(d, 'ellip', 'FilterStructure', 'df2tsos');
+	set(Hd, 'Arithmetic', 'single');
+	g = regexprep(num2str(reshape(Hd.ScaleValues(1:4), [1 4]), '%.16ff '), '\s+', ',')
+	b2 = regexprep(num2str(Hd.sosMatrix(5:8), '%.16ff '), '\s+', ',')
+	a2 = regexprep(num2str(Hd.sosMatrix(17:20), '%.16ff '), '\s+', ',')
+	a3 = regexprep(num2str(Hd.sosMatrix(21:24), '%.16ff '), '\s+', ',')
+	*/
+	lpf = new c_biquad4(
+		{ 0.5086284279823303f,0.3313708603382111f,0.1059221103787422f,0.0055782101117074f },
+		{ -1.9872593879699707f,-1.9750031232833862f,-1.8231037855148315f,-1.9900115728378296f },
+		{ -1.9759204387664795f,-1.9602127075195313f,-1.9470522403717041f,-1.9888486862182617f },
+		{ 0.9801648259162903f,0.9627774357795715f,0.9480593800544739f,0.9940192103385925f }
+	);
+	/*
+	post-filter is butterworth bandpass, 30Hz - 14kHz
+	d = fdesign.bandpass('N,F3dB1,F3dB2', 2, 30, 14000, 48000);
+	Hd = design(d,'butter', 'FilterStructure', 'df2tsos');
+	set(Hd, 'Arithmetic', 'single');
+	g = num2str(Hd.ScaleValues(1), '%.16ff ')
+	b = regexprep(num2str(Hd.sosMatrix(1:3), '%.16ff '), '\s+', ',')
+	a = regexprep(num2str(Hd.sosMatrix(4:6), '%.16ff '), '\s+', ',')
+	*/
+	/*post_filter = new c_biquad(
+		0.5648277401924133f,
+		{ 1.0000000000000000f,0.0000000000000000f,-1.0000000000000000f },
+		{ 1.0000000000000000f,-0.8659016489982605f,-0.1296554803848267f }
+	);*/
+
+	//12kHz
+	post_filter = new c_biquad(
+		0.4990182518959045f,
+		{ 1.0000000000000000f,0.0000000000000000f,-1.0000000000000000f },
+		{ 1.0000000000000000f,-0.9980365037918091f,0.0019634978380054f }
+	);
+
+	resampler = new c_resampler(NES_AUDIO_RATE / 48000.0f, lpf, post_filter);
+}
+
+int c_apu2::get_buffer(const int32_t** buffer)
+{
+	const short* source;
+	short* stereo_dest = (short*)sound_buffer;
+	int num_samples = resampler->get_output_buf(&source);
+	for (int i = 0; i < num_samples; i++) {
+		*stereo_dest++ = *source;
+		*stereo_dest++ = *source++;
+	}
+	*buffer = sound_buffer;
+	return num_samples;
+}
+
+void c_apu2::set_audio_rate(double freq)
+{
+	double x = NES_AUDIO_RATE / freq;
+	resampler->set_m(x);
 }
 
 void c_apu2::write_byte(unsigned short address, unsigned char value)
 {
-	reg[address-0x4000] = value;
+	reg[address - 0x4000] = value;
 	switch (address - 0x4000)
 	{
 	case 0x0:
@@ -123,37 +193,37 @@ void c_apu2::write_byte(unsigned short address, unsigned char value)
 		dmc.ack_irq();
 		break;
 	case 0x17:
+	{
+		frame_irq_enable = !(value & 0x40);
+		if (!frame_irq_enable && frame_irq_flag)
 		{
-			frame_irq_enable = !(value & 0x40);
-			if (!frame_irq_enable && frame_irq_flag)
+			if (frame_irq_asserted)
 			{
-				if (frame_irq_asserted)
-				{
-					nes->cpu->clear_irq();
-					frame_irq_asserted = 0;
-				}
-			}
-			else if (frame_irq_enable && frame_irq_flag)
-			{
-				if (!frame_irq_asserted)
-				{
-					nes->cpu->execute_irq();
-					frame_irq_asserted = 1;
-				}
-			}
-			frame_seq_step = 0;
-			frame_seq_counter = CLOCKS_PER_FRAME_SEQ;
-			if (value & 0x80)
-			{
-				frame_seq_steps = 5;
-				clock_frame_seq();
-			}
-			else
-			{
-				frame_seq_steps = 4;
+				nes->cpu->clear_irq();
+				frame_irq_asserted = 0;
 			}
 		}
-		break;
+		else if (frame_irq_enable && frame_irq_flag)
+		{
+			if (!frame_irq_asserted)
+			{
+				nes->cpu->execute_irq();
+				frame_irq_asserted = 1;
+			}
+		}
+		frame_seq_step = 0;
+		frame_seq_counter = CLOCKS_PER_FRAME_SEQ;
+		if (value & 0x80)
+		{
+			frame_seq_steps = 5;
+			clock_frame_seq();
+		}
+		else
+		{
+			frame_seq_steps = 4;
+		}
+	}
+	break;
 	default:
 		break;
 	}
@@ -186,7 +256,7 @@ unsigned char c_apu2::read_byte(unsigned short address)
 		return retval;
 
 	}
-	return reg[address-0x4000];
+	return reg[address - 0x4000];
 }
 void c_apu2::clock_once()
 {
@@ -214,11 +284,6 @@ void c_apu2::clock(int cycles)
 	}
 }
 
-void c_apu2::set_resampler(c_resampler *resampler)
-{
-	this->resampler = resampler;
-}
-
 void c_apu2::mix()
 {
 	int square_vol = square1.get_output() + square2.get_output();
@@ -227,7 +292,7 @@ void c_apu2::mix()
 	int triangle_vol = triangle.get_output();
 	int noise_vol = noise.get_output();
 	int dmc_vol = dmc.get_output();
-	float tnd_out = tnd_lut [3 * triangle_vol + 2 * noise_vol + dmc_vol];
+	float tnd_out = tnd_lut[3 * triangle_vol + 2 * noise_vol + dmc_vol];
 
 	float sample = square_out + tnd_out;
 	if (nes->mapper->has_expansion_audio())
@@ -326,7 +391,7 @@ void c_apu2::clock_frame_seq()
 		}
 		//frame_seq_step = ++frame_seq_step & 0x3;
 	}
-	
+
 }
 
 c_apu2::c_envelope::c_envelope()
@@ -549,7 +614,7 @@ int c_apu2::c_length::get_halt()
 	return halt;
 }
 
-const int c_apu2::c_length::length_table[32] = 
+const int c_apu2::c_length::length_table[32] =
 {
 	0x0A, 0xFE, 0x14, 0x02, 0x28, 0x04, 0x50, 0x06,
 	0xA0, 0x08, 0x3C, 0x0A, 0x0E, 0x0C, 0x1A, 0x0E,
@@ -627,7 +692,7 @@ void c_apu2::c_square::clock_length_sweep()
 					update_sweep_silencing();
 				}
 			}
-			else 
+			else
 			{
 				if (period + offset < 0x800)
 				{
@@ -795,7 +860,7 @@ void c_apu2::c_triangle::write(unsigned short address, unsigned char value)
 		linear_reload = (value & 0x7F);
 		length.set_halt((value & 0x80) >> 7);
 		break;
-	case 0xA:	
+	case 0xA:
 		timer.set_period_lo(value);
 		break;
 	case 0xB:
@@ -879,7 +944,7 @@ void c_apu2::c_noise::write(unsigned short address, unsigned char value)
 		envelope.write(value);
 		break;
 	case 0xE:
-		lfsr_shift = (value & 0x80) ? 6: 1;
+		lfsr_shift = (value & 0x80) ? 6 : 1;
 		random_period = random_period_table[value & 0xF];
 		timer.set_period(random_period);
 		break;
@@ -914,7 +979,7 @@ void c_apu2::c_noise::clock_length()
 int c_apu2::c_noise::get_output()
 {
 	if (length.get_output() && !(lfsr & 0x1))
-	{	
+	{
 		return envelope.get_output();
 	}
 	else
@@ -1032,7 +1097,7 @@ void c_apu2::c_dmc::clock_timer()
 				if (output_counter < 126)
 					output_counter += 2;
 			}
-			else 
+			else
 			{
 				if (output_counter > 1)
 					output_counter -= 2;
@@ -1057,7 +1122,7 @@ void c_apu2::c_dmc::clock_timer()
 	}
 }
 
-void c_apu2::c_dmc::set_nes(c_nes *nes)
+void c_apu2::c_dmc::set_nes(c_nes* nes)
 {
 	this->nes = nes;
 }

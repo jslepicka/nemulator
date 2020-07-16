@@ -166,11 +166,11 @@ void c_audio_info::draw()
 	{
 		for (int x = 0; x < tex_size; x++)
 		{
-			int range = 10000-0;
-			int t = 1600*3;
-			int min = (int)((tex_size - 1) - (((range - (10000 - (t-1600)))/(double)range) * (tex_size - 1)));
-			int max = (int)((tex_size - 1) - (((range - (10000 - (t+1600)))/(double)range) * (tex_size - 1)));
-			int target = (int)((tex_size - 1) - (((range - (10000 - t))/(double)range) * (tex_size - 1)));
+			int range = MAX-0;
+			int t = 1600*3*2;
+			int min = (int)((tex_size - 1) - (((range - (MAX - (t-(1600*2))))/(double)range) * (tex_size - 1)));
+			int max = (int)((tex_size - 1) - (((range - (MAX - (t+(1600*2))))/(double)range) * (tex_size - 1)));
+			int target = (int)((tex_size - 1) - (((range - (MAX - t))/(double)range) * (tex_size - 1)));
 
 
 			if (y <= min && y >= max)
@@ -205,10 +205,10 @@ void c_audio_info::draw()
 			*(pp + (y*tex_size) + i) = 0xFF00FF00;
 		}
 
-		int range = 10000-0;
+		int range = MAX-0;
 		if (buf[read_pointer] != -1)
 		{
-			int y = (int)(((range - (10000 - buf[read_pointer]))/(double)range) * (tex_size - 1));
+			int y = (int)(((range - (MAX - buf[read_pointer]))/(double)range) * (tex_size - 1));
 			y = ((tex_size - 1) - y);
 
 			if (y > (tex_size - 1))

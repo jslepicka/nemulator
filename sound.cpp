@@ -42,7 +42,7 @@ Sound::Sound(HWND hWnd)
 	lastb = 0;
 	ZeroMemory(&wf, sizeof(WAVEFORMATEX));
 	wf.wFormatTag = WAVE_FORMAT_PCM;
-	wf.nChannels = 1;
+	wf.nChannels = 2;
 	wf.nSamplesPerSec = 48000;
 	wf.wBitsPerSample = 16;
 	wf.nBlockAlign = wf.wBitsPerSample / 8 * wf.nChannels;
@@ -174,7 +174,7 @@ double Sound::calc_slope()
 	}
 	double num = (double)(valid_values * sxy - sx*sy);
 	double den = (double)(valid_values * sxx - sx*sx);
-	return den == 0.0 ? 0.0 : num / den;
+	return den == 0.0 ? 0.0 : num / den / 2.0;
 }
 
 int Sound::Sync()
@@ -205,7 +205,7 @@ int Sound::Sync()
 
 		double new_adj = 0.0;
 
-		if (b > 8000) //near underflow
+		if (b > (8000*2)) //near underflow
 		{
 			Reset();
 			resets++;
@@ -219,7 +219,7 @@ int Sound::Sync()
 		else if (dir * slope > 0.0 || b == 0) //moving away from target or stuck behind play cursor
 		{
 			//skew causes new_adj to increase faster when we're farther away from the target
-			double skew = (abs(diff) / 1600.0) * 10.0;
+			double skew = (abs(diff) / (1600.0*2)) * 10.0;
 			new_adj = -((abs(slope) + skew) / 2.0);
 			if (new_adj < -2.0)
 				new_adj = -2.0;
@@ -249,7 +249,7 @@ void Sound::Clear()
 	buffer->Unlock(lpbuf1, dwsize1, NULL, NULL);
 }
 
-int Sound::Copy(const short *src, int numSamples)
+int Sound::Copy(const int32_t *src, int numSamples)
 {
 	HRESULT hr;
 	LPBYTE lpbuf1 = NULL;

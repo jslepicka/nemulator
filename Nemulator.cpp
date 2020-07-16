@@ -1227,9 +1227,9 @@ void c_nemulator::UpdateScene(double dt)
 		{
 			c_console *nes = ((Game*)texturePanels[selectedPanel]->GetSelected())->console;
 			//sound->Copy(nes->GetSoundBuf(), nes->GetSoundSamples());
-			const short *sound_buf;
+			const int32_t *sound_buf;
 			int x = nes->get_sound_buf(&sound_buf);
-			sound->Copy((short*)sound_buf, x);
+			sound->Copy((int32_t*)sound_buf, x);
 			s = sound->Sync();
 			nes->set_audio_freq(sound->get_requested_freq());
 		}

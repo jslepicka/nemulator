@@ -17,23 +17,27 @@ public:
 	void mix();
 	void enable_mixer();
 	void disable_mixer();
-	int get_buffer(const short** buffer);
+	int get_buffer(const int32_t** buffer);
 	void set_audio_rate(double freq);
 private:
 	c_gb* gb;
-	c_resampler* resampler;
-	c_biquad4* lpf;
-	c_biquad* post_filter;
+	c_resampler* resampler_l;
+	c_resampler* resampler_r;
+	c_biquad4* lpf_l;
+	c_biquad* post_filter_l;
+	c_biquad4* lpf_r;
+	c_biquad* post_filter_r;
 	int mixer_enabled;
 	int ticks;
 	int frame_seq_counter;
 	int frame_seq_step;
-	static const int CLOCKS_PER_FRAME_SEQ = 8192/2;
+	static const int CLOCKS_PER_FRAME_SEQ = 8192;
 	uint8_t NR50;
 	uint8_t NR51;
 	uint8_t NR52;
 	int left_vol;
 	int right_vol;
+	int32_t* sound_buffer;
 
 	int enable_n_l;
 	int enable_n_r;
