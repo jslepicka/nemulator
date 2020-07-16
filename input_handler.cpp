@@ -153,6 +153,9 @@ int c_input_handler::get_result(int button, bool ack)
 void c_input_handler::set_button_joymap(int button, int joy, int joy_button)
 {
 	if (joy == -1 || joy_button == -1) return;
+	int result = joyGetPosEx(joy, &joyInfoEx[joy]);
+	if (result != JOYERR_NOERROR)
+		return;
 	joymask |= (1 << joy);
 	state[button].joy = joy;
 	state[button].joy_button = joy_button; 
