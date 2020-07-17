@@ -10,7 +10,7 @@
 
 const int c_gbppu::pal[][4] = {
 	{
-		//lime green
+		//0 - lime green
 		//https://www.color-hex.com/color-palette/26401
 		0xFF0FBC9B,
 		0xFF0FAC8B,
@@ -18,7 +18,7 @@ const int c_gbppu::pal[][4] = {
 		0xFF0F380F
 	},
 	{
-		//green-yellow from libretro
+		//1 - green-yellow from libretro
 		//https://docs.libretro.com/library/gambatte/
 		0xFF10827B,
 		0xFF42795A,
@@ -26,7 +26,7 @@ const int c_gbppu::pal[][4] = {
 		0xFF394129
 	},
 	{
-		//green
+		//2 - green
 		//https://www.deviantart.com/thewolfbunny/art/Game-Boy-Palette-Greenscale-Ver-A-classic-808011585
 		0xFF0CBE9C,
 		0xFF0A876E,
@@ -34,14 +34,14 @@ const int c_gbppu::pal[][4] = {
 		0xFF0C360C
 	},
 	{
-		//brightened green-yellow libretro
+		//3 - brightened green-yellow libretro
 		0xFF24968F,
 		0xFF568D6E,
 		0xFF5A6949,
 		0xFF474F37
 	},
 	{
-		//gameboy pocket
+		//4 - gameboy pocket
 		//https://www.deviantart.com/thewolfbunny/art/Game-Boy-Palette-Pocket-Ver-808181843
 		0xFFA1CFC4,
 		0xFF6D958B,
@@ -50,7 +50,7 @@ const int c_gbppu::pal[][4] = {
 		
 	},
 	{
-		//yellow-green
+		//5 - yellow-green
 		//https://lospec.com/palette-list/nostalgia
 		0xFF58D0D0,
 		0xFF40A8A0,
@@ -58,6 +58,7 @@ const int c_gbppu::pal[][4] = {
 		0xFF105040
 	},
 	{
+		//6 - DMG
 		//https://www.deviantart.com/thewolfbunny/art/Game-Boy-Palette-DMG-Ver-808181265
 		0xFF0F867F,
 		0xFF447C57,
@@ -65,12 +66,71 @@ const int c_gbppu::pal[][4] = {
 		0xFF3B452A
 	},
 	{
-		//black zero
+		//7 - black zero
 		//http://www.emutalk.net/threads/55441-Game-Boy-Mono-quot-True-quot-colors
 		0xFF0F867F,
 		0xFF457C57,
 		0xFF485D36,
 		0xFF3B452A
+	},
+	{
+		//8 - bgb lcd green
+		0xFFD0F8E0,
+		0xFF70C088,
+		0xFF566834,
+		0xFF201808
+	},
+	{
+		//9 - shader
+		0xFF02988B,
+		0xFF027055,
+		0xFF02532A,
+		0xFF024816
+	},
+	{
+		//10 - RokkumanX
+		//https://github.com/libretro/gambatte-libretro/issues/130
+		0xFF4FC084,
+		0xFF68A66A,
+		0xFF68864B,
+		0xFF586636
+	},
+	{
+		//11 - Greyscale, gamma adjusted
+		0xFFF0F0F0,
+		0xFF878787,
+		0xFF373737,
+		0xFF0C0C0C
+	},
+	{
+		// 12 - Lime Midori
+		//https://www.deviantart.com/thewolfbunny/art/Game-Boy-Palette-Lime-Midori-810574708
+		0xFFAFEBE0,
+		0xFF53CFAA,
+		0xFF428D7B,
+		0xFF505947,
+	},
+	{
+		//13 - retroarch more contrast
+		0xFF1D8F88,
+		0xFF4C8364,
+		0xFF4A5939,
+		0xFF323A22
+	},
+	{
+		//14 - photo
+		0xFF08878F,
+		0xFF317C63,
+		0xFF3C5E35,
+		0xFF25442E
+	},
+	{
+		//15 - photo 3x3 sampling
+		0xFF078990,
+		0xFF337C64,
+		0xFF3D6244,
+		0xFF20462C
+
 	}
 };
 
@@ -104,7 +164,7 @@ c_gbppu::c_gbppu(c_gb* gb)
 	oam = new uint8_t[160];
 	fb = new uint32_t[160 * 144];
 	fb_back = new uint32_t[160 * 144];
-	shades = pal[7];
+	shades = pal[15];
 }
 
 c_gbppu::~c_gbppu()
