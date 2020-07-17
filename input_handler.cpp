@@ -156,7 +156,7 @@ void c_input_handler::set_button_joymap(int button, int joy, int joy_button)
 	if (joy == -1 || joy_button == -1) return;
 	int result = joyGetPosEx(joy, &joyInfoEx[joy]);
 	if (result != JOYERR_NOERROR)
-		joy_suppressed[joy] = JOY_SUPPRESSED_FRAMES;
+		joy_suppressed[joy] = JOY_SUPPRESSED_TIME;
 	joymask |= (1 << joy);
 	state[button].joy = joy;
 	state[button].joy_button = joy_button; 
@@ -174,13 +174,13 @@ void c_input_handler::poll(double dt)
 	if (joymask)
 	{
 		for (int i = 0; i < 8; i++) {
-			if (joy_suppressed[i]) {
-				joy_suppressed[i]--;
+			if (joy_suppressed[i] > 0.0) {
+				joy_suppressed[i] -= dt;
 			}
 			else if (joymask & (1 << i)) {
 				joy_poll_result[i] = joyGetPosEx(i, &joyInfoEx[i]);
 				if (joy_poll_result[i] != JOYERR_NOERROR) {
-					joy_suppressed[i] = JOY_SUPPRESSED_FRAMES;
+					joy_suppressed[i] = JOY_SUPPRESSED_TIME;
 				}
 			}
 		}
