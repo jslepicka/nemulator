@@ -79,6 +79,8 @@ protected:
 
 	JOYINFOEX joyInfoEx[8];
 	int joy_poll_result[8];
+	int joy_suppressed[8];
+	static const int JOY_SUPPRESSED_FRAMES = 120; //if joystick polling fails, wait 2 seconds until trying again
 	unsigned char joymask;
 	int repeat_mask;
 	int extrafast_enabled;
