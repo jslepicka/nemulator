@@ -39,6 +39,7 @@ c_input_handler::c_input_handler(int buttons)
 		joyInfoEx[i].dwSize = sizeof(joyInfoEx[i]);
 		joyInfoEx[i].dwFlags = JOY_RETURNBUTTONS | JOY_RETURNPOVCTS | JOY_RETURNCENTERED | JOY_RETURNX | JOY_RETURNY | JOY_RETURNZ;
 		joy_poll_result[i] = JOYERR_NOERROR;
+		joy_suppressed[i] = 0;
 	}
 	joymask = 0;
 	ackd = false;
@@ -155,7 +156,7 @@ void c_input_handler::set_button_joymap(int button, int joy, int joy_button)
 	if (joy == -1 || joy_button == -1) return;
 	int result = joyGetPosEx(joy, &joyInfoEx[joy]);
 	if (result != JOYERR_NOERROR)
-		return;
+		joy_suppressed[joy] = JOY_SUPPRESSED_FRAMES;
 	joymask |= (1 << joy);
 	state[button].joy = joy;
 	state[button].joy_button = joy_button; 
@@ -172,9 +173,17 @@ void c_input_handler::poll(double dt)
 	ackd = false;
 	if (joymask)
 	{
-		for (int i = 0; i < 8; i++)
-			if (joymask & (1 << i))
+		for (int i = 0; i < 8; i++) {
+			if (joy_suppressed[i]) {
+				joy_suppressed[i]--;
+			}
+			else if (joymask & (1 << i)) {
 				joy_poll_result[i] = joyGetPosEx(i, &joyInfoEx[i]);
+				if (joy_poll_result[i] != JOYERR_NOERROR) {
+					joy_suppressed[i] = JOY_SUPPRESSED_FRAMES;
+				}
+			}
+		}
 	}
 
 	s_state *s = state;
