@@ -128,7 +128,7 @@ const int c_gbppu::pal[][4] = {
 		//15 - photo 3x3 sampling
 		0xFF078990,
 		0xFF337C64,
-		0xFF3D6244,
+		0xFF376244,
 		0xFF20462C
 
 	}
