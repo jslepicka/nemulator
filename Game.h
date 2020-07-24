@@ -29,7 +29,7 @@ public:
 	HANDLE eventDone;
 	c_console* console;
 	void DrawToTexture(ID3D10Texture2D *tex);
-	ID3D10Buffer *get_vertex_buffer(int stretched) { if (stretched) return stretched_vertex_buffer; else return vertex_buffer; };
+	ID3D10Buffer *get_vertex_buffer(int stretched);
 	void build_stretch_buffer(float ratio);
 	bool Selectable();
 	bool mask_sides;
@@ -45,6 +45,11 @@ public:
 	D3DXCOLOR get_overscan_color();
 	int get_height();
 	int get_width();
+	struct SimpleVertex
+	{
+		D3DXVECTOR3 pos;
+		D3DXVECTOR2 tex;
+	};
 private:
 	void OnActivate(bool load);
 	void OnDeactivate();
@@ -57,13 +62,10 @@ private:
 	std::string path;
 	std::string sram_path;
 
-	struct SimpleVertex
-	{
-		D3DXVECTOR3 pos;
-		D3DXVECTOR2 tex;
-	};
+	static const SimpleVertex default_vertices[4];
 	SimpleVertex vertices2[4];
 	D3D10_BUFFER_DESC bd;
 	ID3D10Buffer *vertex_buffer = NULL;
 	ID3D10Buffer *stretched_vertex_buffer = NULL;
+	ID3D10Buffer* default_vertex_buffer = NULL;
 };
