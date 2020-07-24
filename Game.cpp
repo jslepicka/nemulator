@@ -16,6 +16,13 @@ std::string Game::get_filename()
 	return filename;
 }
 
+const Game::SimpleVertex Game::default_vertices[4] = {
+		{ D3DXVECTOR3(-4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2(0.0f, 0.90625f) },
+		{ D3DXVECTOR3(-4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2(0.0f, 0.03125f) },
+		{ D3DXVECTOR3(4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2(1.0f, 0.90625f) },
+		{ D3DXVECTOR3(4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2(1.0f, 0.03125f) },
+};
+
 Game::Game(GAME_TYPE type, std::string path, std::string filename, std::string sram_path)
 {
 	emulation_mode = c_nes::EMULATION_MODE_FAST;
@@ -31,6 +38,16 @@ Game::Game(GAME_TYPE type, std::string path, std::string filename, std::string s
 	submapper = 0;
 	strcpy_s(title, filename.c_str());
 	strip_extension(title);
+
+	bd.Usage = D3D10_USAGE_DEFAULT;
+	bd.ByteWidth = sizeof(SimpleVertex) * 4;
+	bd.BindFlags = D3D10_BIND_VERTEX_BUFFER;
+	bd.CPUAccessFlags = 0;
+	bd.MiscFlags = 0;
+
+	D3D10_SUBRESOURCE_DATA initData;
+	initData.pSysMem = default_vertices;
+	HRESULT hr = d3dDev->CreateBuffer(&bd, &initData, &default_vertex_buffer);
 }
 
 Game::~Game(void)
@@ -118,6 +135,11 @@ void Game::OnDeactivate()
 		{
 			stretched_vertex_buffer->Release();
 			stretched_vertex_buffer = NULL;
+		}
+		if (default_vertex_buffer)
+		{
+			default_vertex_buffer->Release();
+			default_vertex_buffer = NULL;
 		}
 		is_active = 0;
 		played = 0;
@@ -237,13 +259,9 @@ void Game::create_vertex_buffer()
 		vertex_buffer->Release();
 		vertex_buffer = NULL;
 	}
-	SimpleVertex vertices[] =
-	{
-		{ D3DXVECTOR3(-4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2(0.0f, 0.90625f) },
-		{ D3DXVECTOR3(-4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2(0.0f, 0.03125f) },
-		{ D3DXVECTOR3(4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2(1.0f, 0.90625f) },
-		{ D3DXVECTOR3(4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2(1.0f, 0.03125f) },
-	};
+
+	SimpleVertex vertices[4];
+	memcpy(vertices, default_vertices, sizeof(default_vertices));
 
 	if (type == GAME_SMS)
 	{
@@ -273,12 +291,6 @@ void Game::create_vertex_buffer()
 
 
 	memcpy(vertices2, vertices, sizeof(vertices2));
-
-	bd.Usage = D3D10_USAGE_DEFAULT;
-	bd.ByteWidth = sizeof(SimpleVertex) * 4;
-	bd.BindFlags = D3D10_BIND_VERTEX_BUFFER;
-	bd.CPUAccessFlags = 0;
-	bd.MiscFlags = 0;
 
 	D3D10_SUBRESOURCE_DATA initData;
 	initData.pSysMem = vertices;
@@ -362,3 +374,11 @@ int Game::get_height()
 		return 256;
 	}
 }
+
+ID3D10Buffer* Game::get_vertex_buffer(int stretched)
+{
+	if (console && !console->is_loaded()) {
+		return default_vertex_buffer;
+	}
+	if (stretched) return stretched_vertex_buffer; else return vertex_buffer;
+};
