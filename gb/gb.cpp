@@ -29,7 +29,9 @@ c_gb::c_gb()
 	ppu = new c_gbppu(this);
 	apu = new c_gbapu(this);
 	ram = new uint8_t[8192];
+	memset(ram, 0, 8192);
 	hram = new uint8_t[128];
+	memset(hram, 0, 128);
 	loaded = 0;
 	mapper = 0;
 	ram_size = 0;
@@ -77,7 +79,7 @@ int c_gb::reset()
 	TAC = 0;
 	divider = 0;
 	last_TAC_out = 0;
-	input = -1;
+	next_input = input = -1;
 
 	JOY = 0xFF;
 	return 0;
@@ -239,10 +241,10 @@ uint8_t c_gb::read_byte(uint16_t address)
 		if (address >= 0xFE00 && address < 0xFF80) {
 			if (address == 0xFF00) {
 				if ((JOY & 0x30) == 0x20) {
-					return (input & 0xF);// | (JOY & 0x30);
+					return 0xE0 | (input & 0xF);// | (JOY & 0x30);
 				}
 				else if ((JOY & 0x30) == 0x10) {
-					return ((input >> 4) & 0xF);// | (JOY & 0x30);
+					return 0xD0 | ((input >> 4) & 0xF);// | (JOY & 0x30);
 				}
 				else {
 					return 0xFF;
@@ -434,6 +436,12 @@ int c_gb::emulate_frame()
 	//	divided by 2 to get ppu memory clock = 2.1MHz
 	//	divided by 4 to get cpu clock = 1.05MHz
 	for (int line = 0; line < 154; line++) {
+		if (line == 0x90) {
+			input = next_input;
+			if ((input & 0xFF) != 0xFF) {
+				IF |= 0x10;
+			}
+		}
 		ppu->execute(456);
 		//cpu->execute(456);
 	}
@@ -465,7 +473,7 @@ void c_gb::set_stat_irq(int status) {
 }
 void c_gb::set_input(int input)
 {
-	this->input = input;
+	next_input = input;
 }
 
 void c_gb::enable_mixer()
