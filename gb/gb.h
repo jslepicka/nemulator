@@ -61,6 +61,7 @@ private:
 	int divider;
 	int last_TAC_out;
 	int input;
+	int next_input;
 	uint8_t* rom;
 
 	uint8_t cart_type;
