@@ -83,5 +83,8 @@ private:
 	s_mapper *m;
 	int loaded;
 	char sramPath[MAX_PATH];
+
+	int serial_transfer_count;
+	int last_serial_clock;
 };
 
