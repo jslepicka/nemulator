@@ -82,6 +82,8 @@ int c_gb::reset()
 	next_input = input = -1;
 
 	JOY = 0xFF;
+	serial_transfer_count = 0;
+	last_serial_clock = 0;
 	return 0;
 }
 
@@ -214,6 +216,7 @@ int c_gb::save_sram()
 
 	file.write((char*)mapper->ram, ram_size);
 	file.close();
+	return 1;
 }
 
 uint16_t c_gb::read_word(uint16_t address)
@@ -250,6 +253,12 @@ uint8_t c_gb::read_byte(uint16_t address)
 					return 0xFF;
 				}
 				//return 0xF;
+			}
+			if (address == 0xFF01) {
+				return 0xFF;
+			}
+			if (address == 0xFF02) {
+				return SC;
 			}
 			if (address == 0xFF04) {
 				return (divider & 0xFF00) >> 8;
@@ -329,13 +338,13 @@ void c_gb::write_byte(uint16_t address, uint8_t data)
 			}
 			if (address == 0xFF01) {
 				SB = data;
-				wchar_t s[32];
-				//wsprintf(s, L"%c", data);
-				//OutputDebugString(s);
 				return;
 			}
 			if (address == 0xFF02) {
 				SC = data;
+				if ((SC & 0x81) == 0x81) {
+					serial_transfer_count = 8;
+				}
 				return;
 			}
 			if (address == 0xFF04) {
@@ -400,28 +409,44 @@ void c_gb::write_byte(uint16_t address, uint8_t data)
 
 void c_gb::clock_timer()
 {
-	//might need to do this in a loop 4 times instead of simply adding 4
-	for (int i = 0; i < 4; i++) {
-		int TAC_out;
-		int divisors[] = { 0x200, 0x08, 0x20, 0x80 };
-		TAC_out = ++divider & divisors[TAC & 0x3];
-		if (TAC_out && (TAC & 0x4)) {
-			TAC_out = 1;
+	//this is clocked @ 4.2MHz.  Should be ok to simply increment by 4
+	//since all CPU cycles are multiples of 4, and side effects of incrementing
+	//timer (register updates an interrupts) are only detectable on cpu cycle
+	//boundaries.
+
+	int TAC_out;
+	int serial_clock;
+	int divisors[] = { 0x200, 0x08, 0x20, 0x80 };
+	divider += 4;
+	TAC_out = divider & divisors[TAC & 0x3];
+
+	//clock serial output @ 8kHz
+	serial_clock = divider & 0x100;
+
+	if (last_serial_clock && (!serial_clock)) {
+		if (serial_transfer_count) {
+			if (--serial_transfer_count == 0) {
+				IF |= 0x8;
+			}
+		}
+	}
+	last_serial_clock = serial_clock;
+	if (TAC_out && (TAC & 0x4)) {
+		TAC_out = 1;
+	}
+	else {
+		TAC_out = 0;
+	}
+	if (last_TAC_out && (!TAC_out)) {
+		if (TIMA == 0xFF) {
+			TIMA = TMA;
+			IF |= 0x4;
 		}
 		else {
-			TAC_out = 0;
+			TIMA = (TIMA + 1) & 0xFF;
 		}
-		if (last_TAC_out && (!TAC_out)) {
-			if (TIMA == 0xFF) {
-				TIMA = TMA;
-				IF |= 0x4;
-			}
-			else {
-				TIMA = (TIMA + 1) & 0xFF;
-			}
-		}
-		last_TAC_out = TAC_out;
 	}
+	last_TAC_out = TAC_out;
 }
 
 int c_gb::emulate_frame()
@@ -436,6 +461,11 @@ int c_gb::emulate_frame()
 	//	divided by 2 to get ppu memory clock = 2.1MHz
 	//	divided by 4 to get cpu clock = 1.05MHz
 	for (int line = 0; line < 154; line++) {
+		//update input on line 144, right before vblank
+		//Wizards & Warriors reads input at line 16 and 144 when
+		//paused.  If input is updated too early, the second read at 144
+		//overwrites the change detected on line 16, and makes it
+		//impossible to resume from pause.
 		if (line == 0x90) {
 			input = next_input;
 			if ((input & 0xFF) != 0xFF) {
@@ -443,9 +473,7 @@ int c_gb::emulate_frame()
 			}
 		}
 		ppu->execute(456);
-		//cpu->execute(456);
 	}
-	//cpu->execute(70224);
 	return 0;
 }
 
