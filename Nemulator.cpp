@@ -400,7 +400,7 @@ void c_nemulator::Init()
 
 	show_suspend = config->get_bool("show_suspend", false);
 
-	std::string s = config->get_string("emulation_mode_menu", "fast");
+	std::string s = config->get_string("emulation_mode_menu", "accurate");
 	if (s == "accurate")
 	{
 		emulation_mode_menu = c_nes::EMULATION_MODE_ACCURATE;
