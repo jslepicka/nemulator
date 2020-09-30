@@ -37,11 +37,7 @@ private:
 	uint8_t* vram;
 	uint8_t* oam;
 
-	void draw_line();
 	void eval_sprites(int y);
-	void bg_fetch();
-	void sprite_fetch();
-	void output_pixel();
 	struct s_sprite {
 		uint8_t y;
 		uint8_t x;
@@ -58,7 +54,6 @@ private:
 
 	int oam_index;
 
-	//std::queue<int> bg_fifo;
 	std::queue<int> sprite_fifo;
 
 	int obj_fifo[8];
@@ -120,7 +115,7 @@ private:
 	int fetching_sprites;
 	int SCX_latch;
 
-	static const int pal[][4];
-	const int* shades;
+	static const unsigned int pal[][4];
+	const unsigned int* shades;
 };
 
