@@ -116,6 +116,7 @@ private:
 		int period;
 		int output;
 		int mode;
+		int enabled;
 
 	};
 

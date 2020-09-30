@@ -240,6 +240,7 @@ uint8_t c_gbapu::read_byte(uint16_t address)
 		break;
 	case 0xFF26:
 		//need to return channel length statuses
+		//OutputDebugString("NR52 read\n");
 		return NR52;
 		break;
 
@@ -493,6 +494,7 @@ void c_gbapu::c_envelope::reset()
 	period = 0;
 	output = 0;
 	mode = 0;
+
 }
 
 int c_gbapu::c_envelope::get_output()
@@ -529,7 +531,7 @@ void c_gbapu::c_envelope::clock()
 				output = new_vol;
 			}
 		}
-		counter &= 0x7;
+		//counter &= 0x7;
 	}
 }
 
