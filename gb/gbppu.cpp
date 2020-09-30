@@ -8,7 +8,7 @@
 
 
 
-const int c_gbppu::pal[][4] = {
+const unsigned int c_gbppu::pal[][4] = {
 	{
 		//0 - lime green
 		//https://www.color-hex.com/color-palette/26401
@@ -605,7 +605,7 @@ void c_gbppu::execute(int cycles)
 				}
 				else if (line == 154) {
 					//end vblank
-					gb->set_vblank_irq(0);
+					//gb->set_vblank_irq(0);
 					line = 0;
 					mode = 2;
 					update_stat();
