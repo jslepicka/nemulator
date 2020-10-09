@@ -9,7 +9,7 @@ class c_input_handler
 public:
 	c_input_handler(int buttons);
 	virtual ~c_input_handler();
-	void poll(double dt);
+	void poll(double dt, int ignore_input);
 	void ack();
 	int get_result(int button, bool ack = false);
 	double get_hold_time(int button);

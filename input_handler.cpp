@@ -167,7 +167,7 @@ void c_input_handler::set_button_type(int button, int type)
 	state[button].type = type;
 }
 
-void c_input_handler::poll(double dt)
+void c_input_handler::poll(double dt, int ignore_input)
 {
 	//poll joysticks
 	ackd = false;
@@ -191,20 +191,25 @@ void c_input_handler::poll(double dt)
 	for (int i = 0; i < num_buttons; i++)
 	{
 		s->state_prev = s->state_cur;
-		s->state_cur = get_key_state(s->button_key);
-		if (s->joy >= 0)
-		{
-			switch(s->type)
+		if (ignore_input) {
+			s->state_cur = 0;
+		}
+		else {
+			s->state_cur = get_key_state(s->button_key);
+			if (s->joy >= 0)
 			{
-			case TYPE_BUTTON:
-				s->state_cur |= get_joy_state(s->joy, s->joy_button);
-				break;
-			case TYPE_AXIS:
-				s->state_cur |= get_joy_axis(s->joy, s->joy_button);
-				break;
-			case TYPE_POV:
-				s->state_cur |= get_joy_pov(s->joy, s->joy_button & 0xFFFF, (s->joy_button >> 16) & 0xFFFF);
-				break;
+				switch (s->type)
+				{
+				case TYPE_BUTTON:
+					s->state_cur |= get_joy_state(s->joy, s->joy_button);
+					break;
+				case TYPE_AXIS:
+					s->state_cur |= get_joy_axis(s->joy, s->joy_button);
+					break;
+				case TYPE_POV:
+					s->state_cur |= get_joy_pov(s->joy, s->joy_button & 0xFFFF, (s->joy_button >> 16) & 0xFFFF);
+					break;
+				}
 			}
 		}
 

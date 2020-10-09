@@ -76,6 +76,7 @@ protected:
 	bool vsync;
 	bool timer_sync;
 	bool pause_on_lost_focus;
+	int ignore_input;
 	//bool startFullscreen;
 
 	//ID3D10Device *d3dDev;
