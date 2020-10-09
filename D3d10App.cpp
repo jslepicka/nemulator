@@ -216,7 +216,7 @@ void D3d10App::Init(char *config_file_name, c_task *init_task, void *params)
 	clientWidth = config->get_int("app.x", 640);
 	if (clientWidth < 2)
 		clientWidth = 2;
-	aspectRatio = config->get_bool("app.widescreen", true) ? 16.0/10.0 : (4.0/3.0);
+	aspectRatio = config->get_bool("app.widescreen", true) ? 16.0/9.0 : (4.0/3.0);
 	aspectLock = config->get_bool("app.aspect_lock", true);
 	startFullscreen = config->get_bool("app.fullscreen", true);
 	vsync = config->get_bool("app.vsync", true);

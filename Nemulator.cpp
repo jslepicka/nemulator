@@ -349,7 +349,7 @@ void c_nemulator::Init()
 	scroll_fade_timer = 0.0;
 	static const float tile_width = 2.7f;
 
-	int panel_columns = config->get_int("menu_columns", 7);
+	int panel_columns = config->get_int("menu_columns", 8);
 	if (panel_columns < 3)
 		panel_columns = 3;
 	int panel_rows = (int)((panel_columns-1) * tile_width / ((double)clientWidth/clientHeight) * .82 / 2.04);
