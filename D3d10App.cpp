@@ -222,7 +222,7 @@ void D3d10App::Init(char *config_file_name, c_task *init_task, void *params)
 	vsync = config->get_bool("app.vsync", true);
 	timer_sync = config->get_bool("app.timer_sync", false);
 	pause_on_lost_focus = config->get_bool("app.pause_on_lost_focus", true);
-	ignore_input = 1;
+	ignore_input = 0;
 	avrt_handle = 0;
 	timeBeginPeriod(1);
 	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
