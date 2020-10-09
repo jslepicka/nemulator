@@ -23,6 +23,9 @@ c_apu2::c_apu2(void)
 	file.open("c:\\log\\audio.out", std::ios_base::trunc | std::ios_base::binary);
 #endif
 	sound_buffer = new int32_t[1024];
+	resampler = 0;
+	lpf = 0;
+	post_filter = 0;
 }
 
 c_apu2::~c_apu2(void)
