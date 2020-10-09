@@ -137,7 +137,7 @@ int D3d10App::Run()
 		{
 			if (!paused)
 			{
-				g_ih->poll(dt);
+				g_ih->poll(dt, ignore_input);
 				d3dDev->ClearRenderTargetView(renderTargetView, clearColor);
 				d3dDev->ClearDepthStencilView(depthStencilView, D3D10_CLEAR_DEPTH | D3D10_CLEAR_STENCIL, 1.0f, 0);
 				int r = 999;
@@ -222,6 +222,7 @@ void D3d10App::Init(char *config_file_name, c_task *init_task, void *params)
 	vsync = config->get_bool("app.vsync", true);
 	timer_sync = config->get_bool("app.timer_sync", false);
 	pause_on_lost_focus = config->get_bool("app.pause_on_lost_focus", true);
+	ignore_input = 1;
 	avrt_handle = 0;
 	timeBeginPeriod(1);
 	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
@@ -335,16 +336,24 @@ LRESULT D3d10App::MsgProc(UINT msg, WPARAM wParam, LPARAM lParam)
 	switch (msg)
 	{
 	case WM_ACTIVATE:
-		if (pause_on_lost_focus) {
-			if (LOWORD(wParam) == WA_INACTIVE)
-			{
+		if (LOWORD(wParam) == WA_INACTIVE)
+		{
+			if (pause_on_lost_focus) {
 				paused = true;
 				OnPause(paused);
 			}
-			else
-			{
+			else {
+				ignore_input = 1;
+			}
+		}
+		else
+		{
+			if (pause_on_lost_focus) {
 				paused = false;
 				OnPause(paused);
+			}
+			else {
+				ignore_input = 0;
 			}
 		}
 		return 0;
