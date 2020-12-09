@@ -1,6 +1,7 @@
 #include "vdp.h"
 #include "sms.h"
 #include <memory>
+#include "..\clamp.h"
 
 #include <crtdbg.h>
 #if defined(DEBUG) | defined(_DEBUG)
@@ -421,11 +422,6 @@ __forceinline int c_vdp::lookup_color(int palette_index)
 
 void c_vdp::generate_palette()
 {
-	auto d_clamp = [](double v, double min, double max)
-	{
-		return v < min ? min : v > max ? max : v;
-	};
-
 	int expected = 0;
 	if (pal_built.compare_exchange_strong(expected, 1))
 	{
@@ -435,9 +431,9 @@ void c_vdp::generate_palette()
 			int g_bits = (i >> 2) & 0x3;
 			int b_bits = (i >> 4) & 0x3;
 
-			double r = pow(d_clamp(r_bits * (1.0 / 3.0), 0.0, 1.0), 2.2);
-			double g = pow(d_clamp(g_bits * (1.0 / 3.0), 0.0, 1.0), 2.2);
-			double b = pow(d_clamp(b_bits * (1.0 / 3.0), 0.0, 1.0), 2.2);
+			double r = pow(clamp(r_bits * (1.0 / 3.0), 0.0, 1.0), 2.2);
+			double g = pow(clamp(g_bits * (1.0 / 3.0), 0.0, 1.0), 2.2);
+			double b = pow(clamp(b_bits * (1.0 / 3.0), 0.0, 1.0), 2.2);
 
 			pal_sms[i] = (int)(255.0 * r)
 				| ((int)(255.0 * g) << 8)
@@ -450,9 +446,9 @@ void c_vdp::generate_palette()
 			int g_bits = (i >> 4) & 0xF;
 			int b_bits = (i >> 8) & 0xF;
 
-			double r = pow(d_clamp(r_bits * (1.0 / 15.0), 0.0, 1.0), 2.2);
-			double g = pow(d_clamp(g_bits * (1.0 / 15.0), 0.0, 1.0), 2.2);
-			double b = pow(d_clamp(b_bits * (1.0 / 15.0), 0.0, 1.0), 2.2);
+			double r = pow(clamp(r_bits * (1.0 / 15.0), 0.0, 1.0), 2.2);
+			double g = pow(clamp(g_bits * (1.0 / 15.0), 0.0, 1.0), 2.2);
+			double b = pow(clamp(b_bits * (1.0 / 15.0), 0.0, 1.0), 2.2);
 
 			pal_gg[i] = (int)(255.0 * r)
 				| ((int)(255.0 * g) << 8)

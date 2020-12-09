@@ -37,7 +37,7 @@ public:
 	void move_to_char(char c);
 	void Zoom();
 	bool Changed();
-	bool selected; //is this panel selected?
+	bool in_focus; //is this panel selected/does it have focus?
 	int GetSelectedColumn();
 	TexturePanelItem* GetSelected();
 	TexturePanel *prev;
@@ -89,14 +89,18 @@ private:
 		void Unselect();
 		double selectTimer;
 		static const float selectDuration;
-		int selectDir;
+		enum {
+			DIR_SELECTING,
+			DIR_UNSELECTING
+		};
+		int select_dir;
 		TexturePanelItem *item;
 	};
 
 	int scrolls;
 
 	bool changed; //has the panel's items changed?
-	bool prevSelected; //previous selected state
+	bool prev_in_focus; //previous selected state
 
 	int rows;
 	int columns;
@@ -114,6 +118,13 @@ private:
 
 	void DrawItem(c_item_container *item, int draw_border, float x, float y, float z, float c = 1.0f);
 
+	float scrollOffset;
+	void update_scroll(double dt);
+
+	void update_menu(double dt);
+	void update_zoom(double dt);
+	void update_border_color(double dt);
+
 	std::vector<c_item_container*> item_containers;
 
 
@@ -122,14 +133,21 @@ private:
 	static const float zoomDuration;
 	static const float borderDuration;
 
-
-	int scrollDir;
+	enum {
+		SCROLL_LEFT,
+		SCROLL_RIGHT
+	};
+	int scroll_dir;
 	double scrollTimer;
-	bool scrollCleanup;
+	bool scroll_changed_page;
 	bool scrollRepeat;
 
 	double zoomTimer;
-	int zoomDir;
+	enum {
+		ZOOMING_OUT,
+		ZOOMING_IN
+	};
+	int zoom_dir;
 	float zoomStartX;
 	float zoomStartY;
 	float zoomStartZ;
@@ -196,8 +214,8 @@ private:
 		float z;
 	};
 
-	static D3DXVECTOR3 interpolate_linear3(D3DXVECTOR3 &start, D3DXVECTOR3 &end, float mu);
-	static D3DXVECTOR3 interpolate_cosine3(D3DXVECTOR3 &start, D3DXVECTOR3 &end, float mu);
+	static D3DXVECTOR3 interpolate_linear3(const D3DXVECTOR3 &start, const D3DXVECTOR3 &end, float mu);
+	static D3DXVECTOR3 interpolate_cosine3(const D3DXVECTOR3 &start, const D3DXVECTOR3 &end, float mu);
 
 	int valid_chars[27];
 
@@ -206,12 +224,7 @@ private:
 
 	void build_stretch_buffer(float ratio);
 
-
-
-	/*std::vector<float> border_color(3);
-	std::vector<float> border_color_start(3);
-	std::vector<float> border_color_end(3);*/
-
 	D3DXVECTOR3 border_color, border_color_start, border_color_end;
 	D3DXVECTOR3 invalid_border_color, invalid_border_color_start, invalid_border_color_end;
+	D3DXVECTOR3 border_colors[4];
 };
