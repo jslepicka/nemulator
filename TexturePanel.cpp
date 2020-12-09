@@ -1,6 +1,7 @@
 #include "TexturePanel.h"
 #include "effect.fxo.h"
 #include <string>
+#include "clamp.h"
 
 extern ID3D10Device *d3dDev;
 extern D3DXMATRIX matrixView;
@@ -23,7 +24,7 @@ TexturePanel::c_item_container::c_item_container(TexturePanelItem *item)
 	selecting = false;
 	selectTimer = 0.0f;
 	selected = false;
-	selectDir = 0;
+	select_dir = DIR_SELECTING;
 }
 
 TexturePanel::c_item_container::~c_item_container()
@@ -34,24 +35,24 @@ void TexturePanel::c_item_container::Select()
 {
 	selecting = true;
 	selectTimer = 0.0f;
-	selectDir = 0;
+	select_dir = DIR_SELECTING;
 }
 
 void TexturePanel::c_item_container::Unselect()
 {
-	if (selected || (selecting && selectDir == 0))
+	if (selected || (selecting && select_dir == DIR_SELECTING))
 	{
 		selecting = true;
 		selectTimer = 0.0f;
-		selectDir = 1;
+		select_dir = DIR_UNSELECTING;
 	}
 }
 
 TexturePanel::TexturePanel(int rows, int columns)
 {
 	changed = false;
-	prevSelected = false;
-	selected = false;
+	prev_in_focus = false;
+	in_focus = false;
 	on_first_page = true;
 	first_item = 0;
 	last_item = 0;
@@ -62,10 +63,10 @@ TexturePanel::TexturePanel(int rows, int columns)
 	next = NULL;
 	prev = NULL;
 	scrollTimer = 0.0f;
-	scrollCleanup = false;
+	scroll_changed_page = false;
 	scrollRepeat = false;
 	zoomTimer = 0.0f;
-	zoomDir = 0;
+	zoom_dir = ZOOMING_OUT;
 	scrolls = 0;
 	selectable = false;
 
@@ -74,11 +75,13 @@ TexturePanel::TexturePanel(int rows, int columns)
 	zoomDestY = -7.14f;
 	zoomDestZ = -25.0f + 2.414f;
 	
-	border_color = border_color_start = { .71f * .05f, .78f * .05f, 1.0f * .05f };
-	border_color_end = { .71f * .9f, .78f * .9f, 1.0f * .9f };
+	border_colors[0] = { .71f * .05f, .78f * .05f, 1.0f * .05f };
+	border_colors[1] = { .71f * .9f, .78f * .9f, 1.0f * .9f };
+	border_colors[2] = { .05f, 0.0f, 0.0f };
+	border_colors[3] = { 1.0f, 0.0f, 0.0f };
 
-	invalid_border_color = invalid_border_color_start = { .05f, 0.0f, 0.0f };
-	invalid_border_color_end = { 1.0f, 0.0f, 0.0f };
+	border_color = border_colors[0];
+	invalid_border_color = border_colors[2];
 
 	scrollDuration = 180.0f;
 
@@ -100,6 +103,8 @@ TexturePanel::TexturePanel(int rows, int columns)
 
 	Init();
 	stretch_to_fit = false;
+
+	scrollOffset = 0.0f;
 }
 
 TexturePanel::~TexturePanel(void)
@@ -150,15 +155,13 @@ void TexturePanel::Init()
 	technique->GetPassByIndex(0)->GetDesc(&passDesc);
 
 	hr = d3dDev->CreateInputLayout(elementDesc, numElements, passDesc.pIAInputSignature, passDesc.IAInputSignatureSize, &vertexLayout);
-	if (FAILED(hr))
-	{
+	if (FAILED(hr)) {
 		MessageBox(NULL, "CreateInputLayout failed", 0, 0);
 		PostQuitMessage(0);
 		return;
 	}
 
-	SimpleVertex vertices[] =
-	{
+	SimpleVertex vertices[] = {
 		{ {-4.0f / 3.0f, -1.0f, 0.0f}, {0.0f, 1.0f} },
 		{ {-4.0f / 3.0f, 1.0f, 0.0f}, {0.0f, 0.0f} },
 		{ {4.0f / 3.0f, -1.0f, 0.0f}, {1.0f, 1.0f} },
@@ -195,8 +198,7 @@ void TexturePanel::Init()
 	texDesc.MiscFlags = 0;
 
 	hr = d3dDev->CreateTexture2D(&texDesc, 0, &tex);
-	if (FAILED(hr))
-	{
+	if (FAILED(hr)) {
 		MessageBox(NULL, "CreateTexture2D failed", 0, 0);
 		PostQuitMessage(0);
 		return;
@@ -208,8 +210,7 @@ void TexturePanel::Init()
 	descRv.Texture2D.MipLevels = 1;
 	descRv.Texture2D.MostDetailedMip = 0;
 	hr = d3dDev->CreateShaderResourceView(tex, &descRv, &texRv);
-	if (FAILED(hr))
-	{
+	if (FAILED(hr)) {
 		MessageBox(NULL, "CreateShaderResourceView failed", 0, 0);
 		PostQuitMessage(0);
 		return;
@@ -235,21 +236,20 @@ void TexturePanel::set_sharpness(float factor)
 
 void TexturePanel::OnResize()
 {
-	if (stretch_to_fit && state == STATE_ZOOMED)
-	{
+	if (stretch_to_fit && state == STATE_ZOOMED) {
 		build_stretch_buffer((float)clientWidth / (float)clientHeight);
 	}
 }
 
 bool TexturePanel::Changed()
 {
-	if (changed)
-	{
+	if (changed) {
 		changed = false;
 		return true;
 	}
-	else
+	else {
 		return false;
+	}
 }
 
 void TexturePanel::AddItem(TexturePanelItem *item)
@@ -260,8 +260,7 @@ void TexturePanel::AddItem(TexturePanelItem *item)
 	int max_items_on_page = (rows * columns) - (on_first_page ? rows : 0);
 
 	//if (last_item - first_item < rows*columns - rows)
-	if (num_items_on_page < max_items_on_page)
-	{
+	if (num_items_on_page < max_items_on_page) {
 		item->Activate(true);
 		last_item++;
 	}
@@ -284,14 +283,14 @@ int *TexturePanel::get_valid_chars()
 
 void TexturePanel::GetActive(std::list<TexturePanelItem*> *itemList)
 {
-	if (state == STATE_ZOOMED)
-	{
-		if (selected)
+	if (state == STATE_ZOOMED) {
+		if (in_focus)
 			itemList->push_back(item_containers[selected_item]->item);
 	}
-	else
+	else {
 		for (int i = first_item; i < last_item; i++)
 			itemList->push_back(item_containers[i]->item);
+	}
 }
 
 void TexturePanel::load_items()
@@ -301,256 +300,178 @@ void TexturePanel::load_items()
 	changed = true;
 }
 
+void TexturePanel::update_scroll(double dt)
+{
+	scrollOffset = 0.0f;
+	scrollTimer += dt;
+	if (scrollTimer >= scrollDuration) {
+		state = STATE_MENU;
+		scrollTimer = 0.0f;
+		if (scroll_changed_page) {
+			if (scroll_dir == SCROLL_RIGHT) {
+				for (int i = 0; i < rows; ++i)
+					item_containers[first_item++]->item->Deactivate();
+
+			}
+			else if (scroll_dir == SCROLL_LEFT) {
+				for (int i = 0; i < rows; i++) {
+					if (last_item - first_item > rows * columns) {
+						item_containers[last_item - 1]->item->Deactivate();
+						last_item--;
+					}
+				}
+			}
+			scroll_changed_page = false;
+			changed = true;
+		}
+		if (--scrolls > 0)
+			scrollRepeat = true;
+	}
+	else
+		if (scroll_dir == SCROLL_RIGHT)
+			scrollOffset = InterpolateCosine(tile_width, 0.0f, (float)(scrollTimer / scrollDuration));
+		else
+			scrollOffset = InterpolateCosine(-tile_width, 0.0f, (float)(scrollTimer / scrollDuration));
+	if (scroll_changed_page && scroll_dir == SCROLL_RIGHT)
+		scrollOffset -= tile_width;
+}
+
+void TexturePanel::update_menu(double dt)
+{
+	if (state != prevState) {
+		changed = true;
+		prevState = state;
+	}
+	int p = on_first_page ? rows : 0;
+
+	for (int i = first_item; i < last_item; ++i, ++p) {
+		float tile_x = x + scrollOffset + (p / rows) * tile_width;
+		float tile_y = y + (p % rows) * -2.04f;
+
+		D3DXVECTOR3 tile_pos = { tile_x, tile_y, 0.0f };
+		D3DXVECTOR3 popped_pos = interpolate_linear3(tile_pos, { zoomDestX, zoomDestY, zoomDestZ }, .3);
+
+		if (item_containers[i]->selecting) {
+			D3DXVECTOR3 pos[2] = { tile_pos, popped_pos };
+			item_containers[i]->selectTimer += dt;
+			int dir = item_containers[i]->select_dir;
+
+			double mu = (item_containers[i]->selectTimer / item_containers[i]->selectDuration);
+			item_containers[i]->pos = interpolate_cosine3(pos[0 ^ dir], pos[1 ^ dir], clamp(mu, 0.0, 1.0));
+
+			if (item_containers[i]->selectTimer >= item_containers[i]->selectDuration) {
+				item_containers[i]->selecting = false;
+				
+				//if we were selecting, mark it as selected at the end of the pop
+				//otherwise, mark it as not selected
+				if (item_containers[i]->select_dir == c_item_container::DIR_SELECTING) {
+					item_containers[i]->selected = true;
+				}
+				else {
+					item_containers[i]->selected = false;
+				}
+
+				item_containers[i]->selectTimer = 0.0f;
+			}
+		}
+		else if (item_containers[i]->selected) {
+			//this really shouldn't be necessary as the only way to get into a selected state is by
+			//going through the interpolation above, but there is some difference in the interpolated
+			//and final value.  Maybe floating point error?
+			item_containers[i]->pos = popped_pos;
+		}
+		else {
+			item_containers[i]->pos = tile_pos;
+		}
+
+	}
+}
+
+void TexturePanel::update_zoom(double dt)
+{
+	float non_selected_pos[2] = { 0.0f, 10.0f };
+	float non_selected_z = 0.0f;
+	if (state != prevState) {
+		if (zoom_dir == ZOOMING_OUT) {
+			zoomStartX = item_containers[selected_item]->pos.x;
+			zoomStartY = item_containers[selected_item]->pos.y;
+			zoomStartZ = item_containers[selected_item]->pos.z;
+		}
+		prevState = state;
+		changed = true;
+	}
+
+	zoomTimer += dt;
+	double mu = clamp(zoomTimer / zoomDuration, 0.0, 1.0);
+	non_selected_z = InterpolateLinear(non_selected_pos[0 ^ zoom_dir], non_selected_pos[1 ^ zoom_dir], mu);
+	if (in_focus) {
+		c_item_container *i = item_containers[selected_item];
+		D3DXVECTOR3 zoom_pos[2] = { { zoomStartX, zoomStartY, zoomStartZ }, { zoomDestX, zoomDestY, zoomDestZ } };
+		item_containers[selected_item]->pos = interpolate_linear3(zoom_pos[0 ^ zoom_dir], zoom_pos[1 ^ zoom_dir], mu);
+	}
+
+	if (zoomTimer >= zoomDuration) {
+		zoomTimer = 0.0f;
+		prevState = state;
+		state = zoom_dir == ZOOMING_OUT ? STATE_ZOOMED : STATE_MENU;
+		changed = true;
+
+	}
+
+	for (int i = first_item; i < last_item; ++i) {
+		if (!(in_focus && i == selected_item))
+			item_containers[i]->pos.z = non_selected_z;
+	}
+}
+
+void TexturePanel::update_border_color(double dt)
+{
+	borderTimer += dt;
+
+	border_color = interpolate_cosine3(border_colors[0 ^ borderDir], border_colors[1 ^ borderDir], clamp(borderTimer / borderDuration, 0.0, 1.0));
+	invalid_border_color = interpolate_cosine3(border_colors[2 ^ borderDir], border_colors[3 ^ borderDir], clamp(borderTimer / borderDuration, 0.0, 1.0));
+
+	if (borderTimer >= borderDuration) {
+		borderDir ^= 1;
+		borderTimer = 0.0f;
+	}
+}
+
 void TexturePanel::Update(double dt)
 {
 	if (item_containers.size() == 0)
 		return;
-	if (scrollRepeat)
-	{
-		if (scrollDir == 1)
+	//this allows for more than one scroll to be enqueued per frame
+	if (scrollRepeat) {
+		if (scroll_dir == SCROLL_RIGHT)
 			NextColumn();
 		else
 			PrevColumn();
 		scrollRepeat = false;
 	}
-	borderTimer += dt;
-	if (borderTimer >= borderDuration)
-	{
-		if (borderDir == 0)
-		{
-			borderDir = 1;
-			border_color = border_color_end;
-			invalid_border_color = invalid_border_color_end;
-		}
-		else if (borderDir == 1)
-		{
-			borderDir = 0;
-			border_color = border_color_start;
-			invalid_border_color = invalid_border_color_start;
-		}
 
-		borderTimer = 0.0f;
-	}
-	else
-	{
-		if (borderDir == 0)
-		{
-			border_color = interpolate_cosine3(border_color_start, border_color_end, (float)(borderTimer / borderDuration));
-			invalid_border_color = interpolate_cosine3(invalid_border_color_start, invalid_border_color_end, (float)(borderTimer / borderDuration));
-		}
-		else if (borderDir == 1)
-		{
-			border_color = interpolate_cosine3(border_color_end, border_color_start, (float)(borderTimer / borderDuration));
-			invalid_border_color = interpolate_cosine3(invalid_border_color_end, invalid_border_color_start, (float)(borderTimer / borderDuration));
-		}
-	}
-
-	if (selected != prevSelected)
-	{
-		if (selected)
+	if (in_focus != prev_in_focus) {
+		if (in_focus)
 			item_containers[selected_item]->Select();
 		else
 			item_containers[selected_item]->Unselect();
-		prevSelected = selected;
+		prev_in_focus = in_focus;
 	}
 
-	float scrollOffset = 0.0f;
+	update_border_color(dt);
+
 	switch (state)
 	{
 	case STATE_SCROLLING:
-		scrollTimer += dt;
-		if (scrollTimer >= scrollDuration)
-		{
-			state = STATE_MENU;
-			scrollTimer = 0.0f;
-			if (scrollCleanup)
-			{
-				if (scrollDir == 1)
-				{
-					for (int i = 0; i < rows; ++i)
-						item_containers[first_item++]->item->Deactivate();
-
-				}
-				else if (scrollDir == 0)
-				{
-					for (int i = 0; i < rows; i++)
-					{
-						if (last_item - first_item > rows*columns)
-						{
-							item_containers[last_item - 1]->item->Deactivate();
-							last_item--;
-						}
-					}
-				}
-				scrollCleanup = false;
-				changed = true;
-			}
-			if (--scrolls > 0)
-				scrollRepeat = true;
-		}
-		else
-			if (scrollDir)
-				scrollOffset = InterpolateCosine(tile_width, 0.0f, (float)(scrollTimer / scrollDuration));
-			else
-				scrollOffset = InterpolateCosine(-tile_width, 0.0f, (float)(scrollTimer / scrollDuration));
-		if (scrollCleanup && scrollDir == 1)
-			scrollOffset -= tile_width;
+		update_scroll(dt);
+		update_menu(dt);
+		break;
 	case STATE_MENU:
-	{
-		if (state != prevState)
-		{
-			changed = true;
-			prevState = state;
-		}
-		int p = on_first_page ? rows : 0;
-
-		for (int i = first_item; i < last_item; ++i, ++p)
-		{
-			float xx = x + scrollOffset + (p / rows) * tile_width;
-			float yy = y + (p % rows) * -2.04f;
-
-			float xxx = InterpolateLinear(xx, zoomDestX, .3f);
-			float yyy = InterpolateLinear(yy, zoomDestY, .3f);
-			float zzz = InterpolateLinear(0.0f, zoomDestZ, .3f);
-
-			if (item_containers[i]->selecting)
-			{
-				item_containers[i]->selectTimer += dt;
-				if (item_containers[i]->selectTimer >= item_containers[i]->selectDuration)
-				{
-					item_containers[i]->selecting = false;
-					if (item_containers[i]->selectDir == 0)
-					{
-						item_containers[i]->selected = true;
-						item_containers[i]->pos = { xxx, yyy, zzz };
-					}
-					else
-					{
-						item_containers[i]->selected = false;
-						item_containers[i]->pos = { xx, yy, 0.0f };
-					}
-					item_containers[i]->selectTimer = 0.0f;
-
-				}
-				else
-					if (item_containers[i]->selectDir == 0)
-					{
-						D3DXVECTOR3 start = { xx, yy, 0.0f };
-						D3DXVECTOR3 end = { xxx, yyy, zzz };
-						float mu = (float)(item_containers[i]->selectTimer / item_containers[i]->selectDuration);
-						item_containers[i]->pos = interpolate_cosine3(start, end, mu);
-					}
-					else
-					{
-						D3DXVECTOR3 end = { xx, yy, 0.0f };
-						D3DXVECTOR3 start = { xxx, yyy, zzz };
-						float mu = (float)(item_containers[i]->selectTimer / item_containers[i]->selectDuration);
-						item_containers[i]->pos = interpolate_cosine3(start, end, mu);
-					}
-			}
-			else if (item_containers[i]->selected)
-			{
-				item_containers[i]->pos = { xxx, yyy, zzz };
-			}
-
-			else
-			{
-				item_containers[i]->pos = { xx, yy, 0.0f };
-			}
-
-		}
-	}
-	break;
+		update_menu(dt);
+		break;
 	case STATE_ZOOMING:
-	{
-		float zz = 0.0f;
-		if (state != prevState)
-		{
-			if (zoomDir == 0)
-			{
-				zoomStartX = item_containers[selected_item]->pos.x;
-				zoomStartY = item_containers[selected_item]->pos.y;
-				zoomStartZ = item_containers[selected_item]->pos.z;
-			}
-			prevState = state;
-			changed = true;
-		}
-		zoomTimer += dt;
-		if (zoomTimer >= zoomDuration)
-		{
-			zoomTimer = 0.0f;
-			if (zoomDir == 0)
-			{
-				prevState = state;
-				state = STATE_ZOOMED;
-				if (selected)
-				{
-					item_containers[selected_item]->pos = { zoomDestX, zoomDestY, zoomDestZ };
-				}
-				zz = 10.0f;
-				if (stretch_to_fit)
-				{
-					build_stretch_buffer((double)clientWidth / clientHeight);
-				}
-
-			}
-			else
-			{
-				prevState = state;
-				state = STATE_MENU;
-				if (selected)
-				{
-					item_containers[selected_item]->pos = { zoomStartX, zoomStartY, zoomStartZ };
-				}
-				zz = 0.0f;
-				if (stretch_to_fit)
-				{
-					build_stretch_buffer(4.0f / 3.0f);
-				}
-			}
-			changed = true;
-
-		}
-		else
-		{
-			if (zoomDir == 0)
-			{
-				zz = InterpolateLinear(0.0f, 10.0f, (float)(zoomTimer / zoomDuration));
-				if (selected)
-				{
-					D3DXVECTOR3 start = { zoomStartX, zoomStartY, zoomStartZ };
-					D3DXVECTOR3 end = { zoomDestX, zoomDestY, zoomDestZ };
-					float mu = (float)(zoomTimer / zoomDuration);
-					item_containers[selected_item]->pos = interpolate_linear3(start, end, mu);
-					if (stretch_to_fit)
-					{
-						build_stretch_buffer(InterpolateLinear(4.0f / 3.0f, (double)clientWidth / clientHeight, (float)(zoomTimer / zoomDuration)));
-					}
-				}
-			}
-			else if (zoomDir == 1)
-			{
-				zz = InterpolateLinear(10.0f, 0.0f, (float)(zoomTimer / zoomDuration));
-				if (selected)
-				{
-					D3DXVECTOR3 end = { zoomStartX, zoomStartY, zoomStartZ };
-					D3DXVECTOR3 start = { zoomDestX, zoomDestY, zoomDestZ };
-					float mu = (float)(zoomTimer / zoomDuration);
-					item_containers[selected_item]->pos = interpolate_linear3(start, end, mu);
-					if (stretch_to_fit)
-					{
-						build_stretch_buffer(InterpolateLinear((double)clientWidth / clientHeight, 4.0f / 3.0f, (float)(zoomTimer / zoomDuration)));
-					}
-				}
-			}
-		}
-		for (int i = first_item; i < last_item; ++i)
-		{
-			if (!(selected && i == selected_item))
-				item_containers[i]->pos.z = zz;
-		}
-	}
-	break;
+		update_zoom(dt);
+		break;
 	}
 }
 
@@ -564,31 +485,19 @@ void TexturePanel::Draw()
 	case STATE_SCROLLING:
 	case STATE_MENU:
 	case STATE_ZOOMING:
-		for (int i = first_item; i < last_item; ++i)
-		{
+		for (int i = first_item; i < last_item; ++i) {
 			c_item_container *p = item_containers[i];
-			if (selected && i == selected_item)
-			{
-				if (p->item->Selectable())
-				{
-					var_border_color->SetFloatVector((float*)&border_color);
-				}
-				else
-				{
-					var_border_color->SetFloatVector((float*)&invalid_border_color);
-				}
-
+			if (in_focus && i == selected_item) {
+				var_border_color->SetFloatVector((float *)(p->item->Selectable() ? &border_color : &invalid_border_color));
 				DrawItem(p, state != STATE_ZOOMING, p->pos.x, p->pos.y, p->pos.z, 1.0f);
 			}
-			else
-			{
+			else {
 				DrawItem(p, 0, p->pos.x, p->pos.y, p->pos.z, .45f);
 			}
 		}
 		break;
 	case STATE_ZOOMED:
-		if (selected)
-		{
+		if (in_focus) {
 			c_item_container *p = item_containers[selected_item];
 			DrawItem(p, 0, p->pos.x, p->pos.y, p->pos.z);
 		}
@@ -599,8 +508,7 @@ void TexturePanel::Draw()
 
 void TexturePanel::build_stretch_buffer(float ratio)
 {
-	if (vertexBuffer2)
-	{
+	if (vertexBuffer2) {
 		vertexBuffer2->Release();
 		vertexBuffer2 = NULL;
 	}
@@ -621,26 +529,22 @@ void TexturePanel::DrawItem(c_item_container *item, int draw_border, float x, fl
 	d3dDev->IASetInputLayout(vertexLayout);
 	//item->item->build_stretch_buffer((double)clientWidth / clientHeight);
 	ID3D10Buffer *b;
-	if (false && stretch_to_fit && item->selected)
-	{
+	if (false && stretch_to_fit && item->selected) {
 		double ratio = (double)clientWidth / clientHeight;
-		if (state == STATE_ZOOMING)
-		{
+		if (state == STATE_ZOOMING) {
 			ratio = InterpolateLinear((double)clientWidth / clientHeight, 4.0f / 3.0f, (float)(zoomTimer / zoomDuration));
 		}
 		item->item->build_stretch_buffer(ratio);
 		b = item->item->get_vertex_buffer(1);
 	}
-	else
-	{
+	else {
 		b = item->item->get_vertex_buffer(0);
 	}
 	
 	d3dDev->IASetVertexBuffers(0, 1, &b, &stride, &offset);
 	d3dDev->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
-	if (dim)
-	{
+	if (dim) {
 		c *= .09f;
 	}
 
@@ -667,8 +571,7 @@ void TexturePanel::DrawItem(c_item_container *item, int draw_border, float x, fl
 	varWorld->SetMatrix((float*)&matrixWorld);
 	technique->GetPassByIndex(0)->Apply(0);
 	d3dDev->Draw(4, 0);
-	if (draw_border)
-	{
+	if (draw_border) {
 		d3dDev->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
 		d3dDev->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 		technique->GetPassByIndex(1)->Apply(0);
@@ -694,8 +597,8 @@ int TexturePanel::NextRow(bool adjusting)
 		{
 			item_containers[selected_item]->Unselect();
 
-			selected = false;
-			next->selected = true;
+			in_focus = false;
+			next->in_focus = true;
 			return 1;
 		}
 		return 0;
@@ -729,8 +632,8 @@ int TexturePanel::PrevRow(bool adjusting)
 		if (prev && prev->selectable)
 		{
 			item_containers[selected_item]->Unselect();
-			selected = false;
-			prev->selected = true;
+			in_focus = false;
+			prev->in_focus = true;
 			return 1;
 		}
 		return 1;
@@ -774,11 +677,11 @@ void TexturePanel::move_to_char(char c)
 		for (int i = 0; i < column_move; i++)
 		{
 			NextColumn(false, true);
-			if (scrollCleanup)
+			if (scroll_changed_page)
 			{
 				for (int i = 0; i < rows; ++i)
 					item_containers[first_item++]->item->Deactivate();
-				scrollCleanup = 0;
+				scroll_changed_page = false;
 			}
 		}
 	}
@@ -787,7 +690,7 @@ void TexturePanel::move_to_char(char c)
 		for (int i = 0; i < column_move * -1; i++)
 		{
 			PrevColumn(false, true);
-			if (scrollCleanup)
+			if (scroll_changed_page)
 			{
 				for (int i = 0; i < rows; i++)
 				{
@@ -845,12 +748,12 @@ void TexturePanel::move_to_column(int column)
 
 void TexturePanel::NextColumn(bool load, bool adjusting)
 {
-	if (scrollDir == 0)
+	if (scroll_dir == SCROLL_LEFT)
 	{
 		scrolls = 0;
 		//state = STATE_MENU;
 	}
-	if (scrollDir == 1 && state == STATE_SCROLLING && scrolls < 2)
+	if (scroll_dir == SCROLL_RIGHT && state == STATE_SCROLLING && scrolls < 2)
 		scrolls++;
 	if (!adjusting && state != STATE_MENU)
 		return;
@@ -869,8 +772,8 @@ void TexturePanel::NextColumn(bool load, bool adjusting)
 		{
 			state = STATE_SCROLLING;
 			scrolls++;
-			scrollDir = 1;
-			scrollCleanup = true;
+			scroll_dir = SCROLL_RIGHT;
+			scroll_changed_page = true;
 			for (int i = 0; i < rows; i++)
 			{
 				if (last_item < numItems /*&& !adjusting*/)
@@ -886,7 +789,7 @@ void TexturePanel::NextColumn(bool load, bool adjusting)
 	{
 		state = STATE_SCROLLING;
 		scrolls++;
-		scrollDir = 1;
+		scroll_dir = SCROLL_RIGHT;
 		for (int i = 0; i < rows; i++)
 		{
 			if (last_item < numItems/* && !adjusting*/)
@@ -902,12 +805,12 @@ void TexturePanel::NextColumn(bool load, bool adjusting)
 
 void TexturePanel::PrevColumn(bool load, bool adjusting)
 {
-	if (scrollDir == 1)
+	if (scroll_dir == SCROLL_RIGHT)
 	{
 		scrolls = 0;
 		//state = STATE_MENU;
 	}
-	if (scrollDir == 0 && state == STATE_SCROLLING && scrolls < 2)
+	if (scroll_dir == SCROLL_LEFT && state == STATE_SCROLLING && scrolls < 2)
 		scrolls++;
 	if (!adjusting && state != STATE_MENU)
 		return;
@@ -926,8 +829,8 @@ void TexturePanel::PrevColumn(bool load, bool adjusting)
 		{
 			state = STATE_SCROLLING;
 			scrolls++;
-			scrollDir = 0;
-			scrollCleanup = true;
+			scroll_dir = SCROLL_LEFT;
+			scroll_changed_page = true;
 			for (int i = 0; i < rows; i++)
 			{
 				--first_item;
@@ -942,7 +845,7 @@ void TexturePanel::PrevColumn(bool load, bool adjusting)
 	{
 		state = STATE_SCROLLING;
 		scrolls++;
-		scrollDir = 0;
+		scroll_dir = SCROLL_LEFT;
 		for (int i = 0; i < rows; i++)
 		{
 			if (last_item - first_item > rows*columns - rows)
@@ -968,9 +871,9 @@ int TexturePanel::GetSelectedColumn()
 void TexturePanel::Zoom()
 {
 	if (state == STATE_ZOOMED)
-		zoomDir = 1;
+		zoom_dir = ZOOMING_IN;
 	else
-		zoomDir = 0;
+		zoom_dir = ZOOMING_OUT;
 	prevState = state;
 	state = STATE_ZOOMING;
 }
@@ -990,7 +893,7 @@ float TexturePanel::InterpolateCosine(float start, float end, float mu)
 	return InterpolateLinear(start, end, mu2);
 }
 
-D3DXVECTOR3 TexturePanel::interpolate_linear3(D3DXVECTOR3 &start, D3DXVECTOR3 &end, float mu)
+D3DXVECTOR3 TexturePanel::interpolate_linear3(const D3DXVECTOR3 &start, const D3DXVECTOR3 &end, float mu)
 {
 	if (mu > 1.0f)
 		mu = 1.0f;
@@ -1002,7 +905,7 @@ D3DXVECTOR3 TexturePanel::interpolate_linear3(D3DXVECTOR3 &start, D3DXVECTOR3 &e
 	return ret;
 }
 
-D3DXVECTOR3 TexturePanel::interpolate_cosine3(D3DXVECTOR3 &start, D3DXVECTOR3 &end, float mu)
+D3DXVECTOR3 TexturePanel::interpolate_cosine3(const D3DXVECTOR3 &start, const D3DXVECTOR3 &end, float mu)
 {
 	if (mu > 1.0f)
 		mu = 1.0f;
