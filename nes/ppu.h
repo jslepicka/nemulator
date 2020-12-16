@@ -73,8 +73,8 @@ private:
 
 	int InterleaveBits(unsigned char odd, unsigned char even);
 
-	__int32 interleave_bits_32(unsigned char odd, unsigned char even);
-	__int64 interleave_bits_64(unsigned char odd, unsigned char even);
+	uint32_t interleave_bits_32(unsigned char odd, unsigned char even);
+	uint64_t interleave_bits_64(unsigned char odd, unsigned char even);
 
 	struct
 	{
@@ -122,14 +122,16 @@ private:
 	static int mortonOdd[];
 	static int mortonEven[];
 
-	static __int32 morton_odd_32[];
-	static __int32 morton_even_32[];
+	static uint32_t morton_odd_32[];
+	static uint32_t morton_even_32[];
 
-	static __int64 morton_odd_64[];
-	static __int64 morton_even_64[];
+	static uint64_t morton_odd_64[];
+	static uint64_t morton_even_64[];
 
 	static int attr_shift_table[0x400];
 	static int attr_loc[0x400];
+
+	static uint32_t pal[512];
 
 	void update_vram_address();
 
@@ -147,4 +149,6 @@ private:
 	void inc_vertical_address();
 
 	static std::atomic<int> lookup_tables_built;
+
+	void generate_palette();
 };
