@@ -109,8 +109,6 @@ private:
 	void OnPause(bool paused);
 	void GetEvents();
 
-	//void InitPalette();
-	void generate_palette();
 	void RunGames();
 	void ProcessInput(double dt);
 	int selectedPanel;

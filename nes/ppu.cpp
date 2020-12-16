@@ -28,6 +28,9 @@
 #include "mapper.h"
 #include "apu2.h"
 #include <new>
+#define _USE_MATH_DEFINES
+#include <math.h>
+#include "..\clamp.h"
 
 
 #include <crtdbg.h>
@@ -41,10 +44,12 @@ int c_ppu::attr_shift_table[0x400];
 int c_ppu::attr_loc[0x400];
 int c_ppu::mortonOdd[256];
 int c_ppu::mortonEven[256];
-__int32 c_ppu::morton_odd_32[256];
-__int32 c_ppu::morton_even_32[256];
-__int64 c_ppu::morton_odd_64[256];
-__int64 c_ppu::morton_even_64[256];
+uint32_t c_ppu::morton_odd_32[256];
+uint32_t c_ppu::morton_even_32[256];
+uint64_t c_ppu::morton_odd_64[256];
+uint64_t c_ppu::morton_even_64[256];
+
+uint32_t c_ppu::pal[512];
 
 c_ppu::c_ppu(void)
 {
@@ -52,6 +57,113 @@ c_ppu::c_ppu(void)
 	mapper = 0;
 	build_lookup_tables();
 	limit_sprites = false; //don't change this on reset
+}
+
+void c_ppu::generate_palette()
+{
+	double saturation = 1.3;
+	double hue_tweak = 0.0;
+	double contrast = 1.0;
+	double brightness = 1.0;
+
+	for (int pixel = 0; pixel < 512; pixel++)
+	{
+		int color = (pixel & 0xF);
+		int level = color < 0xE ? (pixel >> 4) & 0x3 : 1;
+
+		static const double black = .518;
+		static const double white = 1.962;
+		static const double attenuation = .746;
+		static const double levels[8] = { .350, .518, .962, 1.550,
+			1.094, 1.506, 1.962, 1.962 };
+		double lo_and_hi[2] = { levels[level + 4 * (color == 0x0)],
+			levels[level + 4 * (color < 0xd)] };
+		double y = 0.0;
+		double i = 0.0;
+		double q = 0.0;
+
+		for (int p = 0; p < 12; ++p)
+		{
+			auto wave = [](int p, int color) {
+				return (color + p + 8) % 12 < 6;
+			};
+
+			double spot = lo_and_hi[wave(p, color)];
+			if (((pixel & 0x40) && wave(p, 12))
+				|| ((pixel & 0x80) && wave(p, 4))
+				|| ((pixel & 0x100) && wave(p, 8))) spot *= attenuation;
+			double v = (spot - black) / (white - black);
+
+			v = (v - .5) * contrast + .5;
+			v *= brightness / 12.0;
+
+			y += v;
+			i += v * cos((M_PI / 6.0) * (p + hue_tweak));
+			q += v * sin((M_PI / 6.0) * (p + hue_tweak));
+		}
+
+		i *= saturation;
+		q *= saturation;
+
+		//Y'IQ -> NTSC R'G'B'
+		//conversion matrix from http://wiki.nesdev.com/w/index.php/NTSC_video
+		//Adapted from http://en.wikipedia.org/wiki/YIQ, FCC matrix []^-1
+		//double ntsc_r = y +  0.946882 * i +  0.623557 * q;
+		//double ntsc_g = y + -0.274788 * i + -0.635691 * q;
+		//double ntsc_b = y + -1.108545 * i +  1.709007 * q;
+		//double ntsc_r = y + i * 0.946882217090069 + q * 0.623556581986143;
+		//double ntsc_g = y + i * -0.274787646298978 + q * -0.635691079187380;
+		//double ntsc_b = y + i * -1.10854503464203 + q * 1.70900692840647;
+		double ntsc_r = y + 0.956 * i + 0.620 * q;
+		double ntsc_g = y + -0.272 * i + -0.647 * q;
+		double ntsc_b = y + -1.108 * i + 1.705 * q;
+
+		//NTSC R'G'B' -> linear NTSC RGB
+		ntsc_r = pow(clamp(ntsc_r, 0.0, 1.0), 2.2);
+		ntsc_g = pow(clamp(ntsc_g, 0.0, 1.0), 2.2);
+		ntsc_b = pow(clamp(ntsc_b, 0.0, 1.0), 2.2);
+
+		//NTSC RGB (SMPTE-C) -> CIE XYZ
+		//conversion matrix from http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
+		double cie_x = ntsc_r * 0.3935891 + ntsc_g * 0.3652497 + ntsc_b * 0.1916313;
+		double cie_y = ntsc_r * 0.2124132 + ntsc_g * 0.7010437 + ntsc_b * 0.0865432;
+		double cie_z = ntsc_r * 0.0187423 + ntsc_g * 0.1119313 + ntsc_b * 0.9581563;
+
+		//CIE XYZ -> linear sRGB
+		//Shader will return sR'G'B'
+		//conversion matrix from http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
+		double srgb_r2 = cie_x * 3.2404542 + cie_y * -1.5371385 + cie_z * -0.4985314;
+		double srgb_g2 = cie_x * -0.9692660 + cie_y * 1.8760108 + cie_z * 0.0415560;
+		double srgb_b2 = cie_x * 0.0556434 + cie_y * -0.2040259 + cie_z * 1.0572252;
+
+		//linear RGB -> sRGB
+		srgb_r2 = clamp(pow(srgb_r2, 1.0 / 2.2), 0.0, 1.0);
+		srgb_g2 = clamp(pow(srgb_g2, 1.0 / 2.2), 0.0, 1.0);
+		srgb_b2 = clamp(pow(srgb_b2, 1.0 / 2.2), 0.0, 1.0);
+
+
+		//double srgb_r = ntsc_r * 0.939555319482800 + ntsc_g * 0.0501723952684700 + ntsc_b * 0.0102725646454400;
+		//double srgb_g = ntsc_r * 0.0177757796807600 + ntsc_g * 0.965792853854560 + ntsc_b * 0.0164314174435600;
+		//double srgb_b = ntsc_r * -0.00162232670898000 + ntsc_g * -0.00437074564609001 + ntsc_b * 1.00599294870830;
+
+		//srgb_r = clamp(srgb_r, 0.0, 1.0);
+		//srgb_g = clamp(srgb_g, 0.0, 1.0);
+		//srgb_b = clamp(srgb_b, 0.0, 1.0);
+
+		auto gammafix = [](double f) {
+			float gamma = 2.2;
+			return f;
+			//return f < 0.0 ? 0.0 : pow(f, 2.2 / gamma);
+			return f < 0.0 ? 0.0 : pow(f, gamma);
+		};
+
+
+		int rgb = 0x000001 * (int)(255.0 * srgb_r2)
+			+ 0x000100 * (int)(255.0 * srgb_g2)
+			+ 0x010000 * (int)(255.0 * srgb_b2);
+
+		pal[pixel] = rgb | 0xFF000000;
+	}
 }
 
 void c_ppu::build_lookup_tables()
@@ -89,6 +201,8 @@ void c_ppu::build_lookup_tables()
 			morton_odd_64[i] = result_64;
 			morton_even_64[i] = result_64 << 1;
 		}
+
+		generate_palette();
 	}
 }
 
@@ -103,12 +217,12 @@ __forceinline int c_ppu::InterleaveBits(unsigned char odd, unsigned char even)
 	return mortonOdd[odd] | mortonEven[even];
 }
 
-__forceinline __int32 c_ppu::interleave_bits_32(unsigned char odd, unsigned char even)
+__forceinline uint32_t c_ppu::interleave_bits_32(unsigned char odd, unsigned char even)
 {
 	return morton_odd_32[odd] | morton_even_32[even];
 }
 
-__forceinline __int64 c_ppu::interleave_bits_64(unsigned char odd, unsigned char even)
+__forceinline uint64_t c_ppu::interleave_bits_64(unsigned char odd, unsigned char even)
 {
 	return morton_odd_64[odd] | morton_even_64[even];
 }
@@ -607,6 +721,11 @@ void c_ppu::run_ppu(int cycles)
 			{
 				current_scanline = 0;
 				warmed_up = 1;
+				int* pf = pFrameBuffer;
+				for (int i = 0; i < 256 * 240; i++) {
+					*pf = pal[*pf];
+					pf++;
+				}
 			}
 			current_cycle = 0;
 			//odd_frame ^= 1;
@@ -628,6 +747,11 @@ void c_ppu::DrawScanline(void)
 	{
 		linenumber = 0;
 		warmed_up = 1;
+		int* pf = pFrameBuffer;
+		for (int i = 0; i < 256 * 240; i++) {
+			*pf = pal[*pf & 0x1FF];
+			pf++;
+		}
 	}
 	else
 		linenumber++;

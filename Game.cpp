@@ -4,7 +4,6 @@
 #define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
 #define new DEBUG_NEW
 #endif
-extern int pal[64 * 8];
 extern HANDLE g_start_event;
 
 extern ID3D10Device *d3dDev;
@@ -170,8 +169,7 @@ void Game::DrawToTexture(ID3D10Texture2D *tex)
 					}
 					else
 					{
-						int col = pal[*fb++ & 0x1FF];
-						*p++ = col;
+						*p++ = *fb++;
 					}
 				}
 			}
