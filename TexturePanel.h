@@ -205,8 +205,8 @@ private:
 
 	D3DXMATRIX matrixWorld;
 
-	static float InterpolateLinear(float start, float end, float mu);
-	static float InterpolateCosine(float start, float end, float mu);
+	//static float InterpolateLinear(float start, float end, float mu);
+	//static float InterpolateCosine(float start, float end, float mu);
 
 	struct float3 {
 		float x;
@@ -214,8 +214,8 @@ private:
 		float z;
 	};
 
-	static D3DXVECTOR3 interpolate_linear3(const D3DXVECTOR3 &start, const D3DXVECTOR3 &end, float mu);
-	static D3DXVECTOR3 interpolate_cosine3(const D3DXVECTOR3 &start, const D3DXVECTOR3 &end, float mu);
+	//static D3DXVECTOR3 interpolate_linear3(const D3DXVECTOR3 &start, const D3DXVECTOR3 &end, float mu);
+	//static D3DXVECTOR3 interpolate_cosine3(const D3DXVECTOR3 &start, const D3DXVECTOR3 &end, float mu);
 
 	int valid_chars[27];
 
