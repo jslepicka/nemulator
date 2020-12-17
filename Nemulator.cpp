@@ -245,7 +245,6 @@ void c_nemulator::Init()
 	mainPanel2->y = 0.0f;
 	mainPanel2->z = 0.0f;
 	mainPanel2->in_focus = true;
-	mainPanel2->stretch_to_fit = config->get_bool("app.stretch_to_fit", false);
 	sharpness = config->get_double("sharpness", .8);
 	if (sharpness < 0.0f)
 	{

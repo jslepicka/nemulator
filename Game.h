@@ -42,7 +42,6 @@ public:
 	std::string filename;
 	GAME_TYPE type;
 	int played = 0;
-	D3DXCOLOR get_overscan_color();
 	int get_height();
 	int get_width();
 	struct SimpleVertex
@@ -65,7 +64,6 @@ private:
 	std::string sram_path;
 
 	static const SimpleVertex default_vertices[4];
-	SimpleVertex vertices2[4];
 	D3D10_BUFFER_DESC bd;
 	ID3D10Buffer *vertex_buffer = NULL;
 	ID3D10Buffer *stretched_vertex_buffer = NULL;
