@@ -51,9 +51,6 @@ public:
 	void Suspend();
 	void Resume();
 	void OnResize();
-	float zoomedR;
-	float zoomedG;
-	float zoomedB;
 
 	static const int STATE_NULL = 0;
 	static const int STATE_MENU = 1;
@@ -66,7 +63,6 @@ public:
 	bool selectable;
 	float camera_distance;
 	int *get_valid_chars();
-	bool stretch_to_fit;
 	void set_sharpness(float factor);
 
 private:
@@ -127,8 +123,6 @@ private:
 
 	std::vector<c_item_container*> item_containers;
 
-
-
 	double scrollDuration;
 	static const float zoomDuration;
 	static const float borderDuration;
@@ -155,28 +149,6 @@ private:
 	double borderTimer;
 	int borderDir;
 
-	float borderR;
-	float borderG;
-	float borderB;
-
-	float borderInvalidR;
-	float borderInvalidG;
-	float borderInvalidB;
-
-	float borderR1;
-	float borderG1;
-	float borderB1;
-	float borderR2;
-	float borderG2;
-	float borderB2;
-
-	float borderInvalidR1;
-	float borderInvalidG1;
-	float borderInvalidB1;
-	float borderInvalidR2;
-	float borderInvalidG2;
-	float borderInvalidB2;
-
 	HRESULT hr;
 
 	ID3D10Effect *effect;
@@ -195,34 +167,16 @@ private:
 	ID3D10EffectScalarVariable *var_max_x;
 
 	ID3D10EffectShaderResourceVariable *varTex;
-	//ID3D10EffectShaderResourceVariable *varTex2;
 
 	ID3D10Buffer *vertexBuffer;
-	ID3D10Buffer *vertexBuffer2;
 	ID3D10ShaderResourceView *texRv;
-	//ID3D10ShaderResourceView *tex2Rv;
 	ID3D10InputLayout *vertexLayout;
 
 	D3DXMATRIX matrixWorld;
 
-	//static float InterpolateLinear(float start, float end, float mu);
-	//static float InterpolateCosine(float start, float end, float mu);
-
-	struct float3 {
-		float x;
-		float y;
-		float z;
-	};
-
-	//static D3DXVECTOR3 interpolate_linear3(const D3DXVECTOR3 &start, const D3DXVECTOR3 &end, float mu);
-	//static D3DXVECTOR3 interpolate_cosine3(const D3DXVECTOR3 &start, const D3DXVECTOR3 &end, float mu);
-
 	int valid_chars[27];
 
 	D3D10_BUFFER_DESC bd;
-	SimpleVertex vertices2[4];
-
-	void build_stretch_buffer(float ratio);
 
 	D3DXVECTOR3 border_color, border_color_start, border_color_end;
 	D3DXVECTOR3 invalid_border_color, invalid_border_color_start, invalid_border_color_end;

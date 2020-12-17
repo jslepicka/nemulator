@@ -92,10 +92,6 @@ TexturePanel::TexturePanel(int rows, int columns)
 	this->rows = rows;
 	this->columns = columns;
 
-	zoomedR = 0.0f;
-	zoomedG = 0.0f;
-	zoomedB = 0.0f;
-
 	dim = false;
 
 	camera_distance = 0.0;
@@ -103,7 +99,6 @@ TexturePanel::TexturePanel(int rows, int columns)
 	memset(valid_chars, 0, sizeof(valid_chars));
 
 	Init();
-	stretch_to_fit = false;
 
 	scrollOffset = 0.0f;
 }
@@ -169,17 +164,12 @@ void TexturePanel::Init()
 		{ {4.0f / 3.0f, 1.0f, 0.0f}, {1.0f, 0.0f} },
 	};
 
-	memcpy(vertices2, vertices, sizeof(SimpleVertex) * 4);
-	vertexBuffer2 = NULL;
-
 
 	bd.Usage = D3D10_USAGE_DEFAULT;
 	bd.ByteWidth = sizeof(SimpleVertex) * 4;
 	bd.BindFlags = D3D10_BIND_VERTEX_BUFFER;
 	bd.CPUAccessFlags = 0;
 	bd.MiscFlags = 0;
-
-	build_stretch_buffer(4.0f / 3.0f);
 
 	D3D10_SUBRESOURCE_DATA initData;
 	initData.pSysMem = vertices;
@@ -237,9 +227,6 @@ void TexturePanel::set_sharpness(float factor)
 
 void TexturePanel::OnResize()
 {
-	if (stretch_to_fit && state == STATE_ZOOMED) {
-		build_stretch_buffer((float)clientWidth / (float)clientHeight);
-	}
 }
 
 bool TexturePanel::Changed()
@@ -508,40 +495,12 @@ void TexturePanel::Draw()
 
 }
 
-void TexturePanel::build_stretch_buffer(float ratio)
-{
-	if (vertexBuffer2) {
-		vertexBuffer2->Release();
-		vertexBuffer2 = NULL;
-	}
-	vertices2[0].pos.x = -ratio;
-	vertices2[1].pos.x = -ratio;
-	vertices2[2].pos.x = ratio;
-	vertices2[3].pos.x = ratio;
-
-	D3D10_SUBRESOURCE_DATA initData;
-	initData.pSysMem = vertices2;
-	hr = d3dDev->CreateBuffer(&bd, &initData, &vertexBuffer2);
-}
-
 void TexturePanel::DrawItem(c_item_container *item, int draw_border, float x, float y, float z, float c)
 {
 	UINT stride = sizeof(SimpleVertex);
 	UINT offset = 0;
 	d3dDev->IASetInputLayout(vertexLayout);
-	//item->item->build_stretch_buffer((double)clientWidth / clientHeight);
-	ID3D10Buffer *b;
-	if (false && stretch_to_fit && item->selected) {
-		double ratio = (double)clientWidth / clientHeight;
-		if (state == STATE_ZOOMING) {
-			ratio = lerp((double)clientWidth / clientHeight, 4.0 / 3.0, zoomTimer / zoomDuration);
-		}
-		item->item->build_stretch_buffer((float)ratio);
-		b = item->item->get_vertex_buffer(1);
-	}
-	else {
-		b = item->item->get_vertex_buffer(0);
-	}
+	ID3D10Buffer *b = item->item->get_vertex_buffer(0);
 	
 	d3dDev->IASetVertexBuffers(0, 1, &b, &stride, &offset);
 	d3dDev->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);

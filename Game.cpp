@@ -237,53 +237,9 @@ void Game::create_vertex_buffer()
 	}
 
 
-	memcpy(vertices2, vertices, sizeof(vertices2));
-
 	D3D10_SUBRESOURCE_DATA initData;
 	initData.pSysMem = vertices;
 	HRESULT hr = d3dDev->CreateBuffer(&bd, &initData, &vertex_buffer);
-}
-
-void Game::build_stretch_buffer(float ratio)
-{
-	if (stretched_vertex_buffer)
-	{
-		stretched_vertex_buffer->Release();
-		stretched_vertex_buffer = NULL;
-	}
-	vertices2[0].pos.x = -ratio;
-	vertices2[1].pos.x = -ratio;
-	vertices2[2].pos.x = ratio;
-	vertices2[3].pos.x = ratio;
-
-	D3D10_SUBRESOURCE_DATA initData;
-	initData.pSysMem = vertices2;
-	HRESULT hr = d3dDev->CreateBuffer(&bd, &initData, &stretched_vertex_buffer);
-}
-
-D3DXCOLOR Game::get_overscan_color()
-{
-	if (console->is_loaded())
-	{
-		float r, g, b, a;
-		switch (type)
-		{
-		case GAME_SMS:
-		case GAME_GG:
-			r = (console->get_overscan_color() & 0xFF) / 255.0;
-			g = ((console->get_overscan_color() >> 8) & 0xFF) / 255.0;
-			b = ((console->get_overscan_color() >> 16) & 0xFF) / 255.0;
-			a = ((console->get_overscan_color() >> 24) & 0xFF) / 255.0;
-			return D3DXCOLOR(r, g, b, a);
-			break;
-		default:
-			return D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f);
-		}
-	}
-	else
-	{
-		return D3DXCOLOR(0.0f, 0.0f, 0.0f, 0.0f);
-	}
 }
 
 //TODO: this should probably be handled by console

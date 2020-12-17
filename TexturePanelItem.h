@@ -18,8 +18,6 @@ public:
 	std::string get_description() { return description; }
 	int is_active;
 	virtual ID3D10Buffer *get_vertex_buffer(int stretched) = 0;
-	virtual void build_stretch_buffer(float ratio) = 0;
-	virtual D3DXCOLOR get_overscan_color() = 0;
 	virtual int get_height() = 0;
 	virtual int get_width() = 0;
 private:
