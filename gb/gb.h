@@ -43,6 +43,9 @@ public:
 	void enable_mixer();
 	void disable_mixer();
 
+	int get_fb_width() { return 160; }
+	int get_fb_height() { return 144; }
+
 private:
 
 	c_gbppu* ppu;

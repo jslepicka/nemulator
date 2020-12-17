@@ -22,6 +22,8 @@ public:
 	virtual int *get_video() = 0;
 	virtual void set_sprite_limit(bool limit_sprites) {};
 	virtual bool get_sprite_limit() { return true; }
+	virtual int get_fb_height() = 0;
+	virtual int get_fb_width() = 0;
 	char path[MAX_PATH];
 	char sram_path[MAX_PATH];
 	char filename[MAX_PATH];

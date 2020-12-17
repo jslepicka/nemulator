@@ -57,6 +57,8 @@ private:
 	void create_vertex_buffer();
 
 	int ref;
+	int fb_width;
+	int fb_height;
 
 	//std::string filename;
 	std::string path;

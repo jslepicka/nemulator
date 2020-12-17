@@ -94,6 +94,8 @@ public:
 	c_mem_access_log *mem_access_log;
 	void enable_mixer();
 	void disable_mixer();
+	int get_fb_width() { return 256; }
+	int get_fb_height() { return 240; }
 
 private:
 	int num_apu_samples;
