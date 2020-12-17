@@ -106,6 +106,8 @@ void Game::OnActivate(bool load)
 				if (console->is_loaded())
 					console->disable_mixer();
 				create_vertex_buffer();
+				fb_width = console->get_fb_width();
+				fb_height = console->get_fb_height();
 			}
 		}
 		is_active = 1;
@@ -150,86 +152,33 @@ void Game::DrawToTexture(ID3D10Texture2D *tex)
 	D3D10_MAPPED_TEXTURE2D map;
 	map.pData = 0;
 	tex->Map(0, D3D10_MAP_WRITE_DISCARD, NULL, &map);
-	int *p = 0;
+	int* p;
 	if (console && console->is_loaded())
 	{
 		int *fb = console->get_video();
-		switch (type)
-		{
-		case GAME_NES:
-			for (int y = 0; y < 240; ++y)
-			{
-				p = (int*)map.pData + (y)* (map.RowPitch / 4);
-				for (int x = 0; x < 256; ++x)
-				{
-					if (mask_sides && (x < 8 || x > 247))
-					{
-						fb++;
-						*p++ = 0xFF000000;
-					}
-					else
-					{
-						*p++ = *fb++;
-					}
-				}
+		int y = 0;
+		for (; y < fb_height; y++) {
+			p = (int*)map.pData + (y) * (map.RowPitch / 4);
+			int x = 0;
+			for (; x < fb_width; x++) {
+				*p++ = *fb++;
 			}
-			break;
-		case GAME_SMS:
-		case GAME_GG:
-		{
-			int y = 0;
-			//for (; y < 14; y++)
-			//{
-			//	p = (int*)map.pData + (y)* (map.RowPitch / 4);
-			//	for (int x = 0; x < 256; x++)
-			//		*p++ = overscan;
-			//}
-			for (y = 0; y < 192+14; ++y)
-			{
-				p = (int*)map.pData + (y)* (map.RowPitch / 4);
-				for (int x = 0; x < 256; ++x)
-				{
-					*p++ = *fb++;
-				}
-			}
-			for (; y < 256; ++y)
-			{
-				p = (int*)map.pData + (y)* (map.RowPitch / 4);
-				for (int x = 0; x < 256; ++x)
-					*p++ = 0xFF000000;
+			for (; x < 256; x++) {
+				*p++ = 0xFF000000;
 			}
 		}
-		break;
-		case GAME_GB:
-		{
-			int y = 0;
-			for (y = 0; y < 144; ++y) {
-				int x = 0;
-				p = (int*)map.pData + (y) * (map.RowPitch / 4);
-				for (x = 0; x < 160; ++x) {
-					*p++ = *fb++;
-				}
-				for (; x < 256; ++x) {
-					*p++ = 0xFF000000;
-				}
+		for (; y < 256; y++) {
+			p = (int*)map.pData + (y) * (map.RowPitch / 4);
+			for (int x = 0; x < fb_width; x++) {
+				*p++ = 0xFF000000;
 			}
-			for (; y < 256; y++) {
-				p = (int*)map.pData + (y) * (map.RowPitch / 4);
-				for (int x = 0; x < 256; ++x) {
-					*p++ = 0xFF000000;
-				}
-			}
-		}
-		break;
-		default:
-			break;
 		}
 
 	}
 	else
 	{
 		unsigned char c = 0;
-		for (int y = 0; y < 240; ++y)
+		for (int y = 0; y < 256; ++y)
 		{
 			p = (int*)map.pData + y * (map.RowPitch / 4);
 			for (int x = 0; x < 256; ++x)

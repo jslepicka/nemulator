@@ -32,6 +32,8 @@ public:
 	void disable_mixer();
 	void set_input(int input);
 	int get_overscan_color();
+	int get_fb_width() { return 256; }
+	int get_fb_height() { return 192; }
 private:
 	int type = 0;
 	int psg_cycles;
