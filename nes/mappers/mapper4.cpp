@@ -27,6 +27,7 @@
 c_mapper4::c_mapper4(void)
 {
 	mapperName = "MMC3";
+	four_screen = 0;
 }
 
 c_mapper4::~c_mapper4(void)
@@ -103,10 +104,12 @@ void c_mapper4::WriteByte(unsigned short address, unsigned char value)
 			Sync();
 			break;
 		case 0xa000:
-			if (value & 0x01)
-				set_mirroring(MIRRORING_HORIZONTAL);
-			else
-				set_mirroring(MIRRORING_VERTICAL);
+			if (!four_screen) {
+				if (value & 0x01)
+					set_mirroring(MIRRORING_HORIZONTAL);
+				else
+					set_mirroring(MIRRORING_VERTICAL);
+			}
 			break;
 		case 0xa001:
 			writeProtectSram = value & 0x40 ? true : false;
@@ -230,8 +233,13 @@ void c_mapper4::mmc3_check_a12()
 
 void c_mapper4::reset(void)
 {
-	if (crc32 == 0x404B2E8B)  //Rad Racer 2
+	if (nes->header->Rcb1.Fourscreen) {
+		four_screen = 1;
+	}
+	if (crc32 == 0x404B2E8B) { //Rad Racer 2
 		set_mirroring(MIRRORING_FOURSCREEN);
+		four_screen = 1;
+	}
 
 	//SetPrgBank16k(PRG_C000, prgRomPageCount16k - 1);
 

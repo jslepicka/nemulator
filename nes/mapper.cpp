@@ -282,8 +282,6 @@ void c_mapper::ppu_write(unsigned short address, unsigned char value)
 
 void c_mapper::set_mirroring(int mode)
 {
-	if (four_screen)
-		return;
 	switch (mode)
 	{
 	case MIRRORING_HORIZONTAL:
@@ -303,7 +301,6 @@ void c_mapper::set_mirroring(int mode)
 			name_table[2] = name_table[3] = &vram[0x400];
 		break;
 	case MIRRORING_FOURSCREEN:
-		four_screen = true;
 		name_table[0] = &vram[0];
 		name_table[1] = &vram[0x400];
 		name_table[2] = &vram[0x800];

@@ -47,4 +47,5 @@ protected:
 	int chr_mask;
 
 	int last_prg_page;
+	int four_screen;
 };
