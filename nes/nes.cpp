@@ -205,6 +205,10 @@ unsigned char c_nes::ReadByte(unsigned short address)
 		mem_access_log[address].type = 1;
 	}
 #endif
+	//unlimited health in holy diver
+	//if (address == 0x0440) {
+	//	return 6;
+	//}
 	switch (address >> 12)
 	{
 	case 0:
@@ -260,7 +264,7 @@ void c_nes::WriteByte(unsigned short address, unsigned char value)
 	case 4:
 		if (address == 0x4014)
 		{
-			cpu->DoSpriteDMA(ppu->pSpriteMemory + ppu->spriteMemAddress, (value & 0xFF) << 8);
+			cpu->DoSpriteDMA(ppu->pSpriteMemory, (value & 0xFF) << 8);
 		}
 		else if (address == 0x4016)
 		{

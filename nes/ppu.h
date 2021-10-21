@@ -37,7 +37,6 @@ public:
 	unsigned int current_cycle;
 	int current_scanline;
 	bool limit_sprites;
-	int spriteMemAddress;
 private:
 	int rendering_state;
 	static const int FB_TRANSPARENTBG = 0x1000;
@@ -144,6 +143,7 @@ private:
 	int reversed[256];
 
 	int warmed_up;
+	int spriteMemAddress;
 
 	void inc_horizontal_address();
 	void inc_vertical_address();
@@ -151,4 +151,18 @@ private:
 	static std::atomic<int> lookup_tables_built;
 
 	void generate_palette();
+
+	int fetch_count;
+
+	int fetch_state;
+
+	enum FETCH_STATE {
+		FETCH_IDLE,
+		FETCH_SPRITE,
+		FETCH_BG,
+		FETCH_NT
+	};
+
+	int vram_update_delay;
+	static const int VRAM_UPDATE_DELAY = 3;
 };

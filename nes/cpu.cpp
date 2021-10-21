@@ -369,13 +369,9 @@ void c_cpu::ExecuteOpcode(void)
 		break;
 	case 0x102: //Sprite DMA
 	{
-		*dmaDst = nes->ReadByte(dmaSrc++);
-		intptr_t temp = (intptr_t)dmaDst;
-		intptr_t mask = ~((intptr_t)0xFF);
-		intptr_t h = temp & ~((intptr_t)0xFF);
-		intptr_t l = ++temp & 0xFF;
-		dmaDst = (unsigned char*)(h | l);
+		*(dmaDst++) = nes->ReadByte(dmaSrc++);
 		dmaPos--;
+
 		//Sprite DMA burns 513 CPU cycles, so after the last DMA, burn another one.
 		if (dmaPos == 0)
 			requiredCycles += 3;
@@ -408,7 +404,7 @@ int c_cpu::irq_checked()
 	//irqs are checked 2 cycles before an opcode completes
 	//if this check has already occured, return 1
 	//return (fetchOpcode || ((requiredCycles > availableCycles) && ((requiredCycles - availableCycles) < 6)));
-	if (fetchOpcode || availableCycles > (requiredCycles - 3))
+	if (fetchOpcode || availableCycles >= (requiredCycles - 3))
 		return 1;
 	else
 		return 0;
