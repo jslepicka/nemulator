@@ -24,7 +24,6 @@ const Game::SimpleVertex Game::default_vertices[4] = {
 
 Game::Game(GAME_TYPE type, std::string path, std::string filename, std::string sram_path)
 {
-	emulation_mode = c_nes::EMULATION_MODE_FAST;
 	limit_sprites = false;
 	this->path = path;
 	this->filename = filename;

@@ -57,8 +57,6 @@ c_nemulator::c_nemulator()
 	menu = 0;
 	paused = false;
 	reset_on_select = false;
-	emulation_mode_menu = c_nes::EMULATION_MODE_FAST;
-	emulation_mode_ingame = c_nes::EMULATION_MODE_ACCURATE;
 	g_start_event = CreateEvent(NULL, TRUE, TRUE, NULL);
 	stats = NULL;
 	audio_info = NULL;
@@ -285,26 +283,6 @@ void c_nemulator::Init()
 
 	show_suspend = config->get_bool("show_suspend", false);
 
-	std::string s = config->get_string("emulation_mode_menu", "accurate");
-	if (s == "accurate")
-	{
-		emulation_mode_menu = c_nes::EMULATION_MODE_ACCURATE;
-	}
-	else
-	{
-		emulation_mode_menu = c_nes::EMULATION_MODE_FAST;
-	}
-
-	s = config->get_string("emulation_mode_ingame", "accurate");
-	if (s == "accurate")
-	{
-		emulation_mode_ingame = c_nes::EMULATION_MODE_ACCURATE;
-	}
-	else
-	{
-		emulation_mode_ingame = c_nes::EMULATION_MODE_FAST;
-	}
-
 	if (menu_delay < 1.0)
 		menu_delay = 1.0;
 
@@ -359,7 +337,6 @@ void c_nemulator::configure_input()
 		{ BUTTON_SCREENSHOT,     "",        "",        VK_F6,                       0 },
 		{ BUTTON_MEM_VIEWER,     "",        "",        VK_F5,                       0 },
 		{ BUTTON_AUDIO_INFO,     "",        "",        VK_F4,                       0 },
-		{ BUTTON_EMULATION_MODE, "",        "",        VK_F3,                       0 },
 		{ BUTTON_RESET,          "",        "",        VK_F2,                       0 },
 		{ BUTTON_LEFT_SHIFT,     "",        "",        VK_LSHIFT,                   0 },
 		{ BUTTON_RIGHT_SHIFT,    "",        "",        VK_RSHIFT,                   0 },
@@ -559,26 +536,6 @@ void c_nemulator::ProcessInput(double dt)
 				status->add_message("input replay start");
 			}
 
-		}
-	}
-	else if (g_ih->get_result(BUTTON_EMULATION_MODE, true) & c_input_handler::RESULT_DOWN)
-	{
-		Game *g = (Game*)texturePanels[selectedPanel]->GetSelected();
-		if (g->console->is_loaded())
-		{
-			if (g->console->get_emulation_mode() == c_nes::EMULATION_MODE_ACCURATE)
-			{
-				g->console->set_emulation_mode(c_nes::EMULATION_MODE_FAST);
-				status->add_message("fast emulation mode");
-			}
-			else
-			{
-				g->console->set_emulation_mode(c_nes::EMULATION_MODE_ACCURATE);
-				status->add_message("accurate emulation mode");
-			}
-			g->console->reset();
-			input_buffer_index = 0;
-			input_buffer_playback = 0;
 		}
 	}
 	else if (g_ih->get_result(BUTTON_AUDIO_INFO, true) & c_input_handler::RESULT_DOWN)
@@ -897,7 +854,6 @@ void c_nemulator::start_game()
 	{
 		if (reset_on_select && !g->played)
 		{
-			n->set_emulation_mode(emulation_mode_ingame);
 			n->reset();
 			input_buffer_index = 0;
 			input_buffer_playback = 0;
@@ -1193,7 +1149,6 @@ void c_nemulator::UpdateScene(double dt)
 			stats->report_stat("freq", sound->GetFreq());
 			stats->report_stat("audio position", s);
 			stats->report_stat("audio resets", sound->resets);
-			stats->report_stat("emulation mode", console->get_emulation_mode() == c_nes::EMULATION_MODE_ACCURATE ? "accurate" : "fast");
 			stats->report_stat("audio.slope", sound->slope);
 			std::ostringstream s;
 			s << std::hex << std::uppercase << console->get_crc();
@@ -1471,7 +1426,6 @@ void c_nemulator::LoadGames()
 
 			Game *g = new Game(li.type, li.rom_path, fn, li.save_path);
 			g->set_description(fn);
-			g->emulation_mode = emulation_mode_menu;
 			std::string s = "\"" + fn + "\".";
 			bool mask_sides = config->get_bool(s + "mask_sides", global_mask_sides);
 			bool limit_sprites = config->get_bool(s + "limit_sprites", global_limit_sprites);
