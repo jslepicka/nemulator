@@ -404,7 +404,7 @@ int c_cpu::irq_checked()
 	//irqs are checked 2 cycles before an opcode completes
 	//if this check has already occured, return 1
 	//return (fetchOpcode || ((requiredCycles > availableCycles) && ((requiredCycles - availableCycles) < 6)));
-	if (fetchOpcode || availableCycles >= (requiredCycles - 3))
+	if (fetchOpcode || availableCycles > (requiredCycles - 3))
 		return 1;
 	else
 		return 0;
@@ -425,10 +425,14 @@ void c_cpu::execute_irq(void)
 void c_cpu::clear_irq()
 {
 	doIrq = false;
+	nmi_delay = 0;
 }
 
 void c_cpu::clear_nmi()
 {
+	if (doNmi) {
+		int x = 1;
+	}
 	doNmi = false;
 }
 
