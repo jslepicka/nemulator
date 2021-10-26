@@ -140,7 +140,6 @@ c_nes::c_nes(void)
 	joypad = 0;
 	loaded = false;
 	played = false;
-	emulation_mode = EMULATION_MODE_FAST;
 	limit_sprites = false;
 	mem_access_log = new c_mem_access_log[256*256];
 	crc32 = 0;
@@ -473,18 +472,12 @@ void c_nes::set_submapper(int submapper)
 	mapper->set_submapper(submapper);
 }
 
-int c_nes::emulate_frame()
-{
-	emulate_frame_accurate();
-	return 0;
-}
-
 int c_nes::get_nwc_time()
 {
 	return mapper->get_nwc_time();
 }
 
-int c_nes::emulate_frame_accurate()
+int c_nes::emulate_frame()
 {
 	if (!loaded)
 		return 1;

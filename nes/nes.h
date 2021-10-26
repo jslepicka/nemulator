@@ -47,20 +47,10 @@ public:
 	~c_nes(void);
 	int reset(void);
 	int emulate_frame();
-	int emulate_frame_accurate(void);
-	int emulate_frame_fast(void);
-	int emulation_mode;
 	void set_audio_freq(double freq);
 	int get_nwc_time();
 	int is_loaded() { return loaded; }
-	int get_emulation_mode() { return emulation_mode; }
-	void set_emulation_mode(int mode) { emulation_mode = mode; }
 	void set_input(int input);
-	enum modes
-	{
-		EMULATION_MODE_FAST,
-		EMULATION_MODE_ACCURATE
-	};
 
 	int *get_video(void);
 	int get_sound_bufs(const short **buf_l, const short **buf_r);

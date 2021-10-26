@@ -149,21 +149,15 @@ void c_mapper4::WriteByte(unsigned short address, unsigned char value)
 
 unsigned char c_mapper4::ppu_read(unsigned short address)
 {
-	if (nes->emulation_mode == c_nes::modes::EMULATION_MODE_ACCURATE)
-	{
-		if (!in_sprite_eval)
-			check_a12(address);
-	}
+	if (!in_sprite_eval)
+		check_a12(address);
 	return c_mapper::ppu_read(address);
 }
 
 void c_mapper4::ppu_write(unsigned short address, unsigned char value)
 {
-	if (nes->emulation_mode == c_nes::modes::EMULATION_MODE_ACCURATE)
-	{
-		if (!in_sprite_eval)
-			check_a12(address);
-	}
+	if (!in_sprite_eval)
+		check_a12(address);
 	c_mapper::ppu_write(address, value);
 }
 

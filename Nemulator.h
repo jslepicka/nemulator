@@ -114,8 +114,6 @@ private:
 	int selectedPanel;
 	std::vector<Game*> gameList;
 	bool reset_on_select;
-	int emulation_mode_menu;
-	int emulation_mode_ingame;
 	double menu_delay;
 
 	bool inGame;

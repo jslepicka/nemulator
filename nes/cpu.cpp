@@ -156,9 +156,6 @@ __forceinline void c_cpu::execute()
 		if (requiredCycles <= availableCycles)
 		{
 			availableCycles -= requiredCycles;
-			if (nes->emulation_mode == c_nes::modes::EMULATION_MODE_FAST)
-				nes->mapper->clock(requiredCycles);
-
 			requiredCycles = 0;
 			fetchOpcode = true;
 			ExecuteOpcode();
