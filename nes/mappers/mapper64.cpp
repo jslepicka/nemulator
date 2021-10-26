@@ -14,8 +14,6 @@ c_mapper64::~c_mapper64()
 
 void c_mapper64::WriteByte(unsigned short address, unsigned char value)
 {
-	int x = ppu->current_cycle;
-	int y = ppu->current_scanline;
 	if (address >= 0x8000)
 	{
 		switch (address & 0xE001)
@@ -202,52 +200,18 @@ void c_mapper64::ppu_write(unsigned short address, unsigned char value)
 void c_mapper64::check_a12(int address)
 {
 	current_address = address;
-		int x = ppu->current_cycle;
-	int y = ppu->current_scanline;
+	//	int x = ppu->current_cycle;
+	//int y = ppu->current_scanline;
 	if (!(reg_c001 & 1) && (address & 0x1000) && low_count == 0)
 		clock_irq_counter();
 }
-
-//void c_mapper64::clock_irq_counter()
-//{
-//	int x = ppu->current_cycle;
-//	int y = ppu->current_scanline;
-//	if (irq_counter_reload)
-//	{
-//		irq_counter = reg_c000 + 1/*(cycles_since_irq < 64 ? 1 : 2)*/;
-//		irq_counter_reload = 0;
-//		if (cycles_since_irq < 32)
-//			goto irq;
-//	}
-//	else if (irq_counter == 0)
-//	{
-//		irq_counter = reg_c000/* + 1*/;
-//		if (reg_c000 == 0)
-//			irq_counter = 0;
-//	}
-//	else
-//	{
-//		irq:
-//		irq_counter--;
-//		if (irq_counter == 0 && irq_enabled)
-//		{
-//			if (!irq_asserted)
-//			{
-//				int y = ppu->current_scanline;
-//				int x = ppu->current_cycle;
-//				fire_irq();
-//			}
-//		}
-//	}
-//}
-
 
 void c_mapper64::clock_irq_counter()
 {
 	//if (!irq_enabled)
 	//	return;
-	int x = ppu->current_cycle;
-	int y = ppu->current_scanline;
+	//int x = ppu->current_cycle;
+	//int y = ppu->current_scanline;
 	if (irq_counter_reload)
 	{
 		irq_counter = reg_c000 + 1;
@@ -264,8 +228,8 @@ void c_mapper64::clock_irq_counter()
 		{
 			if (!irq_asserted)
 			{
-				int y = ppu->current_scanline;
-				int x = ppu->current_cycle;
+				//int y = ppu->current_scanline;
+				//int x = ppu->current_cycle;
 				fire_irq();
 			}
 		}
@@ -314,10 +278,4 @@ void c_mapper64::clock(int cycles)
 			cpu_divider = 0;
 		}
 	}
-}
-
-void c_mapper64::mmc3_check_a12()
-{
-	if (!(reg_c001 & 1) && ppu->DoA12())
-		clock_irq_counter();
 }

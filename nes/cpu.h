@@ -19,6 +19,7 @@ public:
 	void ExecuteApuDMA();
 	int executed_cycles;
 	void clear_nmi();
+	void execute();
 
 private:
 	bool check_page_cross;
@@ -37,7 +38,7 @@ private:
 	int requiredCycles;
 	void ExecuteOpcode(void);
 	bool fetchOpcode;
-	void execute();
+
 
 	static const int cycleTable[260];
 

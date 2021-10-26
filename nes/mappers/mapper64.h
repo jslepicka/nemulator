@@ -12,7 +12,6 @@ public:
 	void ppu_write(unsigned short address, unsigned char value);
 	void reset();
 	virtual void clock(int cycles);
-	void mmc3_check_a12();
 protected:
 	virtual void fire_irq();
 	void check_a12(int address);

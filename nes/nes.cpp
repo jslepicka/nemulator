@@ -218,7 +218,7 @@ unsigned char c_nes::ReadByte(unsigned short address)
 	case 2:
 	case 3:
 		//if (address <= 0x2007)
-		return ppu->ReadByte(address & 0x2007);
+		return ppu->read_byte(address & 0x2007);
 		break;
 	case 4:
 		switch (address)
@@ -258,7 +258,7 @@ void c_nes::WriteByte(unsigned short address, unsigned char value)
 		break;
 	case 2:
 	case 3:
-		ppu->WriteByte(address & 0x2007, value);
+		ppu->write_byte(address & 0x2007, value);
 		mapper->mmc5_ppu_write(address & 0x2007, value);
 		break;
 	case 4:
@@ -445,7 +445,7 @@ int c_nes::reset(void)
 	mapper->CloseSram();
 	cpu->nes = this;
 	apu2->reset();
-	ppu->Reset();
+	ppu->reset();
 	ppu->mapper = mapper;
 	ppu->cpu = cpu;
 	ppu->apu2 = apu2;
@@ -468,52 +468,6 @@ int c_nes::reset(void)
 	return 1;
 }
 
-void c_nes::run_sprite0(int i)
-{
-	ppu->set_sprite0_hit();
-}
-
-void c_nes::run_mmc3(int i)
-{
-	mapper->mmc3_check_a12();
-}
-
-void c_nes::run_vblank_begin(int i)
-{
-	do_vblank_nmi = ppu->BeginVBlank();
-}
-
-void c_nes::run_vblank_end(int i)
-{
-	ppu->EndVBlank();
-}
-
-void c_nes::run_start_frame(int i)
-{
-	ppu->StartFrame();
-}
-
-void c_nes::run_end_scanline(int i)
-{
-	ppu->EndScanline();
-}
-
-void c_nes::run_reset_vscroll(int i)
-{
-	ppu->reset_vscroll();
-}
-
-void c_nes::run_reset_hscroll(int i)
-{
-	ppu->reset_hscroll();
-}
-
-void c_nes::run_vblank_nmi(int i)
-{
-	if (do_vblank_nmi)
-		cpu->execute_nmi();
-}
-
 void c_nes::set_submapper(int submapper)
 {
 	mapper->set_submapper(submapper);
@@ -521,17 +475,7 @@ void c_nes::set_submapper(int submapper)
 
 int c_nes::emulate_frame()
 {
-	switch (emulation_mode)
-	{
-	case EMULATION_MODE_ACCURATE:
-		emulate_frame_accurate();
-		break;
-	case EMULATION_MODE_FAST:
-		emulate_frame_fast();
-		break;
-	default:
-		break;
-	}
+	emulate_frame_accurate();
 	return 0;
 }
 
@@ -547,7 +491,8 @@ int c_nes::emulate_frame_accurate()
 	for (int scanline = 0; scanline < 262; scanline++)
 	{
 		ppu->eval_sprites();
-		ppu->run_ppu(341);
+		//ppu->run_ppu(341);
+		ppu->run_ppu_line();
 	}
 	return 0;
 }
@@ -567,101 +512,6 @@ void c_nes::add_event(int cycle, c_nes::line_event e)
 		event_list[event_index].e = e;
 		event_index++;
 	}
-}
-
-int c_nes::emulate_frame_fast(void)
-{
-	if (!loaded)
-		return 1;
-	for (int scanline = 0; scanline < 262; scanline++)
-	{
-		clear_events();
-		switch (scanline)
-		{
-		case 0: //0 - 19 are vblank
-			add_event(0, &c_nes::run_vblank_begin);
-			add_event(vblank_nmi_delay, &c_nes::run_vblank_nmi);
-			break;
-		case 20: //pre-render
-			add_event(0, &c_nes::run_vblank_end);
-			add_event(mmc3_cycles, &c_nes::run_mmc3);
-			add_event(251, &c_nes::run_reset_vscroll);
-			add_event(257, &c_nes::run_reset_hscroll);
-			add_event(304, &c_nes::run_start_frame);
-			break;
-		default:
-			if (scanline > 20 && scanline < 261)
-			{
-				ppu->DrawScanline();
-				add_event(251, &c_nes::run_reset_vscroll);
-				add_event(257, &c_nes::run_reset_hscroll);
-				if (ppu->sprite0_hit_location != -1)
-				{
-					add_event(ppu->sprite0_hit_location, &c_nes::run_sprite0);
-				}
-				add_event(mmc3_cycles, &c_nes::run_mmc3);
-			}
-			break;
-		};
-
-		int total_cpu_cycles = 341;
-		int total_apu_cycles = 113;
-		int executed_cpu_cycles = 0;
-		int executed_apu_cycles = 0;
-
-		while (true)
-		{
-			//get lowest event
-			int cycles = 500;
-			line_event e = 0;
-			int lowest_event;
-			for (int i = 0; i < event_index; i++)
-			{
-				if (event_list[i].cycle != -1 && event_list[i].cycle <= cycles)
-				{
-					cycles = event_list[i].cycle;
-					e = event_list[i].e;
-					lowest_event = i;
-				}
-			}
-
-			if (cycles != 500) //found an event
-			{
-				event_list[lowest_event].cycle = -1;
-				int num_cycles = cycles;
-
-				int apu_cycles = (int)(num_cycles/3);
-				int cycles_to_run = apu_cycles - executed_apu_cycles;
-				//apu->EndLine(cycles_to_run);
-				executed_apu_cycles += cycles_to_run;
-				total_apu_cycles -= cycles_to_run;
-
-				cycles_to_run = num_cycles - executed_cpu_cycles;
-
-				cpu->execute_cycles(cycles_to_run);
-				apu2->clock(cycles_to_run);
-				executed_cpu_cycles += cycles_to_run;
-				total_cpu_cycles -= cycles_to_run;
-
-				(this->*e)(scanline);
-			}
-			else
-				break;
-		}
-		if (total_apu_cycles > 0)
-		{
-			//apu->EndLine(total_apu_cycles);
-			executed_apu_cycles += total_apu_cycles;
-		}
-		if (total_cpu_cycles > 0)
-		{
-			cpu->execute_cycles(total_cpu_cycles);
-			apu2->clock(total_cpu_cycles);
-			executed_cpu_cycles += total_cpu_cycles;
-		}
-	}
-	//apu->EndFrame();
-	return 0;
 }
 
 int *c_nes::get_video(void)

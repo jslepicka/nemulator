@@ -225,12 +225,6 @@ void c_mapper4::fire_irq()
 	irq_asserted = 1;
 }
 
-void c_mapper4::mmc3_check_a12()
-{
-	if (ppu->DoA12())
-		clock_irq_counter();
-}
-
 void c_mapper4::reset(void)
 {
 	if (nes->header->Rcb1.Fourscreen) {

@@ -322,7 +322,7 @@ unsigned char c_mapper5::ReadChrRom(unsigned short address)
 		return *(bank8 + (address & 0x3FF));
 	}
 
-	if (ppu->GetSpriteSize())
+	if (ppu->get_sprite_size())
 	{
 		if (ppu->drawingBg)
 		{

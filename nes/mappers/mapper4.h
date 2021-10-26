@@ -12,7 +12,6 @@ public:
 	virtual void WriteByte(unsigned short address, unsigned char value);
 	virtual unsigned char ReadByte(unsigned short address);
 	virtual void reset(void);
-	void mmc3_check_a12();
 	virtual void clock(int cycles);
 protected:
 	virtual void fire_irq();
