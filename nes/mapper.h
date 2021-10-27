@@ -11,7 +11,6 @@ class c_mapper
 {
 public:
 	c_mapper(void);
-	c_mapper(int submapper);
 	virtual ~c_mapper(void);
 	virtual unsigned char ReadByte(unsigned short address);
 	virtual void WriteByte(unsigned short address, unsigned char value);
@@ -19,7 +18,6 @@ public:
 	virtual unsigned char ReadChrRom(unsigned short address);
 	virtual void mmc3_check_a12() {};
 	virtual void mmc5_ppu_write(unsigned short address, unsigned char value) {};
-	virtual void mmc5_inc_tile() {};
 	virtual void mmc2_latch(int address) {};
 	virtual void clock(int cycles) {};
 	virtual void ppu_clock(int cycles) {};
@@ -42,6 +40,7 @@ public:
 	int crc32;
 	virtual unsigned char ppu_read(unsigned short address);
 	virtual void ppu_write(unsigned short address, unsigned char value);
+	virtual void set_ppu_bus(unsigned short address) {};
 	virtual int get_nwc_time() { return 0; }
 	int in_sprite_eval;
 	c_nes *nes;

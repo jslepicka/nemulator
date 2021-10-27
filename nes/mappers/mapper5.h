@@ -11,8 +11,6 @@ public:
 	void WriteByte(unsigned short address, unsigned char value);
 	unsigned char ReadByte(unsigned short address);
 	void reset(void);
-	void mmc5_ppu_write(unsigned short address, unsigned char value);
-	void mmc5_inc_tile();
 	void clock(int cycles);
 	float mix_audio(float sample);
 private:
@@ -89,6 +87,10 @@ private:
 	int htile;
 	int split_address;
 	int in_split_region;
-
+	int last_address;
+	int last_address_match_count;
+	int idle_count;
+	int ppu_is_reading;
+	int tile_fetch_count;
 	//int in_split_region();
 };

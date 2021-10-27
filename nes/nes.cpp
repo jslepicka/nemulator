@@ -482,7 +482,9 @@ int c_nes::emulate_frame()
 		return 1;
 	for (int scanline = 0; scanline < 262; scanline++)
 	{
-		ppu->eval_sprites();
+		if (scanline == 261 || (scanline >= 0 && scanline <= 239)) {
+			ppu->eval_sprites();
+		}
 		//ppu->run_ppu(341);
 		ppu->run_ppu_line();
 	}
