@@ -1,6 +1,7 @@
 #pragma once
 
 #include <fstream>
+#include <atomic>
 #include "..\resampler.h"
 #include "..\biquad.hpp"
 #include "..\biquad4.hpp"
@@ -22,6 +23,9 @@ public:
 	void disable_mixer();
 	int get_buffer(const short** buf);
 	void set_audio_rate(double freq);
+
+	//mmc5 needs to read this
+	static float square_lut[31];
 
 	class c_envelope
 	{
@@ -245,14 +249,13 @@ public:
 
 		c_timer timer;
 	};
-	static const float square_lut[31];
+
 private:
 	static const float NES_AUDIO_RATE;
 	c_resampler* resampler;
 	c_biquad4* lpf;
 	c_biquad* post_filter;
 	static const int CLOCKS_PER_FRAME_SEQ = 89489;
-	static const float tnd_lut[203];
 	int mixer_enabled;
 	c_nes *nes;
 	int frame_irq_enable;
@@ -274,6 +277,8 @@ private:
 
 	void mix();
 
+	void build_lookup_tables();
+
 	unsigned char reg[24];
 	int frame_seq_step;
 	int frame_seq_steps;
@@ -286,5 +291,8 @@ private:
 	c_dmc dmc;
 
 	int square_clock;
+
+	static std::atomic<int> lookup_tables_built;
+	static float tnd_lut[203];
 };
 

@@ -4,7 +4,6 @@
 #include "nes.h"
 #include "mapper.h"
 #include "cpu.h"
-#include "apu_luts.h"
 //#include <xmmintrin.h>
 
 //#define AUDIO_LOG 1
@@ -13,6 +12,10 @@ std::ofstream file;
 #endif
 
 const float c_apu2::NES_AUDIO_RATE = 341.0f / 3.0f * 262.0f * 60.0f/* / 3.0f*/;
+
+std::atomic<int> c_apu2::lookup_tables_built = 0;
+float c_apu2::square_lut[31];
+float c_apu2::tnd_lut[203];
 
 c_apu2::c_apu2(void)
 {
@@ -26,6 +29,7 @@ c_apu2::c_apu2(void)
 	resampler = 0;
 	lpf = 0;
 	post_filter = 0;
+	build_lookup_tables();
 }
 
 c_apu2::~c_apu2(void)
@@ -41,6 +45,20 @@ c_apu2::~c_apu2(void)
 		delete lpf;
 	if (post_filter)
 		delete post_filter;
+}
+
+void c_apu2::build_lookup_tables()
+{
+	int expected = 0;
+	if (lookup_tables_built.compare_exchange_strong(expected, 1))
+	{
+		for (int i = 0; i < 31; i++) {
+			square_lut[i] = (float)(95.52 / (8128.0 / i + 100));
+		}
+		for (int i = 0; i < 203; i++) {
+			tnd_lut[i] = (float)(163.67 / (24329.0 / i + 100));
+		}
+	}
 }
 
 void c_apu2::enable_mixer()
