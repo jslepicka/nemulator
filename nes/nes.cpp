@@ -23,7 +23,6 @@
 #include "nes.h"
 #include "cpu.h"
 #include "ppu.h"
-#include "apu.h"
 #include "apu2.h"
 #include "joypad.h"
 #include "mappers\mappers.h"
