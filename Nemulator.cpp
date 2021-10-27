@@ -56,7 +56,6 @@ c_nemulator::c_nemulator()
 	ih = 0;
 	menu = 0;
 	paused = false;
-	reset_on_select = false;
 	g_start_event = CreateEvent(NULL, TRUE, TRUE, NULL);
 	stats = NULL;
 	audio_info = NULL;
@@ -276,7 +275,6 @@ void c_nemulator::Init()
 		&D3DXVECTOR3(eye_x, eye_y, 0.0f),
 		&D3DXVECTOR3(0.0f, 1.0f, 0.0f));
 
-	reset_on_select = config->get_bool("reset_on_select", true);
 	menu_delay = config->get_double("menu_delay", 333.0);
 
 	preload = config->get_bool("preload", true);
@@ -852,12 +850,6 @@ void c_nemulator::start_game()
 	c_console *n = g->console;
 	if (n && n->is_loaded())
 	{
-		if (reset_on_select && !g->played)
-		{
-			n->reset();
-			input_buffer_index = 0;
-			input_buffer_playback = 0;
-		}
 		g->played = 1;
 		//joy1 = n->GetJoy1();
 		//joy2 = n->GetJoy2();
