@@ -478,7 +478,7 @@ void c_ppu::run_ppu_line()
 				vramAddress = vramAddressLatch;
 				if (!rendering)
 				{
-					mapper->ppu_read(vramAddress);
+					mapper->set_ppu_bus(vramAddress);
 				}
 				else {
 					int x = 1;
@@ -611,6 +611,7 @@ void c_ppu::run_ppu_line()
 						break;
 					case 7: //High BG byte 2
 						if (fetch_state == FETCH_BG) {
+							drawingBg = true;
 							if (current_cycle == 8 || current_cycle == 328) {
 								int x = 1;
 							}
@@ -622,9 +623,7 @@ void c_ppu::run_ppu_line()
 							__int64* ib64 = (__int64*)&index_buffer[l];
 							__int64 c = interleave_bits_64(pattern1, pattern2) | (attribute * 0x0404040404040404ULL);
 							*ib64 = c;
-
-							drawingBg = false;
-							mapper->mmc5_inc_tile();
+							
 							if (current_cycle == 256) {
 								inc_vertical_address();
 							}
@@ -721,7 +720,7 @@ void c_ppu::run_ppu_line()
 						pf++;
 					}
 					current_cycle = (rendering && odd_frame) ? 1 : 0;
-					odd_frame ^= 1;
+					//odd_frame ^= 1;
 				}
 				else {
 					current_cycle = 0;
@@ -762,6 +761,7 @@ int c_ppu::eval_sprites()
 {
 	if (!rendering)
 		return -1;
+	drawingBg = false;
 	mapper->in_sprite_eval = 1;
 	int max_sprites = limit_sprites ? 8 : 64;
 	int sprite0_x = -1;
@@ -845,6 +845,6 @@ void c_ppu::update_vram_address()
 	{
 		//update bus when not rendering
 		vramAddress = (vramAddress + addressIncrement) & 0x7FFF;
-		mapper->ppu_read(vramAddress);
+		mapper->set_ppu_bus(vramAddress);
 	}
 }

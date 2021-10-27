@@ -81,7 +81,8 @@ unsigned char c_mapper::ReadByte(unsigned short address)
 		else
 			return 0;
 	}
-	return *(prgBank[(address >> 13) & 3] + (address & 0x1FFF));
+	unsigned char val = *(prgBank[(address >> 13) & 3] + (address & 0x1FFF));
+	return val;
 }
 
 void c_mapper::WriteByte(unsigned short address, unsigned char value)

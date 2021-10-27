@@ -19,16 +19,6 @@ c_mapper5::~c_mapper5()
 	delete[] prg_ram;
 }
 
-void c_mapper5::mmc5_ppu_write(unsigned short address, unsigned char value)
-{
-	if (address == 0x2001)
-	{
-		drawing_enabled = (value & 0x18);
-		if (inFrame && !drawing_enabled)
-			inFrame = 0;
-	}
-}
-
 void c_mapper5::WriteByte(unsigned short address, unsigned char value)
 {
 	switch (address >> 12)
@@ -176,7 +166,11 @@ void c_mapper5::WriteByte(unsigned short address, unsigned char value)
 			break;
 		case 0x5204:
 			irqEnable = value & 0x80;
-			if (irqEnable && irqPending && !irq_asserted)
+			if (!irqEnable && irq_asserted) {
+				cpu->clear_irq();
+				irq_asserted = 0;
+			}
+			else if (irqEnable && irqPending && !irq_asserted)
 			{
 				cpu->execute_irq();
 				irq_asserted = 1;
@@ -251,7 +245,56 @@ void c_mapper5::SetChrBank8k(unsigned char *b[8], int value)
 
 unsigned char c_mapper5::ppu_read(unsigned short address)
 {
+	int nt_fetch = (address >= 0x2000 && address <= 0x2FFF && (address & 0x23FF) < 0x23C0) ? 1 : 0;
+
+	if (irqPending) {
+		if (irqEnable && !irq_asserted) {
+			cpu->execute_irq();
+			irq_asserted = 1;
+		}
+	}
+
+	if (nt_fetch) {
+		in_split_region = 0;
+		htile++;
+	}
+
+	if (!in_sprite_eval) {
+		if (address >= 0x2000 && address <= 0x2FFF && address == last_address) {
+			if (++last_address_match_count == 2) {
+				if (!inFrame) {
+					inFrame = 1;
+					vscroll = split_scroll;
+					scanline = 0;
+					irqPending = 0;
+					if (irq_asserted) {
+						cpu->clear_irq();
+						irq_asserted = 0;
+					}
+				}
+				else {
+					vscroll++;
+					if (vscroll > 239) {
+						vscroll -= 240;
+					}
+					if (++scanline == irqTarget) {
+						irqPending = 1;
+					}
+				}
+				htile = 0;
+			}
+		}
+		else {
+			last_address_match_count = 0;
+		}
+
+		last_address = address;
+		ppu_is_reading = 1;
+	}
+
 	address &= 0x3FFF;
+	//this needs to be changed (to 42) once sprite evaluation is done properly.
+	int tt = (htile + 2) % 34;
 
 	if ((address & 0x23FF) >= 0x23C0 && exram_mode == 1 && ppu->drawingBg)
 	{
@@ -268,17 +311,28 @@ unsigned char c_mapper5::ppu_read(unsigned short address)
 	else if ((address & 0x23FF) >= 0x23C0 && in_split_region)
 	{
 		int vtile = (split_address & 0x3E0) >> 5;
-		int attribute_address = 0x3C0 | ((vtile & 0x1C) << 1) | (htile >> 2);
+		int attribute_address = 0x3C0 | ((vtile & 0x1C) << 1) | (tt >> 2);
 		return exram[attribute_address];
 	}
 	else if (address >= 0x2000)
 	{
+		if ((address & 0x23FF) < 0x23C0) {
+			if ((split_control & 0x80) && tt < 33)
+			{
+				if (
+					((split_control & 0x40) && (tt >= (split_control & 0x1F))) ||
+					(!(split_control & 0x40) && (tt < (split_control & 0x1F)))
+					)
+					in_split_region = 1;
+			}
+		}
+		//int t = address & 0x3FF;
 		last_tile = address & 0x3FF;
 		if (in_split_region)
 		{
 			int t = vscroll;
 			t = (t & 0xF8) << 2;
-			t |= (htile & 0x1F);
+			t |= (tt & 0x1F);
 			split_address = t & 0x3FF;
 			return *(exram + split_address);
 		}
@@ -301,7 +355,7 @@ unsigned char c_mapper5::ppu_read(unsigned short address)
 void c_mapper5::ppu_write(unsigned short address, unsigned char value)
 {
 	address &= 0x3FFF;
-
+	//unsure why this is necessary
 	if (address >= 0x2000 && name_table[(address >> 10) & 3] == 0)
 		return;
 	else
@@ -434,6 +488,15 @@ void c_mapper5::Sync()
 
 unsigned char c_mapper5::ReadByte(unsigned short address)
 {
+	if (address == 0xFFFA || address == 0xFFFB) {
+		inFrame = 0;
+		last_address = 0;
+		irqPending = 0;
+		if (irq_asserted) {
+			cpu->clear_irq();
+			irq_asserted = 0;
+		}
+	}
 	switch (address >> 12)
 	{
 	case 5:
@@ -471,6 +534,9 @@ unsigned char c_mapper5::ReadByte(unsigned short address)
 					irq_asserted = 0;
 					if (!pcm_irq_asserted)
 						cpu->clear_irq();
+					else {
+						int x = 1;
+					}
 				}
 				return val;
 			}
@@ -570,20 +636,13 @@ void c_mapper5::reset(void)
 	pcm_irq_asserted = 0;
 	pcm_irq_mode = PCM_IRQ_MODE_WRITE;
 	pcm_data = 0;
-}
 
-void c_mapper5::mmc5_inc_tile()
-{
-	htile++;
-	in_split_region = 0;
-	if ((split_control & 0x80) && htile < 33)
-	{
-		if (
-			((split_control & 0x40)  && (htile >= (split_control & 0x1F))) ||
-			(!(split_control & 0x40) && (htile < (split_control & 0x1F)))
-			)
-			in_split_region = 1;
-	}
+	last_address = 0;
+	last_address_match_count = 0;
+	idle_count = 0;
+	ppu_is_reading = 0;
+
+	tile_fetch_count = 0;
 }
 
 void c_mapper5::clock_frame()
@@ -617,61 +676,16 @@ void c_mapper5::clock(int cycles)
 		ticks-=3;
 		clock_frame();
 
-	}
-	for (int i = 0; i < cycles; i++)
-	{
-		if (cycle == 0)
-		{
-			if (scanline == 20)
-			{
-				vscroll = split_scroll;
-			}
-
-			if (scanline >= 21 && scanline < 261 && drawing_enabled)
-			{
-				if (inFrame == 0)
-				{
-					inFrame = 1;
-					irqCounter = 0;
-					irqPending = 0;
-					if (irq_asserted)
-					{
-						cpu->clear_irq();
-						irq_asserted = 0;
-					}
-				}
-				else
-				{
-					irqCounter++;
-					if (irqCounter == irqTarget)
-					{
-						irqPending = 1;
-						if (irqEnable && !irq_asserted)
-						{
-							cpu->execute_irq();
-							irq_asserted = 1;
-						}
-					}
-				}
-			}
+		if (ppu_is_reading) {
+			idle_count = 0;
 		}
-		else if (cycle == 320)
-		{
-			if (scanline >= 21 && scanline < 261 && drawing_enabled)
-			{
-				vscroll++;
-				if (vscroll > 239)
-					vscroll -= 240;
-			}
-			htile = 0;
-		}
-		if (++cycle == 341)
-		{
-			if (scanline == 260)
+		else {
+			if (++idle_count == 3) {
 				inFrame = 0;
-			cycle = 0;
-			if (++scanline == 262)
-				scanline = 0;
+				last_address = 0;
+			}
 		}
+		ppu_is_reading = 0;
+
 	}
 }

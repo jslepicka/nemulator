@@ -51,8 +51,8 @@ private:
 	unsigned char* control1, * control2, * status;
 	uint32_t pattern1;
 	uint32_t pattern2;
-	unsigned int current_cycle;
-	int current_scanline;
+
+
 	int odd_frame;
 	int palette_mask; //for monochrome display
 	int intensity;
@@ -68,6 +68,8 @@ private:
 	int attribute_shift;
 	unsigned int attribute;
 	int executed_cycles;
+	unsigned int current_cycle;
+	int current_scanline;
 
 	enum FETCH_STATE {
 		FETCH_IDLE,
