@@ -23,7 +23,6 @@
 //#include "nes.h"
 #include "cpu.h"
 #include "ppu.h"
-#include "apu.h"
 #include "memory.h"
 #include "mapper.h"
 #include "apu2.h"
