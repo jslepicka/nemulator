@@ -47,7 +47,6 @@ public:
 	void resize();
 	void on_pause(bool paused);
 	void LoadGames();
-	//void OnKeyUp(WPARAM wParam);
 
 private:
 	float sharpness;
@@ -113,12 +112,10 @@ private:
 	void ProcessInput(double dt);
 	int selectedPanel;
 	std::vector<Game*> gameList;
-	bool reset_on_select;
 	double menu_delay;
 
 	bool inGame;
 	Sound *sound;
-	//bool loaded;
 
 	unsigned char *joy1, *joy2;
 
