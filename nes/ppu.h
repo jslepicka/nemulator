@@ -23,6 +23,8 @@ public:
 	unsigned char* pSpriteMemory;
 	int drawingBg;
 	bool limit_sprites;
+	unsigned int current_cycle;
+	int current_scanline;
 
 private:
 	void inc_horizontal_address();
@@ -51,7 +53,9 @@ private:
 	unsigned char* control1, * control2, * status;
 	uint32_t pattern1;
 	uint32_t pattern2;
-
+	int update_rendering;
+	int next_rendering;
+	int hit;
 
 	int odd_frame;
 	int palette_mask; //for monochrome display
@@ -68,8 +72,7 @@ private:
 	int attribute_shift;
 	unsigned int attribute;
 	int executed_cycles;
-	unsigned int current_cycle;
-	int current_scanline;
+	uint32_t pixel_pipeline;
 
 	enum FETCH_STATE {
 		FETCH_IDLE,
@@ -113,4 +116,5 @@ private:
 	static int attr_loc[0x400];
 	int frameBuffer[256 * 256];
 	unsigned char index_buffer[272];
+	unsigned char pix_buf[256];
 };

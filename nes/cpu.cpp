@@ -23,6 +23,7 @@
 #include "cpu.h"
 #include "mapper.h"
 #include "nes.h"
+#include "ppu.h"
 
 #if defined(DEBUG) | defined(_DEBUG)
 	#define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
@@ -188,6 +189,8 @@ void c_cpu::DoSpriteDMA(unsigned char *dst, int source_address)
 
 void c_cpu::ExecuteOpcode(void)
 {
+	int sl = nes->ppu->current_scanline;
+	int c = nes->ppu->current_cycle;
 	check_page_cross = false;
 	switch (opcode)
 	{
@@ -351,6 +354,12 @@ void c_cpu::ExecuteOpcode(void)
 	case 0xFD: check_page_cross = true; AbsoluteX(); SBC(); break;
 	case 0xFE: AbsoluteX(); INC(); break;
 	case 0x100: //NMI
+		//Battletoads debugging
+	//{
+	//	char x[256];
+	//	sprintf(x, "NMI at scanline %d, cycle %d\n", sl, c);
+	//	OutputDebugString(x);
+	//}
 		PUSH(HIBYTE(PC));
 		PUSH(LOBYTE(PC));
 		SR.B = false;
@@ -418,6 +427,8 @@ int c_cpu::irq_checked()
 
 void c_cpu::execute_nmi()
 {
+	int sl = nes->ppu->current_scanline;
+	int c = nes->ppu->current_cycle;
 	nmi_delay = irq_checked();
 	doNmi = true;
 }

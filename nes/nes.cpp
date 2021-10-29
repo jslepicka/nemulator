@@ -209,7 +209,7 @@ unsigned char c_nes::ReadByte(unsigned short address)
 	//}
 	//start battletoads on level 2
 	//if (address == 0x8320) {
-	//	return 0x79;
+	//	return 0x2;
 	//}
 	switch (address >> 12)
 	{
