@@ -207,6 +207,10 @@ unsigned char c_nes::ReadByte(unsigned short address)
 	//if (address == 0x0440) {
 	//	return 6;
 	//}
+	//start battletoads on level 2
+	//if (address == 0x8320) {
+	//	return 0x79;
+	//}
 	switch (address >> 12)
 	{
 	case 0:
@@ -233,7 +237,8 @@ unsigned char c_nes::ReadByte(unsigned short address)
 		}
 		break;
 	default:
-		return mapper->ReadByte(address);
+		unsigned char val = mapper->ReadByte(address);
+		return val;
 		break;
 	}
 	return 0;
