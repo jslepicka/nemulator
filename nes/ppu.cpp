@@ -379,17 +379,18 @@ void c_ppu::write_byte(int address, unsigned char value)
 	}
 	case 0x2007:    //PPU Memory Data
 	{
-		if ((vramAddress & 0x3FFF) >= 0x3F00)
+		if ((vramAddress & 0x3F00) == 0x3F00)
 		{
-			int pal_address = vramAddress & 0x1F;
-			value &= 0x3F;
-			image_palette[pal_address] = value;
-			if (!(pal_address & 0x03))
-			{
-				image_palette[pal_address ^ 0x10] = value;
-			}
-			if (!rendering)
+			if (!rendering) {
+				int pal_address = vramAddress & 0x1F;
+				value &= 0x3F;
+				image_palette[pal_address] = value;
+				if (!(pal_address & 0x03))
+				{
+					image_palette[pal_address ^ 0x10] = value;
+				}
 				mapper->ppu_read(vramAddress);
+			}
 		}
 		else
 		{
@@ -668,7 +669,9 @@ void c_ppu::run_ppu_line()
 					int bg_index = 0;
 
 					if (ppuControl2.backgroundSwitch && ((current_cycle >= 8 + screen_offset) || ppuControl2.backgroundClipping))
+					{
 						bg_index = index_buffer[current_cycle - screen_offset + fineX];
+					}
 
 					if (bg_index & 0x03)
 					{
@@ -700,8 +703,9 @@ void c_ppu::run_ppu_line()
 										hit = 1;
 									}
 
-									if (!(priority && (bg_index & 0x03)))
+									if (!(priority && (bg_index & 0x03))) {
 										pixel = image_palette[16 + sprite_color];
+									}
 									break;
 								}
 							}
