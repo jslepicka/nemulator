@@ -322,7 +322,7 @@ void c_ppu::write_byte(int address, unsigned char value)
 			palette_mask = 0x30;
 		}
 		else
-			palette_mask = -1;
+			palette_mask = 0xFF;
 		intensity = (value & 0xE0) << 1;
 		break;
 	}
@@ -430,7 +430,7 @@ void c_ppu::reset(void)
 	warmed_up = 0;
 	odd_frame = 0;
 	intensity = 0;
-	palette_mask = -1;
+	palette_mask = 0xFF;
 	current_cycle = 0;
 	nmi_pending = false;
 	current_scanline = 0;
@@ -701,7 +701,7 @@ void c_ppu::run_ppu_line()
 									}
 
 									if (!(priority && (bg_index & 0x03)))
-										pixel = (image_palette[16 + sprite_color] & palette_mask) | intensity;
+										pixel = image_palette[16 + sprite_color];
 									break;
 								}
 							}
@@ -749,7 +749,7 @@ void c_ppu::run_ppu_line()
 		}
 
 		if (current_scanline < 240 && current_cycle >= 4 && current_cycle < 4 + 256) {
-			*p_frame++ = pal[((pixel_pipeline & 0xFF) & palette_mask) | intensity];
+			*p_frame++ = pal[(pixel_pipeline & palette_mask) | intensity];
 		}
 		pixel_pipeline >>= 8;
 		//Battletoads will enable rendering at cycle 255 and break sprite 0 hit (because vertical update happens on cycle 256 and misaligns the background).
