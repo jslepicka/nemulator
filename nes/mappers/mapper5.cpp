@@ -21,6 +21,9 @@ c_mapper5::~c_mapper5()
 
 void c_mapper5::WriteByte(unsigned short address, unsigned char value)
 {
+	if (address >= 0x8000) {
+		int x = 1;
+	}
 	switch (address >> 12)
 	{
 	case 5:
@@ -193,17 +196,26 @@ void c_mapper5::WriteByte(unsigned short address, unsigned char value)
 		if (prg_ram_protect[0] == 0x2 && prg_ram_protect[1] == 0x1)
 			*(prg_6000 + (address & 0x1FFF)) = value;
 		break;
+	default:
+		*(prgBank[(address >> 13) & 3] + (address & 0x1FFF)) = value;
+		break;
 	}
 
 }
 
 void c_mapper5::SetPrgBank8k(int bank, int value)
 {
+	if (value & 0x80) {
+		int x = 1;
+	}
 	prgBank[bank] = (value & 0x80 ? pPrgRom : prg_ram) + (((value & 0x7F) % prgRomPageCount8k) * 0x2000);
 }
 
 void c_mapper5::SetPrgBank16k(int bank, int value)
 {
+	if (value & 0x80) {
+		int x = 1;
+	}
 	unsigned char *base = (value & 0x80 ? pPrgRom : prg_ram) + ((((value & 0x7F) >> 1) % header->PrgRomPageCount) * 0x4000);
 	prgBank[bank] = base;
 	prgBank[bank + 1] = base + 0x2000;
@@ -211,6 +223,9 @@ void c_mapper5::SetPrgBank16k(int bank, int value)
 
 void c_mapper5::SetPrgBank32k(int value)
 {
+	if (value & 0x80) {
+		int x = 1;
+	}
 	unsigned char *base = (value & 0x80 ? pPrgRom : prg_ram) + ((((value & 0x7F) >> 2) % prgRomPageCount32k) * 0x8000);
 	for (int i = PRG_8000; i <= PRG_E000; i++)
 		prgBank[i] = base + (0x2000 * i);
@@ -553,7 +568,7 @@ unsigned char c_mapper5::ReadByte(unsigned short address)
 		return *(prg_6000 + (address & 0x1FFF));
 	default:
 	{
-		unsigned char retval = c_mapper::ReadByte(address);
+		unsigned char retval = *(prgBank[(address >> 13) & 3] + (address & 0x1FFF));
 		if (pcm_irq_mode == PCM_IRQ_MODE_READ)
 		{
 			if (address >= 0x8000 || address < 0xC000)
