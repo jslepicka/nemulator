@@ -86,10 +86,10 @@ public:
 	void disable_mixer();
 	int get_fb_width() { return 256; }
 	int get_fb_height() { return 240; }
-
+	c_ppu* ppu;
 private:
 	int num_apu_samples;
-	c_ppu *ppu;
+
 
 	c_joypad *joypad;
 

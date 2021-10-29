@@ -303,12 +303,18 @@ void c_ppu::write_byte(int address, unsigned char value)
 	{
 		*control2 = value;
 		sprites_visible = ppuControl2.spritesVisible;
-
 		if ((value & 0x18) && (current_scanline < 240 || current_scanline == 261)) {
-			rendering = 1;
+			next_rendering = 1;
+			//Battletoads debugging
+			//char x[256];
+			//sprintf(x, "enabled rendering at scanline %d, cycle %d\n", current_scanline, current_cycle);
+			//OutputDebugString(x);
 		}
 		else {
-			rendering = 0;
+			next_rendering = 0;
+		}
+		if (next_rendering != rendering) {
+			update_rendering = 1;
 		}
 
 		if (value & 0x01)
@@ -461,7 +467,11 @@ void c_ppu::reset(void)
 	fetch_state = FETCH_IDLE;
 	vram_update_delay = 0;
 	suppress_nmi = 0;
+	hit = 0;
+	update_rendering = 0;
+	next_rendering = 0;
 
+	pixel_pipeline = 0;
 }
 
 void c_ppu::run_ppu_line()
@@ -469,6 +479,8 @@ void c_ppu::run_ppu_line()
 	//current_cycle = 0;
 	int pixel_count = 0;
 	int done = 0;
+	const int screen_offset = 2;
+
 	while (true)
 	{
 		cpu->availableCycles++;
@@ -485,11 +497,19 @@ void c_ppu::run_ppu_line()
 				}
 			}
 		}
+
+		if (current_cycle == screen_offset && current_scanline >= 0 && current_scanline < 240) {
+			on_screen = 1;
+		}
+		if (current_cycle == 256 + screen_offset) {
+			on_screen = 0;
+		}
 		if (current_cycle != 0) {
 			switch (current_cycle) {
 			case 1:
 			if (current_scanline == 0) {
 					p_frame = pFrameBuffer;
+					hit = 0;
 				}
 				else if (current_scanline == 240) {
 					rendering = 0;
@@ -523,9 +543,6 @@ void c_ppu::run_ppu_line()
 					ppuStatus.vBlank = false;
 					cpu->clear_nmi();
 				}
-				if (current_scanline >= 0 && current_scanline < 240) {
-					on_screen = 1;
-				}
 				break;
 			case 257:
 				if (rendering) {
@@ -533,9 +550,6 @@ void c_ppu::run_ppu_line()
 					vramAddress |= (vramAddressLatch & 0x41F);
 				}
 				fetch_state = FETCH_SPRITE;
-				break;
-			case 258:
-				on_screen = 0;
 				break;
 			case 321:
 				fetch_state = FETCH_BG;
@@ -652,21 +666,20 @@ void c_ppu::run_ppu_line()
 				{
 					int pixel = 0;
 					int bg_index = 0;
-					const int screen_offset = 2;
 
 					if (ppuControl2.backgroundSwitch && ((current_cycle >= 8 + screen_offset) || ppuControl2.backgroundClipping))
 						bg_index = index_buffer[current_cycle - screen_offset + fineX];
 
 					if (bg_index & 0x03)
 					{
-						pixel = (image_palette[bg_index] & palette_mask) | intensity;
+						pixel = image_palette[bg_index];
 					}
 					else
 					{
-						pixel = (image_palette[0] & palette_mask) | intensity;
+						pixel = image_palette[0];
 					}
 
-					if (sprite_count && ppuControl2.spritesVisible && ((current_cycle >= 9) || ppuControl2.spriteClipping))
+					if (sprite_count && ppuControl2.spritesVisible && ((current_cycle >= 8 + screen_offset) || ppuControl2.spriteClipping))
 					{
 						int max_sprites = limit_sprites ? 8 : 64;
 						for (int i = 0; i < sprite_count && i < max_sprites; i++)
@@ -684,6 +697,7 @@ void c_ppu::run_ppu_line()
 										(bg_index & 0x03) != 0 &&
 										current_cycle < 255 + screen_offset) {
 										ppuStatus.hitFlag = true;
+										hit = 1;
 									}
 
 									if (!(priority && (bg_index & 0x03)))
@@ -693,7 +707,7 @@ void c_ppu::run_ppu_line()
 							}
 						}
 					}
-					*p_frame++ = pixel;
+					pixel_pipeline |= (pixel << 16);
 				}
 			}
 
@@ -702,13 +716,13 @@ void c_ppu::run_ppu_line()
 				int pixel = 0;
 				if ((vramAddress & 0x3F00) == 0x3F00)
 				{
-					pixel = (image_palette[vramAddress & 0x1F] & palette_mask) | intensity;
+					pixel = image_palette[vramAddress & 0x1F];
 				}
 				else
 				{
-					pixel = (image_palette[0] & palette_mask) | intensity;
+					pixel = image_palette[0];
 				}
-				*p_frame++ = pixel;
+				pixel_pipeline |= (pixel << 16);
 			}
 
 			if (current_cycle == 340)
@@ -717,13 +731,11 @@ void c_ppu::run_ppu_line()
 				{
 					current_scanline = 0;
 					warmed_up = 1;
-					int* pf = pFrameBuffer;
-					for (int i = 0; i < 256 * 240; i++) {
-						*pf = pal[*pf];
-						pf++;
-					}
 					current_cycle = (rendering && odd_frame) ? 1 : 0;
 					odd_frame ^= 1;
+					if (hit == 0) {
+						int x = 1;
+					}
 				}
 				else {
 					current_cycle = 0;
@@ -731,6 +743,34 @@ void c_ppu::run_ppu_line()
 				}
 				done = 1;
 			}
+			if (current_cycle == 257 && current_scanline < 240) {
+				int x = 1;
+			}
+		}
+
+		if (current_scanline < 240 && current_cycle >= 4 && current_cycle < 4 + 256) {
+			*p_frame++ = pal[((pixel_pipeline & 0xFF) & palette_mask) | intensity];
+		}
+		pixel_pipeline >>= 8;
+		//Battletoads will enable rendering at cycle 255 and break sprite 0 hit (because vertical update happens on cycle 256 and misaligns the background).
+		//Delaying the update by one cycle seems to fix this.  Unsure if this is actually how it works, but Mesen source code says that this is what
+		//apparently happens.  Need to research how enabling things mid-screen affects PPU state.
+		//
+		//NMI at scanline 241, cycle 28
+		//enabled rendering at scanline 14, cycle 300
+		//enabled rendering at scanline 15, cycle 316
+		//NMI at scanline 241, cycle 29
+		//enabled rendering at scanline 14, cycle 271
+		//enabled rendering at scanline 15, cycle 287
+		//NMI at scanline 241, cycle 30
+		//enabled rendering at scanline 14, cycle 293
+		//enabled rendering at scanline 15, cycle 309
+		//NMI at scanline 241, cycle 25
+		//enabled rendering at scanline 14, cycle 255 <-- breaks here
+
+		if (update_rendering) {
+			rendering = next_rendering;
+			update_rendering = 0;
 		}
 
 		mapper->clock(1);
