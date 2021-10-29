@@ -117,6 +117,7 @@ int c_cpu::reset(void)
 	dmaSrc = 0;
 	dmaPos = 0;
 	doApuDMA = 0;
+	odd_cycle = 0;
 	return 1;
 }
 
@@ -146,8 +147,9 @@ __forceinline void c_cpu::execute()
 				opcode = 0x101;
 				irq_delay = 0;
 			}
-			else
+			else {
 				opcode = nes->ReadByte(PC++);
+			}
 			irq_delay = 0;
 			nmi_delay = 0;
 			requiredCycles += cycleTable[opcode];
@@ -370,8 +372,12 @@ void c_cpu::ExecuteOpcode(void)
 		dmaPos--;
 
 		//Sprite DMA burns 513 CPU cycles, so after the last DMA, burn another one.
-		if (dmaPos == 0)
+		if (dmaPos == 0) {
 			requiredCycles += 3;
+			if (odd_cycle) {
+				requiredCycles += 3;
+			}
+		}
 	}
 		break;
 	case 0x103: //APU DMA
@@ -401,6 +407,9 @@ int c_cpu::irq_checked()
 	//irqs are checked 2 cycles before an opcode completes
 	//if this check has already occured, return 1
 	//return (fetchOpcode || ((requiredCycles > availableCycles) && ((requiredCycles - availableCycles) < 6)));
+	if (dmaPos) {
+		int x = 1;
+	}
 	if (fetchOpcode || availableCycles > (requiredCycles - 3))
 		return 1;
 	else

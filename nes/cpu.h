@@ -20,6 +20,7 @@ public:
 	int executed_cycles;
 	void clear_nmi();
 	void execute();
+	int odd_cycle;
 
 private:
 	bool check_page_cross;

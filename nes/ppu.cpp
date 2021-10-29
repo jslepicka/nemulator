@@ -488,11 +488,7 @@ void c_ppu::run_ppu_line()
 		if (current_cycle != 0) {
 			switch (current_cycle) {
 			case 1:
-				if (current_scanline >= 0 && current_scanline < 240) {
-					on_screen = 1;
-				}
-
-				if (current_scanline == 0) {
+			if (current_scanline == 0) {
 					p_frame = pFrameBuffer;
 				}
 				else if (current_scanline == 240) {
@@ -525,6 +521,10 @@ void c_ppu::run_ppu_line()
 				//therefore, clearing the flag here.
 				if (current_scanline == 261) {
 					ppuStatus.vBlank = false;
+					cpu->clear_nmi();
+				}
+				if (current_scanline >= 0 && current_scanline < 240) {
+					on_screen = 1;
 				}
 				break;
 			case 257:
@@ -532,8 +532,10 @@ void c_ppu::run_ppu_line()
 					vramAddress &= ~0x41F;
 					vramAddress |= (vramAddressLatch & 0x41F);
 				}
-				on_screen = 0;
 				fetch_state = FETCH_SPRITE;
+				break;
+			case 258:
+				on_screen = 0;
 				break;
 			case 321:
 				fetch_state = FETCH_BG;
@@ -650,9 +652,10 @@ void c_ppu::run_ppu_line()
 				{
 					int pixel = 0;
 					int bg_index = 0;
+					const int screen_offset = 2;
 
-					if (ppuControl2.backgroundSwitch && ((current_cycle >= 9) || ppuControl2.backgroundClipping))
-						bg_index = index_buffer[current_cycle - 1 + fineX];
+					if (ppuControl2.backgroundSwitch && ((current_cycle >= 8 + screen_offset) || ppuControl2.backgroundClipping))
+						bg_index = index_buffer[current_cycle - screen_offset + fineX];
 
 					if (bg_index & 0x03)
 					{
@@ -670,16 +673,16 @@ void c_ppu::run_ppu_line()
 						{
 							int sprite_x = sprite_buffer[(i * 4) + 3];
 
-							if ((unsigned int)(current_cycle - 1 - sprite_x) < 8)
+							if ((unsigned int)(current_cycle - screen_offset - sprite_x) < 8)
 							{
 								int priority = sprite_buffer[(i * 4) + 2] & 0x20;
-								int sprite_color = sprite_index_buffer[i * 8 + (current_cycle - 1 - sprite_x)];
+								int sprite_color = sprite_index_buffer[i * 8 + (current_cycle - screen_offset - sprite_x)];
 								if (sprite_color & 0x03)
 								{
 									if (i == sprite0_index &&
 										ppuControl2.backgroundSwitch &&
 										(bg_index & 0x03) != 0 &&
-										current_cycle < 256) {
+										current_cycle < 255 + screen_offset) {
 										ppuStatus.hitFlag = true;
 									}
 
@@ -720,7 +723,7 @@ void c_ppu::run_ppu_line()
 						pf++;
 					}
 					current_cycle = (rendering && odd_frame) ? 1 : 0;
-					//odd_frame ^= 1;
+					odd_frame ^= 1;
 				}
 				else {
 					current_cycle = 0;
@@ -734,6 +737,7 @@ void c_ppu::run_ppu_line()
 		if (--executed_cycles == 0)
 		{
 			cpu->execute();
+			cpu->odd_cycle ^= 1;
 			apu2->clock_once();
 			executed_cycles = 3;
 		}
