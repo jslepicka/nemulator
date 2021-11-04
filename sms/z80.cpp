@@ -51,7 +51,9 @@ int c_z80::reset()
 	IY.word = 0x0000;
 	SP = 0xDFF0;
 	I = 0;
-	R = 0;
+	//Setting R to 0 causes Impossible Mission to use the same map every time
+	//R = 0;
+	R = rand() & 0xFF;
 
 	r_00[0] = r_dd[0] = r_fd[0] = &BC.byte.hi;
 	r_00[1] = r_dd[1] = r_fd[1] = &BC.byte.lo;

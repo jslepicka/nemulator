@@ -677,9 +677,6 @@
     <ClInclude Include="nes\apu2.h">
       <Filter>Header Files\nes</Filter>
     </ClInclude>
-    <ClInclude Include="nes\apu_luts.h">
-      <Filter>Header Files\nes</Filter>
-    </ClInclude>
     <ClInclude Include="crc32.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -760,6 +757,12 @@
     </ClInclude>
     <ClInclude Include="gb\mbc2.h">
       <Filter>Header Files\gb</Filter>
+    </ClInclude>
+    <ClInclude Include="clamp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="interpolate.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

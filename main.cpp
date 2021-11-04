@@ -10,6 +10,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdPlin
 //#define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
 //#define new DEBUG_NEW
 //#endif
+	srand(time(0));
 	app = new D3d10App(hInstance);
 	app->Init("nemulator.ini", new c_nemulator(), NULL);
 	app->SetCaption("nemulator 4.3.1");
