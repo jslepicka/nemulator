@@ -36,7 +36,10 @@ private:
 	bool drawing_enabled(void);
 
 	int vram_update_delay;
-	static const int VRAM_UPDATE_DELAY = 3;
+	//ppu updates apparently happen on ppu cycle following completion of a cpu write
+	//when wr/ce goes high.  This is effectively 3 cycles after wr/cr goes low on the
+	//last cycle of the cpu opcode (i.e., the write cycle)
+	static const int VRAM_UPDATE_DELAY = 1;// 3;
 	int suppress_nmi;
 	static uint64_t morton_odd_64[];
 	static uint64_t morton_even_64[];
