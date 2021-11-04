@@ -485,19 +485,6 @@ void c_ppu::run_ppu_line()
 	while (true)
 	{
 		cpu->availableCycles++;
-		if (vram_update_delay > 0) {
-			vram_update_delay--;
-			if (vram_update_delay == 0) {
-				vramAddress = vramAddressLatch;
-				if (!rendering)
-				{
-					mapper->set_ppu_bus(vramAddress);
-				}
-				else {
-					int x = 1;
-				}
-			}
-		}
 
 		if (current_cycle == screen_offset && current_scanline >= 0 && current_scanline < 240) {
 			on_screen = 1;
@@ -747,9 +734,6 @@ void c_ppu::run_ppu_line()
 				}
 				done = 1;
 			}
-			if (current_cycle == 257 && current_scanline < 240) {
-				int x = 1;
-			}
 		}
 
 		if (current_scanline < 240 && current_cycle >= 4 && current_cycle < 4 + 256) {
@@ -775,6 +759,17 @@ void c_ppu::run_ppu_line()
 		if (update_rendering) {
 			rendering = next_rendering;
 			update_rendering = 0;
+		}
+		//TODO: all cpu writes affecting ppu state should probably be delayed until next ppu cycle
+		if (vram_update_delay > 0) {
+			vram_update_delay--;
+			if (vram_update_delay == 0) {
+				vramAddress = vramAddressLatch;
+				if (!rendering)
+				{
+					mapper->ppu_read(vramAddress);
+				}
+			}
 		}
 
 		mapper->clock(1);
@@ -893,6 +888,6 @@ void c_ppu::update_vram_address()
 	{
 		//update bus when not rendering
 		vramAddress = (vramAddress + addressIncrement) & 0x7FFF;
-		mapper->set_ppu_bus(vramAddress);
+		mapper->ppu_read(vramAddress);
 	}
 }
