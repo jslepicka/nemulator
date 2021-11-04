@@ -339,6 +339,7 @@
     <ClInclude Include="biquad4.hpp" />
     <ClInclude Include="biquad8.hpp" />
     <ClInclude Include="bmp_writer.h" />
+    <ClInclude Include="clamp.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="console.h" />
     <ClInclude Include="constants.h" />
@@ -354,12 +355,12 @@
     <ClInclude Include="gb\mbc2.h" />
     <ClInclude Include="gb\mbc3.h" />
     <ClInclude Include="input_handler.h" />
+    <ClInclude Include="interpolate.h" />
     <ClInclude Include="mem_access_log.h" />
     <ClInclude Include="mem_viewer.h" />
     <ClInclude Include="menu.h" />
     <ClInclude Include="nemulator.h" />
     <ClInclude Include="nes\apu2.h" />
-    <ClInclude Include="nes\apu_luts.h" />
     <ClInclude Include="nes\cpu.h" />
     <ClInclude Include="nes\ines.h" />
     <ClInclude Include="nes\joypad.h" />
