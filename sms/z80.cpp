@@ -204,8 +204,7 @@ const int c_z80::cc[8] = {
 
 void c_z80::inc_r()
 {
-	int R8 = R & 0x80;
-	R = R8 | ((R++) & 0x7F);
+	R = (R & 0x80) | ((R+1) & 0x7F);
 }
 
 void c_z80::execute(int cycles)
