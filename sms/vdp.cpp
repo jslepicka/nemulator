@@ -361,12 +361,9 @@ void c_vdp::draw_scanline()
 		}
 	}
 
-	if (line_number == 261)
-		line_number = 0;
-	else
-		line_number++;
 
-	if (/*line_number == 0 || */line_number > 192)
+
+	if (line_number > 192)
 	{
 		line_counter = registers[10];
 	}
@@ -381,12 +378,16 @@ void c_vdp::draw_scanline()
 		}
 	}
 
-	if (line_number == 193)
+	if (line_number == 192)
 	{
 		status |= 0x80;
 		update_irq();
 
 	}
+	if (line_number == 261)
+		line_number = 0;
+	else
+		line_number++;
 }
 
 int c_vdp::get_scanline()

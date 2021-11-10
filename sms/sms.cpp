@@ -317,6 +317,7 @@ unsigned char c_sms::read_port(int port)
 		return 0;
 	case 1:
 		//printf("Port read from PSG\n");
+		//TODO: need to differentiate between even and odd reads to return either h or v vdp counters
 		return vdp->get_scanline();
 	case 2:
 		//printf("Port read from VDP\n");
