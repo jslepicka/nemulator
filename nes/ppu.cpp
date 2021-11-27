@@ -394,8 +394,9 @@ void c_ppu::write_byte(int address, unsigned char value)
 		}
 		else
 		{
-			if (!rendering)
+			if (!rendering) {
 				mapper->ppu_write(vramAddress, value);
+			}
 		}
 		update_vram_address();
 	}
@@ -481,21 +482,16 @@ void c_ppu::run_ppu_line()
 	int pixel_count = 0;
 	int done = 0;
 	const int screen_offset = 2;
+	int vid_out = 0;
 
 	while (true)
 	{
 		cpu->availableCycles++;
 
-		if (current_cycle == screen_offset && current_scanline >= 0 && current_scanline < 240) {
-			on_screen = 1;
-		}
-		if (current_cycle == 256 + screen_offset) {
-			on_screen = 0;
-		}
 		if (current_cycle != 0) {
 			switch (current_cycle) {
 			case 1:
-			if (current_scanline == 0) {
+				if (current_scanline == 0) {
 					p_frame = pFrameBuffer;
 					hit = 0;
 				}
@@ -531,6 +527,16 @@ void c_ppu::run_ppu_line()
 					ppuStatus.vBlank = false;
 					cpu->clear_nmi();
 				}
+				//screen_offset
+				if (current_scanline < 240) {
+					on_screen = 1;
+				}
+				break;
+			case 4:
+				//enable pixel output
+				if (current_scanline < 240) {
+					vid_out = 1;
+				}
 				break;
 			case 257:
 				if (rendering) {
@@ -538,6 +544,13 @@ void c_ppu::run_ppu_line()
 					vramAddress |= (vramAddressLatch & 0x41F);
 				}
 				fetch_state = FETCH_SPRITE;
+				break;
+			case 258: //256 + screen_offset
+				on_screen = 0;
+				break;
+			case 260:
+				//disable pixel output
+				vid_out = 0;
 				break;
 			case 321:
 				fetch_state = FETCH_BG;
@@ -555,100 +568,98 @@ void c_ppu::run_ppu_line()
 			}
 
 			if (rendering) {
-				if (fetch_state) {
-					switch ((current_cycle - 1) & 0x7) {
-					case 0: //NT byte 1
-						break;
-					case 1: //NT byte 2
-						if (fetch_state == FETCH_BG) {
-							drawingBg = true;
-							tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
-							pattern_address = (tile << 4) + ((vramAddress & 0x7000) >> 12) + (ppuControl1.screenPatternTableAddress * 0x1000);
-						}
-						else if (fetch_state == FETCH_SPRITE) {
-							//tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
-						}
-						else if (fetch_state == FETCH_NT) {
-							tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
-						}
-						break;
-					case 2: //AT byte 1
-						break;
-					case 3: //AT byte 2
-						if (fetch_state == FETCH_BG) {
-							attribute_address = 0x23C0 |
-								(vramAddress & 0xC00) |
-								(attr_loc[vramAddress & 0x3ff]);
-							attribute_shift = attr_shift_table[vramAddress & 0x3FF];
-							attribute = mapper->ppu_read(attribute_address);
-							attribute >>= attribute_shift;
-							attribute &= 0x03;
-						}
-						else if (fetch_state == FETCH_SPRITE) {
-							//tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
-						}
-						else if (fetch_state == FETCH_NT) {
-							tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
-						}
-						break;
-					case 4: //Low BG byte 1
-						break;
-					case 5: //Low BG byte 2
-						if (fetch_state == FETCH_BG) {
-							drawingBg = true;
-							pattern1 = mapper->ppu_read(pattern_address);
-						}
-						else if (fetch_state == FETCH_SPRITE) {
-							drawingBg = false;
-							if (ppuControl1.spriteSize)
-							{
-								int sprite_tile = sprite_buffer[(((current_cycle - 261) / 8) * 4) + 1];
-								mapper->ppu_read((sprite_tile & 0x1) * 0x1000);
-							}
-							else
-							{
-								mapper->ppu_read(ppuControl1.spritePatternTableAddress * 0x1000);
-							}
-						}
-						break;
-					case 6: //High BG byte 1
-						break;
-					case 7: //High BG byte 2
-						if (fetch_state == FETCH_BG) {
-							drawingBg = true;
-							if (current_cycle == 8 || current_cycle == 328) {
-								int x = 1;
-							}
-							pattern2 = mapper->ppu_read(pattern_address + 8);
-							unsigned int l = current_cycle + 8;
-
-							if (l >= 336)
-								l -= 336;
-							__int64* ib64 = (__int64*)&index_buffer[l];
-							__int64 c = interleave_bits_64(pattern1, pattern2) | (attribute * 0x0404040404040404ULL);
-							*ib64 = c;
-							
-							if (current_cycle == 256) {
-								inc_vertical_address();
-							}
-							inc_horizontal_address();
-						}
-						else if (fetch_state == FETCH_SPRITE)
-						{
-							drawingBg = false;
-							if (ppuControl1.spriteSize)
-							{
-								int sprite_tile = sprite_buffer[(((current_cycle - 261) / 8) * 4) + 1];
-								mapper->ppu_read((sprite_tile & 0x1) * 0x1000);
-							}
-							else
-							{
-								mapper->ppu_read(ppuControl1.spritePatternTableAddress * 0x1000);
-							}
-						}
-
-						break;
+				switch ((current_cycle - 1) & 0x7) {
+				case 0: //NT byte 1
+					break;
+				case 1: //NT byte 2
+					if (fetch_state == FETCH_BG) {
+						drawingBg = true;
+						tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
+						pattern_address = (tile << 4) + ((vramAddress & 0x7000) >> 12) + (ppuControl1.screenPatternTableAddress * 0x1000);
 					}
+					else if (fetch_state == FETCH_SPRITE) {
+						//tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
+					}
+					else if (fetch_state == FETCH_NT) {
+						tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
+					}
+					break;
+				case 2: //AT byte 1
+					break;
+				case 3: //AT byte 2
+					if (fetch_state == FETCH_BG) {
+						attribute_address = 0x23C0 |
+							(vramAddress & 0xC00) |
+							(attr_loc[vramAddress & 0x3ff]);
+						attribute_shift = attr_shift_table[vramAddress & 0x3FF];
+						attribute = mapper->ppu_read(attribute_address);
+						attribute >>= attribute_shift;
+						attribute &= 0x03;
+					}
+					else if (fetch_state == FETCH_SPRITE) {
+						//tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
+					}
+					else if (fetch_state == FETCH_NT) {
+						tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
+					}
+					break;
+				case 4: //Low BG byte 1
+					break;
+				case 5: //Low BG byte 2
+					if (fetch_state == FETCH_BG) {
+						drawingBg = true;
+						pattern1 = mapper->ppu_read(pattern_address);
+					}
+					else if (fetch_state == FETCH_SPRITE) {
+						drawingBg = false;
+						if (ppuControl1.spriteSize)
+						{
+							int sprite_tile = sprite_buffer[(((current_cycle - 261) / 8) * 4) + 1];
+							mapper->ppu_read((sprite_tile & 0x1) * 0x1000);
+						}
+						else
+						{
+							mapper->ppu_read(ppuControl1.spritePatternTableAddress * 0x1000);
+						}
+					}
+					break;
+				case 6: //High BG byte 1
+					break;
+				case 7: //High BG byte 2
+					if (fetch_state == FETCH_BG) {
+						drawingBg = true;
+						if (current_cycle == 8 || current_cycle == 328) {
+							int x = 1;
+						}
+						pattern2 = mapper->ppu_read(pattern_address + 8);
+						unsigned int l = current_cycle + 8;
+
+						if (l >= 336)
+							l -= 336;
+						__int64* ib64 = (__int64*)&index_buffer[l];
+						__int64 c = interleave_bits_64(pattern1, pattern2) | (attribute * 0x0404040404040404ULL);
+						*ib64 = c;
+
+						if (current_cycle == 256) {
+							inc_vertical_address();
+						}
+						inc_horizontal_address();
+					}
+					else if (fetch_state == FETCH_SPRITE)
+					{
+						drawingBg = false;
+						if (ppuControl1.spriteSize)
+						{
+							int sprite_tile = sprite_buffer[(((current_cycle - 261) / 8) * 4) + 1];
+							mapper->ppu_read((sprite_tile & 0x1) * 0x1000);
+						}
+						else
+						{
+							mapper->ppu_read(ppuControl1.spritePatternTableAddress * 0x1000);
+						}
+					}
+
+					break;
 				}
 				if (on_screen)
 				{
@@ -736,7 +747,7 @@ void c_ppu::run_ppu_line()
 			}
 		}
 
-		if (current_scanline < 240 && current_cycle >= 4 && current_cycle < 4 + 256) {
+		if (vid_out /*current_scanline < 240 && current_cycle >= 4 && current_cycle < 4 + 256*/) {
 			*p_frame++ = pal[(pixel_pipeline & palette_mask) | intensity];
 		}
 		pixel_pipeline >>= 8;
