@@ -123,7 +123,8 @@ const std::map<int, std::function<c_mapper*()> > c_nes::mapper_factory =
 	{ 232, []() {return new c_mapper232(); } },
 	{ 243, []() {return new c_mapper243(); } },
 	{ 0x100, []() {return new c_mapper_mmc6(); }},
-	{ 0x101, []() {return new c_mapper_mc_acc(); }}
+	{ 0x101, []() {return new c_mapper_mc_acc(); }},
+	{ 0x102, []() {return new c_mapper_nsf(); }}
 
 };
 
@@ -296,16 +297,17 @@ int c_nes::LoadImage(char *pathFile)
 	if (file.fail())
 		return -1;
 	file.seekg(0, std::ios_base::end);
-	int filelength = (int)file.tellg();
+	file_length = (int)file.tellg();
 	file.seekg(0, std::ios_base::beg);
-	image = new unsigned char[filelength];
-	file.read((char*)image, filelength);
+	image = new unsigned char[file_length];
+	file.read((char*)image, file_length);
 	file.close();
 
 	header = (iNesHeader *)image;
 
 	char ines_signature[4] = {'N', 'E', 'S', 0x1a};
 	char fds_signature[] = "*NINTENDO-HVC*";
+	char nsf_signature[] = { 'N', 'E', 'S', 'M', 0x1A };
 
 	//if (memcmp(header->Signature, signature, 4) != 0)
 	//	return -1;
@@ -316,9 +318,9 @@ int c_nes::LoadImage(char *pathFile)
 		//if expected file size doesn't match real file size, try to fix chr rom page count
 		//fixes fire emblem
 		int expected_file_size = (header->PrgRomPageCount * 16384) + (header->ChrRomPageCount * 8192) + sizeof(iNesHeader);
-		int actual_chr_size = filelength - (header->PrgRomPageCount * 16384) - sizeof(iNesHeader);
+		int actual_chr_size = file_length - (header->PrgRomPageCount * 16384) - sizeof(iNesHeader);
 
-		if (filelength != expected_file_size && header->ChrRomPageCount != 0)
+		if (file_length != expected_file_size && header->ChrRomPageCount != 0)
 		{
 			header->ChrRomPageCount = (actual_chr_size / 8192);
 		}
@@ -334,10 +336,13 @@ int c_nes::LoadImage(char *pathFile)
 		//m = 0x101;
 		m = -1;
 	}
+	else if (memcmp(image, nsf_signature, 5) == 0) {
+		m = 0x102;
+	}
 
-	if (m != -1)
+	if (m != -1 && m != 0x102)
 	{
-		crc32 = get_crc32((unsigned char*)image + sizeof(iNesHeader), filelength - sizeof(iNesHeader));
+		crc32 = get_crc32((unsigned char*)image + sizeof(iNesHeader), file_length - sizeof(iNesHeader));
 	}
 	return m;
 }
@@ -435,6 +440,7 @@ int c_nes::load()
 	strcpy_s(mapper->filename, pathFile);
 	strcpy_s(mapper->sramFilename, sramFilename);
 	mapper->crc32 = crc32;
+	mapper->file_length = file_length;
 	reset();
 	return 1;
 }
@@ -459,7 +465,9 @@ int c_nes::reset(void)
 	mapper->nes = this;
 	mapper->header = header;
 	mapper->image = image;
-	mapper->LoadImage();
+	if (mapper->LoadImage() == -1) {
+		return 1;
+	}
 	mapper->reset();
 	cpu->reset();
 	joypad->Reset();

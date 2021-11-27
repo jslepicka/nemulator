@@ -1170,6 +1170,11 @@ void c_nemulator::UpdateScene(double dt)
 				default:
 					break;
 				}
+				if (n->get_mapper_number() == 258) { //NFS
+					stats->report_stat("song #", n->ReadByte(0x54F7));
+					stats->report_stat("input.current", n->ReadByte(0x54FA));
+					stats->report_stat("input.previous", n->ReadByte(0x54F9));
+				}
 
 			}
 			//stats->report_stat("mapper #", nes->get_mapper_number());
@@ -1367,6 +1372,7 @@ void c_nemulator::LoadGames()
 		{ GAME_SMS, "sms", "sms.rom_path", "sms.save_path", "c:\\roms\\sms" },
 		{ GAME_GG,   "gg",  "gg.rom_path",  "gg.save_path",  "c:\\roms\\gg" },
 		{ GAME_GB,   "gb",  "gb.rom_path",  "gb.save_path",  "c:\\roms\\gb" },
+		{ GAME_NES, "nsf", "nsf.rom_path", "nsf.save_path", "c:\\roms\\nsf" }
 	};
 
 	bool global_mask_sides = config->get_bool("mask_sides", false);

@@ -134,5 +134,6 @@ private:
 	int do_vblank_nmi;
 	int vblank_nmi_delay;
 	bool limit_sprites;
+	int file_length;
 	const static std::map<int, std::function<c_mapper*()> > mapper_factory;
 };

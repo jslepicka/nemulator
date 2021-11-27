@@ -71,3 +71,4 @@
 #include "mapper193.h"
 #include "mapper_mmc6.h" 
 #include "mapper_vrc4.h" 
+#include "mapper_nsf.h"
