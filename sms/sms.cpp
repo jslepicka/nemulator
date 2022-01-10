@@ -163,7 +163,7 @@ int c_sms::emulate_frame()
 	//	vdp->eval_sprites();
 	//	vdp->draw_scanline();
 	//}
-
+	psg->clear_buffer();
 	for (int i = 0; i < 262; i++)
 	{
 		z80->execute(228);
@@ -318,6 +318,9 @@ unsigned char c_sms::read_port(int port)
 	case 1:
 		//printf("Port read from PSG\n");
 		//TODO: need to differentiate between even and odd reads to return either h or v vdp counters
+		if (port & 0x1) {
+			int x = 1;
+		}
 		return vdp->get_scanline();
 	case 2:
 		//printf("Port read from VDP\n");

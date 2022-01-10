@@ -451,6 +451,7 @@ void c_gb::clock_timer()
 
 int c_gb::emulate_frame()
 {
+	apu->clear_buffers();
 	//70224 PPU cycles per scanline
 	//divided by 4 to get CPU clock
 	//for scanline renderer:

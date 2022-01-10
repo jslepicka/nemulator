@@ -144,6 +144,11 @@ int c_apu2::get_buffer(const short** buf)
 	return num_samples;
 }
 
+void c_apu2::clear_buffer()
+{
+	resampler->clear_buf();
+}
+
 void c_apu2::set_audio_rate(double freq)
 {
 	double x = NES_AUDIO_RATE / freq;

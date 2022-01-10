@@ -84,6 +84,12 @@ int c_gbapu::get_buffers(const short** buf_l, const short** buf_r)
 	return num_samples;
 }
 
+void c_gbapu::clear_buffers()
+{
+	resampler_l->clear_buf();
+	resampler_r->clear_buf();
+}
+
 void c_gbapu::write_byte(uint16_t address, uint8_t data)
 {
 	int x = 1;

@@ -26,6 +26,7 @@
 #include "bmp_writer.h"
 #include "mem_viewer.h"
 #include "qam.h"
+#include "nsf_stats.h"
 
 
 #define KEYDOWN(key) GetAsyncKeyState(key) & 0x8000 ? 1 : 0
@@ -83,6 +84,7 @@ private:
 	void *load_thread_handle;
 
 	c_stats *stats;
+	c_nsf_stats* nsf_stats;
 	c_status *status;
 	enum MENUS
 	{

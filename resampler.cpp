@@ -43,7 +43,10 @@ void c_resampler::set_m(float m)
 int c_resampler::get_output_buf(const short **sample_buf)
 {
 	*sample_buf = this->output_buf;
-	int x = output_buf_index;
+	return output_buf_index;
+}
+
+void c_resampler::clear_buf()
+{
 	output_buf_index = 0;
-	return x;
 }

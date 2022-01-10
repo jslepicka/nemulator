@@ -64,6 +64,11 @@ int c_psg::get_buffer(const short** buf)
 	return num_samples;
 }
 
+void c_psg::clear_buffer()
+{
+	resampler->clear_buf();
+}
+
 void c_psg::reset()
 {
 	available_cycles = 0;
