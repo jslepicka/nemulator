@@ -9,6 +9,7 @@ public:
 	c_psg();
 	~c_psg();
 	int get_buffer(const short** buf);
+	void clear_buffer();
 	void clock(int cycles);
 	void write(int data);
 	void reset();

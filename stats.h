@@ -12,9 +12,9 @@ class c_stats:
 public:
 	c_stats();
 	~c_stats();
-	void init (void  *params);
-	int update(double dt, int child_result, void *params);
-	void draw();
+	virtual void init (void  *params);
+	virtual int update(double dt, int child_result, void *params);
+	virtual void draw();
 	void resize();
 	void report_stat(std::string stat_name, int stat_value);
 	void report_stat(std::string stat_name, double stat_value);

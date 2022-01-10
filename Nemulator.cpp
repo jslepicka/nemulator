@@ -58,6 +58,7 @@ c_nemulator::c_nemulator()
 	paused = false;
 	g_start_event = CreateEvent(NULL, TRUE, TRUE, NULL);
 	stats = NULL;
+	nsf_stats = NULL;
 	audio_info = NULL;
 	mem_viewer = NULL;
 	qam = NULL;
@@ -841,6 +842,15 @@ void c_nemulator::leave_game()
 	{
 		ResumeThread(game_thread->thread_handle);
 	}
+	Game* g = (Game*)texturePanels[selectedPanel]->GetSelected();
+	if (g->type == GAME_NES)
+	{
+		c_nes* n = (c_nes*)g->console;
+		if (n->get_mapper_number() == 258) { //NFS
+			nsf_stats->dead = true;
+			nsf_stats = NULL;
+		}
+	}
 }
 
 void c_nemulator::start_game()
@@ -864,6 +874,20 @@ void c_nemulator::start_game()
 		{
 			SuspendThread(game_thread->thread_handle);
 		}
+
+		if (g->type == GAME_NES)
+		{
+			c_nes* n = (c_nes*)g->console;
+			if (n->get_mapper_number() == 258) { //NFS
+				nsf_stats = new c_nsf_stats();
+				nsf_stats->x = eye_x;
+				nsf_stats->y = eye_y;
+				nsf_stats->z = (float)(eye_z + (1.0 / tan(fov_h / 2)));
+				add_task(nsf_stats, g->console);
+			}
+
+		}
+		
 	}
 }
 
@@ -900,6 +924,8 @@ int c_nemulator::update(double dt, int child_result, void *params)
 						status->dead = true;
 					if (stats)
 						stats->dead = true;
+					if (nsf_stats)
+						nsf_stats->dead = true;
 					if (audio_info)
 						audio_info->dead = true;
 					if (mem_viewer)
@@ -1170,35 +1196,20 @@ void c_nemulator::UpdateScene(double dt)
 				default:
 					break;
 				}
-				if (n->get_mapper_number() == 258) { //NFS
-					stats->report_stat("song #", n->ReadByte(0x54F7));
-					stats->report_stat("input.current", n->ReadByte(0x54FA));
-					stats->report_stat("input.previous", n->ReadByte(0x54F9));
-				}
+				//if (n->get_mapper_number() == 258) { //NFS
+				//	stats->report_stat("song #", n->ReadByte(0x54F7));
+				//	stats->report_stat("input.current", n->ReadByte(0x54FA));
+				//	stats->report_stat("input.previous", n->ReadByte(0x54F9));
+				//}
 
 			}
-			//stats->report_stat("mapper #", nes->get_mapper_number());
-			//stats->report_stat("mapper name", nes->get_mapper_name());
-			//stats->report_stat("sprite limit", nes->get_sprite_limit() ? "limited" : "unlimited");
-			//switch (nes->get_mirroring_mode())
-			//{
-			//case 0:
-			//	stats->report_stat("mirroring", "horizontal");
-			//	break;
-			//case 1:
-			//	stats->report_stat("mirroring", "vertical");
-			//	break;
-			//case 2:
-			//case 3:
-			//	stats->report_stat("mirroring", "one screen");
-			//	break;
-			//case 4:
-			//	stats->report_stat("mirroring", "four screen");
-			//	break;
-			//default:
-			//	break;
-			//}
 
+		}
+		if (nsf_stats) { //NSF
+			Game* game = (Game*)texturePanels[selectedPanel]->GetSelected();
+			c_console* console = game->console;
+			c_nes* n = (c_nes*)console;
+			nsf_stats->report_stat("song #", n->ReadByte(0x54F7) + 1);
 		}
 		framesDrawn = 0;
 		elapsed = 0.0;

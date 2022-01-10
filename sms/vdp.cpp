@@ -360,8 +360,9 @@ void c_vdp::draw_scanline()
 			frame_buffer[y * 256 + x] = 0;
 		}
 	}
-
-
+	//need to figure out irq timing.
+	//leaving line increment here allows earthworm jim (gg) to run but moving the increment past the irq checks
+	//causes shacking at the screen split in black belt
 
 	if (line_number > 192)
 	{
@@ -388,6 +389,8 @@ void c_vdp::draw_scanline()
 		line_number = 0;
 	else
 		line_number++;
+
+
 }
 
 int c_vdp::get_scanline()

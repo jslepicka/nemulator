@@ -493,6 +493,7 @@ int c_nes::emulate_frame()
 {
 	if (!loaded)
 		return 1;
+	apu2->clear_buffer();
 	for (int scanline = 0; scanline < 262; scanline++)
 	{
 		if (scanline == 261 || (scanline >= 0 && scanline <= 239)) {
