@@ -266,7 +266,7 @@ void D3d10App::disable_screensaver()
 	REASON_CONTEXT rc = { 0 };
 	rc.Version = POWER_REQUEST_CONTEXT_VERSION;
 	rc.Flags = POWER_REQUEST_CONTEXT_SIMPLE_STRING;
-	rc.Reason.SimpleReasonString = L"NoDoz";
+	rc.Reason.SimpleReasonString = (LPWSTR)L"NoDoz";
 	if (power_request = PowerCreateRequest(&rc)) {
 		PowerSetRequest(power_request, PowerRequestDisplayRequired);
 		PowerSetRequest(power_request, PowerRequestExecutionRequired);

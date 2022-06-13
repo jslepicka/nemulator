@@ -21,13 +21,13 @@ void c_mapper82::reset()
 
 void c_mapper82::sync()
 {
-	int xor = chr_mode ? 4 : 0;
-	SetChrBank2k(CHR_0000 ^ xor, chr[0] >> 1);
-	SetChrBank2k(CHR_0800 ^ xor, chr[1] >> 1);
-	SetChrBank1k(CHR_1000 ^ xor, chr[2]);
-	SetChrBank1k(CHR_1400 ^ xor, chr[3]);
-	SetChrBank1k(CHR_1800 ^ xor, chr[4]);
-	SetChrBank1k(CHR_1C00 ^ xor, chr[5]);
+	int _xor = chr_mode ? 4 : 0;
+	SetChrBank2k(CHR_0000 ^ _xor, chr[0] >> 1);
+	SetChrBank2k(CHR_0800 ^ _xor, chr[1] >> 1);
+	SetChrBank1k(CHR_1000 ^ _xor, chr[2]);
+	SetChrBank1k(CHR_1400 ^ _xor, chr[3]);
+	SetChrBank1k(CHR_1800 ^ _xor, chr[4]);
+	SetChrBank1k(CHR_1C00 ^ _xor, chr[5]);
 }
 
 void c_mapper82::WriteByte(unsigned short address, unsigned char value)
