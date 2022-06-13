@@ -1272,12 +1272,12 @@ void c_nemulator::DrawScene()
 			const char *subtitle[] = { "Nintendo NES", "Sega Master System", "Sega Game Gear", "Nintendo Game Boy" };
 
 			DrawText(font2, .0525f, .925f, subtitle[g->type], D3DXCOLOR((float)(.22f * dim), (float)(.22f * dim), (float)(.22f * dim), 1.0f));
-			RECT r = { 0, 0, clientWidth, (LONG)(clientHeight*1.95) };
-			ID3D10DepthStencilState *state;
-			int oldref;
-			d3dDev->OMGetDepthStencilState(&state, (UINT *)&oldref);
-			font2->DrawText(NULL, "www.nemulator.com", -1, &r, DT_NOCLIP | DT_CENTER | DT_VCENTER, D3DXCOLOR((float)(.006f*dim), (float)(.006f*dim), (float)(.006f*dim), 1.0f));
-			d3dDev->OMSetDepthStencilState(state, oldref);
+			//RECT r = { 0, 0, clientWidth, (LONG)(clientHeight*1.95) };
+			//ID3D10DepthStencilState *state;
+			//int oldref;
+			//d3dDev->OMGetDepthStencilState(&state, (UINT *)&oldref);
+			//font2->DrawText(NULL, "www.nemulator.com", -1, &r, DT_NOCLIP | DT_CENTER | DT_VCENTER, D3DXCOLOR((float)(.006f*dim), (float)(.006f*dim), (float)(.006f*dim), 1.0f));
+			//d3dDev->OMSetDepthStencilState(state, oldref);
 		}
 
 		if (!inGame && !menu && (fastscroll || scroll_fade_timer > 0.0))
