@@ -96,7 +96,6 @@ void c_lr35902::execute(int cycles)
 							opcode = i;
 							offset = 512;
 							gb->IF &= ~(1 << i);
-							//printf("irq %d\n", i);
 							break;
 						}
 						i++;

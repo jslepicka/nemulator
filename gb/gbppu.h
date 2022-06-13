@@ -30,6 +30,10 @@ private:
 	int WY;
 	int WX;
 	int DMA;
+	int frame = 0;
+	int fetch_x;
+	int window_tile;
+	int window_start_line;
 
 
 	int cpu_divider;
@@ -117,5 +121,8 @@ private:
 
 	static const unsigned int pal[][4];
 	const unsigned int* shades;
+
+
+	int dots = 0;
 };
 

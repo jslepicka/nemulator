@@ -212,6 +212,9 @@ void c_gbppu::reset()
 	render_buf_index = 0;
 	current_pixel = 0;
 	start_vblank = 0;
+	fetch_x = 0;
+	window_tile = 0;
+	window_start_line = -1;
 
 	dma_count = 0;
 	sprite_count = 0;
@@ -247,6 +250,9 @@ void c_gbppu::eval_sprites(int y)
 		if (y >= sprite_y && y < (sprite_y + h)) {
 			//sprite is in range, copy to sprite_buffer
 			memcpy(&sprite_buffer[sprite_count], s, sizeof(s_sprite));
+			if (h == 16) {
+				sprite_buffer[sprite_count].tile &= ~0x1;
+			}
 			sprite_count++;
 			if (sprite_count == 10)
 				return;
@@ -293,7 +299,7 @@ void c_gbppu::set_ly(int line)
 void c_gbppu::execute(int cycles)
 {
 	while (cycles-- > 0) {
-
+		dots++;
 		if (LCDC & 0x80) {
 
 			if (current_cycle == 0) {
@@ -349,6 +355,7 @@ void c_gbppu::execute(int cycles)
 					in_window = 0;
 					fetching_sprites = 0;
 					SCX_latch = SCX;
+					fetch_x = 0;
 
 				}
 				break;
@@ -380,6 +387,10 @@ void c_gbppu::execute(int cycles)
 						fetch_phase = 0;
 						bg_latched = 0;
 						first_tile = 1;
+						window_tile = 0;
+						if (window_start_line == -1) {
+							window_start_line = line;
+						}
 					}
 				}
 
@@ -401,14 +412,16 @@ void c_gbppu::execute(int cycles)
 					}
 					break;
 				case 1: //fetch nt
-					if (first_tile) {
+					if (true || first_tile) {
 						if (in_window) {
-							ybase = line - WY;
-							char_addr = 0x9800 | ((LCDC & 0x40) << 4) | ((ybase & 0xF8) << 2);
+							ybase = window_start_line - WY;
+							char_addr = 0x9800 | ((LCDC & 0x40) << 4) | ((ybase & 0xF8) << 2) | window_tile;
 						}
 						else {
-							ybase = line + SCY;
-							char_addr = 0x9800 | ((LCDC & 0x8) << 7) | ((ybase & 0xF8) << 2) | ((SCX_latch & 0xF8) >> 3);
+							ybase = (line + SCY) & 0xFF;
+							uint32_t xbase = ((SCX >> 3) + fetch_x) & 0x1F;
+							char_addr = 0x9800 | ((LCDC & 0x8) << 7) | ((ybase & 0xF8) << 2) | xbase;
+							//char_addr = 0x9800 | ((LCDC & 0x8) << 7) | ((ybase & 0xF8) << 2) | ((SCX & 0xF8) >> 3);
 						}
 
 					}
@@ -436,7 +449,10 @@ void c_gbppu::execute(int cycles)
 					bg_latched = 1;
 					//increment lower 5 bits of char_addr
 					if (!first_tile || in_window) {
-						char_addr = (char_addr & 0xFFE0) | ((char_addr + 1) & 0x1F);
+						
+						//char_addr = (char_addr & 0xFFE0) | ((char_addr + 1) & 0x1F);
+						fetch_x++;
+						window_tile++;
 						in_sprite_window = 1;
 						fetch_phase++;
 					}
@@ -463,11 +479,9 @@ void c_gbppu::execute(int cycles)
 							if (sprite_buffer[i].x == current_pixel - (SCX_latch & 0x7)) {
 								current_sprite = i;
 								sprite_tile = sprite_buffer[current_sprite].tile;
-								if (sprite_tile == 4) {
-									int x = 1;
+								if (h == 16) {
+									sprite_tile &= ~0x1;
 								}
-								sprite_buffer[i].x = 255;
-								
 								sprite_y_offset = (line - sprite_buffer[current_sprite].y) & (h - 1);
 								if (sprite_buffer[current_sprite].flags & 0x40) {
 									sprite_y_offset = (h - 1) - sprite_y_offset;
@@ -484,12 +498,11 @@ void c_gbppu::execute(int cycles)
 						obj_fetch_phase++;
 						break;
 					case 3:
-						sprite_addr = (sprite_buffer[current_sprite].tile << 4) | (sprite_y_offset << 1);
-						if (LCDC & 0x4) {
-							sprite_addr &= ~1;
-						}
+					{
+						sprite_addr = (sprite_tile << 4) | (sprite_y_offset << 1);
 						obj_p0 = vram[sprite_addr];
 						obj_fetch_phase++;
+					}
 						break;
 					case 4:
 						obj_fetch_phase++;
@@ -505,10 +518,9 @@ void c_gbppu::execute(int cycles)
 								uint8_t p = ((obj_p0 >> shift) & 0x1) | (((obj_p1 >> shift) & 0x1) << 1);
 
 								int* o = &obj_fifo[(obj_fifo_index + i) & 0x7];
-								if (p != 0) {
-
+								if (p != 0 && !(*o & 0x80000000)) {
 									*o = (p | obj_pri | obj_pal | 0x80000000);
-									*o = (*o & 0xFFFF00FF) | (sprite_tile << 8);
+									//*o = (*o & 0xFFFF00FF) | (sprite_buffer[current_sprite].x << 8);
 								}
 							}
 						}
@@ -524,6 +536,9 @@ void c_gbppu::execute(int cycles)
 
 				if (!lcd_paused && bg_fifo[bg_fifo_index] != -1) {
 					int p = bg_fifo[bg_fifo_index];
+					if (!(LCDC & 0x1)) {
+						p = 0;
+					}
 					bg_fifo[bg_fifo_index] = -1;
 					bg_fifo_index = (bg_fifo_index + 1) & 0x7;
 					uint8_t tile = 255;
@@ -538,14 +553,6 @@ void c_gbppu::execute(int cycles)
 						}
 					}
 					obj_fifo_index = (obj_fifo_index + 1) & 0x7;
-
-					//int shades[] = {
-					//	0xFFFFFFFF,
-					//	0xFFAAAAAA,
-					//	0xFF555555,
-					//	0xFF000000
-					//};
-
 
 					int pal = BGP;
 					if (p & 0x80000000) {
@@ -566,7 +573,7 @@ void c_gbppu::execute(int cycles)
 				}
 
 				//if (pixels_out == 160 || (!(LCDC & 0x80) && current_cycle == 247)) {
-				if (current_cycle >= 247 && done_drawing) {
+				if (current_cycle >= 251 && done_drawing) {
 					mode = 0;
 					start_hblank = 1;
 				}
@@ -596,6 +603,9 @@ void c_gbppu::execute(int cycles)
 				//end of line
 				current_cycle = 0;
 				line++;
+				if (window_start_line != -1 && in_window) {
+					window_start_line++;
+				}
 				if (line == 144) {
 					//begin vblank
 					start_vblank = 1;
@@ -609,6 +619,9 @@ void c_gbppu::execute(int cycles)
 					line = 0;
 					mode = 2;
 					update_stat();
+					dots = 0;
+					frame++;
+					window_start_line = -1;
 				}
 				else if (line < 144) {
 					mode = 2;
@@ -709,10 +722,17 @@ void c_gbppu::write_byte(uint16_t address, uint8_t data)
 			SCX = data;
 			break;
 		case 0xFF44:
-			//LY = data;
+			LY = data;
 			break;
 		case 0xFF45:
 			LYC = data;
+			if (LY == LYC) {
+				STAT |= 0x4;
+			}
+			else {
+				STAT &= ~0x4;
+			}
+			update_stat();
 			break;
 		case 0xFF46:
 			DMA = data << 8;
