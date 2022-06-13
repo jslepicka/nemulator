@@ -269,12 +269,14 @@ void c_nemulator::Init()
 	mainPanel2->zoomDestY = eye_y;
 	mainPanel2->zoomDestZ = (float)(eye_z + (1.0 / tan( (D3DX_PI/4)/2.0 )));
 	mainPanel2->camera_distance = eye_z;
-
+	auto eye = D3DXVECTOR3(eye_x, eye_y, eye_z);
+	auto at = D3DXVECTOR3(eye_x, eye_y, 0.0f);
+	auto up = D3DXVECTOR3(0.0f, 1.0f, 0.0f);
 	D3DXMatrixLookAtLH(
 		&matrixView,
-		&D3DXVECTOR3(eye_x, eye_y, eye_z),
-		&D3DXVECTOR3(eye_x, eye_y, 0.0f),
-		&D3DXVECTOR3(0.0f, 1.0f, 0.0f));
+		&eye,
+		&at,
+		&up);
 
 	menu_delay = config->get_double("menu_delay", 333.0);
 
@@ -721,9 +723,9 @@ void c_nemulator::ProcessInput(double dt)
 				texturePanels[i]->dim = true;
 			c_menu::s_menu_items mi;
 
-			char *m[] = {"quit nemulator", "suspend computer"};
+			const char *m[] = {"quit nemulator", "suspend computer"};
 			mi.num_items = show_suspend ? 2 : 1;
-			mi.items = m;
+			mi.items = (char**)m;
 			add_task(new c_menu(), (void*)&mi);
 			menu = MENU_QUIT;
 		}
@@ -769,9 +771,9 @@ void c_nemulator::ProcessInput(double dt)
 			for (int i = 0; i < num_texture_panels; i++)
 				texturePanels[i]->dim = true;
 			c_menu::s_menu_items mi;
-			char *m[] = {"resume", "reset", "return to menu"};
+			const char *m[] = {"resume", "reset", "return to menu"};
 			mi.num_items = 3;
-			mi.items = m;
+			mi.items = (char**)m;
 			add_task(new c_menu(), (int*)&mi);
 			menu = MENU_INGAME;
 			paused = true;
@@ -1267,7 +1269,7 @@ void c_nemulator::DrawScene()
 			double dim = mainPanel2->dim ? .25 : 1.0;
 			DrawText(font1, .05f, .85f, g->title, D3DXCOLOR((float)(1.0f * dim), 0.0f, 0.0f, 1.0f));
 
-			char *subtitle[] = { "Nintendo NES", "Sega Master System", "Sega Game Gear", "Nintendo Game Boy" };
+			const char *subtitle[] = { "Nintendo NES", "Sega Master System", "Sega Game Gear", "Nintendo Game Boy" };
 
 			DrawText(font2, .0525f, .925f, subtitle[g->type], D3DXCOLOR((float)(.22f * dim), (float)(.22f * dim), (float)(.22f * dim), 1.0f));
 			RECT r = { 0, 0, clientWidth, (LONG)(clientHeight*1.95) };

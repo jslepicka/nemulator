@@ -517,11 +517,14 @@ void TexturePanel::DrawItem(c_item_container *item, int draw_border, float x, fl
 	D3DXVECTOR3 topleft, bottomright;
 	D3DXMATRIX identity;
 	D3DXMatrixIdentity(&identity);
-	D3DXVec3Project(&topleft, &D3DXVECTOR3(x - 4.0f / 3.0f, y - 1.0f, z), &vp, &matrixProj, &matrixView, &identity);
-	D3DXVec3Project(&bottomright, &D3DXVECTOR3(x + 4.0f / 3.0f, y + 1.0f, z), &vp, &matrixProj, &matrixView, &identity);
+	auto v3 = D3DXVECTOR3(x - 4.0f / 3.0f, y - 1.0f, z);
+	D3DXVec3Project(&topleft, &v3, &vp, &matrixProj, &matrixView, &identity);
+	v3 = D3DXVECTOR3(x + 4.0f / 3.0f, y + 1.0f, z);
+	D3DXVec3Project(&bottomright, &v3, &vp, &matrixProj, &matrixView, &identity);
 	float quad_width = bottomright.x - topleft.x;
 	float quad_height = topleft.y - bottomright.y;
-	var_output_size->SetFloatVector((float*)&D3DXVECTOR2(quad_width, quad_height));
+	auto v2 = D3DXVECTOR2(quad_width, quad_height);
+	var_output_size->SetFloatVector((float*)&v2);
 	//D3DXCOLOR oc = item->item->get_overscan_color();
 	//var_overscan_color->SetFloatVector((float*)&item->item->get_overscan_color());
     var_max_y->SetFloat((float)item->item->get_height());

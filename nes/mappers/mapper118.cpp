@@ -22,13 +22,13 @@ void c_mapper118::WriteByte(unsigned short address, unsigned char value)
 
 void c_mapper118::Sync()
 {
-	int or = chr_xor >> 1;
+	int _or = chr_xor >> 1;
 	int add = chr_xor >> 2;
 
-	name_table[0] = &vram[0x400 * ((chr[0 | or] & 0x80) >> 7)];
-	name_table[1] = &vram[0x400 * ((chr[(0 | or) + add] & 0x80) >> 7)];
-	name_table[2] = &vram[0x400 * ((chr[1 << or] & 0x80) >> 7)];
-	name_table[3] = &vram[0x400 * ((chr[(1 << or) + add] & 0x80) >> 7)];
+	name_table[0] = &vram[0x400 * ((chr[0 | _or] & 0x80) >> 7)];
+	name_table[1] = &vram[0x400 * ((chr[(0 | _or) + add] & 0x80) >> 7)];
+	name_table[2] = &vram[0x400 * ((chr[1 << _or] & 0x80) >> 7)];
+	name_table[3] = &vram[0x400 * ((chr[(1 << _or) + add] & 0x80) >> 7)];
 
 	c_mapper4::Sync();
 }
