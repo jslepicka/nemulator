@@ -244,39 +244,22 @@ int c_mapper::CloseSram()
 
 unsigned char c_mapper::ppu_read(unsigned short address)
 {
-		
 	address &= 0x3FFF;
-
-	if (address >= 0x2000)
-	{
+	if (address & 0x2000) {
 		return *(name_table[(address >> 10) & 3] + (address & 0x3FF));
 	}
-	else
-	{
+	else {
 		return ReadChrRom(address);
 	}
-	return 0;
 }
 
 void c_mapper::ppu_write(unsigned short address, unsigned char value)
 {
 	address &= 0x3FFF;
-	//if (address >= 0x3F00)
-	//{
-	//	value &= 0x3F;
-	//	address &= 0x1F;
-	//	image_palette[address] = value;
-	//	if (!(address & 0x03))
-	//	{
-	//		image_palette[address ^ 0x10] = value;
-	//	}
-	//}
-	if (address >= 0x2000)
-	{
+	if (address & 0x2000) {
 		*(name_table[(address >> 10) & 3] + (address & 0x3FF)) = value;
 	}
-	else
-	{
+	else {
 		WriteChrRom(address, value);
 	}
 }

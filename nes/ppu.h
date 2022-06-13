@@ -78,10 +78,10 @@ private:
 	uint32_t pixel_pipeline;
 
 	enum FETCH_STATE {
-		FETCH_IDLE,
-		FETCH_SPRITE,
-		FETCH_BG,
-		FETCH_NT
+		FETCH_BG = 0 << 3,
+		FETCH_SPRITE = 1 << 3,
+		FETCH_NT = 2 << 3,
+		FETCH_IDLE = 3 << 3
 	};
 	struct
 	{
@@ -115,8 +115,8 @@ private:
 	unsigned char sprite_buffer[256];
 	unsigned char sprite_index_buffer[512];
 	static uint32_t pal[512];
-	static int attr_shift_table[0x400];
-	static int attr_loc[0x400];
+	static uint8_t attr_shift_table[0x400];
+	static uint8_t attr_loc[0x400];
 	int frameBuffer[256 * 256];
 	unsigned char index_buffer[272];
 	unsigned char pix_buf[256];
