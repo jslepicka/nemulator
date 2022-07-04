@@ -488,10 +488,11 @@ void c_ppu::run_ppu_line()
 
 	while (true)
 	{
-		cpu->availableCycles++;
+		cpu->add_cycle();
 
 		if (current_cycle != 0) [[likely]] {
 			switch (current_cycle) {
+			
 			case 1:
 				if (current_scanline == 0) [[unlikely]] {
 					p_frame = pFrameBuffer;
@@ -597,8 +598,8 @@ void c_ppu::run_ppu_line()
 					tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
 					break;
 				case (2 | FETCH_BG): //AT byte 1
-				case (2 | (FETCH_SPRITE << 3)):
-				case (2 | (FETCH_NT << 3)):
+				case (2 | FETCH_SPRITE):
+				case (2 | FETCH_NT):
 					break;
 				case (3 | FETCH_BG): //AT byte 2
 					attribute_address = 0x23C0 |
@@ -673,6 +674,8 @@ void c_ppu::run_ppu_line()
 					break;
 				case (7 | FETCH_NT):
 					break;
+				default:
+					__assume(0);
 				}
 				if (on_screen) [[likely]]
 				{
@@ -759,7 +762,7 @@ void c_ppu::run_ppu_line()
 				done = 1;
 			}
 		}
-
+		//idle:
 		if (vid_out /*current_scanline < 240 && current_cycle >= 4 && current_cycle < 4 + 256*/) [[likely]] {
 			*p_frame++ = pal[(pixel_pipeline & palette_mask) | intensity];
 		}
