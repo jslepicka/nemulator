@@ -22,7 +22,8 @@ const Game::SimpleVertex Game::default_vertices[4] = {
 		{ D3DXVECTOR3(4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2(1.0f, 0.03125f) },
 };
 
-Game::Game(GAME_TYPE type, std::string path, std::string filename, std::string sram_path)
+Game::Game(GAME_TYPE type, std::string path, std::string filename, std::string sram_path) :
+	mt(time(0))
 {
 	limit_sprites = false;
 	this->path = path;
@@ -43,9 +44,6 @@ Game::Game(GAME_TYPE type, std::string path, std::string filename, std::string s
 	bd.CPUAccessFlags = 0;
 	bd.MiscFlags = 0;
 
-	D3D10_SUBRESOURCE_DATA initData;
-	initData.pSysMem = default_vertices;
-	HRESULT hr = d3dDev->CreateBuffer(&bd, &initData, &default_vertex_buffer);
 }
 
 Game::~Game(void)
@@ -75,6 +73,10 @@ void Game::OnActivate(bool load)
 {
 	if (ref == 0)
 	{
+		D3D10_SUBRESOURCE_DATA initData;
+		initData.pSysMem = default_vertices;
+		HRESULT hr = d3dDev->CreateBuffer(&bd, &initData, &default_vertex_buffer);
+
 		if (!console)
 		{
 			switch (type)
@@ -182,7 +184,7 @@ void Game::DrawToTexture(ID3D10Texture2D *tex)
 			p = (int*)map.pData + y * (map.RowPitch / 4);
 			for (int x = 0; x < 256; ++x)
 			{
-				c = rand() & 0xFF;
+				c = mt() & 0xFF;
 				*p++ = 0xFF << 24 | c << 16 | c << 8 | c;
 			}
 		}
