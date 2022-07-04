@@ -21,7 +21,6 @@ public:
 	void clear_nmi();
 	void execute();
 	int odd_cycle;
-	void add_cycle();
 
 private:
 	bool check_page_cross;

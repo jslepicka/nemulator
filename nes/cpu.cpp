@@ -94,11 +94,6 @@ c_cpu::~c_cpu(void)
 {
 }
 
-void c_cpu::add_cycle()
-{
-	availableCycles++;
-}
-
 int c_cpu::reset(void)
 {
 	cycles = 0;
