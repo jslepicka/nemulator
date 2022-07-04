@@ -312,6 +312,24 @@ void c_gbppu::execute(int cycles)
 			}
 
 			switch (mode) {
+			case 0:
+				//mode 0 - hblank
+				//85 - 208 dots
+				//248 .. 455
+				if (start_hblank) {
+					start_hblank = 0;
+					update_stat();
+				}
+				break;
+
+			case 1:
+				//mode 1 - vblank
+				//10 lines
+				if (start_vblank) {
+					gb->set_vblank_irq(1);
+					start_vblank = 0;
+				}
+				break;
 			case 2:
 				//mode 2 - scanning OAM
 				//80 dots
@@ -467,6 +485,8 @@ void c_gbppu::execute(int cycles)
 				case 7:
 					fetch_phase = 0;
 					break;
+				default:
+					__assume(0);
 				}
 
 
@@ -530,6 +550,8 @@ void c_gbppu::execute(int cycles)
 							lcd_paused = 0;
 						}
 						break;
+					default:
+						__assume(0);
 					}
 				}
 
@@ -576,25 +598,6 @@ void c_gbppu::execute(int cycles)
 				if (current_cycle >= 251 && done_drawing) {
 					mode = 0;
 					start_hblank = 1;
-				}
-				break;
-
-			case 0:
-				//mode 0 - hblank
-				//85 - 208 dots
-				//248 .. 455
-				if (start_hblank) {
-					start_hblank = 0;
-					update_stat();
-				}
-				break;
-
-			case 1:
-				//mode 1 - vblank
-				//10 lines
-				if (start_vblank) {
-					gb->set_vblank_irq(1);
-					start_vblank = 0;
 				}
 				break;
 			}
