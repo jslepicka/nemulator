@@ -13,7 +13,7 @@ std::atomic<int> c_vdp::pal_built = 0;
 uint32_t c_vdp::pal_sms[256];
 uint32_t c_vdp::pal_gg[4096];
 
-c_vdp::c_vdp(c_sms *sms, int type)
+c_vdp::c_vdp(c_sms* sms, int type)
 {
 	this->sms = sms;
 	mode = type;
@@ -149,7 +149,7 @@ void c_vdp::eval_sprites()
 	{
 		int x = 1;
 	}
-	unsigned char *sat = &vram[sat_base];
+	unsigned char* sat = &vram[sat_base];
 	int sprite_height = registers[0x1] & 0x2 ? 16 : 8;
 	if (registers[0x1] & 0x1)
 	{
@@ -196,7 +196,7 @@ void c_vdp::eval_sprites()
 				sprite_data[sprite_count].y = sprite_y;
 				sprite_data[sprite_count].pattern = sprite_pattern;
 				int sprite_base = (registers[0x6] & 0x4) << 10;
-				unsigned char *pattern = &vram[/*sprite_base |*/ (sprite_pattern * 32)];
+				unsigned char* pattern = &vram[/*sprite_base |*/ (sprite_pattern * 32)];
 				int yy = l - sprite_y_adjusted;
 				if (registers[0x1] & 0x1) //if 8x16 sprite
 					yy /= 2;
@@ -272,7 +272,7 @@ void c_vdp::draw_scanline()
 				int h_flip = tile_data & 0x0200;
 				int v_flip = tile_data & 0x0400;
 				int priority = tile_data & 0x1000;
-				unsigned char *pattern = &vram[(pattern_number * 32)];
+				unsigned char* pattern = &vram[(pattern_number * 32)];
 
 				int y_offset2 = y_offset;
 
@@ -284,10 +284,10 @@ void c_vdp::draw_scanline()
 
 				int pat = *((int*)pattern);
 
-				int *fb = &frame_buffer[y * 256 + x];
+				int* fb = &frame_buffer[y * 256 + x];
 				for (int p = 0; p < 8 && x < 256; p++, x++)
 				{
-					
+
 					//int pal_index = 0;
 					int p2 = p;
 					if (h_flip)
@@ -301,28 +301,28 @@ void c_vdp::draw_scanline()
 
 					//sprites
 					int color = 0;
-					if (sprite_count)
+					//if (sprite_count)
+					//{
+					for (int i = 0; i < sprite_count; i++)
 					{
-						for (int i = 0; i < sprite_count; i++)
+						//int s_x = x;// (column * 8) + p;
+						if (x >= sprite_data[i].x && x < sprite_data[i].x + sprite_width)
 						{
-							//int s_x = x;// (column * 8) + p;
-							if (x >= sprite_data[i].x && x < sprite_data[i].x + sprite_width)
+							int pixel = x - sprite_data[i].x;
+							if (sprite_width == 16)
+								pixel >>= 1;
+							int c = sprite_data[i].pixels[pixel];
+							if ((color & 0xF) == 0)
 							{
-								int pixel = x - sprite_data[i].x;
-								if (sprite_width == 16)
-									pixel >>= 1;
-								int c = sprite_data[i].pixels[pixel];
-								if ((color & 0xF) == 0)
-								{
-									color = c;
-								}
-								else
-								{
-									status |= 0x20;
-								}
+								color = c;
+							}
+							else
+							{
+								status |= 0x20;
 							}
 						}
 					}
+					//}
 
 					if (mode == MODE_GG && (y < 24 || y >= 168 || x < 48 || x >= 208))
 					{
@@ -401,7 +401,7 @@ int c_vdp::get_scanline()
 		return (line_number - 6);
 }
 
-int *c_vdp::get_frame_buffer()
+int* c_vdp::get_frame_buffer()
 {
 	return frame_buffer;
 }
