@@ -301,8 +301,8 @@ void c_vdp::draw_scanline()
 
 					//sprites
 					int color = 0;
-					if (sprite_count)
-					{
+					//if (sprite_count)
+					//{
 						for (int i = 0; i < sprite_count; i++)
 						{
 							//int s_x = x;// (column * 8) + p;
@@ -322,7 +322,7 @@ void c_vdp::draw_scanline()
 								}
 							}
 						}
-					}
+					//}
 
 					if (mode == MODE_GG && (y < 24 || y >= 168 || x < 48 || x >= 208))
 					{
