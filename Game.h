@@ -4,6 +4,7 @@
 #include "sms\sms.h"
 #include "gb\gb.h"
 #include <string>
+#include <random>
 #include "TexturePanelItem.h"
 #include "d3dx10.h"
 
@@ -68,4 +69,6 @@ private:
 	ID3D10Buffer *vertex_buffer = NULL;
 	ID3D10Buffer *stretched_vertex_buffer = NULL;
 	ID3D10Buffer* default_vertex_buffer = NULL;
+
+	std::mt19937 mt;
 };
