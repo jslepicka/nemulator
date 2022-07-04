@@ -41,7 +41,7 @@ void c_vdp::reset()
 	read_buffer = 0;
 	vram_write = 0;
 	memset(registers, 0, sizeof(registers));
-	//memset(vram, 0, 16384);
+	memset(vram.get(), 0, 16384);
 	memset(cram, 0, sizeof(cram));
 	//memset(frame_buffer, 0, 256 * 256);
 	status = 0;
