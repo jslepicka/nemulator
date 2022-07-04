@@ -488,10 +488,11 @@ void c_ppu::run_ppu_line()
 
 	while (true)
 	{
-		cpu->availableCycles++;
+		cpu->add_cycle();
 
 		if (current_cycle != 0) [[likely]] {
 			switch (current_cycle) {
+
 			case 1:
 				if (current_scanline == 0) [[unlikely]] {
 					p_frame = pFrameBuffer;
@@ -597,8 +598,8 @@ void c_ppu::run_ppu_line()
 					tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
 					break;
 				case (2 | FETCH_BG): //AT byte 1
-				case (2 | (FETCH_SPRITE << 3)):
-				case (2 | (FETCH_NT << 3)):
+				case (2 | FETCH_SPRITE):
+				case (2 | FETCH_NT):
 					break;
 				case (3 | FETCH_BG): //AT byte 2
 					attribute_address = 0x23C0 |
@@ -673,6 +674,8 @@ void c_ppu::run_ppu_line()
 					break;
 				case (7 | FETCH_NT):
 					break;
+				default:
+					__assume(0);
 				}
 				if (on_screen) [[likely]]
 				{
@@ -759,55 +762,55 @@ void c_ppu::run_ppu_line()
 				done = 1;
 			}
 		}
-
-		if (vid_out /*current_scanline < 240 && current_cycle >= 4 && current_cycle < 4 + 256*/) [[likely]] {
-			*p_frame++ = pal[(pixel_pipeline & palette_mask) | intensity];
-		}
-		pixel_pipeline >>= 8;
-		//Battletoads will enable rendering at cycle 255 and break sprite 0 hit (because vertical update happens on cycle 256 and misaligns the background).
-		//Delaying the update by one cycle seems to fix this.  Unsure if this is actually how it works, but Mesen source code says that this is what
-		//apparently happens.  Need to research how enabling things mid-screen affects PPU state.
-		//
-		//NMI at scanline 241, cycle 28
-		//enabled rendering at scanline 14, cycle 300
-		//enabled rendering at scanline 15, cycle 316
-		//NMI at scanline 241, cycle 29
-		//enabled rendering at scanline 14, cycle 271
-		//enabled rendering at scanline 15, cycle 287
-		//NMI at scanline 241, cycle 30
-		//enabled rendering at scanline 14, cycle 293
-		//enabled rendering at scanline 15, cycle 309
-		//NMI at scanline 241, cycle 25
-		//enabled rendering at scanline 14, cycle 255 <-- breaks here
-
-		if (update_rendering) [[unlikely]] {
-			rendering = next_rendering;
-			update_rendering = 0;
-		}
-		//TODO: all cpu writes affecting ppu state should probably be delayed until next ppu cycle
-		if (vram_update_delay > 0) [[unlikely]] {
-			vram_update_delay--;
-			if (vram_update_delay == 0) {
-				vramAddress = vramAddressLatch;
-				if (!rendering)
-				{
-					mapper->ppu_read(vramAddress);
+			//idle:
+				if (vid_out /*current_scanline < 240 && current_cycle >= 4 && current_cycle < 4 + 256*/) [[likely]] {
+					*p_frame++ = pal[(pixel_pipeline & palette_mask) | intensity];
 				}
-			}
-		}
+			pixel_pipeline >>= 8;
+			//Battletoads will enable rendering at cycle 255 and break sprite 0 hit (because vertical update happens on cycle 256 and misaligns the background).
+			//Delaying the update by one cycle seems to fix this.  Unsure if this is actually how it works, but Mesen source code says that this is what
+			//apparently happens.  Need to research how enabling things mid-screen affects PPU state.
+			//
+			//NMI at scanline 241, cycle 28
+			//enabled rendering at scanline 14, cycle 300
+			//enabled rendering at scanline 15, cycle 316
+			//NMI at scanline 241, cycle 29
+			//enabled rendering at scanline 14, cycle 271
+			//enabled rendering at scanline 15, cycle 287
+			//NMI at scanline 241, cycle 30
+			//enabled rendering at scanline 14, cycle 293
+			//enabled rendering at scanline 15, cycle 309
+			//NMI at scanline 241, cycle 25
+			//enabled rendering at scanline 14, cycle 255 <-- breaks here
 
-		mapper->clock(1);
-		if (--executed_cycles == 0) [[unlikely]]
-		{
-			cpu->execute();
-			cpu->odd_cycle ^= 1;
-			apu2->clock_once();
-			executed_cycles = 3;
-		}
-		if (done) {
-			return;
-		}
-		current_cycle++;
+			if (update_rendering) [[unlikely]] {
+				rendering = next_rendering;
+				update_rendering = 0;
+			}
+				//TODO: all cpu writes affecting ppu state should probably be delayed until next ppu cycle
+				if (vram_update_delay > 0) [[unlikely]] {
+					vram_update_delay--;
+					if (vram_update_delay == 0) {
+						vramAddress = vramAddressLatch;
+						if (!rendering)
+						{
+							mapper->ppu_read(vramAddress);
+						}
+					}
+				}
+
+			mapper->clock(1);
+			if (--executed_cycles == 0) [[unlikely]]
+			{
+				cpu->execute();
+				cpu->odd_cycle ^= 1;
+				apu2->clock_once();
+				executed_cycles = 3;
+			}
+				if (done) {
+					return;
+				}
+			current_cycle++;
 	}
 }
 
@@ -852,7 +855,7 @@ int c_ppu::eval_sprites()
 
 
 			int sprite_tile = *(pSpriteMemory + sprite_offset + 1);
-			int sprite_y = (sprite_line) - y;
+			int sprite_y = (sprite_line)-y;
 			int sprite_attribute = *(pSpriteMemory + sprite_offset + 2);
 
 			if (sprite_attribute & 0x80)

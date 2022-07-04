@@ -13,14 +13,15 @@ public:
 	void execute_nmi();
 	void execute_irq(void);
 	int availableCycles;
-	void DoSpriteDMA(unsigned char *dst, int source_address);
-	c_nes *nes;
+	void DoSpriteDMA(unsigned char* dst, int source_address);
+	c_nes* nes;
 	void clear_irq();
 	void ExecuteApuDMA();
 	int executed_cycles;
 	void clear_nmi();
 	void execute();
 	int odd_cycle;
+	void add_cycle();
 
 private:
 	bool check_page_cross;
@@ -32,7 +33,7 @@ private:
 	bool irqPending;
 	bool nmiPending;
 	int dmaPos;
-	unsigned char *dmaDst;
+	unsigned char* dmaDst;
 	int dmaSrc;
 
 	int opcode;
@@ -47,16 +48,16 @@ private:
 	unsigned char X;				//X Index Register
 	unsigned char Y;				//Y Index Register
 	struct {
-		bool C:1;		//Carry
-		bool Z:1;		//Zero
-		bool I:1;		//Interrupt enable
-		bool D:1;		//Decimal
-		bool B:1;		//BRK
-		bool Unused:1;
-		bool V:1;		//Overflow
-		bool N:1;		//Sign
+		bool C : 1;		//Carry
+		bool Z : 1;		//Zero
+		bool I : 1;		//Interrupt enable
+		bool D : 1;		//Decimal
+		bool B : 1;		//BRK
+		bool Unused : 1;
+		bool V : 1;		//Overflow
+		bool N : 1;		//Sign
 	} SR;
-	unsigned char *S;	//Status Register
+	unsigned char* S;	//Status Register
 	unsigned short PC;			//Program Counter
 	unsigned char SP;			//Stack Pointer
 	long executecount;
@@ -89,10 +90,10 @@ private:
 	void STA(void);
 
 	//Group two instructions
-	void LSR(unsigned char & Operand, bool bRegister = false);
-	void ASL(unsigned char & Operand, bool bRegister = false);
-	void ROL(unsigned char & Operand, bool bRegister = false);
-	void ROR(unsigned char & Operand, bool bRegister = false);
+	void LSR(unsigned char& Operand, bool bRegister = false);
+	void ASL(unsigned char& Operand, bool bRegister = false);
+	void ROL(unsigned char& Operand, bool bRegister = false);
+	void ROR(unsigned char& Operand, bool bRegister = false);
 	void INC(void);
 	void DEC(void);
 	void LDX(void);
