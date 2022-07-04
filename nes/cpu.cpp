@@ -26,8 +26,8 @@
 #include "ppu.h"
 
 #if defined(DEBUG) | defined(_DEBUG)
-	#define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
-	#define new DEBUG_NEW
+#define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
+#define new DEBUG_NEW
 #endif
 
 #define INLINE __forceinline
@@ -65,23 +65,23 @@
 
 //replaced all zeros with 3 so that invalid opcodes don't cause cpu loop to spin
 const int c_cpu::cycleTable[] = {
-        21, 18,  3,  3,  3,  9, 15,  3,  9,  6,  6,  3,  3, 12, 18,  3, //0F
-         6, 15,  3,  3,  3, 12, 18,  3,  6, 12,  3,  3,  3, 12, 21,  3, //1F
-        18, 18,  3,  3,  9,  9, 15,  3, 12,  6,  6,  3, 12, 12, 18,  3, //2F
-         6, 15,  3,  3,  3, 12, 18,  3,  6, 12,  3,  3,  3, 12, 21,  3, //3F
-        18, 18,  3,  3,  3,  9, 15,  3,  9,  6,  6,  6,  9, 12, 18,  3, //4F
-         6, 15,  3,  3,  3, 12, 18,  3,  6, 12,  3,  3,  3, 12, 21,  3, //5F
-        18, 18,  3,  3,  3,  9, 15,  3, 12,  6,  6,  3, 15, 12, 18,  3, //6F
-         6, 15,  3,  3,  3, 12, 18,  3,  6, 12,  3,  3,  3, 12, 21,  3, //7F
-         3, 18,  3,  3,  9,  9,  9,  3,  6,  6,  6,  3, 12, 12, 12, 12, //8F
-         6, 18,  3,  3, 12, 12, 12,  3,  6, 15,  6,  3,  3, 15,  3,  3, //9F
-         6, 18,  6,  3,  9,  9,  9,  9,  6,  6,  6,  3, 12, 12, 12,  3, //AF
-         6, 15,  3, 15, 12, 12, 12,  3,  6, 12,  6,  3, 12, 12, 12,  3, //BF
-         6, 18,  3,  3,  9,  9, 15,  3,  6,  6,  6,  6, 12, 12, 18,  3, //CF
-         6, 15,  3,  3,  3, 12, 18,  3,  6, 12,  3, 21,  3, 12, 21,  3, //DF
-         6, 18,  3,  3,  9,  9, 15,  3,  6,  6,  6,  3, 12, 12, 18,  3, //EF
-         6, 15,  3,  3,  3, 12, 18,  3,  6, 12,  3, 21,  3, 12, 21,  3, //FF
-        21, 21,  6, 12
+		21, 18,  3,  3,  3,  9, 15,  3,  9,  6,  6,  3,  3, 12, 18,  3, //0F
+		 6, 15,  3,  3,  3, 12, 18,  3,  6, 12,  3,  3,  3, 12, 21,  3, //1F
+		18, 18,  3,  3,  9,  9, 15,  3, 12,  6,  6,  3, 12, 12, 18,  3, //2F
+		 6, 15,  3,  3,  3, 12, 18,  3,  6, 12,  3,  3,  3, 12, 21,  3, //3F
+		18, 18,  3,  3,  3,  9, 15,  3,  9,  6,  6,  6,  9, 12, 18,  3, //4F
+		 6, 15,  3,  3,  3, 12, 18,  3,  6, 12,  3,  3,  3, 12, 21,  3, //5F
+		18, 18,  3,  3,  3,  9, 15,  3, 12,  6,  6,  3, 15, 12, 18,  3, //6F
+		 6, 15,  3,  3,  3, 12, 18,  3,  6, 12,  3,  3,  3, 12, 21,  3, //7F
+		 3, 18,  3,  3,  9,  9,  9,  3,  6,  6,  6,  3, 12, 12, 12, 12, //8F
+		 6, 18,  3,  3, 12, 12, 12,  3,  6, 15,  6,  3,  3, 15,  3,  3, //9F
+		 6, 18,  6,  3,  9,  9,  9,  9,  6,  6,  6,  3, 12, 12, 12,  3, //AF
+		 6, 15,  3, 15, 12, 12, 12,  3,  6, 12,  6,  3, 12, 12, 12,  3, //BF
+		 6, 18,  3,  3,  9,  9, 15,  3,  6,  6,  6,  6, 12, 12, 18,  3, //CF
+		 6, 15,  3,  3,  3, 12, 18,  3,  6, 12,  3, 21,  3, 12, 21,  3, //DF
+		 6, 18,  3,  3,  9,  9, 15,  3,  6,  6,  6,  3, 12, 12, 18,  3, //EF
+		 6, 15,  3,  3,  3, 12, 18,  3,  6, 12,  3, 21,  3, 12, 21,  3, //FF
+		21, 21,  6, 12
 };
 
 
@@ -94,12 +94,17 @@ c_cpu::~c_cpu(void)
 {
 }
 
+void c_cpu::add_cycle()
+{
+	availableCycles++;
+}
+
 int c_cpu::reset(void)
 {
 	cycles = 0;
 	nmi_delay = 0;
 	irq_delay = 0;
-	S = (unsigned char*) &SR;
+	S = (unsigned char*)&SR;
 	*S = 0;
 	SR.Unused = 1;
 	SR.I = 1;
@@ -180,7 +185,7 @@ void c_cpu::execute_cycles(int numPpuCycles)
 	execute();
 }
 
-void c_cpu::DoSpriteDMA(unsigned char *dst, int source_address)
+void c_cpu::DoSpriteDMA(unsigned char* dst, int source_address)
 {
 	dmaDst = dst;
 	dmaSrc = source_address;
@@ -388,18 +393,18 @@ void c_cpu::ExecuteOpcode(void)
 			}
 		}
 	}
-		break;
+	break;
 	case 0x103: //APU DMA
-		{int a = 1;}
-		break;
+	{int a = 1; }
+	break;
 	default:
-		{
-			int a = 1;
-			//char buf[8];
-			//sprintf(buf, "%x", opcode); 
-			//MessageBox(NULL, buf, "illegal opcode", MB_OK);
-		}
-		break;
+	{
+		int a = 1;
+		//char buf[8];
+		//sprintf(buf, "%x", opcode); 
+		//MessageBox(NULL, buf, "illegal opcode", MB_OK);
+	}
+	break;
 	}
 }
 
@@ -498,7 +503,7 @@ INLINE void c_cpu::AbsoluteX(bool bReadMem)
 	Address = temp;
 	//Address += X;
 	//CHECK_PAGE_CROSS(Address, X);
-	
+
 	if (bReadMem) M = nes->ReadByte(Address);
 }
 
@@ -550,11 +555,11 @@ INLINE void c_cpu::IndirectY(bool bReadMem)	//Post-indexed indirect
 {
 	unsigned char temp = nes->ReadByte(PC++);
 	Address = MAKEWORD(nes->ReadByte(temp), nes->ReadByte((temp + 1) & 0xFF));
-	
+
 	int temp2 = Address + Y;
 	CHECK_PAGE_CROSS2(Address, temp2);
 	Address = temp2;
-	
+
 	//Address += Y;
 
 	//if ((Y > (unsigned char)Address) && ((Address & 0xFF00) == 0x0100))
@@ -586,7 +591,7 @@ INLINE void c_cpu::ADC(void)
 	//if A and result have different sign and M and result have different sign, set overflow
 	//127 + 1 = -128 or -1 - -3 = 2 will overflow
 	//127 + -128
-	SR.V = (A^temp) & (M^temp) & 0x80 ? true : false;
+	SR.V = (A ^ temp) & (M ^ temp) & 0x80 ? true : false;
 	A = temp & 0xFF;
 	SETN(A);
 	SETZ(A);
@@ -605,7 +610,7 @@ INLINE void c_cpu::ALR()
 	A >>= 1;
 	SETZ(A);
 }
-INLINE void c_cpu::ASL(unsigned char & Operand, bool bRegister)
+INLINE void c_cpu::ASL(unsigned char& Operand, bool bRegister)
 {
 	SR.C = Operand & 0x80 ? true : false;
 	Operand <<= 1;
@@ -622,7 +627,7 @@ INLINE void c_cpu::AXS()
 	X = temp & 0xFF;
 	SETN(X);
 	SETZ(X);
-	
+
 }
 INLINE void c_cpu::BCC(void)
 {
@@ -657,8 +662,8 @@ INLINE void c_cpu::BPL(void)
 }
 INLINE void c_cpu::BRK(void)
 {
-	PUSH(HIBYTE(PC+1));
-	PUSH(LOBYTE(PC+1));
+	PUSH(HIBYTE(PC + 1));
+	PUSH(LOBYTE(PC + 1));
 	PUSH(*S | 0x30);
 	SR.B = true;
 	SR.I = true;
@@ -800,7 +805,7 @@ INLINE void c_cpu::LDY(void)
 	SETN(Y);
 	SETZ(Y);
 }
-INLINE void c_cpu::LSR(unsigned char & Operand, bool bRegister)
+INLINE void c_cpu::LSR(unsigned char& Operand, bool bRegister)
 {
 	SR.C = Operand & 0x01 ? true : false;
 	Operand >>= 1;
@@ -838,7 +843,7 @@ INLINE void c_cpu::PLP(void)
 	if (doIrq && SR.I == false && SR.I != prev_i)
 		irq_delay = 1;
 }
-INLINE void c_cpu::ROL(unsigned char & Operand, bool bRegister)
+INLINE void c_cpu::ROL(unsigned char& Operand, bool bRegister)
 {
 	int oldcarry = SR.C ? 1 : 0;
 	SR.C = (Operand & 0x80) ? true : false;
@@ -851,7 +856,7 @@ INLINE void c_cpu::ROL(unsigned char & Operand, bool bRegister)
 	SETZ(Operand);
 	if (!bRegister) nes->WriteByte(Address, Operand);
 }
-INLINE void c_cpu::ROR(unsigned char & Operand, bool bRegister)
+INLINE void c_cpu::ROR(unsigned char& Operand, bool bRegister)
 {
 	int oldcarry = SR.C ? 1 : 0;
 	SR.C = (Operand & 0x01) ? true : false;
@@ -872,7 +877,7 @@ INLINE void c_cpu::RTI(void)
 	unsigned char pcl = POP;
 	unsigned char pch = POP;
 	PC = MAKEWORD(pcl, pch);
-		if (doIrq && SR.I == false && SR.I != prev_i)
+	if (doIrq && SR.I == false && SR.I != prev_i)
 		irq_delay = 1;
 }
 INLINE void c_cpu::RTS(void)
@@ -915,7 +920,7 @@ INLINE void c_cpu::SKB(void)
 }
 INLINE void c_cpu::SAX()
 {
-	nes->WriteByte(Address, A&X);
+	nes->WriteByte(Address, A & X);
 }
 INLINE void c_cpu::STA(void)
 {
