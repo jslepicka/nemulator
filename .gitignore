@@ -162,3 +162,5 @@ $RECYCLE.BIN/
 *.fxo.h
 
 /VTune Amplifier Results/nemulator
+/VTune Profiler Results
+/GPUCache
