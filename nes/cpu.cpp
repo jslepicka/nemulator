@@ -127,7 +127,7 @@ int c_cpu::reset(void)
 	return 1;
 }
 
-__forceinline void c_cpu::execute()
+void c_cpu::execute()
 {
 	for (;;)
 	{

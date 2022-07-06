@@ -1,6 +1,6 @@
 #include "nsf_stats.h"
 #include "effect2.fxo.h"
-#include "clamp.h"
+#include <algorithm>
 
 extern ID3D10Device* d3dDev;
 extern D3DXMATRIX matrixView;
@@ -316,7 +316,7 @@ void c_nsf_stats::draw()
 
 	int last_bucket = -1;
 	auto lerp = [](auto start, auto end, double mu) {
-		mu = clamp(mu, 0.0, 1.0);
+		mu = std::clamp(mu, 0.0, 1.0);
 		return start * (1.0 - mu) + end * mu;
 	};
 
@@ -334,7 +334,7 @@ void c_nsf_stats::draw()
 		if ((int)((i + 1) / (double)tex_size * (double)NUM_BANDS) != bucket) {
 			last_pixel_in_bucket = 1;
 		}
-		int colors[] = { 0, 0xFF000000 };
+		unsigned int colors[] = { 0, 0xFF000000 };
 		for (int y = py; y < tex_size; y++)
 		{
 			double mu = (tex_size - y) / (double)tex_size;

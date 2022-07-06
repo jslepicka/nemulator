@@ -1,7 +1,7 @@
 #include "vdp.h"
 #include "sms.h"
 #include <memory>
-#include "..\clamp.h"
+#include <algorithm>
 
 #include <crtdbg.h>
 #if defined(DEBUG) | defined(_DEBUG)
@@ -435,9 +435,9 @@ void c_vdp::generate_palette()
 			int g_bits = (i >> 2) & 0x3;
 			int b_bits = (i >> 4) & 0x3;
 
-			double r = pow(clamp(r_bits * (1.0 / 3.0), 0.0, 1.0), 2.2);
-			double g = pow(clamp(g_bits * (1.0 / 3.0), 0.0, 1.0), 2.2);
-			double b = pow(clamp(b_bits * (1.0 / 3.0), 0.0, 1.0), 2.2);
+			double r = pow(std::clamp(r_bits * (1.0 / 3.0), 0.0, 1.0), 2.2);
+			double g = pow(std::clamp(g_bits * (1.0 / 3.0), 0.0, 1.0), 2.2);
+			double b = pow(std::clamp(b_bits * (1.0 / 3.0), 0.0, 1.0), 2.2);
 
 			pal_sms[i] = (int)(255.0 * r)
 				| ((int)(255.0 * g) << 8)
@@ -450,9 +450,9 @@ void c_vdp::generate_palette()
 			int g_bits = (i >> 4) & 0xF;
 			int b_bits = (i >> 8) & 0xF;
 
-			double r = pow(clamp(r_bits * (1.0 / 15.0), 0.0, 1.0), 2.2);
-			double g = pow(clamp(g_bits * (1.0 / 15.0), 0.0, 1.0), 2.2);
-			double b = pow(clamp(b_bits * (1.0 / 15.0), 0.0, 1.0), 2.2);
+			double r = pow(std::clamp(r_bits * (1.0 / 15.0), 0.0, 1.0), 2.2);
+			double g = pow(std::clamp(g_bits * (1.0 / 15.0), 0.0, 1.0), 2.2);
+			double b = pow(std::clamp(b_bits * (1.0 / 15.0), 0.0, 1.0), 2.2);
 
 			pal_gg[i] = (int)(255.0 * r)
 				| ((int)(255.0 * g) << 8)
