@@ -173,7 +173,7 @@ void c_qam::draw()
 	if (state == STATE_IDLE)
 		return;
 	//RECT r = {(LONG)(clientWidth * .1), (LONG)(clientHeight * .1), 0, 0};
-	RECT r = {0, scroll_pos - scroll_target, clientWidth, scroll_pos};
+	RECT r = {0, (long)scroll_pos - scroll_target, clientWidth, (long)scroll_pos};
 	ID3D10DepthStencilState *state;
 	int oldref;
 	d3dDev->OMGetDepthStencilState(&state, (UINT *)&oldref);

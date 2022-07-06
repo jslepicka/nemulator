@@ -2,7 +2,6 @@
 #include "effect.fxo.h"
 #include <string>
 #include "interpolate.h"
-//#include "clamp.h"
 
 extern ID3D10Device *d3dDev;
 extern D3DXMATRIX matrixView;

@@ -29,7 +29,7 @@
 #include <new>
 #define _USE_MATH_DEFINES
 #include <math.h>
-#include "..\clamp.h"
+#include <algorithm>
 
 
 #include <crtdbg.h>
@@ -65,7 +65,7 @@ void c_ppu::generate_palette()
 	{
 		int color = (pixel & 0xF);
 		int level = color < 0xE ? (pixel >> 4) & 0x3 : 1;
-
+		
 		static const double black = .518;
 		static const double white = 1.962;
 		static const double attenuation = .746;
@@ -107,9 +107,9 @@ void c_ppu::generate_palette()
 		double ntsc_b = y + -1.108 * i + 1.705 * q;
 
 		//NTSC R'G'B' -> linear NTSC RGB
-		ntsc_r = pow(clamp(ntsc_r, 0.0, 1.0), 2.2);
-		ntsc_g = pow(clamp(ntsc_g, 0.0, 1.0), 2.2);
-		ntsc_b = pow(clamp(ntsc_b, 0.0, 1.0), 2.2);
+		ntsc_r = pow(std::clamp(ntsc_r, 0.0, 1.0), 2.2);
+		ntsc_g = pow(std::clamp(ntsc_g, 0.0, 1.0), 2.2);
+		ntsc_b = pow(std::clamp(ntsc_b, 0.0, 1.0), 2.2);
 
 		//NTSC RGB (SMPTE-C) -> CIE XYZ
 		//conversion matrix from http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
@@ -125,9 +125,10 @@ void c_ppu::generate_palette()
 		double srgb_b2 = cie_x * 0.0556434 + cie_y * -0.2040259 + cie_z * 1.0572252;
 
 		//linear RGB -> sRGB
-		srgb_r2 = clamp(pow(srgb_r2, 1.0 / 2.2), 0.0, 1.0);
-		srgb_g2 = clamp(pow(srgb_g2, 1.0 / 2.2), 0.0, 1.0);
-		srgb_b2 = clamp(pow(srgb_b2, 1.0 / 2.2), 0.0, 1.0);
+		
+		srgb_r2 = std::clamp(pow(srgb_r2, 1.0 / 2.2), 0.0, 1.0);
+		srgb_g2 = std::clamp(pow(srgb_g2, 1.0 / 2.2), 0.0, 1.0);
+		srgb_b2 = std::clamp(pow(srgb_b2, 1.0 / 2.2), 0.0, 1.0);
 
 		int rgb = 0x000001 * (int)(255.0 * srgb_r2)
 			+ 0x000100 * (int)(255.0 * srgb_g2)

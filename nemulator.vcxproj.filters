@@ -767,9 +767,6 @@
     <ClInclude Include="gb\mbc2.h">
       <Filter>Header Files\gb</Filter>
     </ClInclude>
-    <ClInclude Include="clamp.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="interpolate.h">
       <Filter>Header Files</Filter>
     </ClInclude>
