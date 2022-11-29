@@ -37,8 +37,8 @@
 #define POP nes->ReadByte(++SP | 0x100)
 #define SETN(x) SR.N = (x & 0x80) == 0x80 ? true : false
 #define SETZ(x) SR.Z = x == 0 ? true : false
-#define CHECK_PAGE_CROSS(a, x) if (check_page_cross && (x & 0xFF) > (a & 0xFF)) requiredCycles += 3
-#define CHECK_PAGE_CROSS2(a, b) if (check_page_cross && ((a^b)&0x100)) requiredCycles += 3
+//(((PC ^ temp) & 0xFF00) != 0) * 3;
+#define CHECK_PAGE_CROSS2(a, b) requiredCycles += ((((a^b)&0xFF00) != 0) & check_page_cross) * 3
 //#define HIBYTE(a) (((a) >> 8) & 0xFF)
 //#define LOBYTE(a) ((a) & 0xFF)
 
@@ -196,7 +196,7 @@ void c_cpu::ExecuteOpcode(void)
 {
 	int sl = nes->ppu->current_scanline;
 	int c = nes->ppu->current_cycle;
-	check_page_cross = false;
+	check_page_cross = 0;
 	switch (opcode)
 	{
 	case 0x00: BRK(); break;
@@ -209,12 +209,12 @@ void c_cpu::ExecuteOpcode(void)
 	case 0x0D: Absolute(); ORA(); break;
 	case 0x0E: Absolute(); ASL(M); break;
 	case 0x10: BPL(); break;
-	case 0x11: check_page_cross = true; IndirectY(); ORA(); break;
+	case 0x11: check_page_cross = 1; IndirectY(); ORA(); break;
 	case 0x15: ZeroPageX(); ORA(); break;
 	case 0x16: ZeroPageX(); ASL(M); break;
 	case 0x18: CLC(); break;
-	case 0x19: check_page_cross = true; AbsoluteY(); ORA(); break;
-	case 0x1D: check_page_cross = true; AbsoluteX(); ORA(); break;
+	case 0x19: check_page_cross = 1; AbsoluteY(); ORA(); break;
+	case 0x1D: check_page_cross = 1; AbsoluteX(); ORA(); break;
 	case 0x1E: AbsoluteX(); ASL(M); break;
 	case 0x20: Absolute(); JSR(); break;
 	case 0x21: IndirectX(); AND(); break;
@@ -228,12 +228,12 @@ void c_cpu::ExecuteOpcode(void)
 	case 0x2D: Absolute(); AND(); break;
 	case 0x2E: Absolute(); ROL(M); break;
 	case 0x30: BMI(); break;
-	case 0x31: check_page_cross = true; IndirectY(); AND(); break;
+	case 0x31: check_page_cross = 1; IndirectY(); AND(); break;
 	case 0x35: ZeroPageX(); AND(); break;
 	case 0x36: ZeroPageX(); ROL(M); break;
 	case 0x38: SEC(); break;
-	case 0x39: check_page_cross = true; AbsoluteY(); AND(); break;
-	case 0x3D: check_page_cross = true; AbsoluteX(); AND(); break;
+	case 0x39: check_page_cross = 1; AbsoluteY(); AND(); break;
+	case 0x3D: check_page_cross = 1; AbsoluteX(); AND(); break;
 	case 0x3E: AbsoluteX(); ROL(M); break;
 	case 0x40: RTI(); break;
 	case 0x41: IndirectX(); EOR(); break;
@@ -247,12 +247,12 @@ void c_cpu::ExecuteOpcode(void)
 	case 0x4D: Absolute(); EOR(); break;
 	case 0x4E: Absolute(); LSR(M); break;
 	case 0x50: BVC(); break;
-	case 0x51: check_page_cross = true; IndirectY(); EOR(); break;
+	case 0x51: check_page_cross = 1; IndirectY(); EOR(); break;
 	case 0x55: ZeroPageX(); EOR(); break;
 	case 0x56: ZeroPageX(); LSR(M); break;
 	case 0x58: CLI(); break;
-	case 0x59: check_page_cross = true; AbsoluteY(); EOR(); break;
-	case 0x5D: check_page_cross = true; AbsoluteX(); EOR(); break;
+	case 0x59: check_page_cross = 1; AbsoluteY(); EOR(); break;
+	case 0x5D: check_page_cross = 1; AbsoluteX(); EOR(); break;
 	case 0x5E: AbsoluteX(); LSR(M); break;
 	case 0x60: RTS(); break;
 	case 0x61: IndirectX(); ADC(); break;
@@ -265,33 +265,33 @@ void c_cpu::ExecuteOpcode(void)
 	case 0x6D: Absolute(); ADC(); break;
 	case 0x6E: Absolute(); ROR(M); break;
 	case 0x70: BVS(); break;
-	case 0x71: check_page_cross = true; IndirectY(); ADC(); break;
+	case 0x71: check_page_cross = 1; IndirectY(); ADC(); break;
 	case 0x75: ZeroPageX(); ADC(); break;
 	case 0x76: ZeroPageX(); ROR(M); break;
 	case 0x78: SEI(); break;
-	case 0x79: check_page_cross = true; AbsoluteY(); ADC(); break;
-	case 0x7D: check_page_cross = true; AbsoluteX(); ADC(); break;
+	case 0x79: check_page_cross = 1; AbsoluteY(); ADC(); break;
+	case 0x7D: check_page_cross = 1; AbsoluteX(); ADC(); break;
 	case 0x7E: AbsoluteX(); ROR(M); break;
-	case 0x81: IndirectX(false); STA(); break;
-	case 0x84: ZeroPage(false); STY(); break;
-	case 0x85: ZeroPage(false); STA(); break;
-	case 0x86: ZeroPage(false); STX(); break;
+	case 0x81: IndirectX_ea(); STA(); break;
+	case 0x84: ZeroPage_ea(); STY(); break;
+	case 0x85: ZeroPage_ea(); STA(); break;
+	case 0x86: ZeroPage_ea(); STX(); break;
 	case 0x88: DEY(); break;
 	case 0x89: SKB(); break;
 	case 0x8A: TXA(); break;
-	case 0x8C: Absolute(false); STY(); break;
-	case 0x8D: Absolute(false); STA(); break;
-	case 0x8E: Absolute(false); STX(); break;
-	case 0x8F: Absolute(false); SAX(); break;
+	case 0x8C: Absolute_ea(); STY(); break;
+	case 0x8D: Absolute_ea(); STA(); break;
+	case 0x8E: Absolute_ea(); STX(); break;
+	case 0x8F: Absolute_ea(); SAX(); break;
 	case 0x90: BCC(); break;
-	case 0x91: IndirectY(false); STA(); break;
-	case 0x94: ZeroPageX(false); STY(); break;
-	case 0x95: ZeroPageX(false); STA(); break;
-	case 0x96: ZeroPageY(false); STX(); break;
+	case 0x91: IndirectY_ea(); STA(); break;
+	case 0x94: ZeroPageX_ea(); STY(); break;
+	case 0x95: ZeroPageX_ea(); STA(); break;
+	case 0x96: ZeroPageY_ea(); STX(); break;
 	case 0x98: TYA(); break;
-	case 0x99: AbsoluteY(false); STA(); break;
+	case 0x99: AbsoluteY_ea(); STA(); break;
 	case 0x9A: TXS(); break;
-	case 0x9D: AbsoluteX(false); STA(); break;
+	case 0x9D: AbsoluteX_ea(); STA(); break;
 	case 0xA0: Immediate(); LDY(); break;
 	case 0xA1: IndirectX(); LDA(); break;
 	case 0xA2: Immediate(); LDX(); break;
@@ -306,17 +306,17 @@ void c_cpu::ExecuteOpcode(void)
 	case 0xAD: Absolute(); LDA(); break;
 	case 0xAE: Absolute(); LDX(); break;
 	case 0xB0: BCS(); break;
-	case 0xB1: check_page_cross = true; IndirectY(); LDA(); break;
-	case 0xB3: check_page_cross = true; IndirectY(); LAX(); break;
+	case 0xB1: check_page_cross = 1; IndirectY(); LDA(); break;
+	case 0xB3: check_page_cross = 1; IndirectY(); LAX(); break;
 	case 0xB4: ZeroPageX(); LDY(); break;
 	case 0xB5: ZeroPageX(); LDA(); break;
 	case 0xB6: ZeroPageY(); LDX(); break;
 	case 0xB8: CLV(); break;
-	case 0xB9: check_page_cross = true; AbsoluteY(); LDA(); break;
+	case 0xB9: check_page_cross = 1; AbsoluteY(); LDA(); break;
 	case 0xBA: TSX(); break;
-	case 0xBC: check_page_cross = true; AbsoluteX(); LDY(); break;
-	case 0xBD: check_page_cross = true; AbsoluteX(); LDA(); break;
-	case 0xBE: check_page_cross = true; AbsoluteY(); LDX(); break;
+	case 0xBC: check_page_cross = 1; AbsoluteX(); LDY(); break;
+	case 0xBD: check_page_cross = 1; AbsoluteX(); LDA(); break;
+	case 0xBE: check_page_cross = 1; AbsoluteY(); LDX(); break;
 	case 0xC0: Immediate(); CPY(); break;
 	case 0xC1: IndirectX(); CMP(); break;
 	case 0xC4: ZeroPage(); CPY(); break;
@@ -350,13 +350,13 @@ void c_cpu::ExecuteOpcode(void)
 	case 0xED: Absolute(); SBC(); break;
 	case 0xEE: Absolute(); INC(); break;
 	case 0xF0: BEQ(); break;
-	case 0xF1: check_page_cross = true; IndirectY(); SBC(); break;
+	case 0xF1: check_page_cross = 1; IndirectY(); SBC(); break;
 	case 0xF5: ZeroPageX(); SBC(); break;
 	case 0xF6: ZeroPageX(); INC(); break;
 	case 0xF8: SED(); break;
-	case 0xF9: check_page_cross = true; AbsoluteY(); SBC(); break;
+	case 0xF9: check_page_cross = 1; AbsoluteY(); SBC(); break;
 	case 0xFB: AbsoluteY(); ISC(); break;
-	case 0xFD: check_page_cross = true; AbsoluteX(); SBC(); break;
+	case 0xFD: check_page_cross = 1; AbsoluteX(); SBC(); break;
 	case 0xFE: AbsoluteX(); INC(); break;
 	case 0x100: //NMI
 		//Battletoads debugging
@@ -463,37 +463,63 @@ INLINE void c_cpu::Immediate(void)
 	M = nes->ReadByte(PC++);
 }
 
-INLINE void c_cpu::ZeroPage(bool bReadMem)
+INLINE void c_cpu::ZeroPage()
 {
 	Address = nes->ReadByte(PC++);
-	if (bReadMem) M = nes->ReadByte(Address);
+	M = nes->ReadByte(Address);
 }
 
-INLINE void c_cpu::ZeroPageX(bool bReadMem)
+INLINE void c_cpu::ZeroPage_ea()
+{
+	Address = nes->ReadByte(PC++);
+}
+
+INLINE void c_cpu::ZeroPageX()
 {
 	Address = nes->ReadByte(PC++);
 	Address += X;
 	Address &= 0xFF;
-	if (bReadMem) M = nes->ReadByte(Address);
+	M = nes->ReadByte(Address);
 }
 
-INLINE void c_cpu::ZeroPageY(bool bReadMem)
+INLINE void c_cpu::ZeroPageX_ea()
+{
+	Address = nes->ReadByte(PC++);
+	Address += X;
+	Address &= 0xFF;
+}
+
+INLINE void c_cpu::ZeroPageY()
 {
 	Address = nes->ReadByte(PC++);
 	Address += Y;
 	Address &= 0xFF;
-	if (bReadMem) M = nes->ReadByte(Address);
+	M = nes->ReadByte(Address);
 }
 
-INLINE void c_cpu::Absolute(bool bReadMem)
+INLINE void c_cpu::ZeroPageY_ea()
+{
+	Address = nes->ReadByte(PC++);
+	Address += Y;
+	Address &= 0xFF;
+}
+
+INLINE void c_cpu::Absolute()
 {
 	unsigned char lo = nes->ReadByte(PC++);
 	unsigned char hi = nes->ReadByte(PC++);
 	Address = MAKEWORD(lo, hi);
-	if (bReadMem) M = nes->ReadByte(Address);
+	M = nes->ReadByte(Address);
 }
 
-INLINE void c_cpu::AbsoluteX(bool bReadMem)
+INLINE void c_cpu::Absolute_ea()
+{
+	unsigned char lo = nes->ReadByte(PC++);
+	unsigned char hi = nes->ReadByte(PC++);
+	Address = MAKEWORD(lo, hi);
+}
+
+INLINE void c_cpu::AbsoluteX()
 {
 	unsigned char lo = nes->ReadByte(PC++);
 	unsigned char hi = nes->ReadByte(PC++);
@@ -501,13 +527,20 @@ INLINE void c_cpu::AbsoluteX(bool bReadMem)
 	int temp = Address + X;
 	CHECK_PAGE_CROSS2(Address, temp);
 	Address = temp;
-	//Address += X;
-	//CHECK_PAGE_CROSS(Address, X);
-
-	if (bReadMem) M = nes->ReadByte(Address);
+	M = nes->ReadByte(Address);
 }
 
-INLINE void c_cpu::AbsoluteY(bool bReadMem)
+INLINE void c_cpu::AbsoluteX_ea()
+{
+	unsigned char lo = nes->ReadByte(PC++);
+	unsigned char hi = nes->ReadByte(PC++);
+	Address = MAKEWORD(lo, hi);
+	int temp = Address + X;
+	CHECK_PAGE_CROSS2(Address, temp);
+	Address = temp;
+}
+
+INLINE void c_cpu::AbsoluteY()
 {
 	unsigned char lo = nes->ReadByte(PC++);
 	unsigned char hi = nes->ReadByte(PC++);
@@ -515,9 +548,17 @@ INLINE void c_cpu::AbsoluteY(bool bReadMem)
 	int temp = Address + Y;
 	CHECK_PAGE_CROSS2(Address, temp);
 	Address = temp;
-	//Address += Y;
-	//CHECK_PAGE_CROSS(Address, Y);
-	if (bReadMem) M = nes->ReadByte(Address);
+	M = nes->ReadByte(Address);
+}
+
+INLINE void c_cpu::AbsoluteY_ea()
+{
+	unsigned char lo = nes->ReadByte(PC++);
+	unsigned char hi = nes->ReadByte(PC++);
+	Address = MAKEWORD(lo, hi);
+	int temp = Address + Y;
+	CHECK_PAGE_CROSS2(Address, temp);
+	Address = temp;
 }
 
 INLINE void c_cpu::Indirect(void)	//For indirect jmp
@@ -532,26 +573,24 @@ INLINE void c_cpu::Indirect(void)	//For indirect jmp
 	Address = MAKEWORD(pcl, pch);
 }
 
-INLINE void c_cpu::IndirectX(bool bReadMem)	//Pre-indexed indirect
+INLINE void c_cpu::IndirectX()	//Pre-indexed indirect
 {
-	/*unsigned short temp = nes->ReadByte(PC++);
-	unsigned char hi = (temp & 0xFF00) >> 2;
-	temp += X;
-	temp &= 0xFF;
-	temp |= (hi << 4);
-	Address = MAKEWORD(nes->ReadByte(temp), nes->ReadByte(temp + 1));
-	if (bReadMem) M = nes->ReadByte(Address);
-	*/
-
 	//TODO: I think this is ok, but need to verify
 	unsigned char hi = nes->ReadByte(PC++);
 	hi += X;
 	Address = MAKEWORD(nes->ReadByte(hi), nes->ReadByte((hi + 1) & 0xFF));
-	//CHECK_PAGE_CROSS(Address, X);
-	if (bReadMem) M = nes->ReadByte(Address);
+	M = nes->ReadByte(Address);
 }
 
-INLINE void c_cpu::IndirectY(bool bReadMem)	//Post-indexed indirect
+INLINE void c_cpu::IndirectX_ea()	//Pre-indexed indirect
+{
+	//TODO: I think this is ok, but need to verify
+	unsigned char hi = nes->ReadByte(PC++);
+	hi += X;
+	Address = MAKEWORD(nes->ReadByte(hi), nes->ReadByte((hi + 1) & 0xFF));
+}
+
+INLINE void c_cpu::IndirectY()	//Post-indexed indirect
 {
 	unsigned char temp = nes->ReadByte(PC++);
 	Address = MAKEWORD(nes->ReadByte(temp), nes->ReadByte((temp + 1) & 0xFF));
@@ -559,14 +598,17 @@ INLINE void c_cpu::IndirectY(bool bReadMem)	//Post-indexed indirect
 	int temp2 = Address + Y;
 	CHECK_PAGE_CROSS2(Address, temp2);
 	Address = temp2;
+	M = nes->ReadByte(Address);
+}
 
-	//Address += Y;
+INLINE void c_cpu::IndirectY_ea()	//Post-indexed indirect
+{
+	unsigned char temp = nes->ReadByte(PC++);
+	Address = MAKEWORD(nes->ReadByte(temp), nes->ReadByte((temp + 1) & 0xFF));
 
-	//if ((Y > (unsigned char)Address) && ((Address & 0xFF00) == 0x0100))
-	//	Address &= 0xFF;
-
-	//CHECK_PAGE_CROSS(Address, Y);
-	if (bReadMem) M = nes->ReadByte(Address);
+	int temp2 = Address + Y;
+	CHECK_PAGE_CROSS2(Address, temp2);
+	Address = temp2;
 }
 
 INLINE void c_cpu::Branch(int Condition)
@@ -577,8 +619,8 @@ INLINE void c_cpu::Branch(int Condition)
 		signed char offset = nes->ReadByte(PC++);
 		int temp = PC;
 		PC += offset;
-		if ((PC & 0xFF00) != (temp & 0xFF00))
-			requiredCycles += 3;
+
+		requiredCycles += (((PC ^ temp) & 0xFF00) != 0) * 3;
 	}
 	else PC++;
 }

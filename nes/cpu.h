@@ -24,7 +24,7 @@ public:
 	void add_cycle();
 
 private:
-	bool check_page_cross;
+	int check_page_cross;
 	int nmi_delay;
 	int irq_delay;
 	int doApuDMA;
@@ -69,15 +69,24 @@ private:
 
 	//Addressing modes
 	void Immediate(void);
-	void ZeroPage(bool bReadMem = true);
-	void ZeroPageX(bool bReadMem = true);
-	void ZeroPageY(bool bReadMem = true);
-	void Absolute(bool bReadMem = true);
-	void AbsoluteX(bool bReadMem = true);
-	void AbsoluteY(bool bReadMem = true);
+	void ZeroPage();
+	void ZeroPageX();
+	void ZeroPageY();
+	void Absolute();
+	void AbsoluteX();
+	void AbsoluteY();
 	void Indirect(void);
-	void IndirectX(bool bReadMem = true);
-	void IndirectY(bool bReadMem = true);
+	void IndirectX();
+	void IndirectY();
+
+	void ZeroPage_ea();
+	void ZeroPageX_ea();
+	void ZeroPageY_ea();
+	void Absolute_ea();
+	void AbsoluteX_ea();
+	void AbsoluteY_ea();
+	void IndirectX_ea();
+	void IndirectY_ea();
 
 	//Group one instructions
 	void ADC(void);
