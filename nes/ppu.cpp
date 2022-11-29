@@ -65,7 +65,7 @@ void c_ppu::generate_palette()
 	{
 		int color = (pixel & 0xF);
 		int level = color < 0xE ? (pixel >> 4) & 0x3 : 1;
-		
+
 		static const double black = .518;
 		static const double white = 1.962;
 		static const double attenuation = .746;
@@ -125,7 +125,7 @@ void c_ppu::generate_palette()
 		double srgb_b2 = cie_x * 0.0556434 + cie_y * -0.2040259 + cie_z * 1.0572252;
 
 		//linear RGB -> sRGB
-		
+
 		srgb_r2 = std::clamp(pow(srgb_r2, 1.0 / 2.2), 0.0, 1.0);
 		srgb_g2 = std::clamp(pow(srgb_g2, 1.0 / 2.2), 0.0, 1.0);
 		srgb_b2 = std::clamp(pow(srgb_b2, 1.0 / 2.2), 0.0, 1.0);
@@ -714,13 +714,13 @@ void c_ppu::run_ppu_line()
 										ppuControl2.backgroundSwitch &&
 										(bg_index & 0x03) != 0 &&
 										current_cycle < 255 + screen_offset) [[unlikely]] {
-										ppuStatus.hitFlag = true;
-										hit = 1;
+											ppuStatus.hitFlag = true;
+											hit = 1;
 									}
 
-									if (!(priority && (bg_index & 0x03))) {
-										pixel = image_palette[16 + sprite_color];
-									}
+										if (!(priority && (bg_index & 0x03))) {
+											pixel = image_palette[16 + sprite_color];
+										}
 									break;
 								}
 							}
