@@ -181,8 +181,8 @@ void c_cpu::execute_opcode()
 	case 0x1B: absolute_y(); SLO(); break;
 	case 0x1C: absolute_x_pc(); break; //unofficial a,x NOP
 	case 0x1D: absolute_x_pc(); ORA(); break;
-	case 0x1E: absolute_x(); ASL(); break;
-	case 0x1F: absolute_x(); SLO(); break;
+	case 0x1E: absolute_x_rmw(); ASL(); break;
+	case 0x1F: absolute_x_rmw(); SLO(); break;
 	case 0x20: absolute(); JSR(); break;
 	case 0x21: indirect_x(); AND(); break;
 	case 0x22: STP(); break;
@@ -213,8 +213,8 @@ void c_cpu::execute_opcode()
 	case 0x3B: absolute_y(); RLA(); break;
 	case 0x3C: absolute_x_pc(); break; //unofficial a,x NOP
 	case 0x3D: absolute_x_pc(); AND(); break;
-	case 0x3E: absolute_x(); ROL(); break;
-	case 0x3F: absolute_x(); RLA(); break;
+	case 0x3E: absolute_x_rmw(); ROL(); break;
+	case 0x3F: absolute_x_rmw(); RLA(); break;
 	case 0x40: RTI(); break;
 	case 0x41: indirect_x(); EOR(); break;
 	case 0x42: STP(); break;
@@ -245,8 +245,8 @@ void c_cpu::execute_opcode()
 	case 0x5B: absolute_y(); SRE(); break;
 	case 0x5C: absolute_x_pc(); break; //unofficial a,x NOP
 	case 0x5D: absolute_x_pc(); EOR(); break;
-	case 0x5E: absolute_x(); LSR(); break;
-	case 0x5F: absolute_x(); SRE(); break;
+	case 0x5E: absolute_x_rmw(); LSR(); break;
+	case 0x5F: absolute_x_rmw(); SRE(); break;
 	case 0x60: RTS(); break;
 	case 0x61: indirect_x(); ADC(); break;
 	case 0x62: STP(); break;
@@ -277,8 +277,8 @@ void c_cpu::execute_opcode()
 	case 0x7B: absolute_y(); RRA(); break;
 	case 0x7C: absolute_x_pc(); break; //unofficial a,x NOP
 	case 0x7D: absolute_x_pc(); ADC(); break;
-	case 0x7E: absolute_x(); ROR(); break;
-	case 0x7F: absolute_x(); RRA(); break;
+	case 0x7E: absolute_x_rmw(); ROR(); break;
+	case 0x7F: absolute_x_rmw(); RRA(); break;
 	case 0x80: immediate(); break; //unofficial i NOP
 	case 0x81: indirect_x_ea(); STA(); break;
 	case 0x82: immediate(); break; //unofficial i NOP
@@ -373,8 +373,8 @@ void c_cpu::execute_opcode()
 	case 0xDB: absolute_y(); DCP(); break;
 	case 0xDC: absolute_x_pc(); break; //unofficial a,x NOP
 	case 0xDD: absolute_x_pc(); CMP(); break;
-	case 0xDE: absolute_x(); DEC(); break;
-	case 0xDF: absolute_x(); DCP(); break;
+	case 0xDE: absolute_x_rmw(); DEC(); break;
+	case 0xDF: absolute_x_rmw(); DCP(); break;
 	case 0xE0: immediate(); CPX(); break;
 	case 0xE1: indirect_x(); SBC(); break;
 	case 0xE2: immediate(); break; //unofficial i NOP
@@ -405,8 +405,8 @@ void c_cpu::execute_opcode()
 	case 0xFB: absolute_y(); ISC(); break;
 	case 0xFC: absolute_x_pc(); break; //unofficial a,x NOP
 	case 0xFD: absolute_x_pc(); SBC(); break;
-	case 0xFE: absolute_x(); INC(); break;
-	case 0xFF: absolute_x(); ISC(); break;
+	case 0xFE: absolute_x_rmw(); INC(); break;
+	case 0xFF: absolute_x_rmw(); ISC(); break;
 	case 0x100: //NMI
 		//Battletoads debugging
 	//{
@@ -566,7 +566,22 @@ INLINE void c_cpu::absolute_x()
 	address = MAKEWORD(lo, hi);
 
 	unsigned short intermediate = (address & 0xFF00) | ((address + X) & 0xFF);
-	nes->read_byte(intermediate);
+	M = nes->read_byte(intermediate);
+	address += X;
+	if (address != intermediate)
+	{
+		M = nes->read_byte(address);
+	}
+}
+
+INLINE void c_cpu::absolute_x_rmw()
+{
+	unsigned char lo = nes->read_byte(PC++);
+	unsigned char hi = nes->read_byte(PC++);
+	address = MAKEWORD(lo, hi);
+
+	unsigned short intermediate = (address & 0xFF00) | ((address + X) & 0xFF);
+	M = nes->read_byte(intermediate);
 	address += X;
 	M = nes->read_byte(address);
 }
@@ -576,14 +591,17 @@ INLINE void c_cpu::absolute_x_pc()
 	unsigned char lo = nes->read_byte(PC++);
 	unsigned char hi = nes->read_byte(PC++);
 	address = MAKEWORD(lo, hi);
-
+	if (address == 0x2000) {
+		int x = 1;
+	}
 	unsigned short intermediate = (address & 0xFF00) | ((address + X) & 0xFF);
-	nes->read_byte(intermediate);
-	unsigned short new_address = address + X;
-	int temp = address + X;
-	CHECK_PAGE_CROSS2(address, new_address);
-	address = new_address;
-	M = nes->read_byte(address);
+	M = nes->read_byte(intermediate);
+	address += X;
+	if (address != intermediate)
+	{
+		required_cycles += 3;
+		M = nes->read_byte(address);
+	}
 }
 
 INLINE void c_cpu::absolute_x_ea()
@@ -604,9 +622,12 @@ INLINE void c_cpu::absolute_y()
 	address = MAKEWORD(lo, hi);
 
 	unsigned short intermediate = (address & 0xFF00) | ((address + Y) & 0xFF);
-	nes->read_byte(intermediate);
+	M = nes->read_byte(intermediate);
 	address += Y;
-	M = nes->read_byte(address);
+	if (address != intermediate)
+	{
+		M = nes->read_byte(address);
+	}
 }
 
 INLINE void c_cpu::absolute_y_pc()
@@ -616,11 +637,13 @@ INLINE void c_cpu::absolute_y_pc()
 	address = MAKEWORD(lo, hi);
 
 	unsigned short intermediate = (address & 0xFF00) | ((address + Y) & 0xFF);
-	nes->read_byte(intermediate);
-	unsigned short new_address = address + Y;
-	CHECK_PAGE_CROSS2(address, new_address);
-	address = new_address;
-	M = nes->read_byte(address);
+	M = nes->read_byte(intermediate);
+	address += Y;
+	if (address != intermediate)
+	{
+		required_cycles += 3;
+		M = nes->read_byte(address);
+	}
 }
 
 INLINE void c_cpu::absolute_y_ea()
@@ -669,9 +692,12 @@ INLINE void c_cpu::indirect_y()	//Post-indexed indirect
 	address = MAKEWORD(nes->read_byte(temp), nes->read_byte((temp + 1) & 0xFF));
 
 	unsigned short intermediate = (address & 0xFF00) | ((address + Y) & 0xFF);
-	nes->read_byte(intermediate);
+	M = nes->read_byte(intermediate);
 	address += Y;
-	M = nes->read_byte(address);
+	if (address != intermediate)
+	{
+		M = nes->read_byte(address);
+	}
 }
 
 INLINE void c_cpu::indirect_y_pc()	//Post-indexed indirect
@@ -680,11 +706,13 @@ INLINE void c_cpu::indirect_y_pc()	//Post-indexed indirect
 	address = MAKEWORD(nes->read_byte(temp), nes->read_byte((temp + 1) & 0xFF));
 
 	unsigned short intermediate = (address & 0xFF00) | ((address + Y) & 0xFF);
-	nes->read_byte(intermediate);
-	unsigned short new_address = address + Y;
-	CHECK_PAGE_CROSS2(address, new_address);
-	address = new_address;
-	M = nes->read_byte(address);
+	M = nes->read_byte(intermediate);
+	address += Y;
+	if (address != intermediate)
+	{
+		required_cycles += 3;
+		M = nes->read_byte(address);
+	}
 }
 
 INLINE void c_cpu::indirect_y_ea()	//Post-indexed indirect
@@ -1016,6 +1044,7 @@ INLINE void c_cpu::RLA()
 }
 INLINE void c_cpu::ROL()
 {
+	nes->write_byte(address, M);
 	int oldcarry = SR.C ? 1 : 0;
 	SR.C = (M & 0x80) ? true : false;
 	M <<= 1;

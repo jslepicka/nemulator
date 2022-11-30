@@ -79,6 +79,9 @@ private:
 	void absolute_y_pc();
 	void indirect_y_pc();
 
+	//for rmw instructions
+	void absolute_x_rmw();
+
 	//load effective address for store ops
 	void zeropage_ea();
 	void zeropage_x_ea();
