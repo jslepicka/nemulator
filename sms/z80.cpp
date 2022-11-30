@@ -431,6 +431,7 @@ void c_z80::execute_opcode()
 				case 5:
 				case 6:
 				case 7:
+					//JR cc[y-4], d
 					d = (signed char)sms->read_byte(PC++);
 					if (test_flag(y - 4))
 						PC += d;
