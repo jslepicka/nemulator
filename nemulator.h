@@ -94,8 +94,6 @@ private:
 		MENU_QAM
 	};
 
-	std::deque<int> menu_stack;
-
 	void start_game();
 	void leave_game();
 	int menu;
@@ -120,7 +118,6 @@ private:
 	unsigned char *joy1, *joy2;
 
 	TexturePanel *mainPanel2;
-	TexturePanel *favoritesPanel2;
 	static const int num_texture_panels = 1;
 	TexturePanel *texturePanels[num_texture_panels];
 
