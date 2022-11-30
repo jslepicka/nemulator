@@ -475,8 +475,10 @@ INLINE void c_cpu::absolute_x()
 	unsigned char lo = nes->read_byte(PC++);
 	unsigned char hi = nes->read_byte(PC++);
 	address = MAKEWORD(lo, hi);
-	int temp = address + X;
-	address = temp;
+
+	unsigned short intermediate = (address & 0xFF00) | ((address + X) & 0xFF);
+	nes->read_byte(intermediate);
+	address += X;
 	M = nes->read_byte(address);
 }
 
@@ -485,9 +487,13 @@ INLINE void c_cpu::absolute_x_pc()
 	unsigned char lo = nes->read_byte(PC++);
 	unsigned char hi = nes->read_byte(PC++);
 	address = MAKEWORD(lo, hi);
+
+	unsigned short intermediate = (address & 0xFF00) | ((address + X) & 0xFF);
+	nes->read_byte(intermediate);
+	unsigned short new_address = address + X;
 	int temp = address + X;
-	CHECK_PAGE_CROSS2(address, temp);
-	address = temp;
+	CHECK_PAGE_CROSS2(address, new_address);
+	address = new_address;
 	M = nes->read_byte(address);
 }
 
@@ -496,9 +502,10 @@ INLINE void c_cpu::absolute_x_ea()
 	unsigned char lo = nes->read_byte(PC++);
 	unsigned char hi = nes->read_byte(PC++);
 	address = MAKEWORD(lo, hi);
-	int temp = address + X;
-	address = temp;
-	nes->read_byte(address);
+
+	unsigned short intermediate = (address & 0xFF00) | ((address + X) & 0xFF);
+	nes->read_byte(intermediate);
+	address += X;
 }
 
 INLINE void c_cpu::absolute_y()
@@ -506,8 +513,10 @@ INLINE void c_cpu::absolute_y()
 	unsigned char lo = nes->read_byte(PC++);
 	unsigned char hi = nes->read_byte(PC++);
 	address = MAKEWORD(lo, hi);
-	int temp = address + Y;
-	address = temp;
+
+	unsigned short intermediate = (address & 0xFF00) | ((address + Y) & 0xFF);
+	nes->read_byte(intermediate);
+	address += Y;
 	M = nes->read_byte(address);
 }
 
@@ -516,9 +525,12 @@ INLINE void c_cpu::absolute_y_pc()
 	unsigned char lo = nes->read_byte(PC++);
 	unsigned char hi = nes->read_byte(PC++);
 	address = MAKEWORD(lo, hi);
-	int temp = address + Y;
-	CHECK_PAGE_CROSS2(address, temp);
-	address = temp;
+
+	unsigned short intermediate = (address & 0xFF00) | ((address + Y) & 0xFF);
+	nes->read_byte(intermediate);
+	unsigned short new_address = address + Y;
+	CHECK_PAGE_CROSS2(address, new_address);
+	address = new_address;
 	M = nes->read_byte(address);
 }
 
@@ -527,9 +539,10 @@ INLINE void c_cpu::absolute_y_ea()
 	unsigned char lo = nes->read_byte(PC++);
 	unsigned char hi = nes->read_byte(PC++);
 	address = MAKEWORD(lo, hi);
-	int temp = address + Y;
-	address = temp;
-	nes->read_byte(address);
+
+	unsigned short intermediate = (address & 0xFF00) | ((address + Y) & 0xFF);
+	nes->read_byte(intermediate);
+	address += Y;
 }
 
 INLINE void c_cpu::indirect()	//For indirect jmp
@@ -566,8 +579,9 @@ INLINE void c_cpu::indirect_y()	//Post-indexed indirect
 	unsigned char temp = nes->read_byte(PC++);
 	address = MAKEWORD(nes->read_byte(temp), nes->read_byte((temp + 1) & 0xFF));
 
-	int temp2 = address + Y;
-	address = temp2;
+	unsigned short intermediate = (address & 0xFF00) | ((address + Y) & 0xFF);
+	nes->read_byte(intermediate);
+	address += Y;
 	M = nes->read_byte(address);
 }
 
@@ -576,9 +590,11 @@ INLINE void c_cpu::indirect_y_pc()	//Post-indexed indirect
 	unsigned char temp = nes->read_byte(PC++);
 	address = MAKEWORD(nes->read_byte(temp), nes->read_byte((temp + 1) & 0xFF));
 
-	int temp2 = address + Y;
-	CHECK_PAGE_CROSS2(address, temp2);
-	address = temp2;
+	unsigned short intermediate = (address & 0xFF00) | ((address + Y) & 0xFF);
+	nes->read_byte(intermediate);
+	unsigned short new_address = address + Y;
+	CHECK_PAGE_CROSS2(address, new_address);
+	address = new_address;
 	M = nes->read_byte(address);
 }
 
@@ -587,9 +603,9 @@ INLINE void c_cpu::indirect_y_ea()	//Post-indexed indirect
 	unsigned char temp = nes->read_byte(PC++);
 	address = MAKEWORD(nes->read_byte(temp), nes->read_byte((temp + 1) & 0xFF));
 
-	int temp2 = address + Y;
-	address = temp2;
-	nes->read_byte(address);
+	unsigned short intermediate = (address & 0xFF00) | ((address + Y) & 0xFF);
+	nes->read_byte(intermediate);
+	address += Y;
 }
 
 INLINE void c_cpu::branch(int condition)
