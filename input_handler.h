@@ -47,6 +47,7 @@ public:
 		AXIS_Y,
 		AXIS_Z
 	};
+
 protected:
 	bool ackd;
 	int num_buttons;
@@ -62,7 +63,7 @@ protected:
 		int button_key;     //virtual key code assigned to button
 		double hold_time;   //how long has the button been depressed?
 		double repeat_time; //next repeat event
-		int joy;					
+		int joy;
 		int joy_button;
 		int ack;
 	} *state;

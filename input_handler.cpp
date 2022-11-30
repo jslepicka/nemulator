@@ -38,7 +38,7 @@ c_input_handler::c_input_handler(int buttons)
 		memset(&joyInfoEx[i], 0, sizeof(joyInfoEx[i]));
 		joyInfoEx[i].dwSize = sizeof(joyInfoEx[i]);
 		joyInfoEx[i].dwFlags = JOY_RETURNBUTTONS | JOY_RETURNPOVCTS | JOY_RETURNCENTERED | JOY_RETURNX | JOY_RETURNY | JOY_RETURNZ;
-		joy_poll_result[i] = JOYERR_NOERROR;
+		joy_poll_result[i] = -1;
 		joy_suppressed[i] = 0;
 	}
 	joymask = 0;
