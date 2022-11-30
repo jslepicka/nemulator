@@ -157,11 +157,26 @@ private:
 
 	//illegal
 	void ALR();
+	void ANC();
+	void ARR();
 	void AXS();
 	void DCP();
 	void ISC();
 	void LAX();
+	void RLA();
+	void RRA();
 	void SAX();
+	void SHY();
+	void SHX();
+	void SLO();
+	void SRE();
+	void STP();
+
+	//untested
+	void LAS();
+	void SHA();
+	void TAS();
+	void XAA();
 
 	int irq_checked();
 };
