@@ -1,7 +1,5 @@
 #pragma once
-//#include "d3d10app.h"
 #include "nes\nes.h"
-#include "nes\palette.h"
 #include "sms\sms.h"
 #include "gb\gb.h"
 #include "game.h"
@@ -36,7 +34,7 @@ class c_nemulator :
 {
 public:
 	c_nemulator();
-	~c_nemulator(void);
+	~c_nemulator();
 
 	void init(void *params);
 	void draw();
@@ -113,11 +111,11 @@ private:
 	void RunGames();
 	void ProcessInput(double dt);
 	int selectedPanel;
-	std::vector<Game*> gameList;
+	std::vector<c_game*> gameList;
 	double menu_delay;
 
 	bool inGame;
-	Sound *sound;
+	c_sound *sound;
 
 	unsigned char *joy1, *joy2;
 
@@ -136,7 +134,6 @@ private:
 
 	ID3D10Texture2D *tex;
 
-
 	ID3DX10Font *font1;
 	ID3DX10Font *font2;
 	ID3DX10Font *font3;
@@ -144,8 +141,6 @@ private:
 	LARGE_INTEGER liFreq;
 	LARGE_INTEGER liCurrent;
 	LARGE_INTEGER liLast;
-
-
 
 	HANDLE *startEvents;
 	HANDLE *doneEvents;
@@ -156,7 +151,6 @@ private:
 	double fps_history[fps_records];
 	int fps_index;
 
-	//static const unsigned char Palette[64*3];
 	bool paused;
 
 	c_audio_info *audio_info;
@@ -171,12 +165,11 @@ private:
 		HANDLE start_event;
 		HANDLE done_event;
 		int kill;
-		std::vector<Game*> game_list;
+		std::vector<c_game*> game_list;
 	};
 	std::vector<s_game_thread*> game_threads;
 	int num_threads;
 	HANDLE *done_events;
-	int num_items_this_frame;
 
 	bool show_suspend;
 	static const int SOUND_BUF_LEN = 1024;

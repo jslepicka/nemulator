@@ -10,7 +10,7 @@ public:
 	void WriteByte(unsigned short address, unsigned char value);
 	void reset();
 private:
-	virtual void Sync(void);
+	virtual void Sync();
 	int reg_a;
 	int reg_b;
 };

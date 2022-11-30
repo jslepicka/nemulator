@@ -47,7 +47,6 @@ private:
 	int lookup_color(int palette_index);
 
 	void update_irq();
-	//static long pal_built;
 	static std::atomic<int> pal_built;
 	void generate_palette();
 	static uint32_t pal_sms[256];

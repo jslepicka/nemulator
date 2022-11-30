@@ -5,10 +5,10 @@ class c_mapper1 :
 	public c_mapper
 {
 public:
-	c_mapper1(void);
-	~c_mapper1(void);
+	c_mapper1();
+	~c_mapper1();
 	void WriteByte(unsigned short address, unsigned char value);
-	void reset(void);
+	void reset();
 	void clock(int cycles);
 protected:
 	int ignore_writes;

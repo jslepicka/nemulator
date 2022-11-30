@@ -5,8 +5,8 @@
 class c_tasklist
 {
 public:
-	c_tasklist(void);
-	~c_tasklist(void);
+	c_tasklist();
+	~c_tasklist();
 	void push(c_task *task);
 	void pop();
 protected:

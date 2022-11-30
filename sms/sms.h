@@ -8,10 +8,8 @@ class c_psg;
 class c_sms : public c_console
 {
 public:
-	//c_sms(void);
 	c_sms(int variant);
-	~c_sms(void);
-	int load_rom(char *filename);
+	~c_sms();
 	int emulate_frame();
 	unsigned char read_byte(unsigned short address);
 	unsigned short read_word(unsigned short address);

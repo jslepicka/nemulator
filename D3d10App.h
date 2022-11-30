@@ -37,7 +37,7 @@ class D3d10App
 {
 public:
 	D3d10App(HINSTANCE hInstance);
-	virtual ~D3d10App(void);
+	virtual ~D3d10App();
 	HINSTANCE GetInstance();
 	HWND GetWnd();
 	int Run();

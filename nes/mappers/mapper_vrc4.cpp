@@ -8,7 +8,7 @@ c_mapper_vrc4::c_mapper_vrc4(int submapper)
 	this->submapper = submapper;
 }
 
-c_mapper_vrc4::~c_mapper_vrc4(void)
+c_mapper_vrc4::~c_mapper_vrc4()
 {
 }
 
@@ -167,7 +167,7 @@ void c_mapper_vrc4::clock(int cycles)
 	}
 }
 
-void c_mapper_vrc4::reset(void)
+void c_mapper_vrc4::reset()
 {
 	memset(chr, 0, sizeof(chr));
 

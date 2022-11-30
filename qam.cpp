@@ -21,7 +21,7 @@ c_qam::c_qam()
 	font = 0;
 }
 
-c_qam::~c_qam(void)
+c_qam::~c_qam()
 {
 }
 

@@ -32,7 +32,7 @@ class c_biquad4 : public i_audio_filter
 public:
 	//c_biquad4(const float *g, const float *b2, const float *a2, const float *a3);
 	c_biquad4(std::vector<float> g, std::vector<float> b2, std::vector<float> a2, std::vector<float> a3);
-	~c_biquad4(void) {};
+	~c_biquad4() {};
 	float process(float input);
 	void *operator new (size_t size) { return _aligned_malloc(size, 16); }
 	void operator delete(void *p) { _aligned_free((c_biquad4*)p); }

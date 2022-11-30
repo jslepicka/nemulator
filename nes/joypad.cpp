@@ -1,6 +1,6 @@
 #include "joypad.h"
 
-int c_joypad::Reset()
+int c_joypad::reset()
 {
 	strobe = 0;
 	joy1 = 0;
@@ -12,7 +12,7 @@ int c_joypad::Reset()
 	return 1;
 }
 
-unsigned char c_joypad::ReadByte(unsigned short address)
+unsigned char c_joypad::read_byte(unsigned short address)
 {
 	unsigned char x = 0;
 	switch (address)
@@ -48,7 +48,7 @@ unsigned char c_joypad::ReadByte(unsigned short address)
 	}
 }
 
-void c_joypad::WriteByte(unsigned short address, unsigned char value)
+void c_joypad::write_byte(unsigned short address, unsigned char value)
 {
 	switch (address)
 	{

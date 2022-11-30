@@ -1,25 +1,3 @@
-///////////////////////////////////////////////////////////////////////////////////
-//                                                                               //
-//   nemulator (an NES emulator)                                                 //
-//                                                                               //
-//   Copyright (C) 2003-2009 James Slepicka <james@nemulator.com>                //
-//                                                                               //
-//   This program is free software; you can redistribute it and/or modify        //
-//   it under the terms of the GNU General Public License as published by        //
-//   the Free Software Foundation; either version 2 of the License, or           //
-//   (at your option) any later version.                                         //
-//                                                                               //
-//   This program is distributed in the hope that it will be useful,             //
-//   but WITHOUT ANY WARRANTY; without even the implied warranty of              //
-//   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               //
-//   GNU General Public License for more details.                                //
-//                                                                               //
-//   You should have received a copy of the GNU General Public License           //
-//   along with this program; if not, write to the Free Software                 //
-//   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA   //
-//                                                                               //
-///////////////////////////////////////////////////////////////////////////////////
-
 #include "nes.h"
 #include "cpu.h"
 #include "ppu.h"
@@ -129,7 +107,7 @@ const std::map<int, std::function<c_mapper*()> > c_nes::mapper_factory =
 };
 
 
-c_nes::c_nes(void)
+c_nes::c_nes()
 {
 	cpuRam = 0;
 	sram = 0;
@@ -139,16 +117,12 @@ c_nes::c_nes(void)
 	image = 0;
 	joypad = 0;
 	loaded = false;
-	played = false;
 	limit_sprites = false;
-	mem_access_log = new c_mem_access_log[256*256];
 	crc32 = 0;
 }
 
-c_nes::~c_nes(void)
+c_nes::~c_nes()
 {
-	//CloseSram();
-	delete[] mem_access_log;
 	if (image)
 		delete[] image;
 	if (cpuRam)
@@ -188,14 +162,14 @@ bool c_nes::get_sprite_limit()
 	return ppu->limit_sprites;
 }
 
-unsigned char c_nes::DmcRead(unsigned short address)
+unsigned char c_nes::dmc_read(unsigned short address)
 {
 	//cpu->availableCycles -= 12;
-	cpu->ExecuteApuDMA();
-	return ReadByte(address);
+	cpu->execute_apu_dma();
+	return read_byte(address);
 }
 
-unsigned char c_nes::ReadByte(unsigned short address)
+unsigned char c_nes::read_byte(unsigned short address)
 {
 #ifdef MEM_VIEWER
 	if (mem_viewer_active)
@@ -231,7 +205,7 @@ unsigned char c_nes::ReadByte(unsigned short address)
 			break;
 		case 0x4016:
 		case 0x4017:
-			return joypad->ReadByte(address);
+			return joypad->read_byte(address);
 			break;
 		default:
 			break;
@@ -245,7 +219,7 @@ unsigned char c_nes::ReadByte(unsigned short address)
 	return 0;
 }
 
-void c_nes::WriteByte(unsigned short address, unsigned char value)
+void c_nes::write_byte(unsigned short address, unsigned char value)
 {
 #ifdef MEM_VIEWER
 	if (mem_viewer_active)
@@ -268,11 +242,11 @@ void c_nes::WriteByte(unsigned short address, unsigned char value)
 	case 4:
 		if (address == 0x4014)
 		{
-			cpu->DoSpriteDMA(ppu->pSpriteMemory, (value & 0xFF) << 8);
+			cpu->do_sprite_dma(ppu->pSpriteMemory, (value & 0xFF) << 8);
 		}
 		else if (address == 0x4016)
 		{
-			joypad->WriteByte(address, value);
+			joypad->write_byte(address, value);
 		}
 		else if (address >= 0x4000 && address <= 0x4017)
 		{
@@ -366,11 +340,6 @@ int c_nes::load()
 	apu2 = new c_apu2();
 	apu2->set_nes(this);
 
-	joy1 = &joypad->joy1;
-	joy2 = &joypad->joy2;
-	joy2 = &joypad->joy3;
-	joy2 = &joypad->joy4;
-
 	mapperNumber = LoadImage(pathFile);
 
 	if (crc32 == 0x96ce586e)
@@ -445,7 +414,7 @@ int c_nes::load()
 	return 1;
 }
 
-int c_nes::reset(void)
+int c_nes::reset()
 {
 	if (!cpuRam)
 		cpuRam = new unsigned char[2048];
@@ -470,12 +439,10 @@ int c_nes::reset(void)
 	}
 	mapper->reset();
 	cpu->reset();
-	joypad->Reset();
+	joypad->reset();
 	loaded = true;
 	mmc3_cycles = 260;
 	ppu_cycles = 341;
-	do_vblank_nmi = false;
-	vblank_nmi_delay = 1;
 	return 1;
 }
 
@@ -505,24 +472,7 @@ int c_nes::emulate_frame()
 	return 0;
 }
 
-void c_nes::clear_events()
-{
-	for (int i = 0; i < MAX_EVENTS; i++)
-		event_list[i].cycle = -1;
-	event_index = 0;
-}
-
-void c_nes::add_event(int cycle, c_nes::line_event e)
-{
-	if (event_index < MAX_EVENTS)
-	{
-		event_list[event_index].cycle = cycle;
-		event_list[event_index].e = e;
-		event_index++;
-	}
-}
-
-int *c_nes::get_video(void)
+int *c_nes::get_video()
 {
 	return ppu->pFrameBuffer;
 }
@@ -530,26 +480,6 @@ int *c_nes::get_video(void)
 void c_nes::set_audio_freq(double freq)
 {
 	apu2->set_audio_rate(freq);
-}
-
-unsigned char *c_nes::GetJoy1(void)
-{
-	return &joypad->joy1;
-}
-
-unsigned char *c_nes::GetJoy2(void)
-{
-	return &joypad->joy2;
-}
-
-unsigned char *c_nes::GetJoy3(void)
-{
-	return &joypad->joy1;
-}
-
-unsigned char *c_nes::GetJoy4(void)
-{
-	return &joypad->joy2;
 }
 
 int c_nes::get_sound_bufs(const short **buf_l, const short **buf_r)
