@@ -10,7 +10,7 @@ class c_biquad8
 {
 public:
 	c_biquad8(const float *g, const float *b2, const float *a2, const float *a3);
-	~c_biquad8(void);
+	~c_biquad8();
 	float process_df2t(float input);
 #ifdef AVX
 	float process_df2t_avx(float input);
@@ -86,7 +86,7 @@ inline c_biquad8::c_biquad8(const float *g, const float *b2, const float *a2, co
 	*a23 = _mm_setr_ps(a3[7], a3[6], a3[5], a3[4]);
 }
 
-inline c_biquad8::~c_biquad8(void)
+inline c_biquad8::~c_biquad8()
 {
 	_aligned_free(z11);
 	_aligned_free(z12);

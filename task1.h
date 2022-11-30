@@ -9,7 +9,7 @@ class c_task1 :
 {
 public:
 	c_task1();
-	~c_task1(void);
+	~c_task1();
 	void init(void *params);
 	int update(double dt, int child_result, void *params);
 	void draw();

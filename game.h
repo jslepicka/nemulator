@@ -17,21 +17,18 @@ enum GAME_TYPE
 	GAME_NONE
 };
 
-class Game : public TexturePanelItem
+class c_game : public TexturePanelItem
 {
 public:
-	Game(GAME_TYPE type, std::string path, std::string filename, std::string sram_path);
+	c_game(GAME_TYPE type, std::string path, std::string filename, std::string sram_path);
 	HANDLE GetEventStart() { return eventStart; } //Retrieve eventStart handle
 	HANDLE GetEventDone() { return eventDone; } //Retrieve eventDone handle
-	//void Load(); //Load nes and create thread
-	//void Unload(); //Kill thread and unload nes
-	~Game(void);
+	~c_game();
 	HANDLE eventStart;
 	HANDLE eventDone;
 	c_console* console;
 	void DrawToTexture(ID3D10Texture2D *tex);
 	ID3D10Buffer *get_vertex_buffer(int stretched);
-	void build_stretch_buffer(float ratio);
 	bool Selectable();
 	bool mask_sides;
 	bool limit_sprites;
@@ -60,7 +57,6 @@ private:
 	int fb_width;
 	int fb_height;
 
-	//std::string filename;
 	std::string path;
 	std::string sram_path;
 

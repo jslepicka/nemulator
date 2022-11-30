@@ -23,7 +23,7 @@ c_vdp::c_vdp(c_sms* sms, int type)
 }
 
 
-c_vdp::~c_vdp(void)
+c_vdp::~c_vdp()
 {
 	delete[] frame_buffer;
 	delete[] vram;
@@ -44,9 +44,6 @@ void c_vdp::reset()
 	read_buffer = 0;
 	vram_write = 0;
 	memset(registers, 0, sizeof(registers));
-	//registers[0x1] |= 0x20;
-	//registers[10] = 0xFF;
-	//registers[6] = 0xFB;
 	memset(vram, 0, 16384);
 	memset(cram, 0, sizeof(cram));
 	memset(frame_buffer, 0, 256 * 256);

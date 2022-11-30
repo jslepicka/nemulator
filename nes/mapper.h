@@ -10,20 +10,16 @@ class c_apu2;
 class c_mapper
 {
 public:
-	c_mapper(void);
-	virtual ~c_mapper(void);
+	c_mapper();
+	virtual ~c_mapper();
 	virtual unsigned char ReadByte(unsigned short address);
 	virtual void WriteByte(unsigned short address, unsigned char value);
 	virtual void WriteChrRom(unsigned short address, unsigned char value);
 	virtual unsigned char ReadChrRom(unsigned short address);
-	virtual void mmc3_check_a12() {};
 	virtual void mmc5_ppu_write(unsigned short address, unsigned char value) {};
-	virtual void mmc2_latch(int address) {};
 	virtual void clock(int cycles) {};
-	virtual void ppu_clock(int cycles) {};
-	virtual void HBlank(int scanline) {};
-	virtual void reset(void);
-	virtual int LoadImage(void);
+	virtual void reset();
+	virtual int LoadImage();
 	virtual float mix_audio(float sample);
 	int has_expansion_audio();
 	c_ppu *ppu;
@@ -40,7 +36,6 @@ public:
 	int crc32;
 	virtual unsigned char ppu_read(unsigned short address);
 	virtual void ppu_write(unsigned short address, unsigned char value);
-	virtual void set_ppu_bus(unsigned short address) {};
 	virtual int get_nwc_time() { return 0; }
 	int in_sprite_eval;
 	c_nes *nes;
@@ -92,7 +87,6 @@ protected:
 	chrRomBank *chrRom;
 	unsigned char *pChrRom;
 	unsigned char *pPrgRom;
-	bool *IRQ;
 
 	unsigned char *prgBank[4];
 	unsigned char *chrBank[8];

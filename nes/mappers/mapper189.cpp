@@ -1,12 +1,12 @@
 #include "mapper189.h"
 
-c_mapper189::c_mapper189(void)
+c_mapper189::c_mapper189()
 {
 	//Thunder Warrior, SF2 World Warrior
 	mapperName = "Mapper 189";
 }
 
-void c_mapper189::reset(void)
+void c_mapper189::reset()
 {
 	c_mapper4::reset();
 	reg_a = 0;

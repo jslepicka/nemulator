@@ -8,8 +8,8 @@ class c_bmp_writer
 public:
 	static int write_bmp(int *source, int x, int y, std::string filename);
 private:
-	c_bmp_writer(void) {};
-	virtual ~c_bmp_writer(void) {};
+	c_bmp_writer() {};
+	virtual ~c_bmp_writer() {};
 
 	inline static const unsigned char magic[2] = { 'B', 'M' };
 
