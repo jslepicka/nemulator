@@ -5,7 +5,6 @@ class c_console
 {
 public:
 	c_console();
-	c_console(int variant);
 	virtual ~c_console();
 	virtual int load() = 0;
 	virtual int is_loaded() = 0;
@@ -29,6 +28,6 @@ public:
 	char filename[MAX_PATH];
 	char title[MAX_PATH];
 	char pathFile[MAX_PATH];
-	virtual int get_overscan_color() { return 0xFF000000;	};
+	virtual int get_overscan_color() { return 0xFF000000; };
 };
 

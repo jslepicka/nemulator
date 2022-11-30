@@ -1,26 +1,3 @@
-///////////////////////////////////////////////////////////////////////////////////
-//                                                                               //
-//   nemulator (an NES emulator)                                                 //
-//                                                                               //
-//   Copyright (C) 2003-2009 James Slepicka <james@nemulator.com>                //
-//                                                                               //
-//   This program is free software; you can redistribute it and/or modify        //
-//   it under the terms of the GNU General Public License as published by        //
-//   the Free Software Foundation; either version 2 of the License, or           //
-//   (at your option) any later version.                                         //
-//                                                                               //
-//   This program is distributed in the hope that it will be useful,             //
-//   but WITHOUT ANY WARRANTY; without even the implied warranty of              //
-//   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               //
-//   GNU General Public License for more details.                                //
-//                                                                               //
-//   You should have received a copy of the GNU General Public License           //
-//   along with this program; if not, write to the Free Software                 //
-//   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA   //
-//                                                                               //
-///////////////////////////////////////////////////////////////////////////////////
-
-//#include "nes.h"
 #include "cpu.h"
 #include "ppu.h"
 #include "memory.h"
@@ -31,6 +8,7 @@
 #include <math.h>
 #include <algorithm>
 
+#define INLINE __forceinline
 
 #include <crtdbg.h>
 //#if defined(DEBUG) | defined(_DEBUG)
@@ -46,7 +24,7 @@ uint64_t c_ppu::morton_even_64[256];
 
 uint32_t c_ppu::pal[512];
 
-c_ppu::c_ppu(void)
+c_ppu::c_ppu()
 {
 	pSpriteMemory = 0;
 	mapper = 0;
@@ -167,13 +145,13 @@ void c_ppu::build_lookup_tables()
 	}
 }
 
-c_ppu::~c_ppu(void)
+c_ppu::~c_ppu()
 {
 	if (pSpriteMemory)
 		delete[] pSpriteMemory;
 }
 
-__forceinline uint64_t c_ppu::interleave_bits_64(unsigned char odd, unsigned char even)
+INLINE uint64_t c_ppu::interleave_bits_64(unsigned char odd, unsigned char even)
 {
 	return morton_odd_64[odd] | morton_even_64[even];
 }
@@ -428,7 +406,7 @@ void c_ppu::inc_vertical_address()
 		vramAddress += 0x1000;
 }
 
-void c_ppu::reset(void)
+void c_ppu::reset()
 {
 	warmed_up = 0;
 	odd_frame = 0;
@@ -475,6 +453,281 @@ void c_ppu::reset(void)
 	next_rendering = 0;
 
 	pixel_pipeline = 0;
+	reload_v = 0;
+	vid_out = 0;
+}
+
+INLINE void c_ppu::output_pixel()
+{
+	int pixel = 0;
+	int bg_index = 0;
+
+	if (ppuControl2.backgroundSwitch && ((current_cycle >= 8 + screen_offset) || ppuControl2.backgroundClipping))
+	{
+		bg_index = index_buffer[current_cycle - screen_offset + fineX];
+	}
+
+	if (bg_index & 0x03)
+	{
+		pixel = image_palette[bg_index];
+	}
+	else
+	{
+		pixel = image_palette[0];
+	}
+
+	if (sprite_count && ppuControl2.spritesVisible && ((current_cycle >= 8 + screen_offset) || ppuControl2.spriteClipping)) [[unlikely]]
+	{
+		int max_sprites = limit_sprites ? 8 : 64;
+		for (int i = 0; i < sprite_count && i < max_sprites; i++)
+		{
+			int sprite_x = sprite_buffer[(i * 4) + 3];
+
+			if ((unsigned int)(current_cycle - screen_offset - sprite_x) < 8)
+			{
+				int priority = sprite_buffer[(i * 4) + 2] & 0x20;
+				int sprite_color = sprite_index_buffer[i * 8 + (current_cycle - screen_offset - sprite_x)];
+				if (sprite_color & 0x03)
+				{
+					if (i == sprite0_index &&
+						ppuControl2.backgroundSwitch &&
+						(bg_index & 0x03) != 0 &&
+						current_cycle < 255 + screen_offset) [[unlikely]] {
+							ppuStatus.hitFlag = true;
+							hit = 1;
+					}
+
+						if (!(priority && (bg_index & 0x03))) {
+							pixel = image_palette[16 + sprite_color];
+						}
+					break;
+				}
+			}
+		}
+	}
+	pixel_pipeline |= (pixel << 16);
+}
+
+INLINE void c_ppu::output_blank_pixel()
+{
+	int pixel = 0;
+	if ((vramAddress & 0x3F00) == 0x3F00)
+	{
+		pixel = image_palette[vramAddress & 0x1F];
+	}
+	else
+	{
+		pixel = image_palette[0];
+	}
+	pixel_pipeline |= (pixel << 16);
+}
+
+void c_ppu::begin_vblank()
+{
+	if (warmed_up) {
+		if (!suppress_nmi) {
+			ppuStatus.vBlank = true;
+			if (ppuControl1.vBlankNmi) {
+				cpu->execute_nmi();
+			}
+		}
+		else {
+			ppuStatus.vBlank = false;
+		}
+	}
+	suppress_nmi = 0;
+}
+
+void c_ppu::end_vblank()
+{
+	ppuStatus.vBlank = false;
+	cpu->clear_nmi();
+}
+
+void c_ppu::do_cycle_events()
+{
+	switch (current_cycle) {
+	case 1:
+		if (current_scanline == 0) [[unlikely]] {
+			p_frame = pFrameBuffer;
+			hit = 0;
+		}
+		else if (current_scanline == 240) [[unlikely]] {
+			rendering = 0;
+		}
+		else if (current_scanline == 241) [[unlikely]] {
+			begin_vblank();
+		}
+		else if (current_scanline == 261) [[unlikely]] {
+			rendering = drawing_enabled();
+			ppuStatus.spriteCount = false;
+			//ppuStatus.vBlank = false;
+			ppuStatus.hitFlag = false;
+		}
+		fetch_state = FETCH_BG;
+		break;
+	case 2:
+		//this technically happens on cycle 1, but if the cpu reads it then, it should still read back as true
+		//therefore, clearing the flag here.
+		if (current_scanline == 261) {
+			end_vblank();
+		}
+		//screen_offset
+		if (current_scanline < 240) {
+			on_screen = 1;
+		}
+		break;
+	case 4:
+		//enable pixel output
+		if (current_scanline < 240) {
+			vid_out = 1;
+		}
+		break;
+	case 257:
+		fetch_state = FETCH_SPRITE;
+		break;
+	case 258: //256 + screen_offset
+		on_screen = 0;
+		break;
+	case 260:
+		//disable pixel output
+		vid_out = 0;
+		break;
+	case 280:
+		if (current_scanline == 261) {
+			reload_v = 1;
+		}
+		break;
+	case 305:
+		if (current_scanline == 261) {
+			reload_v = 0;
+		}
+		break;
+	case 321:
+		fetch_state = FETCH_BG;
+		break;
+	case 337:
+		fetch_state = FETCH_NT;
+		break;
+	default:
+		break;
+	}
+}
+
+INLINE void c_ppu::fetch()
+{
+	unsigned int s = (((current_cycle - 1) & 0x7) | fetch_state);
+	switch (s) {
+	//Background fetch phase cycles 0-256, 321-336
+	case (0 | FETCH_BG): //NT byte 1
+		break;
+	case (1 | FETCH_BG): //NT byte 2
+		drawingBg = true;
+		tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
+		pattern_address = (tile << 4) + ((vramAddress & 0x7000) >> 12) + (ppuControl1.screenPatternTableAddress * 0x1000);
+		break;
+	case (2 | FETCH_BG): //AT byte 1
+		break;
+	case (3 | FETCH_BG): //AT byte 2
+		attribute_address = 0x23C0 |
+			(vramAddress & 0xC00) |
+			(attr_loc[vramAddress & 0x3FF]);
+		attribute_shift = attr_shift_table[vramAddress & 0x3FF];
+		attribute = mapper->ppu_read(attribute_address);
+		attribute >>= attribute_shift;
+		attribute &= 0x03;
+		break;
+	case (4 | FETCH_BG): //Low BG byte 1
+		break;
+	case (5 | FETCH_BG): //Low BG byte 2
+		drawingBg = true;
+		pattern1 = mapper->ppu_read(pattern_address);
+		break;
+	case (6 | FETCH_BG): //High BG byte 1
+		break;
+	case (7 | FETCH_BG): //High BG byte 2
+		drawingBg = true;
+		pattern2 = mapper->ppu_read(pattern_address + 8);
+		{
+			unsigned int l = current_cycle + 8;
+
+			if (l >= 336)
+				l -= 336;
+			uint64_t* ib64 = (uint64_t*)&index_buffer[l];
+			uint64_t c = interleave_bits_64(pattern1, pattern2) | (attribute * 0x0404040404040404ULL);
+			*ib64 = c;
+		}
+		if (current_cycle == 256) {
+			inc_vertical_address();
+		}
+		inc_horizontal_address();
+		break;
+	
+	//Sprite fetch phase cycles 257-320
+	case (0 | FETCH_SPRITE):
+		if (current_cycle == 257) { //reload h
+			vramAddress = (vramAddress & ~0x41F) | (vramAddressLatch & 0x41F);
+		}
+		break;
+	case (1 | FETCH_SPRITE):
+		//tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
+		break;
+	case (2 | FETCH_SPRITE):
+		break;
+	case (3 | FETCH_SPRITE):
+		//tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
+		break;
+	case (4 | FETCH_SPRITE):
+		break;
+	case (5 | FETCH_SPRITE):
+		drawingBg = false;
+		if (ppuControl1.spriteSize)
+		{
+			int sprite_tile = sprite_buffer[(((current_cycle - 261) / 8) * 4) + 1];
+			mapper->ppu_read((sprite_tile & 0x1) * 0x1000);
+		}
+		else
+		{
+			mapper->ppu_read(ppuControl1.spritePatternTableAddress * 0x1000);
+		}
+		break;
+	case (6 | FETCH_SPRITE):
+		break;
+	case (7 | FETCH_SPRITE):
+		drawingBg = false;
+		if (ppuControl1.spriteSize)
+		{
+			int sprite_tile = sprite_buffer[(((current_cycle - 261) / 8) * 4) + 1];
+			mapper->ppu_read((sprite_tile & 0x1) * 0x1000);
+		}
+		else
+		{
+			mapper->ppu_read(ppuControl1.spritePatternTableAddress * 0x1000);
+		}
+		break;
+
+	//Unused NT fetch phase cycles 337-340
+	case (0 | FETCH_NT):
+		break;
+	case (1 | FETCH_NT):
+		tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
+		break;
+	case (2 | FETCH_NT):
+		break;
+	case (3 | FETCH_NT):
+		tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
+		break;
+	case (4 | FETCH_NT):
+		break;
+	case (5 | FETCH_NT):
+		break;
+	case (6 | FETCH_NT):
+		break;
+	case (7 | FETCH_NT):
+		break;
+	default:
+		__assume(0);
+	}
 }
 
 void c_ppu::run_ppu_line()
@@ -482,340 +735,102 @@ void c_ppu::run_ppu_line()
 	//current_cycle = 0;
 	int pixel_count = 0;
 	int done = 0;
-	const int screen_offset = 2;
-	int vid_out = 0;
-
-	int reload_v = 0;
+	vid_out = 0;
+	reload_v = 0;
 
 	while (true)
 	{
 		cpu->add_cycle();
+		if (current_cycle == 0) {
+			goto idle;
+		}
+		//handle events that happen on specific cycles
+		do_cycle_events();
 
-		if (current_cycle != 0) [[likely]] {
-			switch (current_cycle) {
-
-			case 1:
-				if (current_scanline == 0) [[unlikely]] {
-					p_frame = pFrameBuffer;
-					hit = 0;
-				}
-				else if (current_scanline == 240) [[unlikely]] {
-					rendering = 0;
-				}
-				else if (current_scanline == 241) [[unlikely]] {
-					if (warmed_up) {
-						if (!suppress_nmi) {
-							ppuStatus.vBlank = true;
-							if (ppuControl1.vBlankNmi) {
-								cpu->execute_nmi();
-							}
-						}
-						else {
-							ppuStatus.vBlank = false;
-						}
-					}
-					suppress_nmi = 0;
-				}
-				else if (current_scanline == 261) [[unlikely]] {
-					rendering = drawing_enabled();
-					ppuStatus.spriteCount = false;
-					//ppuStatus.vBlank = false;
-					ppuStatus.hitFlag = false;
-				}
-				fetch_state = FETCH_BG;
-				break;
-			case 2:
-				//this technically happens on cycle 1, but if the cpu reads it then, it should still read back as true
-				//therefore, clearing the flag here.
-				if (current_scanline == 261) {
-					ppuStatus.vBlank = false;
-					cpu->clear_nmi();
-				}
-				//screen_offset
-				if (current_scanline < 240) {
-					on_screen = 1;
-				}
-				break;
-			case 4:
-				//enable pixel output
-				if (current_scanline < 240) {
-					vid_out = 1;
-				}
-				break;
-			case 257:
-				fetch_state = FETCH_SPRITE;
-				break;
-			case 258: //256 + screen_offset
-				on_screen = 0;
-				break;
-			case 260:
-				//disable pixel output
-				vid_out = 0;
-				break;
-			case 280:
-				if (current_scanline == 261) {
-					reload_v = 1;
-				}
-				break;
-			case 305:
-				if (current_scanline == 261) {
-					reload_v = 0;
-				}
-				break;
-			case 321:
-				fetch_state = FETCH_BG;
-				break;
-			case 337:
-				fetch_state = FETCH_NT;
-				break;
-			default:
-				break;
+		if (rendering) [[likely]] {
+			if (reload_v) [[unlikely]] {
+				vramAddress = (vramAddress & ~0x7BE0) | (vramAddressLatch & 0x7BE0);
 			}
-
-			if (rendering) [[likely]] {
-				if (reload_v) [[unlikely]] {
-					vramAddress = (vramAddress & ~0x7BE0) | (vramAddressLatch & 0x7BE0);
-				}
-				unsigned int s = (((current_cycle - 1) & 0x7) | fetch_state)/* & 0x1F*/;
-				switch (s) {
-				case (0 | FETCH_BG): //NT byte 1
-				case (0 | FETCH_NT):
-					break;
-				case (0 | FETCH_SPRITE):
-					if (current_cycle == 257) {
-						vramAddress &= ~0x41F;
-						vramAddress |= (vramAddressLatch & 0x41F);
-					}
-					break;
-				case (1 | FETCH_BG): //NT byte 2
-					drawingBg = true;
-					tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
-					pattern_address = (tile << 4) + ((vramAddress & 0x7000) >> 12) + (ppuControl1.screenPatternTableAddress * 0x1000);
-					break;
-				case (1 | FETCH_SPRITE):
-					//tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
-					break;
-				case (1 | FETCH_NT):
-					tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
-					break;
-				case (2 | FETCH_BG): //AT byte 1
-				case (2 | FETCH_SPRITE):
-				case (2 | FETCH_NT):
-					break;
-				case (3 | FETCH_BG): //AT byte 2
-					attribute_address = 0x23C0 |
-						(vramAddress & 0xC00) |
-						(attr_loc[vramAddress & 0x3FF]);
-					attribute_shift = attr_shift_table[vramAddress & 0x3FF];
-					attribute = mapper->ppu_read(attribute_address);
-					attribute >>= attribute_shift;
-					attribute &= 0x03;
-					break;
-				case (3 | FETCH_SPRITE):
-					//tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
-					break;
-				case (3 | FETCH_NT):
-					tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
-					break;
-				case (4 | FETCH_BG): //Low BG byte 1
-				case (4 | FETCH_SPRITE):
-				case (4 | FETCH_NT):
-					break;
-				case (5 | FETCH_BG): //Low BG byte 2
-					drawingBg = true;
-					pattern1 = mapper->ppu_read(pattern_address);
-					break;
-				case (5 | FETCH_SPRITE):
-					drawingBg = false;
-					if (ppuControl1.spriteSize)
-					{
-						int sprite_tile = sprite_buffer[(((current_cycle - 261) / 8) * 4) + 1];
-						mapper->ppu_read((sprite_tile & 0x1) * 0x1000);
-					}
-					else
-					{
-						mapper->ppu_read(ppuControl1.spritePatternTableAddress * 0x1000);
-					}
-					break;
-				case (5 | FETCH_NT):
-					break;
-				case (6 | FETCH_BG): //High BG byte 1
-				case (6 | FETCH_SPRITE):
-				case (6 | FETCH_NT):
-					break;
-				case (7 | FETCH_BG): //High BG byte 2
-					drawingBg = true;
-					pattern2 = mapper->ppu_read(pattern_address + 8);
-					{
-						unsigned int l = current_cycle + 8;
-
-						if (l >= 336)
-							l -= 336;
-						uint64_t* ib64 = (uint64_t*)&index_buffer[l];
-						uint64_t c = interleave_bits_64(pattern1, pattern2) | (attribute * 0x0404040404040404ULL);
-						*ib64 = c;
-					}
-					if (current_cycle == 256) {
-						inc_vertical_address();
-					}
-					inc_horizontal_address();
-
-					break;
-				case (7 | FETCH_SPRITE):
-					drawingBg = false;
-					if (ppuControl1.spriteSize)
-					{
-						int sprite_tile = sprite_buffer[(((current_cycle - 261) / 8) * 4) + 1];
-						mapper->ppu_read((sprite_tile & 0x1) * 0x1000);
-					}
-					else
-					{
-						mapper->ppu_read(ppuControl1.spritePatternTableAddress * 0x1000);
-					}
-					break;
-				case (7 | FETCH_NT):
-					break;
-				default:
-					__assume(0);
-				}
-				if (on_screen) [[likely]]
-				{
-					int pixel = 0;
-					int bg_index = 0;
-
-					if (ppuControl2.backgroundSwitch && ((current_cycle >= 8 + screen_offset) || ppuControl2.backgroundClipping))
-					{
-						bg_index = index_buffer[current_cycle - screen_offset + fineX];
-					}
-
-					if (bg_index & 0x03)
-					{
-						pixel = image_palette[bg_index];
-					}
-					else
-					{
-						pixel = image_palette[0];
-					}
-
-					if (sprite_count && ppuControl2.spritesVisible && ((current_cycle >= 8 + screen_offset) || ppuControl2.spriteClipping)) [[unlikely]]
-					{
-						int max_sprites = limit_sprites ? 8 : 64;
-						for (int i = 0; i < sprite_count && i < max_sprites; i++)
-						{
-							int sprite_x = sprite_buffer[(i * 4) + 3];
-
-							if ((unsigned int)(current_cycle - screen_offset - sprite_x) < 8)
-							{
-								int priority = sprite_buffer[(i * 4) + 2] & 0x20;
-								int sprite_color = sprite_index_buffer[i * 8 + (current_cycle - screen_offset - sprite_x)];
-								if (sprite_color & 0x03)
-								{
-									if (i == sprite0_index &&
-										ppuControl2.backgroundSwitch &&
-										(bg_index & 0x03) != 0 &&
-										current_cycle < 255 + screen_offset) [[unlikely]] {
-											ppuStatus.hitFlag = true;
-											hit = 1;
-									}
-
-										if (!(priority && (bg_index & 0x03))) {
-											pixel = image_palette[16 + sprite_color];
-										}
-									break;
-								}
-							}
-						}
-					}
-					pixel_pipeline |= (pixel << 16);
-				}
-			}
-
-			else if (on_screen)
+			fetch();
+			if (on_screen) [[likely]]
 			{
-				int pixel = 0;
-				if ((vramAddress & 0x3F00) == 0x3F00)
-				{
-					pixel = image_palette[vramAddress & 0x1F];
-				}
-				else
-				{
-					pixel = image_palette[0];
-				}
-				pixel_pipeline |= (pixel << 16);
-			}
-
-			if (current_cycle == 340) [[unlikely]]
-			{
-				if (current_scanline == 261) [[unlikely]]
-				{
-					current_scanline = 0;
-					warmed_up = 1;
-					current_cycle = (rendering && odd_frame) ? 1 : 0;
-					odd_frame ^= 1;
-					if (hit == 0) {
-						int x = 1;
-					}
-				}
-				else {
-					current_cycle = 0;
-					current_scanline++;
-				}
-				done = 1;
+				output_pixel();
 			}
 		}
-			//idle:
-				if (vid_out /*current_scanline < 240 && current_cycle >= 4 && current_cycle < 4 + 256*/) [[likely]] {
-					*p_frame++ = pal[(pixel_pipeline & palette_mask) | intensity];
-				}
-			pixel_pipeline >>= 8;
-			//Battletoads will enable rendering at cycle 255 and break sprite 0 hit (because vertical update happens on cycle 256 and misaligns the background).
-			//Delaying the update by one cycle seems to fix this.  Unsure if this is actually how it works, but Mesen source code says that this is what
-			//apparently happens.  Need to research how enabling things mid-screen affects PPU state.
-			//
-			//NMI at scanline 241, cycle 28
-			//enabled rendering at scanline 14, cycle 300
-			//enabled rendering at scanline 15, cycle 316
-			//NMI at scanline 241, cycle 29
-			//enabled rendering at scanline 14, cycle 271
-			//enabled rendering at scanline 15, cycle 287
-			//NMI at scanline 241, cycle 30
-			//enabled rendering at scanline 14, cycle 293
-			//enabled rendering at scanline 15, cycle 309
-			//NMI at scanline 241, cycle 25
-			//enabled rendering at scanline 14, cycle 255 <-- breaks here
+		else if (on_screen) //if on screen and rendering disabled
+		{
+			output_blank_pixel();
+		}
 
-			if (update_rendering) [[unlikely]] {
-				rendering = next_rendering;
-				update_rendering = 0;
+		if (current_cycle == 340) [[unlikely]]
+		{
+			if (current_scanline == 261) [[unlikely]]
+			{
+				current_scanline = 0;
+				warmed_up = 1;
+				current_cycle = (rendering && odd_frame) ? 1 : 0;
+				odd_frame ^= 1;
 			}
-				//TODO: all cpu writes affecting ppu state should probably be delayed until next ppu cycle
-				if (vram_update_delay > 0) [[unlikely]] {
-					vram_update_delay--;
-					if (vram_update_delay == 0) {
-						vramAddress = vramAddressLatch;
-						if (!rendering)
-						{
-							mapper->ppu_read(vramAddress);
-						}
+			else {
+				current_cycle = 0;
+				current_scanline++;
+			}
+			done = 1;
+		}
+
+		idle:
+		if (vid_out) [[likely]] {
+			*p_frame++ = pal[(pixel_pipeline & palette_mask) | intensity];
+		}
+		pixel_pipeline >>= 8;
+		//Battletoads will enable rendering at cycle 255 and break sprite 0 hit (because vertical update happens on cycle 256 and misaligns the background).
+		//Delaying the update by one cycle seems to fix this.  Unsure if this is actually how it works, but Mesen source code says that this is what
+		//apparently happens.  Need to research how enabling things mid-screen affects PPU state.
+		//
+		//NMI at scanline 241, cycle 28
+		//enabled rendering at scanline 14, cycle 300
+		//enabled rendering at scanline 15, cycle 316
+		//NMI at scanline 241, cycle 29
+		//enabled rendering at scanline 14, cycle 271
+		//enabled rendering at scanline 15, cycle 287
+		//NMI at scanline 241, cycle 30
+		//enabled rendering at scanline 14, cycle 293
+		//enabled rendering at scanline 15, cycle 309
+		//NMI at scanline 241, cycle 25
+		//enabled rendering at scanline 14, cycle 255 <-- breaks here
+
+		if (update_rendering) [[unlikely]] {
+			rendering = next_rendering;
+			update_rendering = 0;
+		}
+			//TODO: all cpu writes affecting ppu state should probably be delayed until next ppu cycle
+			if (vram_update_delay > 0) [[unlikely]] {
+				vram_update_delay--;
+				if (vram_update_delay == 0) {
+					vramAddress = vramAddressLatch;
+					if (!rendering)
+					{
+						mapper->ppu_read(vramAddress);
 					}
 				}
-
-			mapper->clock(1);
-			if (--executed_cycles == 0) [[unlikely]]
-			{
-				cpu->execute();
-				cpu->odd_cycle ^= 1;
-				apu2->clock_once();
-				executed_cycles = 3;
 			}
-				if (done) {
-					return;
-				}
-			current_cycle++;
+
+		mapper->clock(1);
+		if (--executed_cycles == 0) [[unlikely]]
+		{
+			cpu->execute();
+			cpu->odd_cycle ^= 1;
+			apu2->clock_once();
+			executed_cycles = 3;
+		}
+			if (done) {
+				return;
+			}
+		current_cycle++;
 	}
 }
 
-bool c_ppu::drawing_enabled(void)
+bool c_ppu::drawing_enabled()
 {
 	if (ppuControl2.backgroundSwitch || ppuControl2.spritesVisible)
 		return true;

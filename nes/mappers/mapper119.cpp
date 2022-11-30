@@ -1,14 +1,14 @@
 #include "mapper119.h"
 
 
-c_mapper119::c_mapper119(void)
+c_mapper119::c_mapper119()
 {
 	//High Speed, Pinbot
 	mapperName = "TQROM";
 	ram = new unsigned char[8192];
 }
 
-c_mapper119::~c_mapper119(void)
+c_mapper119::~c_mapper119()
 {
 	delete[] ram;
 }

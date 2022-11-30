@@ -1,13 +1,13 @@
 #include "mapper10.h"
 
 
-c_mapper10::c_mapper10(void)
+c_mapper10::c_mapper10()
 {
 	//Fire Emblem
 	mapperName = "MMC4";
 }
 
-void c_mapper10::reset(void)
+void c_mapper10::reset()
 {
 	c_mapper9::reset();
 	SetPrgBank16k(PRG_C000, prgRomPageCount16k - 1);

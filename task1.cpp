@@ -10,7 +10,7 @@ c_task1::c_task1()
 {
 }
 
-c_task1::~c_task1(void)
+c_task1::~c_task1()
 {
 }
 

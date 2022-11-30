@@ -1,37 +1,12 @@
-///////////////////////////////////////////////////////////////////////////////////
-//                                                                               //
-//   nemulator (an NES emulator)                                                 //
-//                                                                               //
-//   Copyright (C) 2003-2009 James Slepicka <james@nemulator.com>                //
-//                                                                               //
-//   This program is free software; you can redistribute it and/or modify        //
-//   it under the terms of the GNU General Public License as published by        //
-//   the Free Software Foundation; either version 2 of the License, or           //
-//   (at your option) any later version.                                         //
-//                                                                               //
-//   This program is distributed in the hope that it will be useful,             //
-//   but WITHOUT ANY WARRANTY; without even the implied warranty of              //
-//   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               //
-//   GNU General Public License for more details.                                //
-//                                                                               //
-//   You should have received a copy of the GNU General Public License           //
-//   along with this program; if not, write to the Free Software                 //
-//   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA   //
-//                                                                               //
-///////////////////////////////////////////////////////////////////////////////////
-
 #include "sound.h"
 #include <math.h>
 #include <assert.h>
 #include "config.h"
-//#include <fstream>
-//
-//std::ofstream file;
+
 extern c_config *config;
 
-Sound::Sound(HWND hWnd)
+c_sound::c_sound(HWND hWnd)
 {
-
 	this->hWnd = hWnd;
 	resets = 0;
 	requested_freq = freq = default_freq = 48000;
@@ -65,11 +40,11 @@ Sound::Sound(HWND hWnd)
 	first_b = 1;
 }
 
-Sound::~Sound(void)
+c_sound::~c_sound()
 {
 	if (buffer)
 	{
-		Stop();
+		stop();
 		buffer->Release();
 		buffer = NULL;
 	}
@@ -81,7 +56,7 @@ Sound::~Sound(void)
 	}
 }
 
-int Sound::Init(void)
+int c_sound::init()
 {
 	if (DS_OK != DirectSoundCreate(NULL, &lpDS, NULL))
 	{
@@ -111,27 +86,27 @@ int Sound::Init(void)
 		MessageBox(NULL, "CreateSoundBuffer failed", "", MB_OK);
 		return 0;
 	}
-	Clear();
-	Reset();
+	clear();
+	reset();
 	return 1;
 }
 
-void Sound::Play(void)
+void c_sound::play()
 {
 	buffer->Play(0, 0, DSBPLAY_LOOPING);
 }
 
-void Sound::Stop(void)
+void c_sound::stop()
 {
 	buffer->Stop();
 }
 
-void Sound::SetVolume(long volume)
+void c_sound::set_volume(long volume)
 {
 	buffer->SetVolume(volume);
 }
 
-void Sound::Reset()
+void c_sound::reset()
 {
 	buffer->SetCurrentPosition((write_cursor + target/* + 3200*/) % bufferdesc.dwBufferBytes );
 	freq = default_freq;
@@ -147,12 +122,12 @@ void Sound::Reset()
 	first_b = 1;
 }
 
-double Sound::get_requested_freq()
+double c_sound::get_requested_freq()
 {
 	return requested_freq;
 }
 
-double Sound::calc_slope()
+double c_sound::calc_slope()
 {
 	int valid_values = 0;
 	int sx = 0;
@@ -177,9 +152,9 @@ double Sound::calc_slope()
 	return den == 0.0 ? 0.0 : num / den / 2.0;
 }
 
-int Sound::Sync()
+int c_sound::sync()
 {
-	int b = GetMaxWrite();
+	int b = get_max_write();
 
 	const double alpha = 2.0 / (15 + 1);
 
@@ -207,7 +182,7 @@ int Sound::Sync()
 
 		if (b > (8000*2)) //near underflow
 		{
-			Reset();
+			reset();
 			resets++;
 		}
 		else if (dir * slope < -1.0) //moving towards target at a slope > 1.0
@@ -235,7 +210,7 @@ int Sound::Sync()
 	return b;
 }
 
-void Sound::Clear()
+void c_sound::clear()
 {
 	LPBYTE lpbuf1 = NULL;
 	LPBYTE lpbuf2 = NULL;
@@ -249,7 +224,7 @@ void Sound::Clear()
 	buffer->Unlock(lpbuf1, dwsize1, NULL, NULL);
 }
 
-int Sound::Copy(const int32_t *src, int numSamples)
+int c_sound::copy(const int32_t *src, int numSamples)
 {
 	HRESULT hr;
 	LPBYTE lpbuf1 = NULL;
@@ -260,7 +235,7 @@ int Sound::Copy(const int32_t *src, int numSamples)
 	DWORD dwbyteswritten2 = 0;
 	int src_len = numSamples * wf.nBlockAlign;
 	//wait until there's enough room in the DirectSound buffer for the new samples
-	while (GetMaxWrite() < src_len);
+	while (get_max_write() < src_len);
 
 	// Lock the sound buffer
 	hr = buffer->Lock(write_cursor, (DWORD)src_len, (LPVOID *)&lpbuf1, &dwsize1, (LPVOID *)&lpbuf2, &dwsize2, 0);
@@ -281,7 +256,7 @@ int Sound::Copy(const int32_t *src, int numSamples)
 	return 0;		
 }
 
-int Sound::GetMaxWrite(void)
+int c_sound::get_max_write()
 {
 	DWORD playCursor;
 	buffer->GetCurrentPosition(&playCursor, NULL);

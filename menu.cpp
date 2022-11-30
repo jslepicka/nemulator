@@ -16,7 +16,7 @@ c_menu::c_menu()
 	text_spacing = text_height + .05;
 }
 
-c_menu::~c_menu(void)
+c_menu::~c_menu()
 {
 	for (int i = 0; i < menu_items->num_items; i++)
 		delete[] menu_items->items[i];

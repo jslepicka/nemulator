@@ -9,7 +9,7 @@ class c_qam :
 {
 public:
 	c_qam();
-	~c_qam(void);
+	~c_qam();
 	void init(void *params);
 	int update(double dt, int child_result, void *params);
 	void draw();

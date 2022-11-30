@@ -102,7 +102,7 @@ TexturePanel::TexturePanel(int rows, int columns)
 	scrollOffset = 0.0f;
 }
 
-TexturePanel::~TexturePanel(void)
+TexturePanel::~TexturePanel()
 {
 	for (auto &item : item_containers)
 	{

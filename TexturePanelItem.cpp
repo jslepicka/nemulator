@@ -1,11 +1,11 @@
 #include "TexturePanelItem.h"
 
-TexturePanelItem::TexturePanelItem(void)
+TexturePanelItem::TexturePanelItem()
 {
 	is_active = 0;
 }
 
-TexturePanelItem::~TexturePanelItem(void)
+TexturePanelItem::~TexturePanelItem()
 {
 }
 

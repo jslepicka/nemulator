@@ -5,7 +5,7 @@ class c_z80
 {
 public:
 	c_z80(c_sms *sms);
-	~c_z80(void);
+	~c_z80();
 	int emulate_frame();
 	int reset();
 	void execute(int cycles);

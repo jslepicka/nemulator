@@ -3,20 +3,19 @@ class c_nes;
 
 class c_cpu
 {
-
 public:
-	c_cpu(void);
-	~c_cpu(void);
-	int reset(void);
+	c_cpu();
+	~c_cpu();
+	int reset();
 	void execute_cycles(int numPpuCycles);
 	void execute3();
 	void execute_nmi();
-	void execute_irq(void);
-	int availableCycles;
-	void DoSpriteDMA(unsigned char* dst, int source_address);
+	void execute_irq();
+	int available_cycles;
+	void do_sprite_dma(unsigned char* dst, int source_address);
+	void execute_apu_dma();
 	c_nes* nes;
 	void clear_irq();
-	void ExecuteApuDMA();
 	int executed_cycles;
 	void clear_nmi();
 	void execute();
@@ -24,26 +23,6 @@ public:
 	void add_cycle();
 
 private:
-	int check_page_cross;
-	int nmi_delay;
-	int irq_delay;
-	int doApuDMA;
-	bool doIrq;
-	bool doNmi;
-	bool irqPending;
-	bool nmiPending;
-	int dmaPos;
-	unsigned char* dmaDst;
-	int dmaSrc;
-
-	int opcode;
-	int requiredCycles;
-	void ExecuteOpcode(void);
-	bool fetchOpcode;
-
-
-	static const int cycleTable[260];
-
 	unsigned char A;				//Accumulator
 	unsigned char X;				//X Index Register
 	unsigned char Y;				//Y Index Register
@@ -58,97 +37,123 @@ private:
 		bool N : 1;		//Sign
 	} SR;
 	unsigned char* S;	//Status Register
-	unsigned short PC;			//Program Counter
 	unsigned char SP;			//Stack Pointer
-	long executecount;
 	unsigned char M;				//Memory
-	unsigned short Address;
+	unsigned short PC;			//Program Counter
+	unsigned short address;
+	int nmi_delay;
+	int irq_delay;
+	int do_apu_dma;
+	bool do_irq;
+	bool do_nmi;
+	bool irq_pending;
+	bool nmi_pending;
+	int dma_pos;
+	unsigned char* dma_dst;
+	int dma_src;
 
-	void Branch(int Condition);
+	int opcode;
+	int required_cycles;
+	void execute_opcode();
+	bool fetch_opcode;
+
+	static const int cycle_table[260];
+
+	void branch(int Condition);
 	int cycles;
 
 	//Addressing modes
-	void Immediate(void);
-	void ZeroPage();
-	void ZeroPageX();
-	void ZeroPageY();
-	void Absolute();
-	void AbsoluteX();
-	void AbsoluteY();
-	void Indirect(void);
-	void IndirectX();
-	void IndirectY();
+	void immediate();
+	void zeropage();
+	void zeropage_x();
+	void zeropage_y();
+	void absolute();
+	void absolute_x();
+	void absolute_y();
+	void indirect();
+	void indirect_x();
+	void indirect_y();
 
-	void ZeroPage_ea();
-	void ZeroPageX_ea();
-	void ZeroPageY_ea();
-	void Absolute_ea();
-	void AbsoluteX_ea();
-	void AbsoluteY_ea();
-	void IndirectX_ea();
-	void IndirectY_ea();
+	//with page crossing check
+	void absolute_x_pc();
+	void absolute_y_pc();
+	void indirect_y_pc();
+
+	//load effective address for store ops
+	void zeropage_ea();
+	void zeropage_x_ea();
+	void zeropage_y_ea();
+	void absolute_ea();
+	void absolute_x_ea();
+	void absolute_y_ea();
+	void indirect_x_ea();
+	void indirect_y_ea();
 
 	//Group one instructions
-	void ADC(void);
-	void AND(void);
-	void CMP(void);
-	void EOR(void);
-	void LDA(void);
-	void ORA(void);
-	void SBC(void);
-	void STA(void);
+	void ADC();
+	void AND();
+	void CMP();
+	void EOR();
+	void LDA();
+	void ORA();
+	void SBC();
+	void STA();
 
 	//Group two instructions
-	void LSR(unsigned char& Operand, bool bRegister = false);
-	void ASL(unsigned char& Operand, bool bRegister = false);
-	void ROL(unsigned char& Operand, bool bRegister = false);
-	void ROR(unsigned char& Operand, bool bRegister = false);
-	void INC(void);
-	void DEC(void);
-	void LDX(void);
-	void STX(void);
-	void TAX(void);
-	void DEX(void);
-	void DEY(void);
-	void TXS(void);
-	void TSX(void);
+	void LSR();
+	void LSR_R(unsigned char& reg);
+	void ASL();
+	void ASL_R(unsigned char& reg);
+	void ROL();
+	void ROL_R(unsigned char& reg);
+	void ROR();
+	void ROR_R(unsigned char& reg);
+	void INC();
+	void DEC();
+	void LDX();
+	void STX();
+	void TAX();
+	void DEX();
+	void DEY();
+	void TXS();
+	void TSX();
 
 	//Group three instructions
-	void LDY(void);
-	void STY(void);
-	void CPY(void);
-	void CPX(void);
-	void INX(void);
-	void INY(void);
-	void BCC(void);
-	void BCS(void);
-	void BEQ(void);
-	void BMI(void);
-	void BNE(void);
-	void BPL(void);
-	void BVC(void);
-	void BVS(void);
-	void CLC(void);
-	void SEC(void);
-	void CLD(void);
-	void SED(void);
-	void CLI(void);
-	void SEI(void);
-	void CLV(void);
-	void BRK(void);
-	void JSR(void);
-	void PHA(void);
-	void PHP(void);
-	void PLA(void);
-	void PLP(void);
-	void JMP(void);
-	void BIT(void);
-	void RTI(void);
-	void TAY(void);
-	void TYA(void);
-	void TXA(void);
-	void RTS(void);
-	void SKB(void);
+	void LDY();
+	void STY();
+	void CPY();
+	void CPX();
+	void INX();
+	void INY();
+	void BCC();
+	void BCS();
+	void BEQ();
+	void BMI();
+	void BNE();
+	void BPL();
+	void BVC();
+	void BVS();
+	void CLC();
+	void SEC();
+	void CLD();
+	void SED();
+	void CLI();
+	void SEI();
+	void CLV();
+	void BRK();
+	void JSR();
+	void PHA();
+	void PHP();
+	void PLA();
+	void PLP();
+	void JMP();
+	void BIT();
+	void RTI();
+	void TAY();
+	void TYA();
+	void TXA();
+	void RTS();
+	void SKB();
 
 	//illegal
 	void ALR();
@@ -157,7 +162,6 @@ private:
 	void ISC();
 	void LAX();
 	void SAX();
-
 
 	int irq_checked();
 };

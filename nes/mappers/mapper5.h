@@ -10,7 +10,7 @@ public:
 	~c_mapper5();
 	void WriteByte(unsigned short address, unsigned char value);
 	unsigned char ReadByte(unsigned short address);
-	void reset(void);
+	void reset();
 	void clock(int cycles);
 	float mix_audio(float sample);
 private:

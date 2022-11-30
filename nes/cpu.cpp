@@ -1,25 +1,3 @@
-///////////////////////////////////////////////////////////////////////////////////
-//                                                                               //
-//   nemulator (an NES emulator)                                                 //
-//                                                                               //
-//   Copyright (C) 2003-2009 James Slepicka <james@nemulator.com>                //
-//                                                                               //
-//   This program is free software; you can redistribute it and/or modify        //
-//   it under the terms of the GNU General Public License as published by        //
-//   the Free Software Foundation; either version 2 of the License, or           //
-//   (at your option) any later version.                                         //
-//                                                                               //
-//   This program is distributed in the hope that it will be useful,             //
-//   but WITHOUT ANY WARRANTY; without even the implied warranty of              //
-//   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               //
-//   GNU General Public License for more details.                                //
-//                                                                               //
-//   You should have received a copy of the GNU General Public License           //
-//   along with this program; if not, write to the Free Software                 //
-//   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA   //
-//                                                                               //
-///////////////////////////////////////////////////////////////////////////////////
-
 #include "cpu.h"
 #include "mapper.h"
 #include "nes.h"
@@ -32,39 +10,14 @@
 
 #define INLINE __forceinline
 //#define INLINE
-//#define MAKEWORD(a,b) (((a) & 0xFF) | (((b) & 0xFF) << 8))
-#define PUSH(x) nes->WriteByte(SP-- | 0x100, x)
-#define POP nes->ReadByte(++SP | 0x100)
+#define PUSH(x) nes->write_byte(SP-- | 0x100, x)
+#define POP nes->read_byte(++SP | 0x100)
 #define SETN(x) SR.N = (x & 0x80) == 0x80 ? true : false
 #define SETZ(x) SR.Z = x == 0 ? true : false
-//(((PC ^ temp) & 0xFF00) != 0) * 3;
-#define CHECK_PAGE_CROSS2(a, b) requiredCycles += ((((a^b)&0xFF00) != 0) & check_page_cross) * 3
-//#define HIBYTE(a) (((a) >> 8) & 0xFF)
-//#define LOBYTE(a) ((a) & 0xFF)
-
-//Cycle counts.  Note: multiplied by 3 to measure in PPU-cycle time
-//const int c_cpu::cycleTable[] = {
-//        21, 18,  0,  0,  0,  9, 15,  0,  9,  6,  6,  0,  0, 12, 18,  0, //0F
-//         6, 15,  0,  0,  0, 12, 18,  0,  6, 12,  0,  0,  0, 12, 21,  0, //1F
-//        18, 18,  0,  0,  9,  9, 15,  0, 12,  6,  6,  0, 12, 12, 18,  0, //2F
-//         6, 15,  0,  0,  0, 12, 18,  0,  6, 12,  0,  0,  0, 12, 21,  0, //3F
-//        18, 18,  0,  0,  0,  9, 15,  0,  9,  6,  6,  0,  9, 12, 18,  0, //4F
-//         6, 15,  0,  0,  0, 12, 18,  0,  6, 12,  0,  0,  0, 12, 21,  0, //5F
-//        18, 18,  0,  0,  0,  9, 15,  0, 12,  6,  6,  0, 15, 12, 18,  0, //6F
-//         6, 15,  0,  0,  0, 12, 18,  0,  6, 12,  0,  0,  0, 12, 21,  0, //7F
-//         0, 18,  0,  0,  9,  9,  9,  0,  6,  6,  6,  0, 12, 12, 12,  0, //8F
-//         6, 18,  0,  0, 12, 12, 12,  0,  6, 15,  6,  0,  0, 15,  0,  0, //9F
-//         6, 18,  6,  0,  9,  9,  9,  0,  6,  6,  6,  0, 12, 12, 12,  0, //AF
-//         6, 15,  0, 15, 12, 12, 12,  0,  6, 12,  6,  0, 12, 12, 12,  0, //BF
-//         6, 18,  0,  0,  9,  9, 15,  0,  6,  6,  6,  0, 12, 12, 18,  0, //CF
-//         6, 15,  0,  0,  0, 12, 18,  0,  6, 12,  0,  0,  0, 12, 21,  0, //DF
-//         6, 18,  0,  0,  9,  9, 15,  0,  6,  6,  6,  0, 12, 12, 18,  0, //EF
-//         6, 15,  0,  0,  0, 12, 18,  0,  6, 12,  0,  0,  0, 12, 21,  0, //FF
-//        21, 21,  6, 12
-//};
+#define CHECK_PAGE_CROSS2(a, b) required_cycles += (((a^b)&0xFF00) != 0) * 3
 
 //replaced all zeros with 3 so that invalid opcodes don't cause cpu loop to spin
-const int c_cpu::cycleTable[] = {
+const int c_cpu::cycle_table[] = {
 		21, 18,  3,  3,  3,  9, 15,  3,  9,  6,  6,  3,  3, 12, 18,  3, //0F
 		 6, 15,  3,  3,  3, 12, 18,  3,  6, 12,  3,  3,  3, 12, 21,  3, //1F
 		18, 18,  3,  3,  9,  9, 15,  3, 12,  6,  6,  3, 12, 12, 18,  3, //2F
@@ -85,21 +38,21 @@ const int c_cpu::cycleTable[] = {
 };
 
 
-c_cpu::c_cpu(void)
+c_cpu::c_cpu()
 {
 	nes = 0;
 }
 
-c_cpu::~c_cpu(void)
+c_cpu::~c_cpu()
 {
 }
 
 void c_cpu::add_cycle()
 {
-	availableCycles++;
+	available_cycles++;
 }
 
-int c_cpu::reset(void)
+int c_cpu::reset()
 {
 	cycles = 0;
 	nmi_delay = 0;
@@ -108,21 +61,20 @@ int c_cpu::reset(void)
 	*S = 0;
 	SR.Unused = 1;
 	SR.I = 1;
-	doNmi = false;
-	doIrq = false;
-	availableCycles = 0;
-	fetchOpcode = true;
+	do_nmi = false;
+	do_irq = false;
+	available_cycles = 0;
+	fetch_opcode = true;
 	opcode = 0;
-	requiredCycles = 0;
-	irqPending = false;
-	nmiPending = false;
-	PC = MAKEWORD(nes->ReadByte(0xFFFC), nes->ReadByte(0xFFFD));
+	required_cycles = 0;
+	irq_pending = false;
+	nmi_pending = false;
+	PC = MAKEWORD(nes->read_byte(0xFFFC), nes->read_byte(0xFFFD));
 	SP = 0xFF;
-	executecount = 0;
-	dmaDst = 0;
-	dmaSrc = 0;
-	dmaPos = 0;
-	doApuDMA = 0;
+	dma_dst = 0;
+	dma_src = 0;
+	dma_pos = 0;
+	do_apu_dma = 0;
 	odd_cycle = 0;
 	return 1;
 }
@@ -131,42 +83,42 @@ void c_cpu::execute()
 {
 	for (;;)
 	{
-		if (fetchOpcode)
+		if (fetch_opcode)
 		{
-			if (doApuDMA)
+			if (do_apu_dma)
 			{
 				opcode = 0x103;
-				doApuDMA--;
+				do_apu_dma--;
 			}
-			else if (dmaPos)
+			else if (dma_pos)
 			{
 				opcode = 0x102;
 			}
-			else if (doNmi && nmi_delay == 0)
+			else if (do_nmi && nmi_delay == 0)
 			{
 				opcode = 0x100;
-				doNmi = false;
+				do_nmi = false;
 				nmi_delay = 0;
 			}
-			else if (doIrq && irq_delay == 0 && !SR.I)
+			else if (do_irq && irq_delay == 0 && !SR.I)
 			{
 				opcode = 0x101;
 				irq_delay = 0;
 			}
 			else {
-				opcode = nes->ReadByte(PC++);
+				opcode = nes->read_byte(PC++);
 			}
 			irq_delay = 0;
 			nmi_delay = 0;
-			requiredCycles += cycleTable[opcode];
-			fetchOpcode = false;
+			required_cycles += cycle_table[opcode];
+			fetch_opcode = false;
 		}
-		if (requiredCycles <= availableCycles)
+		if (required_cycles <= available_cycles)
 		{
-			availableCycles -= requiredCycles;
-			requiredCycles = 0;
-			fetchOpcode = true;
-			ExecuteOpcode();
+			available_cycles -= required_cycles;
+			required_cycles = 0;
+			fetch_opcode = true;
+			execute_opcode();
 		}
 		else
 			break;
@@ -175,189 +127,188 @@ void c_cpu::execute()
 
 void c_cpu::execute3()
 {
-	availableCycles += 3;
+	available_cycles += 3;
 	execute();
 }
 
 void c_cpu::execute_cycles(int numPpuCycles)
 {
-	availableCycles += numPpuCycles;
+	available_cycles += numPpuCycles;
 	execute();
 }
 
-void c_cpu::DoSpriteDMA(unsigned char* dst, int source_address)
+void c_cpu::do_sprite_dma(unsigned char* dst, int source_address)
 {
-	dmaDst = dst;
-	dmaSrc = source_address;
-	dmaPos = 256;
+	dma_dst = dst;
+	dma_src = source_address;
+	dma_pos = 256;
 }
 
-void c_cpu::ExecuteOpcode(void)
+void c_cpu::execute_opcode()
 {
 	int sl = nes->ppu->current_scanline;
 	int c = nes->ppu->current_cycle;
-	check_page_cross = 0;
 	switch (opcode)
 	{
 	case 0x00: BRK(); break;
-	case 0x01: IndirectX(); ORA(); break;
-	case 0x05: ZeroPage(); ORA(); break;
-	case 0x06: ZeroPage(); ASL(M); break;
+	case 0x01: indirect_x(); ORA(); break;
+	case 0x05: zeropage(); ORA(); break;
+	case 0x06: zeropage(); ASL(); break;
 	case 0x08: PHP(); break;
-	case 0x09: Immediate(); ORA(); break;
-	case 0x0A: ASL(A, true); break;
-	case 0x0D: Absolute(); ORA(); break;
-	case 0x0E: Absolute(); ASL(M); break;
+	case 0x09: immediate(); ORA(); break;
+	case 0x0A: ASL_R(A); break;
+	case 0x0D: absolute(); ORA(); break;
+	case 0x0E: absolute(); ASL(); break;
 	case 0x10: BPL(); break;
-	case 0x11: check_page_cross = 1; IndirectY(); ORA(); break;
-	case 0x15: ZeroPageX(); ORA(); break;
-	case 0x16: ZeroPageX(); ASL(M); break;
+	case 0x11: indirect_y_pc(); ORA(); break;
+	case 0x15: zeropage_x(); ORA(); break;
+	case 0x16: zeropage_x(); ASL(); break;
 	case 0x18: CLC(); break;
-	case 0x19: check_page_cross = 1; AbsoluteY(); ORA(); break;
-	case 0x1D: check_page_cross = 1; AbsoluteX(); ORA(); break;
-	case 0x1E: AbsoluteX(); ASL(M); break;
-	case 0x20: Absolute(); JSR(); break;
-	case 0x21: IndirectX(); AND(); break;
-	case 0x24: ZeroPage(); BIT(); break;
-	case 0x25: ZeroPage(); AND(); break;
-	case 0x26: ZeroPage(); ROL(M); break;
+	case 0x19: absolute_y_pc(); ORA(); break;
+	case 0x1D: absolute_x_pc(); ORA(); break;
+	case 0x1E: absolute_x(); ASL(); break;
+	case 0x20: absolute(); JSR(); break;
+	case 0x21: indirect_x(); AND(); break;
+	case 0x24: zeropage(); BIT(); break;
+	case 0x25: zeropage(); AND(); break;
+	case 0x26: zeropage(); ROL(); break;
 	case 0x28: PLP(); break;
-	case 0x29: Immediate(); AND(); break;
-	case 0x2A: ROL(A, true); break;
-	case 0x2C: Absolute(); BIT(); break;
-	case 0x2D: Absolute(); AND(); break;
-	case 0x2E: Absolute(); ROL(M); break;
+	case 0x29: immediate(); AND(); break;
+	case 0x2A: ROL_R(A); break;
+	case 0x2C: absolute(); BIT(); break;
+	case 0x2D: absolute(); AND(); break;
+	case 0x2E: absolute(); ROL(); break;
 	case 0x30: BMI(); break;
-	case 0x31: check_page_cross = 1; IndirectY(); AND(); break;
-	case 0x35: ZeroPageX(); AND(); break;
-	case 0x36: ZeroPageX(); ROL(M); break;
+	case 0x31: indirect_y_pc(); AND(); break;
+	case 0x35: zeropage_x(); AND(); break;
+	case 0x36: zeropage_x(); ROL(); break;
 	case 0x38: SEC(); break;
-	case 0x39: check_page_cross = 1; AbsoluteY(); AND(); break;
-	case 0x3D: check_page_cross = 1; AbsoluteX(); AND(); break;
-	case 0x3E: AbsoluteX(); ROL(M); break;
+	case 0x39: absolute_y_pc(); AND(); break;
+	case 0x3D: absolute_x_pc(); AND(); break;
+	case 0x3E: absolute_x(); ROL(); break;
 	case 0x40: RTI(); break;
-	case 0x41: IndirectX(); EOR(); break;
-	case 0x45: ZeroPage(); EOR(); break;
-	case 0x46: ZeroPage(); LSR(M); break;
+	case 0x41: indirect_x(); EOR(); break;
+	case 0x45: zeropage(); EOR(); break;
+	case 0x46: zeropage(); LSR(); break;
 	case 0x48: PHA(); break;
-	case 0x49: Immediate(); EOR(); break;
-	case 0x4A: LSR(A, true); break;
+	case 0x49: immediate(); EOR(); break;
+	case 0x4A: LSR_R(A); break;
 	case 0x4B: ALR(); break;
-	case 0x4C: Absolute(); JMP(); break;
-	case 0x4D: Absolute(); EOR(); break;
-	case 0x4E: Absolute(); LSR(M); break;
+	case 0x4C: absolute(); JMP(); break;
+	case 0x4D: absolute(); EOR(); break;
+	case 0x4E: absolute(); LSR(); break;
 	case 0x50: BVC(); break;
-	case 0x51: check_page_cross = 1; IndirectY(); EOR(); break;
-	case 0x55: ZeroPageX(); EOR(); break;
-	case 0x56: ZeroPageX(); LSR(M); break;
+	case 0x51: indirect_y_pc(); EOR(); break;
+	case 0x55: zeropage_x(); EOR(); break;
+	case 0x56: zeropage_x(); LSR(); break;
 	case 0x58: CLI(); break;
-	case 0x59: check_page_cross = 1; AbsoluteY(); EOR(); break;
-	case 0x5D: check_page_cross = 1; AbsoluteX(); EOR(); break;
-	case 0x5E: AbsoluteX(); LSR(M); break;
+	case 0x59: absolute_y_pc(); EOR(); break;
+	case 0x5D: absolute_x_pc(); EOR(); break;
+	case 0x5E: absolute_x(); LSR(); break;
 	case 0x60: RTS(); break;
-	case 0x61: IndirectX(); ADC(); break;
-	case 0x65: ZeroPage(); ADC(); break;
-	case 0x66: ZeroPage(); ROR(M); break;
+	case 0x61: indirect_x(); ADC(); break;
+	case 0x65: zeropage(); ADC(); break;
+	case 0x66: zeropage(); ROR(); break;
 	case 0x68: PLA(); break;
-	case 0x69: Immediate(); ADC(); break;
-	case 0x6A: ROR(A, true); break;
-	case 0x6C: Indirect(); JMP(); break;
-	case 0x6D: Absolute(); ADC(); break;
-	case 0x6E: Absolute(); ROR(M); break;
+	case 0x69: immediate(); ADC(); break;
+	case 0x6A: ROR_R(A); break;
+	case 0x6C: indirect(); JMP(); break;
+	case 0x6D: absolute(); ADC(); break;
+	case 0x6E: absolute(); ROR(); break;
 	case 0x70: BVS(); break;
-	case 0x71: check_page_cross = 1; IndirectY(); ADC(); break;
-	case 0x75: ZeroPageX(); ADC(); break;
-	case 0x76: ZeroPageX(); ROR(M); break;
+	case 0x71: indirect_y_pc(); ADC(); break;
+	case 0x75: zeropage_x(); ADC(); break;
+	case 0x76: zeropage_x(); ROR(); break;
 	case 0x78: SEI(); break;
-	case 0x79: check_page_cross = 1; AbsoluteY(); ADC(); break;
-	case 0x7D: check_page_cross = 1; AbsoluteX(); ADC(); break;
-	case 0x7E: AbsoluteX(); ROR(M); break;
-	case 0x81: IndirectX_ea(); STA(); break;
-	case 0x84: ZeroPage_ea(); STY(); break;
-	case 0x85: ZeroPage_ea(); STA(); break;
-	case 0x86: ZeroPage_ea(); STX(); break;
+	case 0x79: absolute_y_pc(); ADC(); break;
+	case 0x7D: absolute_x_pc(); ADC(); break;
+	case 0x7E: absolute_x(); ROR(); break;
+	case 0x81: indirect_x_ea(); STA(); break;
+	case 0x84: zeropage_ea(); STY(); break;
+	case 0x85: zeropage_ea(); STA(); break;
+	case 0x86: zeropage_ea(); STX(); break;
 	case 0x88: DEY(); break;
 	case 0x89: SKB(); break;
 	case 0x8A: TXA(); break;
-	case 0x8C: Absolute_ea(); STY(); break;
-	case 0x8D: Absolute_ea(); STA(); break;
-	case 0x8E: Absolute_ea(); STX(); break;
-	case 0x8F: Absolute_ea(); SAX(); break;
+	case 0x8C: absolute_ea(); STY(); break;
+	case 0x8D: absolute_ea(); STA(); break;
+	case 0x8E: absolute_ea(); STX(); break;
+	case 0x8F: absolute_ea(); SAX(); break;
 	case 0x90: BCC(); break;
-	case 0x91: IndirectY_ea(); STA(); break;
-	case 0x94: ZeroPageX_ea(); STY(); break;
-	case 0x95: ZeroPageX_ea(); STA(); break;
-	case 0x96: ZeroPageY_ea(); STX(); break;
+	case 0x91: indirect_y_ea(); STA(); break;
+	case 0x94: zeropage_x_ea(); STY(); break;
+	case 0x95: zeropage_x_ea(); STA(); break;
+	case 0x96: zeropage_y_ea(); STX(); break;
 	case 0x98: TYA(); break;
-	case 0x99: AbsoluteY_ea(); STA(); break;
+	case 0x99: absolute_y_ea(); STA(); break;
 	case 0x9A: TXS(); break;
-	case 0x9D: AbsoluteX_ea(); STA(); break;
-	case 0xA0: Immediate(); LDY(); break;
-	case 0xA1: IndirectX(); LDA(); break;
-	case 0xA2: Immediate(); LDX(); break;
-	case 0xA4: ZeroPage(); LDY(); break;
-	case 0xA5: ZeroPage(); LDA(); break;
-	case 0xA6: ZeroPage(); LDX(); break;
-	case 0xA7: ZeroPage(); LAX(); break;
+	case 0x9D: absolute_x_ea(); STA(); break;
+	case 0xA0: immediate(); LDY(); break;
+	case 0xA1: indirect_x(); LDA(); break;
+	case 0xA2: immediate(); LDX(); break;
+	case 0xA4: zeropage(); LDY(); break;
+	case 0xA5: zeropage(); LDA(); break;
+	case 0xA6: zeropage(); LDX(); break;
+	case 0xA7: zeropage(); LAX(); break;
 	case 0xA8: TAY(); break;
-	case 0xA9: Immediate(); LDA(); break;
+	case 0xA9: immediate(); LDA(); break;
 	case 0xAA: TAX(); break;
-	case 0xAC: Absolute(); LDY(); break;
-	case 0xAD: Absolute(); LDA(); break;
-	case 0xAE: Absolute(); LDX(); break;
+	case 0xAC: absolute(); LDY(); break;
+	case 0xAD: absolute(); LDA(); break;
+	case 0xAE: absolute(); LDX(); break;
 	case 0xB0: BCS(); break;
-	case 0xB1: check_page_cross = 1; IndirectY(); LDA(); break;
-	case 0xB3: check_page_cross = 1; IndirectY(); LAX(); break;
-	case 0xB4: ZeroPageX(); LDY(); break;
-	case 0xB5: ZeroPageX(); LDA(); break;
-	case 0xB6: ZeroPageY(); LDX(); break;
+	case 0xB1: indirect_y_pc(); LDA(); break;
+	case 0xB3: indirect_y_pc(); LAX(); break;
+	case 0xB4: zeropage_x(); LDY(); break;
+	case 0xB5: zeropage_x(); LDA(); break;
+	case 0xB6: zeropage_y(); LDX(); break;
 	case 0xB8: CLV(); break;
-	case 0xB9: check_page_cross = 1; AbsoluteY(); LDA(); break;
+	case 0xB9: absolute_y_pc(); LDA(); break;
 	case 0xBA: TSX(); break;
-	case 0xBC: check_page_cross = 1; AbsoluteX(); LDY(); break;
-	case 0xBD: check_page_cross = 1; AbsoluteX(); LDA(); break;
-	case 0xBE: check_page_cross = 1; AbsoluteY(); LDX(); break;
-	case 0xC0: Immediate(); CPY(); break;
-	case 0xC1: IndirectX(); CMP(); break;
-	case 0xC4: ZeroPage(); CPY(); break;
-	case 0xC5: ZeroPage(); CMP(); break;
-	case 0xC6: ZeroPage(); DEC(); break;
+	case 0xBC: absolute_x_pc(); LDY(); break;
+	case 0xBD: absolute_x_pc(); LDA(); break;
+	case 0xBE: absolute_y_pc(); LDX(); break;
+	case 0xC0: immediate(); CPY(); break;
+	case 0xC1: indirect_x(); CMP(); break;
+	case 0xC4: zeropage(); CPY(); break;
+	case 0xC5: zeropage(); CMP(); break;
+	case 0xC6: zeropage(); DEC(); break;
 	case 0xC8: INY(); break;
-	case 0xC9: Immediate(); CMP(); break;
+	case 0xC9: immediate(); CMP(); break;
 	case 0xCA: DEX(); break;
 	case 0xCB: AXS(); break;
-	case 0xCC: Absolute(); CPY(); break;
-	case 0xCD: Absolute(); CMP(); break;
-	case 0xCE: Absolute(); DEC(); break;
+	case 0xCC: absolute(); CPY(); break;
+	case 0xCD: absolute(); CMP(); break;
+	case 0xCE: absolute(); DEC(); break;
 	case 0xD0: BNE(); break;
-	case 0xD1: check_page_cross = true; IndirectY(); CMP(); break;
-	case 0xD5: ZeroPageX(); CMP(); break;
-	case 0xD6: ZeroPageX(); DEC(); break;
+	case 0xD1: indirect_y_pc(); CMP(); break;
+	case 0xD5: zeropage_x(); CMP(); break;
+	case 0xD6: zeropage_x(); DEC(); break;
 	case 0xD8: CLD(); break;
-	case 0xD9: check_page_cross = true; AbsoluteY(); CMP(); break;
-	case 0xDB: AbsoluteY(); DCP(); break;
-	case 0xDD: check_page_cross = true; AbsoluteX(); CMP(); break;
-	case 0xDE: AbsoluteX(); DEC(); break;
-	case 0xE0: Immediate(); CPX(); break;
-	case 0xE1: IndirectX(); SBC(); break;
-	case 0xE4: ZeroPage(); CPX(); break;
-	case 0xE5: ZeroPage(); SBC(); break;
-	case 0xE6: ZeroPage(); INC(); break;
+	case 0xD9: absolute_y_pc(); CMP(); break;
+	case 0xDB: absolute_y(); DCP(); break;
+	case 0xDD: absolute_x_pc(); CMP(); break;
+	case 0xDE: absolute_x(); DEC(); break;
+	case 0xE0: immediate(); CPX(); break;
+	case 0xE1: indirect_x(); SBC(); break;
+	case 0xE4: zeropage(); CPX(); break;
+	case 0xE5: zeropage(); SBC(); break;
+	case 0xE6: zeropage(); INC(); break;
 	case 0xE8: INX(); break;
-	case 0xE9: Immediate(); SBC(); break;
+	case 0xE9: immediate(); SBC(); break;
 	case 0xEA: break;
-	case 0xEC: Absolute(); CPX(); break;
-	case 0xED: Absolute(); SBC(); break;
-	case 0xEE: Absolute(); INC(); break;
+	case 0xEC: absolute(); CPX(); break;
+	case 0xED: absolute(); SBC(); break;
+	case 0xEE: absolute(); INC(); break;
 	case 0xF0: BEQ(); break;
-	case 0xF1: check_page_cross = 1; IndirectY(); SBC(); break;
-	case 0xF5: ZeroPageX(); SBC(); break;
-	case 0xF6: ZeroPageX(); INC(); break;
+	case 0xF1: indirect_y_pc(); SBC(); break;
+	case 0xF5: zeropage_x(); SBC(); break;
+	case 0xF6: zeropage_x(); INC(); break;
 	case 0xF8: SED(); break;
-	case 0xF9: check_page_cross = 1; AbsoluteY(); SBC(); break;
-	case 0xFB: AbsoluteY(); ISC(); break;
-	case 0xFD: check_page_cross = 1; AbsoluteX(); SBC(); break;
-	case 0xFE: AbsoluteX(); INC(); break;
+	case 0xF9: absolute_y_pc(); SBC(); break;
+	case 0xFB: absolute_y(); ISC(); break;
+	case 0xFD: absolute_x_pc(); SBC(); break;
+	case 0xFE: absolute_x(); INC(); break;
 	case 0x100: //NMI
 		//Battletoads debugging
 	//{
@@ -370,7 +321,7 @@ void c_cpu::ExecuteOpcode(void)
 		SR.B = false;
 		PUSH(*S);
 		SR.I = true;
-		PC = MAKEWORD(nes->ReadByte(0xFFFA), nes->ReadByte(0xFFFB));
+		PC = MAKEWORD(nes->read_byte(0xFFFA), nes->read_byte(0xFFFB));
 		break;
 	case 0x101: //IRQ
 		PUSH(HIBYTE(PC));
@@ -378,18 +329,18 @@ void c_cpu::ExecuteOpcode(void)
 		SR.B = false;
 		PUSH(*S);
 		SR.I = true;
-		PC = MAKEWORD(nes->ReadByte(0xFFFE), nes->ReadByte(0xFFFF));
+		PC = MAKEWORD(nes->read_byte(0xFFFE), nes->read_byte(0xFFFF));
 		break;
 	case 0x102: //Sprite DMA
 	{
-		*(dmaDst++) = nes->ReadByte(dmaSrc++);
-		dmaPos--;
+		*(dma_dst++) = nes->read_byte(dma_src++);
+		dma_pos--;
 
 		//Sprite DMA burns 513 CPU cycles, so after the last DMA, burn another one.
-		if (dmaPos == 0) {
-			requiredCycles += 3;
+		if (dma_pos == 0) {
+			required_cycles += 3;
 			if (odd_cycle) {
-				requiredCycles += 3;
+				required_cycles += 3;
 			}
 		}
 	}
@@ -408,12 +359,12 @@ void c_cpu::ExecuteOpcode(void)
 	}
 }
 
-void c_cpu::ExecuteApuDMA()
+void c_cpu::execute_apu_dma()
 {
 	//doApuDMA++;
 	//if (doApuDMA > 1)
 	//	int x = 1;
-	requiredCycles += 12;
+	required_cycles += 12;
 }
 
 int c_cpu::irq_checked()
@@ -421,10 +372,10 @@ int c_cpu::irq_checked()
 	//irqs are checked 2 cycles before an opcode completes
 	//if this check has already occured, return 1
 	//return (fetchOpcode || ((requiredCycles > availableCycles) && ((requiredCycles - availableCycles) < 6)));
-	if (dmaPos) {
+	if (dma_pos) {
 		int x = 1;
 	}
-	if (fetchOpcode || availableCycles > (requiredCycles - 3))
+	if (fetch_opcode || available_cycles > (required_cycles - 3))
 		return 1;
 	else
 		return 0;
@@ -435,197 +386,221 @@ void c_cpu::execute_nmi()
 	int sl = nes->ppu->current_scanline;
 	int c = nes->ppu->current_cycle;
 	nmi_delay = irq_checked();
-	doNmi = true;
+	do_nmi = true;
 }
 
-void c_cpu::execute_irq(void)
+void c_cpu::execute_irq()
 {
 	irq_delay = irq_checked();
-	doIrq = true;
+	do_irq = true;
 }
 
 void c_cpu::clear_irq()
 {
-	doIrq = false;
+	do_irq = false;
 	nmi_delay = 0;
 }
 
 void c_cpu::clear_nmi()
 {
-	if (doNmi) {
+	if (do_nmi) {
 		int x = 1;
 	}
-	doNmi = false;
+	do_nmi = false;
 }
 
-INLINE void c_cpu::Immediate(void)
+INLINE void c_cpu::immediate()
 {
-	M = nes->ReadByte(PC++);
+	M = nes->read_byte(PC++);
 }
 
-INLINE void c_cpu::ZeroPage()
+INLINE void c_cpu::zeropage()
 {
-	Address = nes->ReadByte(PC++);
-	M = nes->ReadByte(Address);
+	address = nes->read_byte(PC++);
+	M = nes->read_byte(address);
 }
 
-INLINE void c_cpu::ZeroPage_ea()
+INLINE void c_cpu::zeropage_ea()
 {
-	Address = nes->ReadByte(PC++);
+	address = nes->read_byte(PC++);
 }
 
-INLINE void c_cpu::ZeroPageX()
+INLINE void c_cpu::zeropage_x()
 {
-	Address = nes->ReadByte(PC++);
-	Address += X;
-	Address &= 0xFF;
-	M = nes->ReadByte(Address);
+	address = nes->read_byte(PC++);
+	address += X;
+	address &= 0xFF;
+	M = nes->read_byte(address);
 }
 
-INLINE void c_cpu::ZeroPageX_ea()
+INLINE void c_cpu::zeropage_x_ea()
 {
-	Address = nes->ReadByte(PC++);
-	Address += X;
-	Address &= 0xFF;
+	address = nes->read_byte(PC++);
+	address += X;
+	address &= 0xFF;
 }
 
-INLINE void c_cpu::ZeroPageY()
+INLINE void c_cpu::zeropage_y()
 {
-	Address = nes->ReadByte(PC++);
-	Address += Y;
-	Address &= 0xFF;
-	M = nes->ReadByte(Address);
+	address = nes->read_byte(PC++);
+	address += Y;
+	address &= 0xFF;
+	M = nes->read_byte(address);
 }
 
-INLINE void c_cpu::ZeroPageY_ea()
+INLINE void c_cpu::zeropage_y_ea()
 {
-	Address = nes->ReadByte(PC++);
-	Address += Y;
-	Address &= 0xFF;
+	address = nes->read_byte(PC++);
+	address += Y;
+	address &= 0xFF;
 }
 
-INLINE void c_cpu::Absolute()
+INLINE void c_cpu::absolute()
 {
-	unsigned char lo = nes->ReadByte(PC++);
-	unsigned char hi = nes->ReadByte(PC++);
-	Address = MAKEWORD(lo, hi);
-	M = nes->ReadByte(Address);
+	unsigned char lo = nes->read_byte(PC++);
+	unsigned char hi = nes->read_byte(PC++);
+	address = MAKEWORD(lo, hi);
+	M = nes->read_byte(address);
 }
 
-INLINE void c_cpu::Absolute_ea()
+INLINE void c_cpu::absolute_ea()
 {
-	unsigned char lo = nes->ReadByte(PC++);
-	unsigned char hi = nes->ReadByte(PC++);
-	Address = MAKEWORD(lo, hi);
+	unsigned char lo = nes->read_byte(PC++);
+	unsigned char hi = nes->read_byte(PC++);
+	address = MAKEWORD(lo, hi);
 }
 
-INLINE void c_cpu::AbsoluteX()
+INLINE void c_cpu::absolute_x()
 {
-	unsigned char lo = nes->ReadByte(PC++);
-	unsigned char hi = nes->ReadByte(PC++);
-	Address = MAKEWORD(lo, hi);
-	int temp = Address + X;
-	CHECK_PAGE_CROSS2(Address, temp);
-	Address = temp;
-	M = nes->ReadByte(Address);
+	unsigned char lo = nes->read_byte(PC++);
+	unsigned char hi = nes->read_byte(PC++);
+	address = MAKEWORD(lo, hi);
+	int temp = address + X;
+	address = temp;
+	M = nes->read_byte(address);
 }
 
-INLINE void c_cpu::AbsoluteX_ea()
+INLINE void c_cpu::absolute_x_pc()
 {
-	unsigned char lo = nes->ReadByte(PC++);
-	unsigned char hi = nes->ReadByte(PC++);
-	Address = MAKEWORD(lo, hi);
-	int temp = Address + X;
-	CHECK_PAGE_CROSS2(Address, temp);
-	Address = temp;
+	unsigned char lo = nes->read_byte(PC++);
+	unsigned char hi = nes->read_byte(PC++);
+	address = MAKEWORD(lo, hi);
+	int temp = address + X;
+	CHECK_PAGE_CROSS2(address, temp);
+	address = temp;
+	M = nes->read_byte(address);
 }
 
-INLINE void c_cpu::AbsoluteY()
+INLINE void c_cpu::absolute_x_ea()
 {
-	unsigned char lo = nes->ReadByte(PC++);
-	unsigned char hi = nes->ReadByte(PC++);
-	Address = MAKEWORD(lo, hi);
-	int temp = Address + Y;
-	CHECK_PAGE_CROSS2(Address, temp);
-	Address = temp;
-	M = nes->ReadByte(Address);
+	unsigned char lo = nes->read_byte(PC++);
+	unsigned char hi = nes->read_byte(PC++);
+	address = MAKEWORD(lo, hi);
+	int temp = address + X;
+	address = temp;
 }
 
-INLINE void c_cpu::AbsoluteY_ea()
+INLINE void c_cpu::absolute_y()
 {
-	unsigned char lo = nes->ReadByte(PC++);
-	unsigned char hi = nes->ReadByte(PC++);
-	Address = MAKEWORD(lo, hi);
-	int temp = Address + Y;
-	CHECK_PAGE_CROSS2(Address, temp);
-	Address = temp;
+	unsigned char lo = nes->read_byte(PC++);
+	unsigned char hi = nes->read_byte(PC++);
+	address = MAKEWORD(lo, hi);
+	int temp = address + Y;
+	address = temp;
+	M = nes->read_byte(address);
 }
 
-INLINE void c_cpu::Indirect(void)	//For indirect jmp
+INLINE void c_cpu::absolute_y_pc()
 {
-	unsigned char lo = nes->ReadByte(PC++);
-	unsigned char hi = nes->ReadByte(PC++);
+	unsigned char lo = nes->read_byte(PC++);
+	unsigned char hi = nes->read_byte(PC++);
+	address = MAKEWORD(lo, hi);
+	int temp = address + Y;
+	CHECK_PAGE_CROSS2(address, temp);
+	address = temp;
+	M = nes->read_byte(address);
+}
+
+INLINE void c_cpu::absolute_y_ea()
+{
+	unsigned char lo = nes->read_byte(PC++);
+	unsigned char hi = nes->read_byte(PC++);
+	address = MAKEWORD(lo, hi);
+	int temp = address + Y;
+	address = temp;
+}
+
+INLINE void c_cpu::indirect()	//For indirect jmp
+{
+	unsigned char lo = nes->read_byte(PC++);
+	unsigned char hi = nes->read_byte(PC++);
 	unsigned short tempaddress = MAKEWORD(lo, hi);
-	unsigned char pcl = nes->ReadByte(tempaddress);
+	unsigned char pcl = nes->read_byte(tempaddress);
 	lo++;
 	tempaddress = MAKEWORD(lo, hi);
-	unsigned char pch = nes->ReadByte(tempaddress);
-	Address = MAKEWORD(pcl, pch);
+	unsigned char pch = nes->read_byte(tempaddress);
+	address = MAKEWORD(pcl, pch);
 }
 
-INLINE void c_cpu::IndirectX()	//Pre-indexed indirect
+INLINE void c_cpu::indirect_x()	//Pre-indexed indirect
 {
 	//TODO: I think this is ok, but need to verify
-	unsigned char hi = nes->ReadByte(PC++);
+	unsigned char hi = nes->read_byte(PC++);
 	hi += X;
-	Address = MAKEWORD(nes->ReadByte(hi), nes->ReadByte((hi + 1) & 0xFF));
-	M = nes->ReadByte(Address);
+	address = MAKEWORD(nes->read_byte(hi), nes->read_byte((hi + 1) & 0xFF));
+	M = nes->read_byte(address);
 }
 
-INLINE void c_cpu::IndirectX_ea()	//Pre-indexed indirect
+INLINE void c_cpu::indirect_x_ea()	//Pre-indexed indirect
 {
 	//TODO: I think this is ok, but need to verify
-	unsigned char hi = nes->ReadByte(PC++);
+	unsigned char hi = nes->read_byte(PC++);
 	hi += X;
-	Address = MAKEWORD(nes->ReadByte(hi), nes->ReadByte((hi + 1) & 0xFF));
+	address = MAKEWORD(nes->read_byte(hi), nes->read_byte((hi + 1) & 0xFF));
 }
 
-INLINE void c_cpu::IndirectY()	//Post-indexed indirect
+INLINE void c_cpu::indirect_y()	//Post-indexed indirect
 {
-	unsigned char temp = nes->ReadByte(PC++);
-	Address = MAKEWORD(nes->ReadByte(temp), nes->ReadByte((temp + 1) & 0xFF));
+	unsigned char temp = nes->read_byte(PC++);
+	address = MAKEWORD(nes->read_byte(temp), nes->read_byte((temp + 1) & 0xFF));
 
-	int temp2 = Address + Y;
-	CHECK_PAGE_CROSS2(Address, temp2);
-	Address = temp2;
-	M = nes->ReadByte(Address);
+	int temp2 = address + Y;
+	address = temp2;
+	M = nes->read_byte(address);
 }
 
-INLINE void c_cpu::IndirectY_ea()	//Post-indexed indirect
+INLINE void c_cpu::indirect_y_pc()	//Post-indexed indirect
 {
-	unsigned char temp = nes->ReadByte(PC++);
-	Address = MAKEWORD(nes->ReadByte(temp), nes->ReadByte((temp + 1) & 0xFF));
+	unsigned char temp = nes->read_byte(PC++);
+	address = MAKEWORD(nes->read_byte(temp), nes->read_byte((temp + 1) & 0xFF));
 
-	int temp2 = Address + Y;
-	CHECK_PAGE_CROSS2(Address, temp2);
-	Address = temp2;
+	int temp2 = address + Y;
+	CHECK_PAGE_CROSS2(address, temp2);
+	address = temp2;
+	M = nes->read_byte(address);
 }
 
-INLINE void c_cpu::Branch(int Condition)
+INLINE void c_cpu::indirect_y_ea()	//Post-indexed indirect
 {
-	if (Condition)
+	unsigned char temp = nes->read_byte(PC++);
+	address = MAKEWORD(nes->read_byte(temp), nes->read_byte((temp + 1) & 0xFF));
+
+	int temp2 = address + Y;
+	address = temp2;
+}
+
+INLINE void c_cpu::branch(int condition)
+{
+	signed char offset = nes->read_byte(PC++);
+	if (condition)
 	{
-		requiredCycles += 3;
-		signed char offset = nes->ReadByte(PC++);
-		int temp = PC;
+		int old_pc = PC;
 		PC += offset;
-
-		requiredCycles += (((PC ^ temp) & 0xFF00) != 0) * 3;
+		required_cycles += 3 + ((((PC ^ old_pc) & 0xFF00) != 0) * 3);
 	}
-	else PC++;
 }
 
-INLINE void c_cpu::ADC(void)
+INLINE void c_cpu::ADC()
 {
 	unsigned int temp = A + M + (SR.C ? 1 : 0);
 	SR.C = temp > 0xFF ? true : false;
@@ -638,7 +613,7 @@ INLINE void c_cpu::ADC(void)
 	SETN(A);
 	SETZ(A);
 }
-INLINE void c_cpu::AND(void)
+INLINE void c_cpu::AND()
 {
 	A = A & M;
 	SETN(A);
@@ -646,24 +621,31 @@ INLINE void c_cpu::AND(void)
 }
 INLINE void c_cpu::ALR()
 {
-	A &= nes->ReadByte(PC++);
+	A &= nes->read_byte(PC++);
 	SR.C = A & 0x1;
 	SR.N = 0;
 	A >>= 1;
 	SETZ(A);
 }
-INLINE void c_cpu::ASL(unsigned char& Operand, bool bRegister)
+INLINE void c_cpu::ASL()
 {
-	SR.C = Operand & 0x80 ? true : false;
-	Operand <<= 1;
-	if (!bRegister) nes->WriteByte(Address, Operand);
-	SETN(Operand);
-	SETZ(Operand);
+	SR.C = M & 0x80 ? true : false;
+	M <<= 1;
+	nes->write_byte(address, M);
+	SETN(M);
+	SETZ(M);
+}
+INLINE void c_cpu::ASL_R(unsigned char& reg)
+{
+	SR.C = reg & 0x80 ? true : false;
+	reg <<= 1;
+	SETN(reg);
+	SETZ(reg);
 }
 INLINE void c_cpu::AXS()
 {
 	X &= A;
-	unsigned short temp = X - nes->ReadByte(PC++);
+	unsigned short temp = X - nes->read_byte(PC++);
 	if (temp > 0xFF)
 		SR.C = true;
 	X = temp & 0xFF;
@@ -671,87 +653,87 @@ INLINE void c_cpu::AXS()
 	SETZ(X);
 
 }
-INLINE void c_cpu::BCC(void)
+INLINE void c_cpu::BCC()
 {
-	Branch(SR.C == false);
+	branch(SR.C == false);
 }
-INLINE void c_cpu::BCS(void)
+INLINE void c_cpu::BCS()
 {
-	Branch(SR.C == true);
+	branch(SR.C == true);
 }
-INLINE void c_cpu::BEQ(void)
+INLINE void c_cpu::BEQ()
 {
-	Branch(SR.Z == true);
+	branch(SR.Z == true);
 }
-INLINE void c_cpu::BIT(void)
+INLINE void c_cpu::BIT()
 {
 	unsigned char result = A & M;
 	SETZ(result);
 	SR.V = M & 0x40 ? true : false;
 	SETN(M);
 }
-INLINE void c_cpu::BMI(void)
+INLINE void c_cpu::BMI()
 {
-	Branch(SR.N == true);
+	branch(SR.N == true);
 }
-INLINE void c_cpu::BNE(void)
+INLINE void c_cpu::BNE()
 {
-	Branch(SR.Z == false);
+	branch(SR.Z == false);
 }
-INLINE void c_cpu::BPL(void)
+INLINE void c_cpu::BPL()
 {
-	Branch(SR.N == false);
+	branch(SR.N == false);
 }
-INLINE void c_cpu::BRK(void)
+INLINE void c_cpu::BRK()
 {
 	PUSH(HIBYTE(PC + 1));
 	PUSH(LOBYTE(PC + 1));
 	PUSH(*S | 0x30);
 	SR.B = true;
 	SR.I = true;
-	PC = MAKEWORD(nes->ReadByte(0xFFFE), nes->ReadByte(0xFFFF));
+	PC = MAKEWORD(nes->read_byte(0xFFFE), nes->read_byte(0xFFFF));
 }
-INLINE void c_cpu::BVC(void)
+INLINE void c_cpu::BVC()
 {
-	Branch(SR.V == false);
+	branch(SR.V == false);
 }
-INLINE void c_cpu::BVS(void)
+INLINE void c_cpu::BVS()
 {
-	Branch(SR.V == true);
+	branch(SR.V == true);
 }
-INLINE void c_cpu::CLC(void)
+INLINE void c_cpu::CLC()
 {
 	SR.C = false;
 }
-INLINE void c_cpu::CLD(void)
+INLINE void c_cpu::CLD()
 {
 	SR.D = false;
 }
-INLINE void c_cpu::CLI(void)
+INLINE void c_cpu::CLI()
 {
 	SR.I = false;
-	if (doIrq)
+	if (do_irq)
 		irq_delay = 1;
 }
-INLINE void c_cpu::CLV(void)
+INLINE void c_cpu::CLV()
 {
 	SR.V = false;
 }
-INLINE void c_cpu::CMP(void)
+INLINE void c_cpu::CMP()
 {
 	unsigned char temp = A - M;
 	SETZ(temp);
 	SETN(temp);
 	SR.C = M <= A ? true : false;
 }
-INLINE void c_cpu::CPX(void)
+INLINE void c_cpu::CPX()
 {
 	unsigned char temp = X - M;
 	SETZ(temp);
 	SETN(temp);
 	SR.C = M <= X ? true : false;
 }
-INLINE void c_cpu::CPY(void)
+INLINE void c_cpu::CPY()
 {
 	unsigned char temp = Y - M;
 	SETZ(temp);
@@ -763,46 +745,46 @@ INLINE void c_cpu::DCP()
 	DEC();
 	CMP();
 }
-INLINE void c_cpu::DEC(void)
+INLINE void c_cpu::DEC()
 {
 	M--;
-	nes->WriteByte(Address, M);
+	nes->write_byte(address, M);
 	SETN(M);
 	SETZ(M);
 }
-INLINE void c_cpu::DEX(void)
+INLINE void c_cpu::DEX()
 {
 	X--;
 	SETN(X);
 	SETZ(X);
 }
-INLINE void c_cpu::DEY(void)
+INLINE void c_cpu::DEY()
 {
 	Y--;
 	SETN(Y);
 	SETZ(Y);
 }
-INLINE void c_cpu::EOR(void)
+INLINE void c_cpu::EOR()
 {
 	A ^= M;
 	SETN(A);
 	SETZ(A);
 }
-INLINE void c_cpu::INC(void)
+INLINE void c_cpu::INC()
 {
-	nes->WriteByte(Address, M);
+	nes->write_byte(address, M);
 	M++;
-	nes->WriteByte(Address, M);
+	nes->write_byte(address, M);
 	SETN(M);
 	SETZ(M);
 }
-INLINE void c_cpu::INX(void)
+INLINE void c_cpu::INX()
 {
 	X++;
 	SETN(X);
 	SETZ(X);
 }
-INLINE void c_cpu::INY(void)
+INLINE void c_cpu::INY()
 {
 	Y++;
 	SETN(Y);
@@ -813,105 +795,136 @@ INLINE void c_cpu::ISC()
 	INC();
 	SBC();
 }
-INLINE void c_cpu::JMP(void)
+INLINE void c_cpu::JMP()
 {
-	PC = Address;
+	PC = address;
 }
-INLINE void c_cpu::JSR(void)
+INLINE void c_cpu::JSR()
 {
 	PC--;
 	PUSH(HIBYTE(PC));
 	PUSH(LOBYTE(PC));
-	PC = Address;
+	PC = address;
 }
 INLINE void c_cpu::LAX()
 {
 	LDX();
 	TXA();
 }
-INLINE void c_cpu::LDA(void)
+INLINE void c_cpu::LDA()
 {
 	A = M;
 	SETN(A);
 	SETZ(A);
 }
-INLINE void c_cpu::LDX(void)
+INLINE void c_cpu::LDX()
 {
 	X = M;
 	SETN(X);
 	SETZ(X);
 }
-INLINE void c_cpu::LDY(void)
+INLINE void c_cpu::LDY()
 {
 	Y = M;
 	SETN(Y);
 	SETZ(Y);
 }
-INLINE void c_cpu::LSR(unsigned char& Operand, bool bRegister)
+INLINE void c_cpu::LSR()
 {
-	SR.C = Operand & 0x01 ? true : false;
-	Operand >>= 1;
-	SETZ(Operand);
+	SR.C = M & 0x01 ? true : false;
+	M >>= 1;
+	SETZ(M);
 	SR.N = false;
-	if (!bRegister) nes->WriteByte(Address, Operand);
+	nes->write_byte(address, M);
 }
-INLINE void c_cpu::ORA(void)
+INLINE void c_cpu::LSR_R(unsigned char& reg)
+{
+	SR.C = reg & 0x01 ? true : false;
+	reg >>= 1;
+	SETZ(reg);
+	SR.N = false;
+}
+INLINE void c_cpu::ORA()
 {
 	A |= M;
 	SETZ(A);
 	SETN(A);
 }
 
-INLINE void c_cpu::PHA(void)
+INLINE void c_cpu::PHA()
 {
 	PUSH(A);
 }
-INLINE void c_cpu::PHP(void)
+INLINE void c_cpu::PHP()
 {
 	PUSH(*S | 0x30);
 }
-INLINE void c_cpu::PLA(void)
+INLINE void c_cpu::PLA()
 {
 	A = POP;
 	SETN(A);
 	SETZ(A);
 }
-INLINE void c_cpu::PLP(void)
+INLINE void c_cpu::PLP()
 {
 	bool prev_i = SR.I;
 	*S = POP;
 	SR.B = false;
 	SR.Unused = true;
-	if (doIrq && SR.I == false && SR.I != prev_i)
+	if (do_irq && SR.I == false && SR.I != prev_i)
 		irq_delay = 1;
 }
-INLINE void c_cpu::ROL(unsigned char& Operand, bool bRegister)
+INLINE void c_cpu::ROL()
 {
 	int oldcarry = SR.C ? 1 : 0;
-	SR.C = (Operand & 0x80) ? true : false;
-	Operand <<= 1;
+	SR.C = (M & 0x80) ? true : false;
+	M <<= 1;
 	if (oldcarry)
 	{
-		Operand |= 0x01;
+		M |= 0x01;
 	}
-	SETN(Operand);
-	SETZ(Operand);
-	if (!bRegister) nes->WriteByte(Address, Operand);
+	SETN(M);
+	SETZ(M);
+	nes->write_byte(address, M);
 }
-INLINE void c_cpu::ROR(unsigned char& Operand, bool bRegister)
+INLINE void c_cpu::ROL_R(unsigned char& reg)
 {
 	int oldcarry = SR.C ? 1 : 0;
-	SR.C = (Operand & 0x01) ? true : false;
-	Operand >>= 1;
+	SR.C = (reg & 0x80) ? true : false;
+	reg <<= 1;
 	if (oldcarry)
 	{
-		Operand |= 0x80;
+		reg |= 0x01;
 	}
-	SETN(Operand);
-	SETZ(Operand);
-	if (!bRegister) nes->WriteByte(Address, Operand);
+	SETN(reg);
+	SETZ(reg);
 }
-INLINE void c_cpu::RTI(void)
+INLINE void c_cpu::ROR()
+{
+	int oldcarry = SR.C ? 1 : 0;
+	SR.C = (M & 0x01) ? true : false;
+	M >>= 1;
+	if (oldcarry)
+	{
+		M |= 0x80;
+	}
+	SETN(M);
+	SETZ(M);
+	nes->write_byte(address, M);
+}
+INLINE void c_cpu::ROR_R(unsigned char& reg)
+{
+	int oldcarry = SR.C ? 1 : 0;
+	SR.C = (reg & 0x01) ? true : false;
+	reg >>= 1;
+	if (oldcarry)
+	{
+		reg |= 0x80;
+	}
+	SETN(reg);
+	SETZ(reg);
+}
+INLINE void c_cpu::RTI()
 {
 	bool prev_i = SR.I;
 	*S = POP;
@@ -919,94 +932,85 @@ INLINE void c_cpu::RTI(void)
 	unsigned char pcl = POP;
 	unsigned char pch = POP;
 	PC = MAKEWORD(pcl, pch);
-	if (doIrq && SR.I == false && SR.I != prev_i)
+	if (do_irq && SR.I == false && SR.I != prev_i)
 		irq_delay = 1;
 }
-INLINE void c_cpu::RTS(void)
+INLINE void c_cpu::RTS()
 {
 	unsigned char pcl = POP;
 	unsigned char pch = POP;
 	PC = MAKEWORD(pcl, pch);
 	PC++;
 }
-INLINE void c_cpu::SBC(void)
+INLINE void c_cpu::SBC()
 {
-	/*
-	unsigned short temp = A - M - (SR.C ? 0 : 1);
-	SR.C = temp < 0x100 ? true : false;
-	//SR.V = (((A^temp) & 0x80) & ((A^M) & 0x80)) ? true : false;
-	SR.V = (A^temp) & (M^A) & 0x80 ? true : false;
-	A = temp & 0xFF;
-	SETN(A);
-	SETZ(A);
-	*/
 	M ^= 0xFF;
 	ADC();
 }
-INLINE void c_cpu::SEC(void)
+INLINE void c_cpu::SEC()
 {
 	SR.C = true;
 }
-INLINE void c_cpu::SED(void)
+INLINE void c_cpu::SED()
 {
 	SR.D = true;
 }
-INLINE void c_cpu::SEI(void)
+INLINE void c_cpu::SEI()
 {
 	SR.I = true;
 }
 
-INLINE void c_cpu::SKB(void)
+INLINE void c_cpu::SKB()
 {
 	PC++;
 }
 INLINE void c_cpu::SAX()
 {
-	nes->WriteByte(Address, A & X);
+	nes->write_byte(address, A & X);
 }
-INLINE void c_cpu::STA(void)
+INLINE void c_cpu::STA()
 {
-	nes->WriteByte(Address, A);
+	nes->write_byte(address, A);
 }
-INLINE void c_cpu::STX(void)
+INLINE void c_cpu::STX()
 {
-	nes->WriteByte(Address, X);
+	nes->write_byte(address, X);
 }
-INLINE void c_cpu::STY(void)
+INLINE void c_cpu::STY()
 {
-	nes->WriteByte(Address, Y);
+	nes->write_byte(address, Y);
 }
-INLINE void c_cpu::TAX(void)
+INLINE void c_cpu::TAX()
 {
 	X = A;
 	SETN(X);
 	SETZ(X);
 }
-INLINE void c_cpu::TAY(void)
+INLINE void c_cpu::TAY()
 {
 	Y = A;
 	SETN(Y);
 	SETZ(Y);
 }
-INLINE void c_cpu::TXA(void)
+INLINE void c_cpu::TXA()
 {
 	A = X;
 	SETN(A);
 	SETZ(A);
 }
-INLINE void c_cpu::TYA(void)
+INLINE void c_cpu::TYA()
 {
 	A = Y;
 	SETN(A);
 	SETZ(A);
 }
-INLINE void c_cpu::TSX(void)
+INLINE void c_cpu::TSX()
 {
 	X = SP;
 	SETN(X);
 	SETZ(X);
 }
-INLINE void c_cpu::TXS(void)
+INLINE void c_cpu::TXS()
 {
 	SP = X;
 }

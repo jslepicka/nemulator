@@ -9,5 +9,5 @@ public:
 	~c_mapper95() {};
 	void WriteByte(unsigned short address, unsigned char value);
 protected:
-	void Sync(void);
+	void Sync();
 };

@@ -482,7 +482,6 @@
     <ClInclude Include="TexturePanel.h" />
     <ClInclude Include="TexturePanelItem.h" />
     <ClInclude Include="nes\nes.h" />
-    <ClInclude Include="nes\Palette.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="effect.fx">

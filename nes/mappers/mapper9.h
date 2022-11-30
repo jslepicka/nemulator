@@ -5,15 +5,13 @@ class c_mapper9 :
 	public c_mapper
 {
 public:
-	c_mapper9(void);
-	virtual ~c_mapper9(void);
+	c_mapper9();
+	virtual ~c_mapper9();
 	virtual void WriteByte(unsigned short address, unsigned char value);
-	virtual void reset(void);
-	//void Latch(int address);
+	virtual void reset();
 	void mmc2_latch(int address);
 	unsigned char ReadChrRom(unsigned short address);
 private:
-	void sync();
 	int latch0;
 	int latch1;
 	int latch0FD;

@@ -27,7 +27,7 @@ c_sms::c_sms(int type)
 	rom = 0;
 }
 
-c_sms::~c_sms(void)
+c_sms::~c_sms()
 {
 	if (has_sram)
 		save_sram();

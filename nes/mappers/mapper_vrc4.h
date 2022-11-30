@@ -8,7 +8,7 @@ public:
 	c_mapper_vrc4(int submapper = 0);
 	~c_mapper_vrc4();
 	void WriteByte(unsigned short address, unsigned char value);
-	void reset(void);
+	void reset();
 	void clock(int cycles);
 private:
 	int swap_bits;

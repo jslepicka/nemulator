@@ -1,13 +1,13 @@
 #include "mapper75.h"
 
 
-c_mapper75::c_mapper75(void)
+c_mapper75::c_mapper75()
 {
 	//Tetsuwan Atom, Exciting Boxing
 	mapperName = "VRC-1";
 }
 
-void c_mapper75::reset(void)
+void c_mapper75::reset()
 {
 	SetPrgBank8k(PRG_E000, prgRomPageCount8k - 1);
 	chr0 = chr1 = 0;

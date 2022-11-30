@@ -11,9 +11,9 @@ class c_nes;
 class c_apu2
 {
 public:
-	c_apu2(void);
-	virtual ~c_apu2(void);
-	void reset(void);
+	c_apu2();
+	virtual ~c_apu2();
+	void reset();
 	void write_byte(unsigned short address, unsigned char value);
 	unsigned char read_byte(unsigned short address);
 	void clock(int cycles);
@@ -60,7 +60,6 @@ public:
 		void set_period_lo(int period_lo);
 		void set_period_hi(int period_hi);
 		void set_period(int value);
-		int get_output();
 		int get_period();
 		void reset();
 	private:
@@ -266,8 +265,6 @@ private:
 	float *external_audio;
 	int32_t* sound_buffer;
 
-	
-
 	int ticks;
 	int frame_seq_counter;
 	void clock_frame_seq();
@@ -296,4 +293,3 @@ private:
 	static std::atomic<int> lookup_tables_built;
 	static float tnd_lut[203];
 };
-

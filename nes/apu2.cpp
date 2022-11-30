@@ -17,7 +17,7 @@ std::atomic<int> c_apu2::lookup_tables_built = 0;
 float c_apu2::square_lut[31];
 float c_apu2::tnd_lut[203];
 
-c_apu2::c_apu2(void)
+c_apu2::c_apu2()
 {
 	squares[0] = &square1;
 	squares[1] = &square2;
@@ -32,7 +32,7 @@ c_apu2::c_apu2(void)
 	build_lookup_tables();
 }
 
-c_apu2::~c_apu2(void)
+c_apu2::~c_apu2()
 {
 #ifdef AUDIO_LOG
 	file.close();
@@ -1179,7 +1179,7 @@ void c_apu2::c_dmc::fill_sample_buffer()
 {
 	if (sample_buffer_empty && duration)
 	{
-		output_shift = nes->DmcRead(0x8000 + address);
+		output_shift = nes->dmc_read(0x8000 + address);
 		address = (address + 1) & 0x7FFF;
 		sample_buffer_empty = 0;
 		if (--duration == 0)

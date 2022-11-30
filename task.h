@@ -8,7 +8,7 @@ class c_task
 {
 public:
 	c_task();
-	virtual ~c_task(void);
+	virtual ~c_task();
 	virtual void resize() {};
 	virtual void init(void *params) {};
 	virtual int update(double dt, int child_result, void *params) { return 0; };

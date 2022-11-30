@@ -73,7 +73,7 @@ D3d10App::D3d10App(HINSTANCE hInstance)
 	power_request = NULL;
 }
 
-D3d10App::~D3d10App(void)
+D3d10App::~D3d10App()
 {
 	timeEndPeriod(1);
 	if (avrt_handle != 0)

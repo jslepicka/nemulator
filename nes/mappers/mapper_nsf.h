@@ -5,11 +5,11 @@ class c_mapper_nsf :
 	public c_mapper
 {
 public:
-	c_mapper_nsf(void);
-	~c_mapper_nsf(void);
+	c_mapper_nsf();
+	~c_mapper_nsf();
 	void WriteByte(unsigned short address, unsigned char value);
 	unsigned char ReadByte(unsigned short address);
-	void reset(void);
+	void reset();
 	int LoadImage();
 private:
 	struct NSF_HEADER {

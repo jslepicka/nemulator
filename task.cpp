@@ -9,7 +9,7 @@ c_task::c_task()
 	dead = false;
 }
 
-c_task::~c_task(void)
+c_task::~c_task()
 {
 	//if (task_list)
 	//	delete task_list;
