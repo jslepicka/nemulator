@@ -13,7 +13,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdPlin
 //#endif
 	app = new D3d10App(hInstance);
 	app->Init((char*)"nemulator.ini", new c_nemulator(), NULL);
-	app->SetCaption("nemulator 4.4");
+	app->SetCaption("nemulator 4.5");
 	int retval = app->Run();
 	delete app;
 	return retval;
