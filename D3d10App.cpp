@@ -4,6 +4,7 @@
 #include "dwmapi.h"
 #include <algorithm>
 #include "resource.h"
+#include "benchmark.h"
 
 #pragma comment (lib, "PowrProf.lib")
 #pragma comment (lib, "avrt.lib")
@@ -220,6 +221,9 @@ void D3d10App::Init(char *config_file_name, c_task *init_task, void *params)
 	aspectLock = config->get_bool("app.aspect_lock", true);
 	startFullscreen = config->get_bool("app.fullscreen", true);
 	vsync = config->get_bool("app.vsync", true);
+	if (benchmark_mode) {
+		vsync = false;
+	}
 	timer_sync = config->get_bool("app.timer_sync", false);
 	pause_on_lost_focus = config->get_bool("app.pause_on_lost_focus", true);
 	ignore_input = 0;

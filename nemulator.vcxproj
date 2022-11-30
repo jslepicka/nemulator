@@ -337,6 +337,7 @@
   <ItemGroup>
     <ClInclude Include="audio_filter.h" />
     <ClInclude Include="audio_info.h" />
+    <ClInclude Include="benchmark.h" />
     <ClInclude Include="biquad.hpp" />
     <ClInclude Include="biquad4.hpp" />
     <ClInclude Include="biquad8.hpp" />
