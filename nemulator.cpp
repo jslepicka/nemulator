@@ -1049,6 +1049,9 @@ void c_nemulator::UpdateScene(double dt)
 				if (splash_timer < 1000.0)
 					splash_timer = 1000.0;
 				splash_stage++;
+				if (benchmark_mode) {
+					splash_done = 1;
+				}
 			}
 			break;
 		case 3: //fade out
