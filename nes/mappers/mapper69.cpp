@@ -224,7 +224,7 @@ unsigned char c_mapper69::ReadByte(unsigned short address)
 	return c_mapper::ReadByte(address);
 }
 
-void c_mapper69::reset(void)
+void c_mapper69::reset()
 {
 	command = 0;
 	tick = 0;

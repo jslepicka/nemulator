@@ -18,7 +18,7 @@ class TexturePanel
 {
 public:
 	TexturePanel(int rows, int columns);
-	~TexturePanel(void);
+	~TexturePanel();
 	void load_items();
 	bool is_first_col();
 	bool is_last_col();

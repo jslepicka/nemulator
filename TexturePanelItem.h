@@ -7,8 +7,8 @@
 class TexturePanelItem
 {
 public:
-	TexturePanelItem(void);
-	virtual ~TexturePanelItem(void);
+	TexturePanelItem();
+	virtual ~TexturePanelItem();
 	void Activate(bool load);
 	void Deactivate();
 	void Load();

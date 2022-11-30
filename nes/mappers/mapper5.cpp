@@ -597,7 +597,7 @@ unsigned char c_mapper5::ReadByte(unsigned short address)
 	//return c_mapper::ReadByte(address);
 }
 
-void c_mapper5::reset(void)
+void c_mapper5::reset()
 {
 	for (int i = 0; i < 2; i++)
 		squares[i].reset();

@@ -101,7 +101,7 @@ void c_nemulator::kill_threads()
 	}
 }
 
-c_nemulator::~c_nemulator(void)
+c_nemulator::~c_nemulator()
 {
 	//if (stats)
 	//	delete stats;
@@ -225,8 +225,8 @@ void c_nemulator::Init()
 	//add_task(mem_viewer, NULL);
 
 	LoadFonts();
-	sound = new Sound(hWnd);
-	sound->Init();
+	sound = new c_sound(hWnd);
+	sound->init();
 
 	fastscroll = false;
 	scroll_fade_timer = 0.0;
@@ -411,7 +411,7 @@ void c_nemulator::RunGames()
 	else
 	{
 		//c_console *n = ((Game*)texturePanels[selectedPanel]->GetSelected())->console;
-		Game *g = (Game*)texturePanels[selectedPanel]->GetSelected();
+		c_game *g = (c_game*)texturePanels[selectedPanel]->GetSelected();
 		switch (g->type)
 		{
 		case GAME_NES:
@@ -477,7 +477,7 @@ void c_nemulator::ProcessInput(double dt)
 	//these keys work anytime
 	if (g_ih->get_result(BUTTON_RESET, true) & c_input_handler::RESULT_DOWN)
 	{
-		Game *g = (Game*)texturePanels[selectedPanel]->GetSelected();
+		c_game *g = (c_game*)texturePanels[selectedPanel]->GetSelected();
 		if (g->console->is_loaded())
 		{
 			g->console->reset();
@@ -488,7 +488,7 @@ void c_nemulator::ProcessInput(double dt)
 	}
 	else if (g_ih->get_result(BUTTON_INPUT_SAVE, true) & c_input_handler::RESULT_DOWN)
 	{
-		Game *g = (Game*)texturePanels[selectedPanel]->GetSelected();
+		c_game *g = (c_game*)texturePanels[selectedPanel]->GetSelected();
 		if (g->console->is_loaded())
 		{
 			std::ofstream file;
@@ -508,7 +508,7 @@ void c_nemulator::ProcessInput(double dt)
 	}
 	else if (g_ih->get_result(BUTTON_INPUT_REPLAY, true) & c_input_handler::RESULT_DOWN)
 	{
-		Game *g = (Game*)texturePanels[selectedPanel]->GetSelected();
+		c_game *g = (c_game*)texturePanels[selectedPanel]->GetSelected();
 		if (g->console->is_loaded())
 		{
 			//load input from file
@@ -594,7 +594,7 @@ void c_nemulator::ProcessInput(double dt)
 	}
 	else if (g_ih->get_result(BUTTON_MASK_SIDES, true) & c_input_handler::RESULT_DOWN)
 	{
-		Game *g = (Game*)texturePanels[selectedPanel]->GetSelected();
+		c_game *g = (c_game*)texturePanels[selectedPanel]->GetSelected();
 		g->mask_sides = !g->mask_sides;
 		if (g->mask_sides)
 			status->add_message("side mask enabled");
@@ -610,7 +610,7 @@ void c_nemulator::ProcessInput(double dt)
 	}
 	else if (g_ih->get_result(BUTTON_SPRITE_LIMIT) & c_input_handler::RESULT_DOWN)
 	{
-		Game *g = (Game*)texturePanels[selectedPanel]->GetSelected();
+		c_game *g = (c_game*)texturePanels[selectedPanel]->GetSelected();
 		if (g->type == GAME_NES)
 		{
 			g->console->set_sprite_limit(!g->console->get_sprite_limit());
@@ -776,7 +776,7 @@ void c_nemulator::ProcessInput(double dt)
 			add_task(new c_menu(), (int*)&mi);
 			menu = MENU_INGAME;
 			paused = true;
-			sound->Stop();
+			sound->stop();
 		}
 	}
 }
@@ -833,8 +833,8 @@ void c_nemulator::leave_game()
 		*joy2 = 0;
 	joy1 = NULL;
 	joy2 = NULL;
-	sound->Stop();
-	c_console *n = ((Game*)texturePanels[selectedPanel]->GetSelected())->console;
+	sound->stop();
+	c_console *n = ((c_game*)texturePanels[selectedPanel]->GetSelected())->console;
 	n->disable_mixer();
 	inGame = false;
 	for (int i = 0; i < num_texture_panels; i++)
@@ -843,7 +843,7 @@ void c_nemulator::leave_game()
 	{
 		ResumeThread(game_thread->thread_handle);
 	}
-	Game* g = (Game*)texturePanels[selectedPanel]->GetSelected();
+	c_game* g = (c_game*)texturePanels[selectedPanel]->GetSelected();
 	if (g->type == GAME_NES)
 	{
 		c_nes* n = (c_nes*)g->console;
@@ -857,7 +857,7 @@ void c_nemulator::leave_game()
 void c_nemulator::start_game()
 {
 	//todo: come back and fix has played logic
-	Game *g = (Game*)texturePanels[selectedPanel]->GetSelected();
+	c_game *g = (c_game*)texturePanels[selectedPanel]->GetSelected();
 	c_console *n = g->console;
 	if (n && n->is_loaded())
 	{
@@ -865,8 +865,8 @@ void c_nemulator::start_game()
 		//joy1 = n->GetJoy1();
 		//joy2 = n->GetJoy2();
 		//sound->Reset();
-		sound->Clear();
-		sound->Play();
+		sound->clear();
+		sound->play();
 		inGame = true;
 		n->enable_mixer();
 		for (int i = 0; i < num_texture_panels; i++)
@@ -984,7 +984,7 @@ int c_nemulator::update(double dt, int child_result, void *params)
 					break;
 				case 1: //reset
 					{
-						c_console *n = ((Game*)texturePanels[selectedPanel]->GetSelected())->console;
+						c_console *n = ((c_game*)texturePanels[selectedPanel]->GetSelected())->console;
 						n->reset();
 						input_buffer_index = 0;
 						input_buffer_playback = 0;
@@ -1000,7 +1000,7 @@ int c_nemulator::update(double dt, int child_result, void *params)
 				paused = false;
 				menu = 0;
 				if (*(int*)params != 2)
-					sound->Play();
+					sound->play();
 			}
 			else if (child_result == c_task::TASK_RESULT_CANCEL)
 			{
@@ -1008,7 +1008,7 @@ int c_nemulator::update(double dt, int child_result, void *params)
 				for (int i = 0; i < num_texture_panels; i++)
 					texturePanels[i]->dim = false;
 				menu = 0;
-				sound->Play();
+				sound->play();
 			}
 			break;
 		}
@@ -1090,7 +1090,7 @@ void c_nemulator::UpdateScene(double dt)
 	{
 		if (inGame)
 		{
-			c_console *console = ((Game*)texturePanels[selectedPanel]->GetSelected())->console;
+			c_console *console = ((c_game*)texturePanels[selectedPanel]->GetSelected())->console;
 
 			const short* buf_l;
 			const short* buf_r;
@@ -1116,8 +1116,8 @@ void c_nemulator::UpdateScene(double dt)
 				}
 			}
 
-			sound->Copy(sound_buf, num_samples);
-			s = sound->Sync();
+			sound->copy(sound_buf, num_samples);
+			s = sound->sync();
 			console->set_audio_freq(sound->get_requested_freq());
 		}
 		RunGames();
@@ -1126,7 +1126,7 @@ void c_nemulator::UpdateScene(double dt)
 #ifdef MEM_VIEWER
 	if (mem_viewer)
 	{
-		c_nes *nes = ((Game*)texturePanels[selectedPanel]->GetSelected())->nes;
+		c_nes *nes = ((c_game*)texturePanels[selectedPanel]->GetSelected())->nes;
 		if (nes->loaded)
 			mem_viewer->set_mem_access_log(nes->mem_access_log);
 		else
@@ -1145,27 +1145,27 @@ void c_nemulator::UpdateScene(double dt)
 	if (audio_info != NULL && elapsed >= 10.0)
 	{
 		if (inGame)
-			audio_info->report((int)sound->GetFreq(), s, 0, sound->max_freq, sound->min_freq);
+			audio_info->report((int)sound->get_freq(), s, 0, sound->max_freq, sound->min_freq);
 	}
 
 	if (elapsed >= 250.0)
 	{
 		double fps = framesDrawn / (elapsed / 1000.0);
-		//fps_history[fps_index++ % fps_records] = fps;
-		//max_fps = 60.0;
-		//for (int i = 0; i < fps_records; i++)
-		//	if (fps_history[i] > 60.0 && fps_history[i] > max_fps)
-		//		max_fps = fps_history[i];
-		//char x[64];
-		//sprintf(x, "%.2f [%.2f] %.2f", fps, max_fps, 1.0/fps*1000.0);
-		//SetWindowText(hWnd, x);
+		fps_history[fps_index++ % fps_records] = fps;
+		max_fps = 60.0;
+		for (int i = 0; i < fps_records; i++)
+			if (fps_history[i] > 60.0 && fps_history[i] > max_fps)
+				max_fps = fps_history[i];
+		char x[64];
+		sprintf(x, "%.2f [%.2f] %.2f", fps, max_fps, 1.0/fps*1000.0);
+		SetWindowText(hWnd, x);
 
 		if (stats)
 		{
-			Game* game = (Game*)texturePanels[selectedPanel]->GetSelected();
+			c_game* game = (c_game*)texturePanels[selectedPanel]->GetSelected();
 			c_console *console = game->console;
 			stats->report_stat("fps", fps);
-			stats->report_stat("freq", sound->GetFreq());
+			stats->report_stat("freq", sound->get_freq());
 			stats->report_stat("audio position", s);
 			stats->report_stat("audio resets", sound->resets);
 			stats->report_stat("audio.slope", sound->slope);
@@ -1207,10 +1207,10 @@ void c_nemulator::UpdateScene(double dt)
 
 		}
 		if (nsf_stats) { //NSF
-			Game* game = (Game*)texturePanels[selectedPanel]->GetSelected();
+			c_game* game = (c_game*)texturePanels[selectedPanel]->GetSelected();
 			c_console* console = game->console;
 			c_nes* n = (c_nes*)console;
-			nsf_stats->report_stat("song #", n->ReadByte(0x54F7) + 1);
+			nsf_stats->report_stat("song #", n->read_byte(0x54F7) + 1);
 		}
 		framesDrawn = 0;
 		elapsed = 0.0;
@@ -1259,7 +1259,7 @@ void c_nemulator::DrawScene()
 
 	if (texturePanels[selectedPanel]->get_num_items() > 0)
 	{
-		Game *g = (Game*)texturePanels[selectedPanel]->GetSelected();
+		c_game *g = (c_game*)texturePanels[selectedPanel]->GetSelected();
 		for (int i = 0; i < num_texture_panels; i++)
 			texturePanels[i]->Draw();
 
@@ -1319,9 +1319,9 @@ void c_nemulator::OnPause(bool paused)
 	if (inGame)
 	{
 		if (paused)
-			sound->Stop();
+			sound->stop();
 		else if (menu != MENU_INGAME)
-			sound->Play();
+			sound->play();
 	}
 }
 
@@ -1353,7 +1353,7 @@ void c_nemulator::GetEvents()
 		y = 0;
 		for (auto &i : panelItems)
 		{
-			game_threads[y % game_threads.size()]->game_list.push_back((Game*)i);
+			game_threads[y % game_threads.size()]->game_list.push_back((c_game*)i);
 			y++;
 		}
 	}
@@ -1434,7 +1434,7 @@ void c_nemulator::LoadGames()
 				delete[] buf;
 			}
 
-			Game *g = new Game(li.type, li.rom_path, fn, li.save_path);
+			c_game *g = new c_game(li.type, li.rom_path, fn, li.save_path);
 			g->set_description(fn);
 			std::string s = "\"" + fn + "\".";
 			bool mask_sides = config->get_bool(s + "mask_sides", global_mask_sides);
@@ -1447,7 +1447,7 @@ void c_nemulator::LoadGames()
 		}
 	}
 
-	std::sort(gameList.begin(), gameList.end(), [](const Game* a, const Game* b) {
+	std::sort(gameList.begin(), gameList.end(), [](const c_game* a, const c_game* b) {
 		std::string aa = a->filename;
 		std::string bb = b->filename;
 		for (auto & a_upper : aa) a_upper = toupper(a_upper);
@@ -1473,8 +1473,8 @@ int c_nemulator::dir_exists(const std::string &path)
 
 int c_nemulator::take_screenshot()
 {
-	bool mask_sides = ((Game*)texturePanels[selectedPanel]->GetSelected())->mask_sides;
-	Game *g = (Game*)texturePanels[selectedPanel]->GetSelected();
+	bool mask_sides = ((c_game*)texturePanels[selectedPanel]->GetSelected())->mask_sides;
+	c_game *g = (c_game*)texturePanels[selectedPanel]->GetSelected();
 	c_console *n = g->console;
 	if (n->is_loaded())
 	{

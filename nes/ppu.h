@@ -5,11 +5,11 @@
 class c_ppu
 {
 public:
-	c_ppu(void);
-	~c_ppu(void);
+	c_ppu();
+	~c_ppu();
 	unsigned char read_byte(int address);
 	void write_byte(int address, unsigned char value);
-	void reset(void);
+	void reset();
 	int get_sprite_size();
 	int eval_sprites();
 	void run_ppu_line();
@@ -33,7 +33,13 @@ private:
 	void update_vram_address();
 	void build_lookup_tables();
 	uint64_t interleave_bits_64(unsigned char odd, unsigned char even);
-	bool drawing_enabled(void);
+	bool drawing_enabled();
+	void output_pixel();
+	void output_blank_pixel();
+	void begin_vblank();
+	void end_vblank();
+	void fetch();
+	void do_cycle_events();
 
 	int vram_update_delay;
 	//ppu updates apparently happen on ppu cycle following completion of a cpu write
@@ -43,6 +49,7 @@ private:
 	int suppress_nmi;
 	static uint64_t morton_odd_64[];
 	static uint64_t morton_even_64[];
+	static const int screen_offset = 2;
 	int* p_frame;
 	int sprites_visible;
 	int warmed_up;
@@ -76,6 +83,8 @@ private:
 	unsigned int attribute;
 	int executed_cycles;
 	uint32_t pixel_pipeline;
+	int vid_out;
+	int reload_v;
 
 	enum FETCH_STATE {
 		FETCH_BG = 0 << 3,
@@ -119,5 +128,4 @@ private:
 	static uint8_t attr_loc[0x400];
 	int frameBuffer[256 * 256];
 	unsigned char index_buffer[272];
-	unsigned char pix_buf[256];
 };

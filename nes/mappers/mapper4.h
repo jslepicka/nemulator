@@ -5,13 +5,13 @@ class c_mapper4 :
 	public c_mapper
 {
 public:
-	c_mapper4(void);
-	~c_mapper4(void);
+	c_mapper4();
+	~c_mapper4();
 	unsigned char ppu_read(unsigned short address);
 	void ppu_write(unsigned short address, unsigned char value);
 	virtual void WriteByte(unsigned short address, unsigned char value);
 	virtual unsigned char ReadByte(unsigned short address);
-	virtual void reset(void);
+	virtual void reset();
 	virtual void clock(int cycles);
 protected:
 	virtual void fire_irq();
@@ -35,7 +35,7 @@ protected:
 
 	int chr[6];
 	int prg[2];
-	virtual void Sync(void);
+	virtual void Sync();
 
 	int prg_offset;
 	int chr_offset;

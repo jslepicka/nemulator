@@ -10,19 +10,19 @@ extern ID3D10Device *d3dDev;
 
 void strip_extension(char *path);
 
-std::string Game::get_filename()
+std::string c_game::get_filename()
 {
 	return filename;
 }
 
-const Game::SimpleVertex Game::default_vertices[4] = {
+const c_game::SimpleVertex c_game::default_vertices[4] = {
 		{ D3DXVECTOR3(-4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2(0.0f, 0.90625f) },
 		{ D3DXVECTOR3(-4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2(0.0f, 0.03125f) },
 		{ D3DXVECTOR3(4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2(1.0f, 0.90625f) },
 		{ D3DXVECTOR3(4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2(1.0f, 0.03125f) },
 };
 
-Game::Game(GAME_TYPE type, std::string path, std::string filename, std::string sram_path) :
+c_game::c_game(GAME_TYPE type, std::string path, std::string filename, std::string sram_path) :
 	mt(time(0))
 {
 	limit_sprites = false;
@@ -46,7 +46,7 @@ Game::Game(GAME_TYPE type, std::string path, std::string filename, std::string s
 
 }
 
-Game::~Game(void)
+c_game::~c_game()
 {
 	if (console)
 		delete console;
@@ -57,7 +57,7 @@ Game::~Game(void)
 	}
 }
 
-void Game::OnLoad()
+void c_game::OnLoad()
 {
 	if (!console->is_loaded())
 	{
@@ -69,7 +69,7 @@ void Game::OnLoad()
 	}
 }
 
-void Game::OnActivate(bool load)
+void c_game::OnActivate(bool load)
 {
 	if (ref == 0)
 	{
@@ -116,7 +116,7 @@ void Game::OnActivate(bool load)
 	++ref;
 }
 
-void Game::OnDeactivate()
+void c_game::OnDeactivate()
 {
 	if (ref == 0)
 		return;
@@ -148,7 +148,7 @@ void Game::OnDeactivate()
 	}
 }
 
-void Game::DrawToTexture(ID3D10Texture2D *tex)
+void c_game::DrawToTexture(ID3D10Texture2D *tex)
 {
 	D3D10_MAPPED_TEXTURE2D map;
 	map.pData = 0;
@@ -192,7 +192,7 @@ void Game::DrawToTexture(ID3D10Texture2D *tex)
 	tex->Unmap(0);
 }
 
-bool Game::Selectable()
+bool c_game::Selectable()
 {
 	if (console)
 		return console->is_loaded();
@@ -200,7 +200,7 @@ bool Game::Selectable()
 		return 0;
 }
 
-void Game::create_vertex_buffer()
+void c_game::create_vertex_buffer()
 {
 	if (vertex_buffer)
 	{
@@ -245,7 +245,7 @@ void Game::create_vertex_buffer()
 
 //TODO: this should probably be handled by console
 
-int Game::get_width()
+int c_game::get_width()
 {
 	switch (type)
 	{
@@ -262,7 +262,7 @@ int Game::get_width()
 	}
 }
 
-int Game::get_height()
+int c_game::get_height()
 {
 	switch (type)
 	{
@@ -279,7 +279,7 @@ int Game::get_height()
 	}
 }
 
-ID3D10Buffer* Game::get_vertex_buffer(int stretched)
+ID3D10Buffer* c_game::get_vertex_buffer(int stretched)
 {
 	if (console && !console->is_loaded()) {
 		return default_vertex_buffer;

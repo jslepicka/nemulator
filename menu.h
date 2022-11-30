@@ -9,7 +9,7 @@ class c_menu :
 {
 public:
 	c_menu();
-	virtual ~c_menu(void);
+	virtual ~c_menu();
 	virtual void init(void *params);
 	virtual int update(double dt, int child_result, void *params);
 	virtual void draw();
