@@ -30,21 +30,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class c_biquad4 : public i_audio_filter
 {
 public:
-	//c_biquad4(const float *g, const float *b2, const float *a2, const float *a3);
 	c_biquad4(std::vector<float> g, std::vector<float> b2, std::vector<float> a2, std::vector<float> a3);
-	~c_biquad4() {};
+	~c_biquad4(void) {};
 	float process(float input);
-	void *operator new (size_t size) { return _aligned_malloc(size, 16); }
-	void operator delete(void *p) { _aligned_free((c_biquad4*)p); }
 
 private:
-	__m128 z1;
-	__m128 z2;
-	__m128 d;
-	__m128 g;
-	__m128 a2;
-	__m128 b2;
-	__m128 a3;
+	alignas(16) __m128 z1;
+	alignas(16) __m128 z2;
+	alignas(16) __m128 d;
+	alignas(16) __m128 g;
+	alignas(16) __m128 a2;
+	alignas(16) __m128 b2;
+	alignas(16) __m128 a3;
 };
 
 inline c_biquad4::c_biquad4(std::vector<float> g, std::vector<float> b2, std::vector<float> a2, std::vector<float> a3)
@@ -61,7 +58,7 @@ inline c_biquad4::c_biquad4(std::vector<float> g, std::vector<float> b2, std::ve
 
 __forceinline float c_biquad4::process(float input)
 {
-	d = _mm_move_ss(d, _mm_load_ss(&input));
+	d.m128_f32[0] = input;
 	__m128 post_gain1 = _mm_mul_ps(d, g);
 	__m128 out = _mm_add_ps(post_gain1, z1);
 	__m128 t_z1_1 = _mm_mul_ps(post_gain1, b2);
@@ -73,4 +70,3 @@ __forceinline float c_biquad4::process(float input)
 	z1 = _mm_sub_ps(t_z1_1, t_z1_2);
 	return _mm_cvtss_f32(d);
 }
-
