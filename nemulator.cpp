@@ -9,6 +9,7 @@
 #include "console.h"
 #include <algorithm>
 #include <pmmintrin.h>
+#include "benchmark.h"
 
 extern ID3D10Device *d3dDev;
 extern D3DXMATRIX matrixView;
@@ -1115,9 +1116,10 @@ void c_nemulator::UpdateScene(double dt)
 					*sb++ = *buf_r++;
 				}
 			}
-
-			sound->copy(sound_buf, num_samples);
-			s = sound->sync();
+			if (!benchmark_mode) {
+				sound->copy(sound_buf, num_samples);
+				s = sound->sync();
+			}
 			console->set_audio_freq(sound->get_requested_freq());
 		}
 		RunGames();
@@ -1151,14 +1153,16 @@ void c_nemulator::UpdateScene(double dt)
 	if (elapsed >= 250.0)
 	{
 		double fps = framesDrawn / (elapsed / 1000.0);
-		//fps_history[fps_index++ % fps_records] = fps;
-		//max_fps = 60.0;
-		//for (int i = 0; i < fps_records; i++)
-		//	if (fps_history[i] > 60.0 && fps_history[i] > max_fps)
-		//		max_fps = fps_history[i];
-		//char x[64];
-		//sprintf(x, "%.2f [%.2f] %.2f", fps, max_fps, 1.0/fps*1000.0);
-		//SetWindowText(hWnd, x);
+		if (benchmark_mode) {
+			fps_history[fps_index++ % fps_records] = fps;
+			max_fps = 60.0;
+			for (int i = 0; i < fps_records; i++)
+				if (fps_history[i] > 60.0 && fps_history[i] > max_fps)
+					max_fps = fps_history[i];
+			char x[64];
+			sprintf(x, "%.2f [%.2f] %.2f", fps, max_fps, 1.0 / fps * 1000.0);
+			SetWindowText(hWnd, x);
+		}
 
 		if (stats)
 		{
