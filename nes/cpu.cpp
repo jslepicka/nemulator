@@ -498,6 +498,7 @@ INLINE void c_cpu::absolute_x_ea()
 	address = MAKEWORD(lo, hi);
 	int temp = address + X;
 	address = temp;
+	nes->read_byte(address);
 }
 
 INLINE void c_cpu::absolute_y()
@@ -528,6 +529,7 @@ INLINE void c_cpu::absolute_y_ea()
 	address = MAKEWORD(lo, hi);
 	int temp = address + Y;
 	address = temp;
+	nes->read_byte(address);
 }
 
 INLINE void c_cpu::indirect()	//For indirect jmp
@@ -587,6 +589,7 @@ INLINE void c_cpu::indirect_y_ea()	//Post-indexed indirect
 
 	int temp2 = address + Y;
 	address = temp2;
+	nes->read_byte(address);
 }
 
 INLINE void c_cpu::branch(int condition)
