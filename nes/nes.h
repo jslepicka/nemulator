@@ -37,8 +37,6 @@ public:
 	const char *get_mapper_name();
 	int get_mapper_number();
 	int get_mirroring_mode();
-	int mmc3_cycles;
-	int ppu_cycles;
 	void set_sprite_limit(bool limit_sprites);
 	bool get_sprite_limit();
 	void set_submapper(int submapper);

@@ -277,10 +277,12 @@ int c_nes::LoadImage(char *pathFile)
 	image = new unsigned char[file_length];
 	file.read((char*)image, file_length);
 	file.close();
-
+	if (file_length < sizeof(iNesHeader)) {
+		return -1;
+	}
 	header = (iNesHeader *)image;
 
-	char ines_signature[4] = {'N', 'E', 'S', 0x1a};
+	char ines_signature[] = {'N', 'E', 'S', 0x1a};
 	char fds_signature[] = "*NINTENDO-HVC*";
 	char nsf_signature[] = { 'N', 'E', 'S', 'M', 0x1A };
 
@@ -405,8 +407,6 @@ int c_nes::reset()
 	cpu->reset();
 	joypad->reset();
 	loaded = true;
-	mmc3_cycles = 260;
-	ppu_cycles = 341;
 	return 1;
 }
 
