@@ -73,4 +73,13 @@ private:
 	double scroll_offset;
 	Meow_FFT_Complex* meow_out;
 	Meow_FFT_Workset_Real* fft_real;
+
+	int visualization;
+
+	enum VISUALIZATIONS {
+		VIZ_FFT,
+		VIZ_SCOPE,
+		VIZ_BOTH,
+		NUM_VISUALIZATIONS
+	};
 };
