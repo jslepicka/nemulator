@@ -37,9 +37,6 @@
     <Filter Include="Source Files\gb">
       <UniqueIdentifier>{4afd6606-abc9-437f-bee7-24c26e86b3ac}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\ffft">
-      <UniqueIdentifier>{c0fef103-a93f-43cc-bc62-2077b079d3d2}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="config.cpp">
@@ -776,66 +773,6 @@
     <ClInclude Include="nsf_stats.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ffft\Array.h">
-      <Filter>Header Files\ffft</Filter>
-    </ClInclude>
-    <ClInclude Include="ffft\Array.hpp">
-      <Filter>Header Files\ffft</Filter>
-    </ClInclude>
-    <ClInclude Include="ffft\def.h">
-      <Filter>Header Files\ffft</Filter>
-    </ClInclude>
-    <ClInclude Include="ffft\DynArray.h">
-      <Filter>Header Files\ffft</Filter>
-    </ClInclude>
-    <ClInclude Include="ffft\DynArray.hpp">
-      <Filter>Header Files\ffft</Filter>
-    </ClInclude>
-    <ClInclude Include="ffft\FFTReal.h">
-      <Filter>Header Files\ffft</Filter>
-    </ClInclude>
-    <ClInclude Include="ffft\FFTReal.hpp">
-      <Filter>Header Files\ffft</Filter>
-    </ClInclude>
-    <ClInclude Include="ffft\FFTRealFixLen.h">
-      <Filter>Header Files\ffft</Filter>
-    </ClInclude>
-    <ClInclude Include="ffft\FFTRealFixLen.hpp">
-      <Filter>Header Files\ffft</Filter>
-    </ClInclude>
-    <ClInclude Include="ffft\FFTRealFixLenParam.h">
-      <Filter>Header Files\ffft</Filter>
-    </ClInclude>
-    <ClInclude Include="ffft\FFTRealPassDirect.h">
-      <Filter>Header Files\ffft</Filter>
-    </ClInclude>
-    <ClInclude Include="ffft\FFTRealPassDirect.hpp">
-      <Filter>Header Files\ffft</Filter>
-    </ClInclude>
-    <ClInclude Include="ffft\FFTRealPassInverse.h">
-      <Filter>Header Files\ffft</Filter>
-    </ClInclude>
-    <ClInclude Include="ffft\FFTRealPassInverse.hpp">
-      <Filter>Header Files\ffft</Filter>
-    </ClInclude>
-    <ClInclude Include="ffft\FFTRealSelect.h">
-      <Filter>Header Files\ffft</Filter>
-    </ClInclude>
-    <ClInclude Include="ffft\FFTRealSelect.hpp">
-      <Filter>Header Files\ffft</Filter>
-    </ClInclude>
-    <ClInclude Include="ffft\FFTRealUseTrigo.h">
-      <Filter>Header Files\ffft</Filter>
-    </ClInclude>
-    <ClInclude Include="ffft\FFTRealUseTrigo.hpp">
-      <Filter>Header Files\ffft</Filter>
-    </ClInclude>
-    <ClInclude Include="ffft\OscSinCos.h">
-      <Filter>Header Files\ffft</Filter>
-    </ClInclude>
-    <ClInclude Include="ffft\OscSinCos.hpp">
-      <Filter>Header Files\ffft</Filter>
-    </ClInclude>
     <ClInclude Include="benchmark.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -844,6 +781,9 @@
     </ClInclude>
     <ClInclude Include="nes\mirroring_types.h">
       <Filter>Header Files\nes</Filter>
+    </ClInclude>
+    <ClInclude Include="meow_fft.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

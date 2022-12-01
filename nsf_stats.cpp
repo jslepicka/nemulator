@@ -1,6 +1,8 @@
 #include "nsf_stats.h"
 #include "effect2.fxo.h"
 #include <algorithm>
+#define MEOW_FFT_IMPLEMENTATION
+#include "meow_fft.h"
 
 extern ID3D10Device* d3dDev;
 extern D3DXMATRIX matrixView;
@@ -12,7 +14,8 @@ c_nsf_stats::c_nsf_stats()
 	biquad1 = NULL;
 	biquad2 = NULL;
 	biquad3 = NULL;
-
+	meow_out = NULL;
+	fft_real = NULL;
 }
 
 c_nsf_stats::~c_nsf_stats()
@@ -25,6 +28,12 @@ c_nsf_stats::~c_nsf_stats()
 	}
 	if (biquad3) {
 		delete biquad3;
+	}
+	if (meow_out) {
+		delete meow_out;
+	}
+	if (fft_real) {
+		delete fft_real;
 	}
 }
 
@@ -170,6 +179,11 @@ void c_nsf_stats::init(void* params)
 
 	scroll_offset = 1.5;
 	scroll_timer = 0.0;
+
+	meow_out = (Meow_FFT_Complex*) operator new(sizeof(Meow_FFT_Complex) * fft_length);
+	size_t workset_bytes = meow_fft_generate_workset_real(fft_length, NULL);
+	fft_real = (Meow_FFT_Workset_Real*)operator new(workset_bytes);
+	meow_fft_generate_workset_real(fft_length, fft_real);
 }
 
 int c_nsf_stats::update(double dt, int child_result, void* params)
@@ -228,6 +242,7 @@ float c_nsf_stats::aweight_filter(float sample)
 	return biquad3->process(biquad2->process(biquad1->process(sample))) * 1.189276456832886;
 }
 
+
 void c_nsf_stats::draw()
 {
 	draw_count++;
@@ -254,7 +269,7 @@ void c_nsf_stats::draw()
 		ss = (ss + 1) & 8191;
 		op++;
 	}
-	fft2.do_fft(out2, in2);
+	meow_fft_real(fft_real, in2, meow_out);
 
 	const double db_max = 100.0;
 	for (int bucket = 0; bucket < NUM_BANDS; bucket++) {
@@ -267,8 +282,11 @@ void c_nsf_stats::draw()
 		int count = 0;
 		double max = 0.0;
 		for (int i = start; i <= end; i++) {
-			float re = out2[i];
-			float im = out2[i + fft_length / 2];
+			float re = meow_out[i].r;
+			//float im = meow_out[i + fft_length / 2].j;
+			float im = meow_out[i].j;
+			//re /= fft_length;
+			//im /= fft_length;
 			double mag = sqrt(re * re + im * im);
 			if (mag > 0.0) {
 				mag = 20.0 * log10(mag);

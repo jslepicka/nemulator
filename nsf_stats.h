@@ -1,9 +1,8 @@
 #pragma once
 #include "stats.h"
 #include "console.h"
-#include "ffft\FFTRealFixLen.h"
 #include "biquad.hpp"
-//#include "ffft\FFTReal.h"
+#include "meow_fft.h"
 
 class c_nsf_stats :
 	public c_stats
@@ -52,7 +51,6 @@ private:
 	double avg_level;
 
 	static const int fft_length = 8192;
-	ffft::FFTRealFixLen <13> fft2; //2^13 = 8192
 
 	static const int NUM_BANDS = 32;
 	int fft_scale;
@@ -73,5 +71,6 @@ private:
 
 	double scroll_timer;
 	double scroll_offset;
-	//ffft::FFTReal <float> fft2;
+	Meow_FFT_Complex* meow_out;
+	Meow_FFT_Workset_Real* fft_real;
 };
