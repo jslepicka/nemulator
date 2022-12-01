@@ -3,11 +3,12 @@
 #include <algorithm>
 #define MEOW_FFT_IMPLEMENTATION
 #include "meow_fft.h"
+#include "nemulator.h"
 
 extern ID3D10Device* d3dDev;
 extern D3DXMATRIX matrixView;
 extern D3DXMATRIX matrixProj;
-
+extern c_input_handler* g_ih;
 
 c_nsf_stats::c_nsf_stats()
 {
@@ -16,6 +17,7 @@ c_nsf_stats::c_nsf_stats()
 	biquad3 = NULL;
 	meow_out = NULL;
 	fft_real = NULL;
+	visualization = 0;
 }
 
 c_nsf_stats::~c_nsf_stats()
@@ -234,6 +236,15 @@ int c_nsf_stats::update(double dt, int child_result, void* params)
 		scroll_timer = 0.0;
 	}
 
+	if (g_ih->get_result(BUTTON_1A, true) & c_input_handler::RESULT_DOWN) {
+		visualization = (visualization + 1) % NUM_VISUALIZATIONS;
+	}
+	else if (g_ih->get_result(BUTTON_1B, true) & c_input_handler::RESULT_DOWN) {
+		if (--visualization < 0) {
+			visualization = NUM_VISUALIZATIONS - 1;
+		}
+	}
+
 	return c_stats::update(dt, child_result, params);
 }
 
@@ -269,52 +280,7 @@ void c_nsf_stats::draw()
 		ss = (ss + 1) & 8191;
 		op++;
 	}
-	meow_fft_real(fft_real, in2, meow_out);
 
-	const double db_max = 100.0;
-	for (int bucket = 0; bucket < NUM_BANDS; bucket++) {
-		double band_min = band_mins[bucket];
-		double band_max = band_maxs[bucket];
-		double f = 24000.0 / (double)(fft_length / 2.0);
-		int start = band_min / f;
-		int end = band_max / f;
-		double avg = 0.0;
-		int count = 0;
-		double max = 0.0;
-		for (int i = start; i <= end; i++) {
-			float re = meow_out[i].r;
-			//float im = meow_out[i + fft_length / 2].j;
-			float im = meow_out[i].j;
-			//re /= fft_length;
-			//im /= fft_length;
-			double mag = sqrt(re * re + im * im);
-			if (mag > 0.0) {
-				mag = 20.0 * log10(mag);
-				mag -= mag_adjust;
-				mag += 130.0;
-				mag *= fft_scale;
-			}
-			else {
-				mag = 0.0;
-			}
-			if (mag > max)
-			{
-				max = mag;
-			}
-		}
-		double v = max / db_max;
-		if (v > max_fft_level)
-		{
-			max_fft_level = v;
-		}
-		
-		if (v > bucket_vals[bucket]) {
-			bucket_vals[bucket] = v;
-		}
-	}
-
-	sbp = sb;
-	draw_count = 0;
 	D3D10_MAPPED_TEXTURE2D map;
 	tex->Map(0, D3D10_MAP_WRITE_DISCARD, NULL, &map);
 	int* p = (int*)map.pData;
@@ -324,7 +290,6 @@ void c_nsf_stats::draw()
 		*pp++ = 0xF0202020;
 	}
 
-
 	auto plot = [&](int x, int y, int c) {
 		if (x < 0 || x >= tex_size || y < 0 || y >= tex_size) {
 			return;
@@ -332,91 +297,140 @@ void c_nsf_stats::draw()
 		*(p + y * tex_size + x) = c;
 	};
 
-	int last_bucket = -1;
-	auto lerp = [](auto start, auto end, double mu) {
-		mu = std::clamp(mu, 0.0, 1.0);
-		return start * (1.0 - mu) + end * mu;
-	};
+	if (visualization == VIZ_FFT || visualization == VIZ_BOTH) {
+		meow_fft_real(fft_real, in2, meow_out);
 
-	for (int i = 0; i < tex_size; i++)
-	{
-		int bucket = i / (double)tex_size * (double)NUM_BANDS;
-		double lower = .5;
-		int py = ((bucket_vals[bucket] - lower) * (1.0 / (1.0 - lower))) * (tex_size - 1);
-		py = tex_size - 1 - py;
-		if (py < 0) {
-			py = 0;
-		}
-		int last_pixel_in_bucket = 0;
+		const double db_max = 100.0;
+		for (int bucket = 0; bucket < NUM_BANDS; bucket++) {
+			double band_min = band_mins[bucket];
+			double band_max = band_maxs[bucket];
+			double f = 24000.0 / (double)(fft_length / 2.0);
+			int start = band_min / f;
+			int end = band_max / f;
+			double avg = 0.0;
+			int count = 0;
+			double max = 0.0;
+			for (int i = start; i <= end; i++) {
+				float re = meow_out[i].r;
+				//float im = meow_out[i + fft_length / 2].j;
+				float im = meow_out[i].j;
+				//re /= fft_length;
+				//im /= fft_length;
+				double mag = sqrt(re * re + im * im);
+				if (mag > 0.0) {
+					mag = 20.0 * log10(mag);
+					mag -= mag_adjust;
+					mag += 130.0;
+					mag *= fft_scale;
+				}
+				else {
+					mag = 0.0;
+				}
+				if (mag > max)
+				{
+					max = mag;
+				}
+			}
+			double v = max / db_max;
+			if (v > max_fft_level)
+			{
+				max_fft_level = v;
+			}
 
-		if ((int)((i + 1) / (double)tex_size * (double)NUM_BANDS) != bucket) {
-			last_pixel_in_bucket = 1;
+			if (v > bucket_vals[bucket]) {
+				bucket_vals[bucket] = v;
+			}
 		}
-		unsigned int colors[] = { 0, 0xFF000000 };
-		for (int y = py; y < tex_size; y++)
+
+		sbp = sb;
+		draw_count = 0;
+
+		int last_bucket = -1;
+		auto lerp = [](auto start, auto end, double mu) {
+			mu = std::clamp(mu, 0.0, 1.0);
+			return start * (1.0 - mu) + end * mu;
+		};
+
+		for (int i = 0; i < tex_size; i++)
 		{
-			double mu = (tex_size - y) / (double)tex_size;
-			int r = lerp(0x10, 0xFF, mu*1.25);
-			int g = lerp(0x28, 0xFF, mu*1.25);
-			int b = lerp(0x80, 0xFF, mu);
-			colors[0] = 0xFF000000 | ((b & 0xFF) << 16) | ((g & 0xFF) << 8) | (r & 0xFF);
+			int bucket = i / (double)tex_size * (double)NUM_BANDS;
+			double lower = .5;
+			int py = ((bucket_vals[bucket] - lower) * (1.0 / (1.0 - lower))) * (tex_size - 1);
+			py = tex_size - 1 - py;
+			if (py < 0) {
+				py = 0;
+			}
+			int last_pixel_in_bucket = 0;
 
-			int color_select = (y == py || bucket != last_bucket || last_pixel_in_bucket);
-			plot(i, y, colors[color_select]);
+			if ((int)((i + 1) / (double)tex_size * (double)NUM_BANDS) != bucket) {
+				last_pixel_in_bucket = 1;
+			}
+			unsigned int colors[] = { 0, 0xFF000000 };
+			for (int y = py; y < tex_size; y++)
+			{
+				double mu = (tex_size - y) / (double)tex_size;
+				int r = lerp(0x10, 0xFF, mu * 1.25);
+				int g = lerp(0x28, 0xFF, mu * 1.25);
+				int b = lerp(0x80, 0xFF, mu);
+				colors[0] = 0xFF000000 | ((b & 0xFF) << 16) | ((g & 0xFF) << 8) | (r & 0xFF);
+
+				int color_select = (y == py || bucket != last_bucket || last_pixel_in_bucket);
+				plot(i, y, colors[color_select]);
+			}
+			last_bucket = bucket;
 		}
-		last_bucket = bucket;
+
 	}
 
+	if (visualization == VIZ_SCOPE || visualization == VIZ_BOTH) {
+		int mult = 4;
+
+		int steps = 8192 / tex_size / mult;
+
+		for (int i = 0; i < tex_size / mult; i++) {
+			//int vol = *(sb + (i * steps));
+			int vol = sb[(sb_index + (i * steps)) & 8191];
+			vol *= scale;
+			vol += 32768; //move sample level to 0 -> 65535
+			float yy = vol / 65535.0;
+			float new_level = abs(yy * 2.0 - 1.0);
+			yy = std::clamp(yy, 0.0f, 1.0f);
 
 
+			if (new_level > max_level)
+			{
+				max_level = new_level;
+			}
 
-	int mult = 4;
+			int c = 0xFFFFFFFF;
+			int cur_x = (i + 1) * mult;
+			if (prev_x != -1.0) {
+				float dx = (float)cur_x - prev_x;
+				float dy = yy - prev_y;
 
-	int steps = 8192 / tex_size / mult;
+				for (int j = prev_x; j < cur_x; j++) {
+					float yyy = prev_y + dy * (float)(j - prev_x) / dx;
+					int px = j;
+					int py = (int)round((yyy * (float)(tex_size - 1)));
+					plot(px, py, c);
 
-	//for (int i = 0; i < tex_size / mult; i++) {
-	//	//int vol = *(sb + (i * steps));
-	//	int vol = sb[(sb_index + (i * steps)) & 8191];
-	//	vol *= scale;
-	//	vol += 32768; //move sample level to 0 -> 65535
-	//	float yy = vol / 65535.0;
-	//	float new_level = abs(yy * 2.0 - 1.0);
-	//	yy = clamp(yy, 0.0f, 1.0f);
+					plot(px - 1, py, c);
+					plot(px + 1, py, c);
 
+					plot(px - 1, py - 1, c);
+					plot(px, py - 1, c);
+					plot(px + 1, py - 1, c);
 
-	//	if (new_level > max_level)
-	//	{
-	//		max_level = new_level;
-	//	}
+					plot(px - 1, py + 1, c);
+					plot(px, py + 1, c);
+					plot(px + 1, py + 1, c);
+				}
+			}
 
-	//	int c = 0xFFFFFFFF;
-	//	int cur_x = (i + 1) * mult;
-	//	if (prev_x != -1.0) {
-	//		float dx = (float)cur_x - prev_x;
-	//		float dy = yy - prev_y;
-
-	//		for (int j = prev_x; j < cur_x; j++) {
-	//			float yyy = prev_y + dy * (float)(j - prev_x) / dx;
-	//			int px = j;
-	//			int py = (int)round((yyy * (float)(tex_size - 1)));
-	//			plot(px, py, c);
-
-	//			plot(px - 1, py, c);
-	//			plot(px + 1, py, c);
-
-	//			plot(px - 1, py - 1, c);
-	//			plot(px, py - 1, c);
-	//			plot(px + 1, py - 1, c);
-
-	//			plot(px - 1, py + 1, c);
-	//			plot(px, py + 1, c);
-	//			plot(px + 1, py + 1, c);
-	//		}
-	//	}
-
-	//	prev_x = cur_x;
-	//	prev_y = yy;
-	//}
+			prev_x = cur_x;
+			prev_y = yy;
+		}
+	}
 
 	tex->Unmap(0);
 
