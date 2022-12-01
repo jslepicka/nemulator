@@ -1,6 +1,7 @@
 #pragma once
 #include "ines.h"
 #include "windows.h"
+#include "mirroring_types.h"
 
 class c_ppu;
 class c_cpu;
@@ -43,11 +44,6 @@ public:
 	int file_length;
 protected:
 	int expansion_audio;
-	static const int MIRRORING_HORIZONTAL = 0;
-	static const int MIRRORING_VERTICAL = 1;
-	static const int MIRRORING_ONESCREEN_LOW = 2;
-	static const int MIRRORING_ONESCREEN_HIGH = 3;
-	static const int MIRRORING_FOURSCREEN = 4;
 
 	static const int CHR_0000 = 0;
 	static const int CHR_0400 = 1;

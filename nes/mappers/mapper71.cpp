@@ -29,8 +29,7 @@ void c_mapper71::reset()
 {
 	enable_mirroring_control = 0;
 	SetPrgBank16k(PRG_C000, prgRomPageCount16k - 1);
-	if (this->crc32 == 0x1bc686a8) //fire hawk has one sceeen mirroring
-	{
+	if (submapper == 1) {
 		enable_mirroring_control = 1;
 	}
 }

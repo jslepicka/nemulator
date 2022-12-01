@@ -20,8 +20,4 @@ void c_mapper2::WriteByte(unsigned short address, unsigned char value)
 void c_mapper2::reset()
 {
 	c_mapper::reset();
-	if (crc32 == 0x419461d0)
-		set_mirroring(MIRRORING_VERTICAL);
-	else if (crc32 == 0x9ea1dc76)  //Rainbow Islands has incorrect mirroring
-		set_mirroring(MIRRORING_HORIZONTAL);
 }

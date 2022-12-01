@@ -64,11 +64,6 @@ void c_mapper88::reset()
 	SetPrgBank16k(PRG_C000, prgRomPageCount16k - 1);
 	command = 0;
 
-	if (
-		crc32 == 0xD1691028		//Devil Man (J)
-		)
-		submapper = 1;
-
 	for (int i = CHR_0000; i <= CHR_1C00; i++)
 		SetChrBank1k(i, 0);
 }

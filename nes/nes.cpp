@@ -7,6 +7,7 @@
 #include "ines.h"
 #include "..\mem_access_log.h"
 #include "..\crc32.h"
+#include "cartdb.h"
 
 #include <fstream>
 
@@ -324,15 +325,12 @@ int c_nes::LoadImage(char *pathFile)
 int c_nes::load()
 {
 	char sram_path_file[MAX_PATH];
+	int submapper = -1;
 	sprintf_s(sram_path_file, "%s\\%s", sram_path, filename);
 	sprintf_s(pathFile, "%s\\%s", path, filename);
 
 	strip_extension(sram_path_file);
 	sprintf_s(sramFilename, "%s.ram", sram_path_file);
-
-	//strcpy_s(title, filename);
-
-	//strip_extension(title);
 
 	cpu = new c_cpu();
 	ppu = new c_ppu();
@@ -342,60 +340,25 @@ int c_nes::load()
 
 	mapperNumber = LoadImage(pathFile);
 
-	if (crc32 == 0x96ce586e)
-		mapperNumber = 189;
-
-	if (crc32 == 0x889129CB ||	//Startropics (U) [!].nes
-		crc32 == 0xD054FFB0)	//Startropics II - Zoda's Revenge (U) [!].nes
-	{
-		mapperNumber = 0x100;
-	}
-
-	if (crc32 == 0x02CC3973)  //Ninja Kid has wrong mapper in header
-	{
-		mapperNumber = 0x3;
-	}
-
-	if (crc32 == 0x9BDE3267)		//Adventures of Dino Riki has bad header
-	{
-		header->Rcb1.Mirroring = 1;
-		mapperNumber = 3;
-	}
-
-	if (crc32 == 0x404B2E8B)		//Rad Racer 2 - bad header
-	{
-		header->Rcb1.Fourscreen = 1;
-	}
-
-	if (crc32 == 0x90C773C1) //Goal! Two - bad header
-	{
-		mapperNumber = 118;
-	}
-
-	if (crc32 == 0xA80A0F01 || //Incredible Crash Dummies
-		//crc32 == 0x018A8699 || //Roger Clemens' MVP Baseball
-		crc32 == 0x982DFB38 //|| //Mickey's Safari in Letterland
-		//crc32 == 0xAF05F37E || //George Foreman's KO Boxing
-		//crc32 == 0x445DD134 //Bart vs. The World
-		)
-		mapperNumber = 0x101;
-
-	if (crc32 == 0x6BC65D7E) //Youkai Kuraba
-		mapperNumber = 140;
-
-	//if (crc32 == 0xedcf1b71) //solstice needs sprite limiting to prevent glitches in intro
-	//{
-	//	limit_sprites = true;
-	//}
-
-	if (crc32 == 0x5B4C6146) //Family Boxing (J) - Ring King
-	{
-		header->Rcb1.Mirroring = 1; //incorrect mirroring in header
-	}
-
-	if (crc32 == 0x4F2F1846) //Damista '89 - Kaimaku Han!!
-	{
-		header->Rcb1.Mirroring = 1; //incorrect mirroring in header
+	auto cartdb_entry = cartdb.find(crc32);
+	if (cartdb_entry != cartdb.end()) {
+		s_cartdb c = cartdb_entry->second;
+		if (c.mapper != -1) {
+			mapperNumber = c.mapper;
+		}
+		if (c.submapper != -1) {
+			submapper = c.submapper;
+		}
+		if (c.mirroring != -1) {
+			switch (c.mirroring) {
+			case 0:
+			case 1:
+				header->Rcb1.Mirroring = c.mirroring;
+				break;
+			case 4:
+				header->Rcb1.Fourscreen = 1;
+			}
+		}
 	}
 
 	auto m = mapper_factory.find(mapperNumber);
@@ -403,8 +366,9 @@ int c_nes::load()
 		return 0;
 	mapper = (m->second)();
 
-	if (crc32 == 0x93991433)	//Low G Man
-		mapper->set_submapper(1);
+	if (submapper != -1) {
+		mapper->set_submapper(submapper);
+	}
 
 	strcpy_s(mapper->filename, pathFile);
 	strcpy_s(mapper->sramFilename, sramFilename);

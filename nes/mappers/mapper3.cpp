@@ -29,6 +29,4 @@ void c_mapper3::WriteByte(unsigned short address, unsigned char value)
 void c_mapper3::reset()
 {
 	c_mapper::reset();
-	if (crc32 == 0x6997F5E1)
-		this->set_mirroring(MIRRORING_VERTICAL);
 }

@@ -24,11 +24,6 @@ void c_mapper19::reset()
 	memset(chr_regs, 0, sizeof(chr_regs));
 	memset(mirroring_regs, 0, sizeof(mirroring_regs));
 	SetPrgBank8k(PRG_E000, prgRomPageCount8k - 1);
-	if (crc32 == 0xC247CC80) //Family Circuit '91
-	{
-		submapper = 1;
-		mapperName = "Mapper 19 (1)";
-	}
 }
 
 void c_mapper19::WriteByte(unsigned short address, unsigned char value)

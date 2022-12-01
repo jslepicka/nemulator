@@ -7,8 +7,6 @@ public:
 	c_cpu();
 	~c_cpu();
 	int reset();
-	void execute_cycles(int numPpuCycles);
-	void execute3();
 	void execute_nmi();
 	void execute_irq();
 	int available_cycles;
