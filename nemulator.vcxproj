@@ -383,6 +383,7 @@
     <ClInclude Include="menu.h" />
     <ClInclude Include="nemulator.h" />
     <ClInclude Include="nes\apu2.h" />
+    <ClInclude Include="nes\cartdb.h" />
     <ClInclude Include="nes\cpu.h" />
     <ClInclude Include="nes\ines.h" />
     <ClInclude Include="nes\joypad.h" />
@@ -463,6 +464,7 @@
     <ClInclude Include="nes\mappers\mapper_nsf_rom.h" />
     <ClInclude Include="nes\mappers\mapper_vrc4.h" />
     <ClInclude Include="nes\mappers\vrc7_audio.h" />
+    <ClInclude Include="nes\mirroring_types.h" />
     <ClInclude Include="nes\ppu.h" />
     <ClInclude Include="nes_input_handler.h" />
     <ClInclude Include="nsf_stats.h" />

@@ -38,12 +38,17 @@ void c_mapper78::WriteByte(unsigned short address, unsigned char value)
 void c_mapper78::reset()
 {
 	four_screen = false;
-	if (crc32 == 0xBA51AC6F)		//Holy Diver (J).nes
+
+	switch (submapper) {
+	case 1:
 		mirror_mode = 0;
-	else if (crc32 == 0x3D1C3137)	//Uchuusen - Cosmo Carrier (J).nes
+		break;
+	case 2:
 		mirror_mode = 1;
-
-
+		break;
+	default:
+		break;
+	}
 
 	SetPrgBank16k(PRG_C000, prgRomPageCount16k - 1);
 }

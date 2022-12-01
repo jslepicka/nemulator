@@ -140,55 +140,6 @@ void c_mapper1::clock(int cycles)
 
 void c_mapper1::reset()
 {
-	if (
-		crc32 == 0xA49B48B8 ||	//Dragon Quest III - Soshite Densetsu e... (J) (PRG0) [!].nes
-		crc32 == 0x9C654F15 ||	//Dragon Quest III - Soshite Densetsu e... (J) (PRG0) [o1].nes
-		crc32 == 0x9F830358 ||	//Dragon Quest III - Soshite Densetsu e... (J) (PRG0) [T+Eng0.0111_Spinner_8].nes
-		crc32 == 0x869501CA ||	//Dragon Quest III - Soshite Densetsu e... (J) (PRG1) [!].nes
-		crc32 == 0x0794F2A5 ||	//Dragon Quest IV - Michibikareshi Monotachi (J) (PRG1) [!].nes
-		crc32 == 0xAC413EB0 ||	//Dragon Quest IV - Michibikareshi Monotachi (J) (PRG1) [b1].nes
-		crc32 == 0x579EEE6B ||	//Dragon Quest IV - Michibikareshi Monotachi (J) (PRG1) [b2].nes
-		crc32 == 0x545D027B ||	//Dragon Quest IV - Michibikareshi Monotachi (J) (PRG1) [b3].nes
-		crc32 == 0x3EBCE9D3 ||	//Dragon Quest IV - Michibikareshi Monotachi (J) (PRG1) [b4].nes
-		crc32 == 0xB4CAFFFB ||	//Dragon Quest IV - Michibikareshi Monotachi (J) (PRG1) [o1].nes
-		crc32 == 0x1613A3E8 ||	//Dragon Quest IV - Michibikareshi Monotachi (J) (PRG1) [o2].nes
-		crc32 == 0xB7BDE3FC ||	//Dragon Quest IV - Michibikareshi Monotachi (J) (PRG1) [o3].nes
-		crc32 == 0x9CAD70D7 ||	//Dragon Quest IV Mayuge V1.0 (DQ4 Hack).nes
-		crc32 == 0xA86A5318 ||	//Dragon Warrior III (U) [!].nes
-		crc32 == 0x759EE933 ||	//Dragon Warrior III (U) [b1].nes
-		crc32 == 0x1ED7F280 ||	//Dragon Warrior III (U) [b1][o1].nes
-		crc32 == 0xA48352DD ||	//Dragon Warrior III (U) [b2].nes
-		crc32 == 0xE1D847F8 ||	//Dragon Warrior III (U) [b2][o1].nes
-		crc32 == 0xE02BD69D ||	//Dragon Warrior III (U) [b3].nes
-		crc32 == 0x74597343 ||	//Dragon Warrior III (U) [b4].nes
-		crc32 == 0x26733857 ||	//Dragon Warrior III (U) [b5].nes
-		crc32 == 0xA6BE0EA7 ||	//Dragon Warrior III (U) [b6].nes
-		crc32 == 0x29BD4B11 ||	//Dragon Warrior III (U) [o1].nes
-		crc32 == 0x9898CA71 ||	//Dragon Warrior III (U) [o2].nes
-		crc32 == 0xA44021DB ||	//Dragon Warrior III (U) [T+Fre1.0_Generation IX].nes
-		crc32 == 0x9549652C ||	//Dragon Warrior III (U) [T+Por1.1_CBT].nes 9549652C
-		crc32 == 0xAABF628C ||	//Dragon Warrior III (U) [T-FreBeta_Generation IX].nes
-		crc32 == 0x9B9D3893 ||	//Dragon Warrior III (U) [T-Por_CBT].nes
-		crc32 == 0x39EEEE89 ||	//Dragon Warrior III Special Ed. V0.5 (Hack).nes
-		crc32 == 0x506E259D ||	//Dragon Warrior IV (U) [!].nes
-		crc32 == 0x41413B06 ||	//Dragon Warrior IV (U) [b1].nes
-		crc32 == 0x2E91EB15 ||	//Dragon Warrior IV (U) [o1].nes
-		crc32 == 0x06390812 ||	//Dragon Warrior IV (U) [o2].nes
-		crc32 == 0xFC2B6281 ||	//Dragon Warrior IV (U) [o3].nes
-		crc32 == 0x030AB0B2 ||	//Dragon Warrior IV (U) [o4].nes
-		crc32 == 0xAB43AA55 ||	//Dragon Warrior IV (U) [o5].nes
-		crc32 == 0x97F8C475 ||	//Dragon Warrior IV (U) [o6].nes
-		crc32 == 0x44544B8A ||	//Final Fantasy 99 (DQ3 Hack) [a1].nes
-		crc32 == 0xB8F8D911 ||	//Final Fantasy 99 (DQ3 Hack) [a1][o1].nes
-		crc32 == 0x70FA1880	||	//Final Fantasy 99 (DQ3 Hack).nes
-		crc32 == 0xCEE5857B ||  //Ninjara Hoi! (J) [!].nes
-		crc32 == 0xCB8F9273 ||  //Ninjara Hoi! (J) [b1].nes
-		crc32 == 0xFFBC61C5 ||  //Ninjara Hoi! (J) [b2].nes
-		crc32 == 0xB061F6E2     //Ninjara Hoi! (J) [o1].nes
-		)
-	{
-		submapper = 1;
-	}
 	regs[0] = 0x0C;
 	regs[1] = 0;
 	regs[2] = 0;
@@ -198,5 +149,4 @@ void c_mapper1::reset()
 	ignore_writes = 0;
 	cycle_count = 1;
 	Sync();
-
 }

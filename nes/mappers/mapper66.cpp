@@ -26,7 +26,4 @@ void c_mapper66::reset()
 {
 	SetPrgBank32k(0);
 	SetChrBank8k(0);
-
-	if (crc32 == 0xD26EFD78)
-		this->set_mirroring(MIRRORING_VERTICAL);
 }

@@ -201,14 +201,9 @@ void c_mapper4::fire_irq()
 void c_mapper4::reset()
 {
 	if (nes->header->Rcb1.Fourscreen) {
+		//if four screen, disallow changes to mirroring mode
 		four_screen = 1;
 	}
-	if (crc32 == 0x404B2E8B) { //Rad Racer 2
-		set_mirroring(MIRRORING_FOURSCREEN);
-		four_screen = 1;
-	}
-
-	//SetPrgBank16k(PRG_C000, prgRomPageCount16k - 1);
 
 	irqCounter = 0;
 	irqEnabled = false;
@@ -230,8 +225,9 @@ void c_mapper4::reset()
 	prg_mask = 0xFF;
 	chr_mask = 0xFF;
 
-	if (crc32 == 0x97B6CB19) //Aladdin (SuperGame) (Mapper 4)
+	if (submapper == 2) {
 		irq_mode = 0;
+	}
 
 	//TODO: Not sure if these are the correct initialization values
 

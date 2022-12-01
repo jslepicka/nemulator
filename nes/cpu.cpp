@@ -82,8 +82,8 @@ int c_cpu::reset()
 
 void c_cpu::execute()
 {
-	for (;;)
-	{
+	//for (;;)
+	//{
 		if (fetch_opcode)
 		{
 			if (do_apu_dma)
@@ -121,21 +121,9 @@ void c_cpu::execute()
 			fetch_opcode = true;
 			execute_opcode();
 		}
-		else
-			break;
-	}
-}
-
-void c_cpu::execute3()
-{
-	available_cycles += 3;
-	execute();
-}
-
-void c_cpu::execute_cycles(int numPpuCycles)
-{
-	available_cycles += numPpuCycles;
-	execute();
+	//	else
+	//		break;
+	//}
 }
 
 void c_cpu::do_sprite_dma(unsigned char* dst, int source_address)
