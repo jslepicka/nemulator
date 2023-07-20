@@ -32,10 +32,10 @@ c_nsf_stats::~c_nsf_stats()
 		delete biquad3;
 	}
 	if (meow_out) {
-		delete meow_out;
+		free(meow_out);
 	}
 	if (fft_real) {
-		delete fft_real;
+		free(fft_real);
 	}
 }
 
@@ -181,10 +181,9 @@ void c_nsf_stats::init(void* params)
 
 	scroll_offset = 1.5;
 	scroll_timer = 0.0;
-
-	meow_out = (Meow_FFT_Complex*) operator new(sizeof(Meow_FFT_Complex) * fft_length);
+	meow_out = (Meow_FFT_Complex*)malloc(sizeof(Meow_FFT_Complex) * fft_length);
 	size_t workset_bytes = meow_fft_generate_workset_real(fft_length, NULL);
-	fft_real = (Meow_FFT_Workset_Real*)operator new(workset_bytes);
+	fft_real = (Meow_FFT_Workset_Real*)malloc(workset_bytes);
 	meow_fft_generate_workset_real(fft_length, fft_real);
 }
 

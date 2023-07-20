@@ -233,7 +233,6 @@
     <ClCompile Include="gb\mbc1.cpp" />
     <ClCompile Include="gb\mbc3.cpp" />
     <ClCompile Include="input_handler.cpp" />
-    <ClCompile Include="mem_viewer.cpp" />
     <ClCompile Include="menu.cpp" />
     <ClCompile Include="nemulator.cpp" />
     <ClCompile Include="nes\apu2.cpp" />
@@ -358,8 +357,6 @@
     <ClInclude Include="gb\mbc3.h" />
     <ClInclude Include="input_handler.h" />
     <ClInclude Include="interpolate.h" />
-    <ClInclude Include="mem_access_log.h" />
-    <ClInclude Include="mem_viewer.h" />
     <ClInclude Include="menu.h" />
     <ClInclude Include="meow_fft.h" />
     <ClInclude Include="nemulator.h" />

@@ -285,9 +285,6 @@
     <ClCompile Include="nes\mappers\mapper146.cpp">
       <Filter>Source Files\nes\mappers</Filter>
     </ClCompile>
-    <ClCompile Include="mem_viewer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="qam.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -646,12 +643,6 @@
     </ClInclude>
     <ClInclude Include="nes\ines.h">
       <Filter>Header Files\nes</Filter>
-    </ClInclude>
-    <ClInclude Include="mem_viewer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="mem_access_log.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="qam.h">
       <Filter>Header Files</Filter>

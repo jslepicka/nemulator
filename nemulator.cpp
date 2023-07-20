@@ -60,7 +60,6 @@ c_nemulator::c_nemulator()
 	stats = NULL;
 	nsf_stats = NULL;
 	audio_info = NULL;
-	mem_viewer = NULL;
 	qam = NULL;
 	splash_done = 0;
 	splash_timer = 2000.0;
@@ -113,6 +112,8 @@ c_nemulator::~c_nemulator()
 	if (done_events)
 		delete[] done_events;
 	ReleaseCOM(font1);
+	ReleaseCOM(font2);
+	ReleaseCOM(font3);
 	delete (mainPanel2);
 	if (sound)
 		delete sound;
@@ -127,47 +128,40 @@ c_nemulator::~c_nemulator()
 
 void c_nemulator::LoadFonts()
 {
-	ReleaseCOM(font1);
-	ReleaseCOM(font2);
-	ReleaseCOM(font3);
+	struct s_fonts {
+		ID3DX10Font **font;
+		double scale;
+		unsigned int weight = 0;
+	};
+
+	s_fonts fonts[] = {
+		{&font1, .08},
+		{&font2, .04},
+		{&font3, .9, FW_SEMIBOLD}
+	};
+
 
 	D3DX10_FONT_DESC fontDesc;
-	fontDesc.Height = (int)(clientHeight * .08);
-	fontDesc.Width = 0;
-	fontDesc.Weight = 0;
-	fontDesc.MipLevels = 1;
-	fontDesc.Italic = false;
-	fontDesc.CharSet = DEFAULT_CHARSET;
-	fontDesc.OutputPrecision = OUT_DEFAULT_PRECIS;
-	fontDesc.Quality = DEFAULT_QUALITY;
-	fontDesc.PitchAndFamily = DEFAULT_PITCH | FF_DONTCARE;
-	strcpy_s(fontDesc.FaceName, "Calibri");
-	hr = D3DX10CreateFontIndirect(d3dDev, &fontDesc, &font1);
 
-	fontDesc.Height = (int)(clientHeight * .04);
-	fontDesc.Width = 0;
-	fontDesc.Weight = 0;
-	fontDesc.MipLevels = 1;
-	fontDesc.Italic = false;
-	fontDesc.CharSet = DEFAULT_CHARSET;
-	fontDesc.OutputPrecision = OUT_DEFAULT_PRECIS;
-	fontDesc.Quality = DEFAULT_QUALITY;
-	fontDesc.PitchAndFamily = DEFAULT_PITCH | FF_DONTCARE;
-	strcpy_s(fontDesc.FaceName, "Calibri");
-	hr = D3DX10CreateFontIndirect(d3dDev, &fontDesc, &font2);
-
-	fontDesc.Height = (int)(clientHeight * .9);
-	fontDesc.Width = 0;
-	fontDesc.Weight = FW_SEMIBOLD;
-	fontDesc.MipLevels = 1;
-	fontDesc.Italic = false;
-	fontDesc.CharSet = DEFAULT_CHARSET;
-	fontDesc.OutputPrecision = OUT_DEFAULT_PRECIS;
-	fontDesc.Quality = DEFAULT_QUALITY;
-	fontDesc.PitchAndFamily = DEFAULT_PITCH | FF_DONTCARE;
-	strcpy_s(fontDesc.FaceName, "Calibri");
-	hr = D3DX10CreateFontIndirect(d3dDev, &fontDesc, &font3);
-
+	for (auto f : fonts) {
+		ReleaseCOM((*f.font));
+		fontDesc = { 0 };
+		fontDesc.Height = (int)(clientHeight * f.scale);
+		fontDesc.Width = 0;
+		fontDesc.Weight = f.weight;
+		fontDesc.MipLevels = 1;
+		fontDesc.Italic = false;
+		fontDesc.CharSet = DEFAULT_CHARSET;
+		fontDesc.OutputPrecision = OUT_DEFAULT_PRECIS;
+		fontDesc.Quality = DEFAULT_QUALITY;
+		fontDesc.PitchAndFamily = DEFAULT_PITCH | FF_DONTCARE;
+		strcpy_s(fontDesc.FaceName, "Calibri");
+		hr = D3DX10CreateFontIndirect(d3dDev, &fontDesc, f.font);
+		if (hr != S_OK) {
+			MessageBox(hWnd, "Unable to load fonts", "Error", MB_OK);
+			exit(1);
+		}
+	}
 }
 
 void c_nemulator::init(void *params)
@@ -330,8 +324,8 @@ void c_nemulator::configure_input()
 		{ BUTTON_2SELECT,       "joy2",     "select",  0,                           0 },
 		{ BUTTON_2START,        "joy2",     "start",   0,                           0 },
 
-		{ BUTTON_INPUT_REPLAY,   "",        "",        VK_F12,                      0 },
-		{ BUTTON_INPUT_SAVE,     "",        "",        VK_F11,                      0 },
+		//{ BUTTON_INPUT_REPLAY,   "",        "",        VK_F12,                      0 },
+		//{ BUTTON_INPUT_SAVE,     "",        "",        VK_F11,                      0 },
 		{ BUTTON_STATS,          "",        "",        VK_F9,                       0 },
 		{ BUTTON_MASK_SIDES,     "",        "",        VK_F8,                       0 },
 		{ BUTTON_SPRITE_LIMIT,   "",        "",        VK_F7,                       0 },
@@ -436,225 +430,327 @@ void c_nemulator::RunGames()
 
 }
 
+void c_nemulator::handle_button_reset(s_button_handler_params* params)
+{
+	c_game* g = (c_game*)texturePanels[selectedPanel]->GetSelected();
+	if (g == NULL)
+		return;
+	if (g->console->is_loaded())
+	{
+		g->console->reset();
+		input_buffer_index = 0;
+		input_buffer_playback = 0;
+		status->add_message("reset");
+	}
+}
+
+void c_nemulator::handle_button_input_save(s_button_handler_params* params)
+{
+	c_game* g = (c_game*)texturePanels[selectedPanel]->GetSelected();
+	if (g->console->is_loaded())
+	{
+		std::ofstream file;
+		std::string filename = g->console->pathFile;
+		filename += ".input";
+		file.open(filename, std::ios_base::trunc | std::ios_base::binary);
+		if (file.is_open())
+		{
+			for (int i = 0; i < input_buffer_index; i++)
+			{
+				file.write((char*)&input_buffer[i], sizeof(char));
+			}
+			file.close();
+			status->add_message("saved input");
+		}
+	}
+}
+
+void c_nemulator::handle_button_input_replay(s_button_handler_params *params)
+{
+	c_game* g = (c_game*)texturePanels[selectedPanel]->GetSelected();
+	if (g->console->is_loaded())
+	{
+		//load input from file
+		char* buf = new char[65536];
+		std::ifstream file;
+		std::string filename = g->console->pathFile;
+		filename += ".input";
+		file.open(filename, std::ios_base::in | std::ios_base::binary);
+		int i = 0;
+		if (file.is_open())
+		{
+			while (!file.eof())
+			{
+				file.read(buf, 65536);
+				int num_bytes = (int)file.gcount();
+				memcpy(&input_buffer[i], buf, num_bytes);
+				i += (num_bytes / sizeof(char));
+			}
+			g->console->reset();
+
+			input_buffer_end = i;
+			input_buffer_index = 0;
+			input_buffer_playback = 1;
+			file.close();
+			status->add_message("input replay start");
+		}
+	}
+}
+
+void c_nemulator::handle_button_audio_info(s_button_handler_params *params)
+{
+	if (audio_info)
+	{
+		audio_info->dead = true;
+		audio_info = NULL;
+	}
+	else
+	{
+		audio_info = new c_audio_info();
+		audio_info->x = eye_x;
+		audio_info->y = eye_y;
+		audio_info->z = (float)(eye_z + (1.0 / tan(fov_h / 2)));
+		add_task(audio_info, NULL);
+	}
+}
+
+void c_nemulator::handle_button_stats(s_button_handler_params *params)
+{
+	if (stats)
+	{
+		stats->dead = true;
+		stats = NULL;
+		//status->add_message("stats disabled");
+	}
+	else
+	{
+		stats = new c_stats();
+		add_task(stats, NULL);
+		//status->add_message("stats enabled");
+	}
+}
+
+void c_nemulator::handle_button_mask_sides(s_button_handler_params *params)
+{
+	c_game* g = (c_game*)texturePanels[selectedPanel]->GetSelected();
+	g->mask_sides = !g->mask_sides;
+	if (g->mask_sides)
+		status->add_message("side mask enabled");
+	else
+		status->add_message("side mask disabled");
+
+}
+
+void c_nemulator::handle_button_screenshot(s_button_handler_params *params)
+{
+	if (take_screenshot() == 0)
+		status->add_message("saved screenshot");
+	else
+		status->add_message("screenshot failed");
+}
+
+void c_nemulator::handle_button_sprite_limit(s_button_handler_params *params)
+{
+	c_game* g = (c_game*)texturePanels[selectedPanel]->GetSelected();
+	if (g->type == GAME_NES)
+	{
+		g->console->set_sprite_limit(!g->console->get_sprite_limit());
+	}
+
+	if (g->console->get_sprite_limit())
+		status->add_message("sprites limited");
+	else
+		status->add_message("sprites unlimited");
+}
+
+void c_nemulator::adjust_sharpness(float value)
+{
+	if (value < 0.0f && sharpness <= 0.0f)
+		return;
+	if (value > 0.0f && sharpness >= 1.0f)
+		return;
+	sharpness += value;
+	if (sharpness < 0.0f + .0001f)
+		sharpness = 0.0f;
+	if (sharpness + .0001f > 1.0f)
+		sharpness = 1.0f;
+	mainPanel2->set_sharpness(sharpness);
+	char buf[6];
+	sprintf_s(buf, sizeof(buf), "%.3f", sharpness);
+	status->add_message("set sharpness to " + std::string(buf));
+}
+
+void c_nemulator::handle_button_dec_sharpness(s_button_handler_params *params)
+{
+	adjust_sharpness(-0.025f);
+}
+
+void c_nemulator::handle_button_inc_sharpness(s_button_handler_params *params)
+{
+	adjust_sharpness(.025f);
+}
+
+
+void c_nemulator::handle_button_menu_right(s_button_handler_params *params)
+{
+	if (params->result & c_input_handler::RESULT_REPEAT_EXTRAFAST && !texturePanels[selectedPanel]->is_last_col())
+	{
+		texturePanels[selectedPanel]->set_scroll_duration(20.0);
+		fastscroll = true;
+	}
+	else if (params->result & c_input_handler::RESULT_REPEAT_FAST && !texturePanels[selectedPanel]->is_last_col())
+	{
+		texturePanels[selectedPanel]->set_scroll_duration(50.0);
+		fastscroll = true;
+	}
+	else
+		texturePanels[selectedPanel]->set_scroll_duration(180.0);
+	texturePanels[selectedPanel]->NextColumn();
+}
+
+void c_nemulator::handle_button_menu_left(s_button_handler_params *params)
+{
+	if (params->result & c_input_handler::RESULT_REPEAT_EXTRAFAST && !texturePanels[selectedPanel]->is_first_col())
+	{
+		texturePanels[selectedPanel]->set_scroll_duration(20.0);
+		fastscroll = true;
+	}
+	else if (params->result & c_input_handler::RESULT_REPEAT_FAST && !texturePanels[selectedPanel]->is_first_col())
+	{
+		texturePanels[selectedPanel]->set_scroll_duration(50.0);
+		fastscroll = true;
+	}
+	else
+		texturePanels[selectedPanel]->set_scroll_duration(180.0);
+	texturePanels[selectedPanel]->PrevColumn();
+}
+
+void c_nemulator::handle_button_menu_up(s_button_handler_params *params)
+{
+	if (texturePanels[selectedPanel]->PrevRow())
+	{
+		show_qam();
+	}
+}
+
+void c_nemulator::handle_button_menu_down(s_button_handler_params *params)
+{
+	if (texturePanels[selectedPanel]->NextRow())
+	{
+		int c = texturePanels[selectedPanel]->GetSelectedColumn();
+		selectedPanel++;
+		texturePanels[selectedPanel]->move_to_column(c);
+	}
+}
+
+void c_nemulator::handle_button_menu_cancel(s_button_handler_params *params)
+{
+	for (int i = 0; i < num_texture_panels; i++)
+		texturePanels[i]->dim = true;
+	c_menu::s_menu_items mi;
+
+	const char* m[] = { "quit nemulator", "suspend computer" };
+	mi.num_items = show_suspend ? 2 : 1;
+	mi.items = (char**)m;
+	add_task(new c_menu(), (void*)&mi);
+	menu = MENU_QUIT;
+}
+
+void c_nemulator::handle_button_menu_ok(s_button_handler_params *params)
+{
+	start_game();
+}
+
+void c_nemulator::handle_button_show_qam(s_button_handler_params *params)
+{
+	show_qam();
+}
+
+void c_nemulator::handle_button_turbo(s_button_handler_params* params)
+{
+	int button = 0;
+	const char* button_names[] = { "1 A", "1 B", "2 A", "2 B" };
+	const char* button_name;
+	switch (params->button) {
+	case BUTTON_1A_TURBO:
+		button = BUTTON_1A;
+		button_name = button_names[0];
+		break;
+	case BUTTON_1B_TURBO:
+		button = BUTTON_1B;
+		button_name = button_names[1];
+		break;
+	case BUTTON_2A_TURBO:
+		button = BUTTON_2A;
+		button_name = button_names[2];
+		break;
+	case BUTTON_2B_TURBO:
+		button = BUTTON_2B;
+		button_name = button_names[3];
+		break;
+	default:
+		return;
+	}
+	do_turbo_press(button, button_name);
+}
+
+void c_nemulator::handle_button_leave_game(s_button_handler_params* params)
+{
+	g_ih->ack_button(BUTTON_1START);
+	g_ih->ack_button(BUTTON_1SELECT);
+	for (int i = 0; i < num_texture_panels; i++)
+		texturePanels[i]->dim = true;
+	c_menu::s_menu_items mi;
+	const char* m[] = { "resume", "reset", "return to menu" };
+	mi.num_items = 3;
+	mi.items = (char**)m;
+	add_task(new c_menu(), (int*)&mi);
+	menu = MENU_INGAME;
+	paused = true;
+	sound->stop();
+}
+
+const c_nemulator::s_button_handler c_nemulator::button_handlers[] =
+{
+	{ SCOPE::GAMES_LOADED, {BUTTON_RESET}, true, RESULT_DOWN, &c_nemulator::handle_button_reset },
+	{ SCOPE::GAMES_LOADED, {BUTTON_INPUT_SAVE}, true, RESULT_DOWN, &c_nemulator::handle_button_input_save },
+	{ SCOPE::GAMES_LOADED, {BUTTON_INPUT_REPLAY}, true, RESULT_DOWN, &c_nemulator::handle_button_input_replay },
+	{ SCOPE::GAMES_LOADED, {BUTTON_AUDIO_INFO}, true, RESULT_DOWN, &c_nemulator::handle_button_audio_info },
+	{ SCOPE::GAMES_LOADED, {BUTTON_STATS}, true, RESULT_DOWN, &c_nemulator::handle_button_stats },
+	{ SCOPE::GAMES_LOADED, {BUTTON_MASK_SIDES}, true, RESULT_DOWN ,&c_nemulator::handle_button_mask_sides },
+	{ SCOPE::GAMES_LOADED, {BUTTON_SCREENSHOT}, true, RESULT_DOWN, &c_nemulator::handle_button_screenshot },
+	{ SCOPE::GAMES_LOADED, {BUTTON_SPRITE_LIMIT}, true, RESULT_DOWN, &c_nemulator::handle_button_sprite_limit },
+	{ SCOPE::GAMES_LOADED, {BUTTON_DEC_SHARPNESS}, true, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_dec_sharpness },
+	{ SCOPE::GAMES_LOADED, {BUTTON_INC_SHARPNESS}, true, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_inc_sharpness },
+	{ SCOPE::IN_MENU, {BUTTON_1RIGHT}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_right },
+	{ SCOPE::IN_MENU, {BUTTON_1LEFT}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_left },
+	{ SCOPE::IN_MENU, {BUTTON_1UP}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_up },
+	{ SCOPE::IN_MENU, {BUTTON_1DOWN}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_down },
+	{ SCOPE::IN_MENU | SCOPE::NO_GAMES_LOADED, {BUTTON_1B, BUTTON_ESCAPE}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_cancel },
+	{ SCOPE::IN_MENU, {BUTTON_1A, BUTTON_1START, BUTTON_RETURN}, true, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_ok },
+	{ SCOPE::IN_MENU, {BUTTON_1SELECT}, true, RESULT_DOWN, &c_nemulator::handle_button_show_qam },
+	{ SCOPE::IN_GAME, {BUTTON_1A_TURBO, BUTTON_1B_TURBO, BUTTON_2A_TURBO, BUTTON_2B_TURBO}, false, RESULT_DOWN, &c_nemulator::handle_button_turbo },
+	{ SCOPE::IN_GAME, {BUTTON_ESCAPE}, false, RESULT_DOWN, &c_nemulator::handle_button_leave_game }
+};
+
+
 void c_nemulator::ProcessInput(double dt)
 {
-	//Process NES input
-	if (inGame)
-	{
-		if (texturePanels[selectedPanel]->state != TexturePanel::STATE_ZOOMING)
-		{
-
-			if (joy1)
-			{
-				if (input_buffer_playback)
-				{
-					*joy1 = input_buffer[input_buffer_index];
-					input_buffer_index = ++input_buffer_index % input_buffer_size;
-					if (input_buffer_index == input_buffer_end)
-					{
-						input_buffer_playback = 0;
-						//input_buffer_index = 0;
-						status->add_message("input replay end");
-					}
-				}
-				else
-				{
-					*joy1 = ((c_nes_input_handler*)g_ih)->get_nes_byte(0);
-					input_buffer[input_buffer_index] = *joy1;
-					input_buffer_index = ++input_buffer_index % input_buffer_size;
-				}
-
-			}
-			if (joy2)
-				*joy2 = ((c_nes_input_handler*)g_ih)->get_nes_byte(1);
-		}
-		else if (!input_buffer_playback)
-		{
-			input_buffer[input_buffer_index] = 0;
-			input_buffer_index = ++input_buffer_index % input_buffer_size;
-		}
+	int current_scope = 0;
+	if (gameList.size() == 0) {
+		current_scope |= SCOPE::NO_GAMES_LOADED;
 	}
-
-	//these keys work anytime
-	if (g_ih->get_result(BUTTON_RESET, true) & c_input_handler::RESULT_DOWN)
-	{
-		c_game *g = (c_game*)texturePanels[selectedPanel]->GetSelected();
-		if (g->console->is_loaded())
-		{
-			g->console->reset();
-			input_buffer_index = 0;
-			input_buffer_playback = 0;
-			status->add_message("reset");
-		}
-	}
-	else if (g_ih->get_result(BUTTON_INPUT_SAVE, true) & c_input_handler::RESULT_DOWN)
-	{
-		c_game *g = (c_game*)texturePanels[selectedPanel]->GetSelected();
-		if (g->console->is_loaded())
-		{
-			std::ofstream file;
-			std::string filename = g->console->pathFile;
-			filename += ".input";
-			file.open(filename, std::ios_base::trunc | std::ios_base::binary);
-			if (file.is_open())
-			{
-				for (int i = 0; i < input_buffer_index; i++)
-				{
-					file.write((char*)&input_buffer[i], sizeof(char));
-				}
-				file.close();
-				status->add_message("saved input");
-			}
-		}
-	}
-	else if (g_ih->get_result(BUTTON_INPUT_REPLAY, true) & c_input_handler::RESULT_DOWN)
-	{
-		c_game *g = (c_game*)texturePanels[selectedPanel]->GetSelected();
-		if (g->console->is_loaded())
-		{
-			//load input from file
-			char *buf = new char[65536];
-			std::ifstream file;
-			std::string filename = g->console->pathFile;
-			filename += ".input";
-			file.open(filename, std::ios_base::in | std::ios_base::binary);
-			int i = 0;
-			if (file.is_open())
-			{
-				while (!file.eof())
-				{
-					file.read(buf, 65536);
-					int num_bytes = (int)file.gcount();
-					memcpy(&input_buffer[i], buf, num_bytes);
-					i += (num_bytes/sizeof(char));
-				}
-				g->console->reset();
-
-				input_buffer_end = i;
-				input_buffer_index = 0;
-				input_buffer_playback = 1;
-				file.close();
-				status->add_message("input replay start");
-			}
-
-		}
-	}
-	else if (g_ih->get_result(BUTTON_AUDIO_INFO, true) & c_input_handler::RESULT_DOWN)
-	{
-		if (audio_info)
-		{
-			audio_info->dead = true;
-			audio_info = NULL;
-		}
+	else {
+		current_scope |= SCOPE::GAMES_LOADED;
+		if (inGame)
+			current_scope |= SCOPE::IN_GAME;
 		else
-		{
-			audio_info = new c_audio_info();
-			audio_info->x = eye_x;
-			audio_info->y = eye_y;
-			audio_info->z = (float)(eye_z + (1.0 / tan(fov_h/2)));
-			add_task(audio_info, NULL);
-		}
-	}
-#ifdef MEM_VIEWER
-	else if (g_ih->get_result(BUTTON_MEM_VIEWER, true) & c_input_handler::RESULT_DOWN)
-	{
-		if (mem_viewer)
-		{
-			mem_viewer->size *= 2;
-			if (mem_viewer->size > 32)
-			{
-				mem_viewer->dead = true;
-				mem_viewer = NULL;
-				mem_viewer_active = 0;
-			}
-		}
-		else
-		{
-			mem_viewer = new c_mem_viewer();
-			mem_viewer->x = eye_x;
-			mem_viewer->y = eye_y;
-			mem_viewer->z = (float)(eye_z + (1.0 / tan(fov_h/2)));
-			add_task(mem_viewer, NULL);
-			mem_viewer_active = 1;
-		}
-	}
-#endif
-	else if (g_ih->get_result(BUTTON_STATS, true) & c_input_handler::RESULT_DOWN)
-	{
-		if (stats)
-		{
-			stats->dead = true;
-			stats = NULL;
-			//status->add_message("stats disabled");
-		} else
-		{
-			stats = new c_stats();
-			add_task(stats, NULL);
-			//status->add_message("stats enabled");
-		}
-	}
-	else if (g_ih->get_result(BUTTON_MASK_SIDES, true) & c_input_handler::RESULT_DOWN)
-	{
-		c_game *g = (c_game*)texturePanels[selectedPanel]->GetSelected();
-		g->mask_sides = !g->mask_sides;
-		if (g->mask_sides)
-			status->add_message("side mask enabled");
-		else
-			status->add_message("side mask disabled");
-	}
-	else if (g_ih->get_result(BUTTON_SCREENSHOT) & c_input_handler::RESULT_DOWN)
-	{
-		if (take_screenshot() == 0)
-			status->add_message("saved screenshot");
-		else
-			status->add_message("screenshot failed");
-	}
-	else if (g_ih->get_result(BUTTON_SPRITE_LIMIT) & c_input_handler::RESULT_DOWN)
-	{
-		c_game *g = (c_game*)texturePanels[selectedPanel]->GetSelected();
-		if (g->type == GAME_NES)
-		{
-			g->console->set_sprite_limit(!g->console->get_sprite_limit());
-		}
-
-		if (g->console->get_sprite_limit())
-			status->add_message("sprites limited");
-		else
-			status->add_message("sprites unlimited");
-	}
-	else if (g_ih->get_result(BUTTON_DEC_SHARPNESS) &
-		(c_input_handler::RESULT_DOWN | c_input_handler::RESULT_REPEAT_SLOW | c_input_handler::RESULT_REPEAT_FAST | c_input_handler::RESULT_REPEAT_EXTRAFAST))
-	{
-		if (sharpness > 0.0f)
-		{
-			sharpness -= .025f;
-			if (sharpness < 0.0f + .0001f)
-				sharpness = 0.0f;
-			mainPanel2->set_sharpness(sharpness);
-			char buf[6];
-			sprintf_s(buf, sizeof(buf), "%.3f", sharpness);
-			status->add_message("set sharpness to " + std::string(buf));
-		}
-	}
-	else if (g_ih->get_result(BUTTON_INC_SHARPNESS) &
-		(c_input_handler::RESULT_DOWN | c_input_handler::RESULT_REPEAT_SLOW | c_input_handler::RESULT_REPEAT_FAST | c_input_handler::RESULT_REPEAT_EXTRAFAST))
-	{
-		if (sharpness < 1.0f)
-		{
-			sharpness += .025f;
-			if (sharpness + .0001f > 1.0f)
-				sharpness = 1.0f;
-			mainPanel2->set_sharpness(sharpness);
-			char buf[6];
-			sprintf_s(buf, sizeof(buf), "%.3f", sharpness);
-			status->add_message("set sharpness to " + std::string(buf));
-		}
+			current_scope |= SCOPE::IN_MENU;
 	}
 
-	//these keys work in the menu
-	if (!inGame && splash_done)
-	{
-		int result_mask = c_input_handler::RESULT_DOWN | c_input_handler::RESULT_REPEAT_SLOW | c_input_handler::RESULT_REPEAT_FAST | c_input_handler::RESULT_REPEAT_EXTRAFAST;
+	//if in menu and fastscrolling, and we've released left/right or reached the ends,
+	//disable fastscrolling and fade the postition letter.
+	if (current_scope == IN_MENU) {
 		if (fastscroll)
 		{
 			if ((!g_ih->get_result(BUTTON_1RIGHT)
@@ -665,120 +761,32 @@ void c_nemulator::ProcessInput(double dt)
 				fastscroll = false;
 				scroll_fade_timer = 333.0;
 				//texturePanels[selectedPanel]->load_items();
-			}		
-		}
-
-		if (int r = g_ih->get_result(BUTTON_1RIGHT) & result_mask)
-		{
-			if (r & c_input_handler::RESULT_REPEAT_EXTRAFAST && !texturePanels[selectedPanel]->is_last_col())
-			{
-				texturePanels[selectedPanel]->set_scroll_duration(20.0);
-				fastscroll = true;
 			}
-			else if (r & c_input_handler::RESULT_REPEAT_FAST && !texturePanels[selectedPanel]->is_last_col())
-			{
-				texturePanels[selectedPanel]->set_scroll_duration(50.0);
-				fastscroll = true;
-			}
-			else
-				texturePanels[selectedPanel]->set_scroll_duration(180.0);
-			texturePanels[selectedPanel]->NextColumn();
-		}
-		else if (int r = g_ih->get_result(BUTTON_1LEFT) & result_mask)
-		{
-			if (r & c_input_handler::RESULT_REPEAT_EXTRAFAST && !texturePanels[selectedPanel]->is_first_col())
-			{
-				texturePanels[selectedPanel]->set_scroll_duration(20.0);
-				fastscroll = true;
-			}
-			else if (r & c_input_handler::RESULT_REPEAT_FAST && !texturePanels[selectedPanel]->is_first_col())
-			{
-				texturePanels[selectedPanel]->set_scroll_duration(50.0);
-				fastscroll = true;
-			}
-			else
-				texturePanels[selectedPanel]->set_scroll_duration(180.0);
-			texturePanels[selectedPanel]->PrevColumn();
-		}
-		else if (int r = g_ih->get_result(BUTTON_1UP) & result_mask)
-		{
-			if (texturePanels[selectedPanel]->PrevRow())
-			{
-				show_qam();
-			}
-		}
-		else if (int r = g_ih->get_result(BUTTON_1DOWN) & result_mask)
-		{
-			if (texturePanels[selectedPanel]->NextRow())
-			{
-				int c = texturePanels[selectedPanel]->GetSelectedColumn();
-				selectedPanel++;
-				texturePanels[selectedPanel]->move_to_column(c);
-			}
-		}
-		else if ((g_ih->get_result(BUTTON_1B) & result_mask) ||
-			(g_ih->get_result(BUTTON_ESCAPE) & c_input_handler::RESULT_DOWN))
-		{
-			for (int i = 0; i < num_texture_panels; i++)
-				texturePanels[i]->dim = true;
-			c_menu::s_menu_items mi;
-
-			const char *m[] = {"quit nemulator", "suspend computer"};
-			mi.num_items = show_suspend ? 2 : 1;
-			mi.items = (char**)m;
-			add_task(new c_menu(), (void*)&mi);
-			menu = MENU_QUIT;
-		}
-		else if (g_ih->get_result(BUTTON_1A, true) & result_mask ||
-			g_ih->get_result(BUTTON_1START, true) & result_mask ||
-			g_ih->get_result(BUTTON_RETURN, true) & c_input_handler::RESULT_DOWN)
-		{
-			start_game();
-		}
-		else if (g_ih->get_result(BUTTON_1SELECT, true) & c_input_handler::RESULT_DOWN)
-		{
-			show_qam();
 		}
 	}
-	//these keys work in game
-	else
-	{
-		int result_mask = c_input_handler::RESULT_DOWN | c_input_handler::RESULT_REPEAT_SLOW | c_input_handler::RESULT_REPEAT_FAST | c_input_handler::RESULT_REPEAT_EXTRAFAST;
 
-		if (g_ih->get_result(BUTTON_1A_TURBO) & c_input_handler::RESULT_DOWN)
-		{
-			do_turbo_press(BUTTON_1A, "1 A");
+	//this is a lambda so we can 'break' from nested for loops by using return
+	auto check_handlers = [&]() [[msvc::forceinline]] {
+		for (auto bh : button_handlers) {
+			if (current_scope & bh.scope) {
+				for (auto button : bh.button_list) {
+					if (int result = g_ih->get_result(button, bh.ack) & bh.mask) {
+						s_button_handler_params p = { button, result };
+						std::invoke(bh.func, this, &p);
+						return;
+					}
+				}
+			}
 		}
-		else if (g_ih->get_result(BUTTON_1B_TURBO) & c_input_handler::RESULT_DOWN)
-		{
-			do_turbo_press(BUTTON_1B, "1 B");
-		}
-		else if (g_ih->get_result(BUTTON_2A_TURBO) & c_input_handler::RESULT_DOWN)
-		{
-			do_turbo_press(BUTTON_1B, "2 A");
-		}
-		else if (g_ih->get_result(BUTTON_2B_TURBO) & c_input_handler::RESULT_DOWN)
-		{
-			do_turbo_press(BUTTON_1B, "2 B");
-		}
+	};
 
+	check_handlers();
 
-		if ((g_ih->get_result(BUTTON_ESCAPE) & c_input_handler::RESULT_DOWN) ||
-			(g_ih->get_hold_time(BUTTON_1START) >= menu_delay && g_ih->get_hold_time(BUTTON_1SELECT) >= menu_delay))
-		{
-			g_ih->ack_button(BUTTON_1START);
-			g_ih->ack_button(BUTTON_1SELECT);
-			for (int i = 0; i < num_texture_panels; i++)
-				texturePanels[i]->dim = true;
-			c_menu::s_menu_items mi;
-			const char *m[] = {"resume", "reset", "return to menu"};
-			mi.num_items = 3;
-			mi.items = (char**)m;
-			add_task(new c_menu(), (int*)&mi);
-			menu = MENU_INGAME;
-			paused = true;
-			sound->stop();
-		}
+	//check start+select after button check.  If ESC is pressed at the same time,
+	//handle_button_leave_game() will have already been called and ack'd these buttons,
+	//so there is no chance of that function running twice in the same frame.
+	if (g_ih->get_hold_time(BUTTON_1START) >= menu_delay && g_ih->get_hold_time(BUTTON_1SELECT) >= menu_delay) {
+		handle_button_leave_game(NULL); //params not used
 	}
 }
 
@@ -930,8 +938,6 @@ int c_nemulator::update(double dt, int child_result, void *params)
 						nsf_stats->dead = true;
 					if (audio_info)
 						audio_info->dead = true;
-					if (mem_viewer)
-						mem_viewer->dead = true;
 					if (qam)
 						qam->dead = true;
 					return 0;
@@ -1014,7 +1020,7 @@ int c_nemulator::update(double dt, int child_result, void *params)
 			break;
 		}
 	}
-	if (splash_done && gameList.size() != 0) ProcessInput(dt);
+	if (splash_done) ProcessInput(dt);
 	UpdateScene(dt);
 	return 0;
 }
@@ -1049,7 +1055,7 @@ void c_nemulator::UpdateScene(double dt)
 				if (splash_timer < 1000.0)
 					splash_timer = 1000.0;
 				splash_stage++;
-				if (benchmark_mode) {
+				if (benchmark_mode || disable_splash) {
 					splash_done = 1;
 				}
 			}
@@ -1128,16 +1134,6 @@ void c_nemulator::UpdateScene(double dt)
 		RunGames();
 
 	}
-#ifdef MEM_VIEWER
-	if (mem_viewer)
-	{
-		c_nes *nes = ((c_game*)texturePanels[selectedPanel]->GetSelected())->nes;
-		if (nes->loaded)
-			mem_viewer->set_mem_access_log(nes->mem_access_log);
-		else
-			mem_viewer->set_mem_access_log(NULL);
-	}
-#endif
 
 	for (int i = 0; i < num_texture_panels; i++)
 		texturePanels[i]->Update(dt);
@@ -1519,39 +1515,38 @@ int c_nemulator::take_screenshot()
 
 		std::string filename = screenshot_path + "\\" + n->filename + "." + temp + ".bmp";
 
-		int *buf = new int[256*240];
+		int w = 0;
+		int h = 0;
+
+		switch (g->type) {
+		case GAME_NES:
+		case GAME_SMS:
+		case GAME_GG:
+			w = 256;
+			h = 240;
+			break;
+		case GAME_GB:
+			w = 160;
+			h = 144;
+			break;
+		default:
+			return 1;
+		}
+
+		int *buf = new int[w*h];
 		int *b_ptr = buf;
 		int *fb = n->get_video();
-		for (int y = 0; y < 240; y++)
+		for (int y = 0; y < h; y++)
 		{
-			for (int x = 0; x < 256; x++)
+			for (int x = 0; x < w; x++)
 			{
 				int col = 0;
-				if (mask_sides && (x < 8 || x > 247))
-				{
+				if (mask_sides && (x < 8 || x > 247)) {
 					fb++;
-					col = 0;
+					col = 0xFF000000;
 				}
-				else
-					switch (g->type)
-					{
-					case GAME_NES:
-						col = *fb++;
-						break;
-					case GAME_SMS:
-					case GAME_GG:
-						col = *fb++;
-						break;
-					}
-					//col = pal[*fb++ & 0x1FF];
-				{
-					int r = col & 0xFF;
-					int g = (col >> 8) & 0xFF;
-					int b = (col >> 16) & 0xFF;
-					r = 255.0 * pow(r/255.0, 1.0 / 2.2);
-					g = 255.0 * pow(g/255.0, 1.0 / 2.2);
-					b = 255.0 * pow(b/255.0, 1.0 / 2.2);
-					col = 0xFF000000 | (b << 16) | (g << 8) | r;
+				else {
+					col = *fb++ | 0xFF000000;
 				}
 				*b_ptr++ = col;
 			}
@@ -1566,6 +1561,9 @@ int c_nemulator::take_screenshot()
 		case GAME_SMS:
 		case GAME_GG:
 			ret = c_bmp_writer::write_bmp(buf + 256 * 8, 256, 192, filename);
+			break;
+		case GAME_GB:
+			ret = c_bmp_writer::write_bmp(buf, 160, 144, filename);
 			break;
 		}
 		delete[] buf;

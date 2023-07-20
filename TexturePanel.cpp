@@ -75,10 +75,10 @@ TexturePanel::TexturePanel(int rows, int columns)
 	zoomDestY = -7.14f;
 	zoomDestZ = -25.0f + 2.414f;
 	
-	border_colors[0] = { .71f * .05f, .78f * .05f, 1.0f * .05f };
-	border_colors[1] = { .71f * .9f, .78f * .9f, 1.0f * .9f };
-	border_colors[2] = { .05f, 0.0f, 0.0f };
-	border_colors[3] = { 1.0f, 0.0f, 0.0f };
+	border_colors[0] = { .71f * .05f, .78f * .05f, 1.0f * .05f }; //selectable start color
+	border_colors[1] = { .71f * .9f, .78f * .9f, 1.0f * .9f }; //selectable end color
+	border_colors[2] = { .05f, 0.0f, 0.0f }; //unselectable start color
+	border_colors[3] = { 1.0f, 0.0f, 0.0f }; //unselectable end color
 
 	border_color = border_colors[0];
 	invalid_border_color = border_colors[2];

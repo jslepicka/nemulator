@@ -22,12 +22,8 @@
 #include "status.h"
 #include "audio_info.h"
 #include "bmp_writer.h"
-#include "mem_viewer.h"
 #include "qam.h"
 #include "nsf_stats.h"
-
-
-#define KEYDOWN(key) GetAsyncKeyState(key) & 0x8000 ? 1 : 0
 
 class c_nemulator :
 	public c_task
@@ -66,6 +62,32 @@ private:
 	double splash_timer;
 	double splash_fade_timer;
 	void configure_input();
+	void adjust_sharpness(float value);
+
+	struct s_button_handler_params {
+		int button;
+		int result;
+	};
+	
+	void handle_button_reset(s_button_handler_params *params);
+	void handle_button_input_save(s_button_handler_params* params);
+	void handle_button_input_replay(s_button_handler_params* params);
+	void handle_button_audio_info(s_button_handler_params* params);
+	void handle_button_stats(s_button_handler_params* params);
+	void handle_button_mask_sides(s_button_handler_params* params);
+	void handle_button_screenshot(s_button_handler_params* params);
+	void handle_button_sprite_limit(s_button_handler_params* params);
+	void handle_button_dec_sharpness(s_button_handler_params* params);
+	void handle_button_inc_sharpness(s_button_handler_params* params);
+	void handle_button_menu_right(s_button_handler_params* params);
+	void handle_button_menu_left(s_button_handler_params* params);
+	void handle_button_menu_up(s_button_handler_params* params);
+	void handle_button_menu_down(s_button_handler_params* params);
+	void handle_button_menu_cancel(s_button_handler_params* params);
+	void handle_button_menu_ok(s_button_handler_params* params);
+	void handle_button_show_qam(s_button_handler_params* params);
+	void handle_button_turbo(s_button_handler_params* params);
+	void handle_button_leave_game(s_button_handler_params* params);
 
 	float fov_h;
 	float eye_x;
@@ -151,7 +173,6 @@ private:
 	bool paused;
 
 	c_audio_info *audio_info;
-	c_mem_viewer *mem_viewer;
 	c_qam *qam;
 
 	int dir_exists(const std::string &path);
@@ -171,4 +192,24 @@ private:
 	bool show_suspend;
 	static const int SOUND_BUF_LEN = 1024;
 	int32_t* sound_buf;
+
+	typedef void (c_nemulator::* button_handler_func)(s_button_handler_params*);
+	struct s_button_handler {
+		int scope;
+		//int button;
+		std::vector<int> button_list;
+		bool ack;
+		int mask;
+		button_handler_func func;
+	};
+	static const int RESULT_DOWN = c_input_handler::RESULT_DOWN;
+	static const int RESULT_DOWN_OR_REPEAT = c_input_handler::RESULT_DOWN | c_input_handler::RESULT_REPEAT_SLOW | c_input_handler::RESULT_REPEAT_FAST | c_input_handler::RESULT_REPEAT_EXTRAFAST;
+	enum SCOPE {
+		ANYTIME = 1,
+		IN_MENU = 2,
+		IN_GAME = 4,
+		GAMES_LOADED = 8,
+		NO_GAMES_LOADED = 16
+	};
+	static const s_button_handler button_handlers[];
 };

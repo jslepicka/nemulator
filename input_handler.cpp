@@ -43,7 +43,7 @@ c_input_handler::c_input_handler(int buttons)
 	}
 	joymask = 0;
 	ackd = false;
-	extrafast_enabled = 0;
+	extrafast_enabled = 1;
 }
 
 c_input_handler::~c_input_handler()

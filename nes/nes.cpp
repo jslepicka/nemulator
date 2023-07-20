@@ -5,7 +5,6 @@
 #include "joypad.h"
 #include "mappers\mappers.h"
 #include "ines.h"
-#include "..\mem_access_log.h"
 #include "..\crc32.h"
 #include "cartdb.h"
 
