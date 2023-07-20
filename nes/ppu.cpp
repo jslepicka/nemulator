@@ -618,7 +618,7 @@ INLINE void c_ppu::fetch()
 {
 	unsigned int s = (((current_cycle - 1) & 0x7) | fetch_state);
 	switch (s) {
-	//Background fetch phase cycles 0-256, 321-336
+		//Background fetch phase cycles 0-256, 321-336
 	case (0 | FETCH_BG): //NT byte 1
 		break;
 	case (1 | FETCH_BG): //NT byte 2
@@ -662,8 +662,8 @@ INLINE void c_ppu::fetch()
 		}
 		inc_horizontal_address();
 		break;
-	
-	//Sprite fetch phase cycles 257-320
+
+		//Sprite fetch phase cycles 257-320
 	case (0 | FETCH_SPRITE):
 		if (current_cycle == 257) { //reload h
 			vramAddress = (vramAddress & ~0x41F) | (vramAddressLatch & 0x41F);
@@ -706,7 +706,7 @@ INLINE void c_ppu::fetch()
 		}
 		break;
 
-	//Unused NT fetch phase cycles 337-340
+		//Unused NT fetch phase cycles 337-340
 	case (0 | FETCH_NT):
 		break;
 	case (1 | FETCH_NT):
@@ -741,44 +741,42 @@ void c_ppu::run_ppu_line()
 	while (true)
 	{
 		cpu->add_cycle();
-		if (current_cycle == 0) {
-			goto idle;
-		}
-		//handle events that happen on specific cycles
-		do_cycle_events();
+		if (current_cycle != 0) [[likely]] {
+			//handle events that happen on specific cycles
+			do_cycle_events();
 
-		if (rendering) [[likely]] {
-			if (reload_v) [[unlikely]] {
-				vramAddress = (vramAddress & ~0x7BE0) | (vramAddressLatch & 0x7BE0);
+			if (rendering) [[likely]] {
+				if (reload_v) [[unlikely]] {
+					vramAddress = (vramAddress & ~0x7BE0) | (vramAddressLatch & 0x7BE0);
+				}
+				fetch();
+				if (on_screen) [[likely]]
+				{
+					output_pixel();
+				}
 			}
-			fetch();
-			if (on_screen) [[likely]]
+			else if (on_screen) //if on screen and rendering disabled
 			{
-				output_pixel();
+				output_blank_pixel();
 			}
-		}
-		else if (on_screen) //if on screen and rendering disabled
-		{
-			output_blank_pixel();
-		}
 
-		if (current_cycle == 340) [[unlikely]]
-		{
-			if (current_scanline == 261) [[unlikely]]
+			if (current_cycle == 340) [[unlikely]]
 			{
-				current_scanline = 0;
-				warmed_up = 1;
-				current_cycle = (rendering && odd_frame) ? 1 : 0;
-				odd_frame ^= 1;
+				if (current_scanline == 261) [[unlikely]]
+				{
+					current_scanline = 0;
+					warmed_up = 1;
+					current_cycle = (rendering && odd_frame) ? 1 : 0;
+					odd_frame ^= 1;
+				}
+				else {
+					current_cycle = 0;
+					current_scanline++;
+				}
+				done = 1;
 			}
-			else {
-				current_cycle = 0;
-				current_scanline++;
-			}
-			done = 1;
-		}
+		};
 
-		idle:
 		if (vid_out) [[likely]] {
 			*p_frame++ = pal[(pixel_pipeline & palette_mask) | intensity];
 		}
@@ -802,18 +800,18 @@ void c_ppu::run_ppu_line()
 		if (update_rendering) [[unlikely]] {
 			rendering = next_rendering;
 			update_rendering = 0;
-		}
-			//TODO: all cpu writes affecting ppu state should probably be delayed until next ppu cycle
-			if (vram_update_delay > 0) [[unlikely]] {
-				vram_update_delay--;
-				if (vram_update_delay == 0) {
-					vramAddress = vramAddressLatch;
-					if (!rendering)
-					{
-						mapper->ppu_read(vramAddress);
-					}
+		};
+		//TODO: all cpu writes affecting ppu state should probably be delayed until next ppu cycle
+		if (vram_update_delay > 0) [[unlikely]] {
+			vram_update_delay--;
+			if (vram_update_delay == 0) {
+				vramAddress = vramAddressLatch;
+				if (!rendering)
+				{
+					mapper->ppu_read(vramAddress);
 				}
 			}
+		}
 
 		mapper->clock(1);
 		if (--executed_cycles == 0) [[unlikely]]
@@ -822,10 +820,10 @@ void c_ppu::run_ppu_line()
 			cpu->odd_cycle ^= 1;
 			apu2->clock_once();
 			executed_cycles = 3;
+		};
+		if (done) {
+			return;
 		}
-			if (done) {
-				return;
-			}
 		current_cycle++;
 	}
 }
@@ -890,8 +888,8 @@ int c_ppu::eval_sprites()
 				sprite_address = (sprite_tile * 16) + (sprite_y & 0x07) + (ppuControl1.spritePatternTableAddress * 0x1000);
 
 			int attr = ((sprite_attribute & 0x03) << 2) * 0x01010101;
-			int* p1 = (int*)morton_odd_64 + mapper->ppu_read(sprite_address) * 2;
-			int* p2 = (int*)morton_even_64 + mapper->ppu_read(sprite_address + 8) * 2;
+			int* p1 = (int*)morton_odd_64 + (uint64_t)mapper->ppu_read(sprite_address) * 2;
+			int* p2 = (int*)morton_even_64 + (uint64_t)mapper->ppu_read(sprite_address + 8) * 2;
 
 			int p[2] = { *p1++ | *p2++ | attr, *p1 | *p2 | attr };
 

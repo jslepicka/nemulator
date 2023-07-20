@@ -102,15 +102,12 @@ float4 PSx(PS_INPUT input) : SV_Target
 
 float4 PS1 (PS_INPUT input) : SV_Target
 {
- if (input.Tex.x < .01 || input.Tex.x > .99 || input.Tex.y < .01 || input.Tex.y > .99)
- {
-     float4 r = {border_color.r * color, border_color.g * color, border_color.b * color, 1.0};
-  return r;
- }
- else
- {
-   return float4 (0.0, 0.0, 0.0, 0.0);
- }
+    const float border_width = .01;
+    const float lower_border = 0.0 + border_width;
+    const float upper_border = 1.0 - border_width;
+    bool in_border_range = input.Tex.x < lower_border || input.Tex.x > upper_border || input.Tex.y < lower_border || input.Tex.y > upper_border;
+    float4 r = { border_color.r * color, border_color.g * color, border_color.b * color, 1.0 };
+    return r * float(in_border_range);
 }
 
 DepthStencilState DisableDepth
