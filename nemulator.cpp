@@ -750,7 +750,7 @@ void c_nemulator::ProcessInput(double dt)
 
 	//if in menu and fastscrolling, and we've released left/right or reached the ends,
 	//disable fastscrolling and fade the postition letter.
-	if (current_scope == IN_MENU) {
+	if (current_scope | IN_MENU) {
 		if (fastscroll)
 		{
 			if ((!g_ih->get_result(BUTTON_1RIGHT)
