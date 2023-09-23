@@ -236,6 +236,7 @@
     <ClCompile Include="menu.cpp" />
     <ClCompile Include="nemulator.cpp" />
     <ClCompile Include="nes\apu2.cpp" />
+    <ClCompile Include="nes\game_genie.cpp" />
     <ClCompile Include="nes\mappers\mapper1.cpp" />
     <ClCompile Include="nes\mappers\mapper10.cpp" />
     <ClCompile Include="nes\mappers\mapper103.cpp" />
@@ -363,6 +364,7 @@
     <ClInclude Include="nes\apu2.h" />
     <ClInclude Include="nes\cartdb.h" />
     <ClInclude Include="nes\cpu.h" />
+    <ClInclude Include="nes\game_genie.h" />
     <ClInclude Include="nes\ines.h" />
     <ClInclude Include="nes\joypad.h" />
     <ClInclude Include="nes\mapper.h" />
@@ -539,6 +541,9 @@
     <Image Include="..\..\Users\james\Desktop\nes.png" />
     <Image Include="..\..\Users\james\Desktop\nes_ELf_icon.ico" />
     <Image Include="icon1.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".clang-format" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

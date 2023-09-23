@@ -387,6 +387,9 @@
     <ClCompile Include="nsf_stats.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="nes\game_genie.cpp">
+      <Filter>Source Files\nes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="config.h">
@@ -776,6 +779,9 @@
     <ClInclude Include="meow_fft.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="nes\game_genie.h">
+      <Filter>Header Files\nes</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="effect.fx">
@@ -800,5 +806,10 @@
     <Image Include="..\..\Users\james\Desktop\nes_ELf_icon.ico">
       <Filter>Resource Files</Filter>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".clang-format">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
