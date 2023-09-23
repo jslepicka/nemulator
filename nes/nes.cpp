@@ -119,6 +119,7 @@ c_nes::c_nes()
 	loaded = false;
 	limit_sprites = false;
 	crc32 = 0;
+	game_genie = new c_game_genie();
 }
 
 c_nes::~c_nes()
@@ -139,6 +140,8 @@ c_nes::~c_nes()
 		delete apu2;
 	if (joypad)
 		delete joypad;
+	if (game_genie)
+		delete game_genie;
 }
 
 void c_nes::enable_mixer()
@@ -213,6 +216,9 @@ unsigned char c_nes::read_byte(unsigned short address)
 		break;
 	default:
 		unsigned char val = mapper->ReadByte(address);
+		if (game_genie->count > 0) {
+			val = game_genie->filter_read(address, val);
+		}
 		return val;
 		break;
 	}
@@ -406,6 +412,9 @@ int c_nes::reset()
 	cpu->reset();
 	joypad->reset();
 	loaded = true;
+
+	//game_genie->add_code("IPVGZGZE");
+	//game_genie->add_code("LEIIXZ");
 	return 1;
 }
 

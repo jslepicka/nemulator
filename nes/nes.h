@@ -8,6 +8,7 @@
 #include "..\console.h"
 #include "..\biquad4.hpp"
 #include "..\biquad.hpp"
+#include "game_genie.h"
 
 class c_cpu;
 class c_ppu;
@@ -56,6 +57,7 @@ private:
 	int num_apu_samples;
 	c_apu2* apu2;
 	c_joypad *joypad;
+	c_game_genie* game_genie;
 	int crc32;
 	int mapperNumber;
 	char sramFilename[MAX_PATH];
