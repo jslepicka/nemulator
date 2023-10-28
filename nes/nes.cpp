@@ -124,24 +124,24 @@ c_nes::c_nes()
 
 c_nes::~c_nes()
 {
-	if (image)
-		delete[] image;
-	if (cpuRam)
-		delete[] cpuRam;
-	if (sram)
-		delete[] sram;
-	if (cpu)
-		delete cpu;
-	if (ppu)
-		delete ppu;
-	if (mapper)
-		delete mapper;
-	if (apu2)
-		delete apu2;
-	if (joypad)
-		delete joypad;
-	if (game_genie)
-		delete game_genie;
+    if (image)
+        delete[] image;
+    if (cpuRam)
+        delete[] cpuRam;
+    if (sram)
+        delete[] sram;
+    if (cpu)
+        delete cpu;
+    if (ppu)
+        delete ppu;
+    if (mapper)
+        delete mapper;
+    if (apu2)
+        delete apu2;
+    if (joypad)
+        delete joypad;
+    if (game_genie)
+        delete game_genie;
 }
 
 void c_nes::enable_mixer()
@@ -189,6 +189,14 @@ unsigned char c_nes::read_byte(unsigned short address)
 	//if (address == 0x8320) {
 	//	return 0x2;
 	//}
+	//journey to silius unlimited energy
+ //   if (address == 0x00B0) {
+ //       return 0x0F;
+ //   }
+	////journey to silius unlimited gun power
+ //   if (address == 0x00B1) {
+ //       return 0x3F;
+ //   }
 	switch (address >> 12)
 	{
 	case 0:
@@ -415,6 +423,7 @@ int c_nes::reset()
 
 	//game_genie->add_code("IPVGZGZE");
 	//game_genie->add_code("LEIIXZ");
+    //game_genie->add_code("GXVAAASA");
 	return 1;
 }
 

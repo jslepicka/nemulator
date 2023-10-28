@@ -21,7 +21,7 @@ public:
 	virtual void clock(int cycles) {};
 	virtual void reset();
 	virtual int LoadImage();
-	virtual float mix_audio(float sample);
+    virtual float mix_audio(float sample);
 	int has_expansion_audio();
 	c_ppu *ppu;
 	c_cpu *cpu;
