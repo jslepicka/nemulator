@@ -14,7 +14,7 @@ public:
 	int init();
 	void play();
 	void stop();
-	int copy(const int32_t *src, int numSamples);
+    int copy(const short *left, const short *right, int numSamples);
 	double get_freq() { return freq; }
 	int get_max_freq() { return max_freq; }
 	int rate;
@@ -27,7 +27,9 @@ public:
 	double slope;
 	double get_requested_freq();
 	void reset();
-private:
+    int get_buffered_length();
+
+  private:
 	double requested_freq;
 
 	HWND hWnd;
@@ -58,4 +60,7 @@ private:
 
 	double ema;
 	int first_b;
+
+	uint32_t *interleave_buffer;
+    const int INTERLEAVE_BUFFER_LEN = 1024;
 };

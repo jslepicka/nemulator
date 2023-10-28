@@ -314,8 +314,8 @@ void c_apu2::mix()
 	float tnd_out = tnd_lut[3 * triangle_vol + 2 * noise_vol + dmc_vol];
 
 	float sample = square_out + tnd_out;
-	if (nes->mapper->has_expansion_audio())
-		sample = nes->mapper->mix_audio(sample);
+	/*if (nes->mapper->has_expansion_audio())*/
+	sample = nes->mapper->mix_audio(sample);
 	resampler->process(sample);
 }
 

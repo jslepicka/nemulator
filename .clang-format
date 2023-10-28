@@ -31,7 +31,7 @@ AlignConsecutiveMacros:
 AlignEscapedNewlines: Right
 AlignOperands:   Align
 AlignTrailingComments:
-  Kind:            Always
+  Kind:            Leave
   OverEmptyLines:  0
 AllowAllArgumentsOnNextLine: true
 AllowAllParametersOfDeclarationOnNextLine: true
@@ -54,7 +54,7 @@ BitFieldColonSpacing: Both
 BraceWrapping:
   AfterCaseLabel:  false
   AfterClass:      true
-  AfterControlStatement: Always
+  AfterControlStatement: Never
   AfterEnum:       true
   AfterExternBlock: true
   AfterFunction:   true
@@ -117,7 +117,7 @@ IncludeIsMainRegex: '(Test)?$'
 IncludeIsMainSourceRegex: ''
 IndentAccessModifiers: false
 IndentCaseBlocks: false
-IndentCaseLabels: false
+IndentCaseLabels: true
 IndentExternBlock: AfterExternBlock
 IndentGotoLabels: true
 IndentPPDirectives: None
@@ -203,7 +203,7 @@ SpacesInConditionalStatement: false
 SpacesInContainerLiterals: true
 SpacesInCStyleCastParentheses: false
 SpacesInLineCommentPrefix:
-  Minimum:         1
+  Minimum:         0
   Maximum:         -1
 SpacesInParentheses: false
 SpacesInSquareBrackets: false

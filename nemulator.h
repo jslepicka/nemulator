@@ -190,8 +190,6 @@ private:
 	HANDLE *done_events;
 
 	bool show_suspend;
-	static const int SOUND_BUF_LEN = 1024;
-	int32_t* sound_buf;
 
 	typedef void (c_nemulator::* button_handler_func)(s_button_handler_params*);
 	struct s_button_handler {

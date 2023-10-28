@@ -80,10 +80,6 @@ c_nemulator::c_nemulator()
 
 	_MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
 	_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
-
-	sound_buf = new int32_t[SOUND_BUF_LEN];
-	memset(sound_buf, 0, sizeof(int32_t) * SOUND_BUF_LEN);
-
 }
 
 void c_nemulator::kill_threads()
@@ -122,8 +118,6 @@ c_nemulator::~c_nemulator()
 	{
 		delete game;
 	}
-	if (sound_buf)
-		delete[] sound_buf;
 }
 
 void c_nemulator::LoadFonts()
@@ -767,7 +761,7 @@ void c_nemulator::ProcessInput(double dt)
 
 	//this is a lambda so we can 'break' from nested for loops by using return
 	auto check_handlers = [&]() [[msvc::forceinline]] {
-		for (auto bh : button_handlers) {
+		for (auto &bh : button_handlers) {
 			if (current_scope & bh.scope) {
 				for (auto button : bh.button_list) {
 					if (int result = g_ih->get_result(button, bh.ack) & bh.mask) {
@@ -1107,26 +1101,8 @@ void c_nemulator::UpdateScene(double dt)
 
 			int num_samples = console->get_sound_bufs(&buf_l, &buf_r);
 			
-			if (buf_r == NULL) {
-				//mono
-				short* sb = (short*)sound_buf;
-				for (int i = 0; i < num_samples; i++)
-				{
-					*sb++ = *buf_l;
-					*sb++ = *buf_l++;
-				}
-			}
-			else {
-				//stereo
-				short* sb = (short*)sound_buf;
-				for (int i = 0; i < num_samples; i++)
-				{
-					*sb++ = *buf_l++;
-					*sb++ = *buf_r++;
-				}
-			}
 			if (!benchmark_mode) {
-				sound->copy(sound_buf, num_samples);
+				sound->copy(buf_l, buf_r, num_samples);
 				s = sound->sync();
 			}
 			console->set_audio_freq(sound->get_requested_freq());
@@ -1170,6 +1146,8 @@ void c_nemulator::UpdateScene(double dt)
 			stats->report_stat("fps", fps);
 			stats->report_stat("freq", sound->get_freq());
 			stats->report_stat("audio position", s);
+            stats->report_stat("audio bytes buffered", sound->get_buffered_length());
+            stats->report_stat("audio buffer length (ms)", (double)sound->get_buffered_length() / (48000.0 * 2 * 2) * 1000.0);
 			stats->report_stat("audio resets", sound->resets);
 			stats->report_stat("audio.slope", sound->slope);
 			std::ostringstream s;

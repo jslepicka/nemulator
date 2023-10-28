@@ -38,6 +38,8 @@ c_sound::c_sound(HWND hWnd)
 
 	ema = 0.0;
 	first_b = 1;
+
+	interleave_buffer = new uint32_t[INTERLEAVE_BUFFER_LEN];
 }
 
 c_sound::~c_sound()
@@ -53,6 +55,10 @@ c_sound::~c_sound()
 	{
 		lpDS->Release();
 		lpDS = NULL;
+	}
+
+	if (interleave_buffer) {
+        delete[] interleave_buffer;
 	}
 }
 
@@ -207,7 +213,7 @@ int c_sound::sync()
 			freq = max_freq;
 		requested_freq = freq;
 	}
-	return b;
+    return b;
 }
 
 void c_sound::clear()
@@ -224,7 +230,7 @@ void c_sound::clear()
 	buffer->Unlock(lpbuf1, dwsize1, NULL, NULL);
 }
 
-int c_sound::copy(const int32_t *src, int numSamples)
+int c_sound::copy(const short *left, const short *right, int numSamples)
 {
 	HRESULT hr;
 	LPBYTE lpbuf1 = NULL;
@@ -234,6 +240,14 @@ int c_sound::copy(const int32_t *src, int numSamples)
 	DWORD dwbyteswritten1 = 0;
 	DWORD dwbyteswritten2 = 0;
 	int src_len = numSamples * wf.nBlockAlign;
+	
+	uint32_t *ib = interleave_buffer;
+    const uint16_t *l = (uint16_t*)left;
+    const uint16_t *r = right != NULL ? (uint16_t*)right : (uint16_t*)left;
+    for (int i = 0; i < numSamples; i++) {
+        *ib++ = *l++ | (*r++ << 16);
+    }
+	
 	//wait until there's enough room in the DirectSound buffer for the new samples
 	while (get_max_write() < src_len);
 
@@ -241,18 +255,21 @@ int c_sound::copy(const int32_t *src, int numSamples)
 	hr = buffer->Lock(write_cursor, (DWORD)src_len, (LPVOID *)&lpbuf1, &dwsize1, (LPVOID *)&lpbuf2, &dwsize2, 0);
 	if (hr == DS_OK)
 	{
-		memcpy(lpbuf1, src, dwsize1);
+		memcpy(lpbuf1, interleave_buffer, dwsize1);
 		dwbyteswritten1 = dwsize1;
 		if (lpbuf2)
 		{
 			dwbyteswritten2 = src_len - dwsize1;
-			memcpy(lpbuf2, src + (dwsize1 / wf.nBlockAlign), dwbyteswritten2);
+			memcpy(lpbuf2, interleave_buffer + (dwsize1 / wf.nBlockAlign), dwbyteswritten2);
 		}
 
 		// Update our buffer offset and unlock sound buffer
 		write_cursor = (write_cursor + src_len) % bufferdesc.dwBufferBytes;
 		buffer->Unlock(lpbuf1, dwbyteswritten1, lpbuf2, dwbyteswritten2);
 	}
+    else {
+        int x = 1;
+    }
 	return 0;		
 }
 
@@ -265,4 +282,16 @@ int c_sound::get_max_write()
 		return playCursor - write_cursor;
 	else
 		return bufferdesc.dwBufferBytes - write_cursor + playCursor;
+}
+
+int c_sound::get_buffered_length()
+{
+    DWORD play_cursor;
+    buffer->GetCurrentPosition(&play_cursor, NULL);
+    if (write_cursor >= play_cursor) {
+        return write_cursor - play_cursor;
+    }
+    else {
+        return bufferdesc.dwBufferBytes - play_cursor + write_cursor;
+    }
 }
