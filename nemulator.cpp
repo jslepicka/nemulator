@@ -214,8 +214,11 @@ void c_nemulator::Init()
 	//add_task(mem_viewer, NULL);
 
 	LoadFonts();
-	sound = new c_sound(hWnd);
-	sound->init();
+	sound = new c_sound();
+    if (!sound->init()) {
+        MessageBox(NULL, "Sound initialization failed", "Error", MB_OK);
+        exit(1);
+    }
 
 	fastscroll = false;
 	scroll_fade_timer = 0.0;
@@ -231,15 +234,7 @@ void c_nemulator::Init()
 	mainPanel2->y = 0.0f;
 	mainPanel2->z = 0.0f;
 	mainPanel2->in_focus = true;
-	sharpness = config->get_double("sharpness", .8);
-	if (sharpness < 0.0f)
-	{
-		sharpness = 0.0f;
-	}
-	else if (sharpness > 1.0f)
-	{
-		sharpness = 1.0f;
-	}
+	sharpness = std::clamp(config->get_double("sharpness", .8), 0.0, 1.0);
 	mainPanel2->set_sharpness(sharpness);
 	texturePanels[0] = mainPanel2;
 
@@ -868,7 +863,6 @@ void c_nemulator::start_game()
 		//joy1 = n->GetJoy1();
 		//joy2 = n->GetJoy2();
 		//sound->Reset();
-		sound->clear();
 		sound->play();
 		inGame = true;
 		n->enable_mixer();
@@ -1101,7 +1095,7 @@ void c_nemulator::UpdateScene(double dt)
 
 			int num_samples = console->get_sound_bufs(&buf_l, &buf_r);
 			
-			if (!benchmark_mode) {
+			if (!benchmark_mode && !paused) {
 				sound->copy(buf_l, buf_r, num_samples);
 				s = sound->sync();
 			}
@@ -1149,7 +1143,12 @@ void c_nemulator::UpdateScene(double dt)
             stats->report_stat("audio bytes buffered", sound->get_buffered_length());
             stats->report_stat("audio buffer length (ms)", (double)sound->get_buffered_length() / (48000.0 * 2 * 2) * 1000.0);
 			stats->report_stat("audio resets", sound->resets);
+            stats->report_stat("audio buffer wait count", (int)sound->buffer_wait_count);
 			stats->report_stat("audio.slope", sound->slope);
+            stats->report_stat("audio_frequency", sound->audio_frequency);
+			stats->report_stat("audio_position", sound->audio_position);
+            stats->report_stat("audio_position_diff", sound->audio_position_diff);
+            stats->report_stat("audio state", sound->state);
 			std::ostringstream s;
 			s << std::hex << std::uppercase << console->get_crc();
 			stats->report_stat("CRC", s.str());

@@ -5,18 +5,21 @@
 #pragma comment (lib, "dxerr.lib")
 #pragma comment (lib, "dxgi.lib")
 
-//compile for 7+
 #ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0601
+#define _WIN32_WINNT _WIN32_WINNT_WIN10
 #endif
+
+#ifndef _WIN64
+#error This application requires x64 compilation
+#endif
+
+#define WIN32_LEAN_AND_MEAN
 
 #if defined(DEBUG) || defined(_DEBUG)
 #define _CRTDBG_MAP_ALLOC
 #include <crtdbg.h>
 
 #endif
-
-#define ReleaseCOM(x) { if(x) {x->Release(); x = 0; } }
 
 #include <d3d10.h>
 #include <dxgi.h>
@@ -63,7 +66,6 @@ protected:
 	void InitWnd();
 	int InitD3d();
 	virtual void OnPause(bool paused);
-	void add_task(c_task *task, void *params);
 	bool resized;
 	void disable_screensaver();
 
@@ -77,9 +79,7 @@ protected:
 	bool timer_sync;
 	bool pause_on_lost_focus;
 	int ignore_input;
-	//bool startFullscreen;
 
-	//ID3D10Device *d3dDev;
 	IDXGISwapChain *swapChain;
 	ID3D10Texture2D *depthStencilBuffer;
 	ID3D10RenderTargetView *renderTargetView;
@@ -109,4 +109,5 @@ protected:
 	IDXGIFactory * pFactory;
 
 	HANDLE power_request;
+    D3D10_TEXTURE2D_DESC depthStencilDesc;
 };
