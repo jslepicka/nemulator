@@ -19,7 +19,9 @@ public:
 	void report_stat(std::string stat_name, int stat_value);
 	void report_stat(std::string stat_name, double stat_value);
 	void report_stat(std::string stat_name, std::string stat_value);
-private:
+    void report_stat(std::string stat_name, uint64_t stat_value);
+
+  private:
 	bool reported;
 	void draw_text(char *text, double x, double y, D3DXCOLOR color);
 	ID3DX10Font *font;

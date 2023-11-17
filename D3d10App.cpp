@@ -10,6 +10,8 @@
 #pragma comment(lib, "avrt.lib")
 #pragma comment(lib, "dwmapi.lib")
 
+#define ReleaseCOM(x) { if(x) { x->Release(); x = 0; } }
+
 ID3D10Device *d3dDev;
 D3DXMATRIX matrixView;
 D3DXMATRIX matrixProj;
@@ -153,6 +155,7 @@ int D3d10App::Run()
                 d3dDev->Flush();
 
                 swapChain->Present(vsync ? 1 : 0, 0);
+                d3dDev->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
             }
             else
                 Sleep(250);
@@ -209,12 +212,13 @@ void D3d10App::Init(char *config_file_name, c_task *init_task, void *params)
     ignore_input = 0;
     avrt_handle = 0;
     timeBeginPeriod(1);
-    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
+    //SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
 
     task_index = 0;
 
     SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
     avrt_handle = AvSetMmThreadCharacteristics("Pro Audio", &task_index);
+    //AvSetMmThreadPriority(avrt_handle, AVRT_PRIORITY_CRITICAL);
     clientHeight = (int)(clientWidth / aspectRatio);
 
     fullscreen = startFullscreen;
@@ -275,7 +279,7 @@ void D3d10App::OnResize()
     d3dDev->CreateRenderTargetView(backBuffer, 0, &renderTargetView);
     ReleaseCOM(backBuffer);
 
-    D3D10_TEXTURE2D_DESC depthStencilDesc;
+    
     depthStencilDesc.Width = clientWidth;
     depthStencilDesc.Height = clientHeight;
     depthStencilDesc.MipLevels = 1;

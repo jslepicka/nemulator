@@ -70,6 +70,13 @@ void c_stats::report_stat(std::string stat_name, double stat_value)
 	report_stat(stat_name, temp);
 }
 
+void c_stats::report_stat(std::string stat_name, uint64_t stat_value)
+{
+    char temp[32];
+    sprintf_s(temp, 32, "%llu", stat_value);
+    report_stat(stat_name, temp);
+}
+
 void c_stats::report_stat(std::string stat_name, std::string stat_value)
 {
 	stats.erase(stat_name);

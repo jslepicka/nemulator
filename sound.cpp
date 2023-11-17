@@ -2,17 +2,21 @@
 #include <math.h>
 #include <assert.h>
 #include "config.h"
+#include <algorithm>
+
 
 extern c_config *config;
 
-c_sound::c_sound(HWND hWnd)
+#define ReleaseCOM(x) { if(x) { x->Release(); x = 0; } }
+
+//#define blah(x, ...) { if (x(__VA_ARGS__) == S_OK) { MessageBox(NULL, #x " failed", "Error", MB_OK); return 0;} }
+
+c_sound::c_sound()
 {
-	this->hWnd = hWnd;
 	resets = 0;
-	requested_freq = freq = default_freq = 48000;
-	max_freq = default_max_freq = (int)(default_freq * 1.02);
-	min_freq = default_min_freq = (int)(default_freq * .98);
-	lpDS = NULL;
+	requested_freq = freq = default_freq = 48000.0;
+	max_freq = default_freq * 1.02;
+	min_freq = default_freq * .98;
 	adjustPeriod = 3;
 	lastb = 0;
 	ZeroMemory(&wf, sizeof(WAVEFORMATEX));
@@ -23,109 +27,132 @@ c_sound::c_sound(HWND hWnd)
 	wf.nBlockAlign = wf.wBitsPerSample / 8 * wf.nChannels;
 	wf.nAvgBytesPerSec = wf.nSamplesPerSec * wf.nBlockAlign;
 
-	ZeroMemory(&bufferdesc, sizeof(DSBUFFERDESC));
-	bufferdesc.dwSize = sizeof(DSBUFFERDESC); 
-	bufferdesc.dwFlags = DSBCAPS_GLOBALFOCUS | DSBCAPS_TRUEPLAYPOSITION | DSBCAPS_CTRLFREQUENCY | DSBCAPS_CTRLVOLUME; 
-	bufferdesc.dwBufferBytes = (wf.nAvgBytesPerSec * BUFFER_MSEC)/1000;
-	bufferdesc.lpwfxFormat = &wf;
-
-	ZeroMemory(&primaryBufferDesc, sizeof(DSBUFFERDESC));
-	primaryBufferDesc.dwSize = sizeof(DSBUFFERDESC);
-	primaryBufferDesc.dwFlags = DSBCAPS_PRIMARYBUFFER;
-	primaryBufferDesc.dwBufferBytes = 0;
-
-	write_cursor = 0;
-
 	ema = 0.0;
 	first_b = 1;
+    slope = 0.0;
+    value_index = 0;
 
 	interleave_buffer = new uint32_t[INTERLEAVE_BUFFER_LEN];
+    buffer_wait_count = 0;
+}
+
+int c_sound::init_wasapi()
+{
+    HRESULT hr;
+
+	hr = CoCreateInstance(CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL, IID_IMMDeviceEnumerator, (void **)&enumerator);
+    if (hr != S_OK) {
+        MessageBox(NULL, "WASAPI CoCreateInstance failed", "Error", MB_OK);
+        return 0;
+    }
+
+    hr = enumerator->GetDefaultAudioEndpoint(eRender, eConsole, &device);
+    if (hr != S_OK) {
+        MessageBox(NULL, "WASAPI GetDefaultAudioEndpoint failed", "Error", MB_OK);
+        return 0;
+    }
+
+    hr = device->Activate(IID_IAudioClient3, CLSCTX_ALL, NULL,(void **)&audio_client);
+    if (hr != S_OK) {
+        MessageBox(NULL, "WASAPI Activate failed", "Error", MB_OK);
+        return 0;
+    }
+
+	UINT32 pDefaultPeriodInFrames;
+    UINT32 pFundamentalPeriodInFrames;
+    UINT32 pMinPeriodInFrames;
+    UINT32 pMaxPeriodInFrames;
+
+	hr = audio_client->GetSharedModeEnginePeriod(&wf, &pDefaultPeriodInFrames,
+                                            &pFundamentalPeriodInFrames , &pMinPeriodInFrames, &pMaxPeriodInFrames);
+    if (hr != S_OK) {
+        MessageBox(NULL, "WASAPI GetSharedModeEnginePeriod failed", "Error", MB_OK);
+        return 0;
+    }
+
+	//convert BUFFER_MSEC to length in 100ns
+    const REFERENCE_TIME buffer_time = (REFERENCE_TIME)BUFFER_MSEC * 10000;
+	
+	hr = audio_client->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, buffer_time, 0, &wf, NULL);
+    if (hr != S_OK) {
+        MessageBox(NULL, "WASAPI Initialize failed", "Error", MB_OK);
+        return 0;
+    }
+
+    hr = audio_client->GetBufferSize(&pNumBufferFrames);
+    if (hr != S_OK) {
+        MessageBox(NULL, "WASAPI GetBufferSize failed", "Error", MB_OK);
+        return 0;
+    }
+	
+	hr = audio_client->GetService(IID_IAudioRenderClient, (void **)&render_client);
+    if (hr != S_OK) {
+        MessageBox(NULL, "WASAPI GetService IAudioRenderClient failed", "Error", MB_OK);
+        return 0;
+    }
+
+	hr = audio_client->GetService(IID_IAudioClock, (void **)&audio_clock);
+    if (hr != S_OK) {
+        MessageBox(NULL, "WASAPI GetService IAudioClock failed", "Error", MB_OK);
+        return 0;
+    }
+
+    return 1;
 }
 
 c_sound::~c_sound()
 {
-	if (buffer)
-	{
-		stop();
-		buffer->Release();
-		buffer = NULL;
-	}
-
-	if (lpDS)
-	{
-		lpDS->Release();
-		lpDS = NULL;
-	}
-
-	if (interleave_buffer) {
+    if (interleave_buffer) {
         delete[] interleave_buffer;
-	}
+    }
+
+    ReleaseCOM(audio_clock);
+    ReleaseCOM(render_client);
+    ReleaseCOM(audio_client);
+    ReleaseCOM(device);
+    ReleaseCOM(enumerator);
 }
 
 int c_sound::init()
 {
-	if (DS_OK != DirectSoundCreate(NULL, &lpDS, NULL))
-	{
-		MessageBox(NULL, "DirectSoundCreate failed", "", MB_OK);
-		return 0;
-	}
-	if (DS_OK != IDirectSound_SetCooperativeLevel(lpDS, hWnd, DSSCL_PRIORITY))
-	{
-		MessageBox(NULL, "IDirectSound_SetCooperativeLevel failed", "", MB_OK);
-		return 0;
-	}
-	if (DS_OK != lpDS->CreateSoundBuffer(&primaryBufferDesc, &primaryBuffer, NULL))
-	{
-		MessageBox(NULL, "Unable to create primary sound buffer", "", MB_OK);
-		return 0;
-	}
-	if (DS_OK != primaryBuffer->SetFormat(&wf))
-	{
-		MessageBox(NULL, "Unable to set primary buffer format", "", MB_OK);
-		return 0;
-	}
+    if (!init_wasapi()) {
+        return 0;
+    }
 
-	primaryBuffer->Release();
-	primaryBuffer = NULL;
-	if (DS_OK != lpDS->CreateSoundBuffer(&bufferdesc, &buffer, NULL))
-	{
-		MessageBox(NULL, "CreateSoundBuffer failed", "", MB_OK);
-		return 0;
-	}
-	clear();
 	reset();
 	return 1;
 }
 
 void c_sound::play()
 {
-	buffer->Play(0, 0, DSBPLAY_LOOPING);
+    reset_slope();
+    BYTE *buffer;
+    render_client->GetBuffer(pNumBufferFrames, &buffer);
+    render_client->ReleaseBuffer(pNumBufferFrames, AUDCLNT_BUFFERFLAGS_SILENT);
+    audio_client->Start();
+    Sleep(50); //sleep for a bit to give the play cursor time to advance.  ick.
 }
 
 void c_sound::stop()
 {
-	buffer->Stop();
-}
-
-void c_sound::set_volume(long volume)
-{
-	buffer->SetVolume(volume);
+    audio_client->Stop();
+    audio_client->Reset();
 }
 
 void c_sound::reset()
 {
-	buffer->SetCurrentPosition((write_cursor + target/* + 3200*/) % bufferdesc.dwBufferBytes );
 	freq = default_freq;
-	max_freq = default_max_freq;
-	min_freq = default_min_freq;
+}
 
-	slope = 0.0;
-	value_index = 0;
-	for (int i = 0; i < num_values; i++)
-		values[i] = -1;
+void c_sound::reset_slope()
+{
+    slope = 0.0;
+    value_index = 0;
+    for (int i = 0; i < num_values; i++)
+        values[i] = -1;
 
-	ema = 0.0;
-	first_b = 1;
+    ema = 0.0;
+    first_b = 1;
 }
 
 double c_sound::get_requested_freq()
@@ -155,14 +182,18 @@ double c_sound::calc_slope()
 	}
 	double num = (double)(valid_values * sxy - sx*sy);
 	double den = (double)(valid_values * sxx - sx*sx);
-	return den == 0.0 ? 0.0 : num / den / 2.0;
+    return den == 0.0 ? 0.0 : num / den / 2.0;
 }
 
 int c_sound::sync()
 {
 	int b = get_max_write();
+    audio_clock->GetFrequency(&audio_frequency);
+    audio_clock->GetPosition(&audio_position, NULL);
+    audio_position_diff = audio_position - audio_last_position;
+    audio_last_position = audio_position;
 
-	const double alpha = 2.0 / (15 + 1);
+	const double alpha = 2.0 / (30 + 1);
 
 	if (first_b) {
 		ema = b;
@@ -174,124 +205,119 @@ int c_sound::sync()
 	}
 	values[value_index] = b;
 	value_index = (value_index + 1) % num_values;
+
+    enum
+    {
+        CONVERGING,
+        STEADY,
+        DIVERGING
+    };
 	
-	if (--adjustPeriod == 0)
+    if (--adjustPeriod == 0)
 	{
 		slope = calc_slope();
+        double abs_slope = abs(slope);
 		adjustPeriod = adjustFrames;
 		int diff = b - target;
+        int abs_diff = abs(diff);
+
+        int trend = (diff * slope > 0.0) - (diff * slope < 0.0);
+
+        if (trend == CONVERGING) {
+            state = "converging";
+        }
+        else if (trend == DIVERGING) {
+            state = "diverging";
+        }
+        else {
+            state = "steady";
+        }
 		
-		//dir = 1 if diff > 0, -1 if diff < 0, else 0
-		int dir = (diff > 0) - (diff < 0);
-
 		double new_adj = 0.0;
+        char buf[64];
 
-		if (b > (8000*2)) //near underflow
+		if (false && b > (8000*2)) //near underflow
 		{
 			reset();
 			resets++;
 		}
-		else if (dir * slope < -1.0) //moving towards target at a slope > 1.0
+		else if (trend == CONVERGING) //moving towards target at a abs(slope) > 1.0
 		{
-			new_adj = abs(slope)/4.0;
-			if (new_adj > 1.0)
-				new_adj = 1.0;
+			//if we're more than 1000 bytes away from target, increase adjustment to cause us to converge faster
+            //unless abs(slope) is above 3.0
+            if (abs_diff > 1000) {
+                if (abs_slope < 3.0) {
+                    new_adj = -2.0;
+                    //sprintf(buf, "fast converge diff: %d, slope: %f, fixed adj -2.0\n", abs_diff, abs_slope);
+                    //OutputDebugString(buf);
+                }
+            }
+            else if (abs_slope > 1.0) {
+                //else if we're near the target and our abs(slope) is greater than one, back off on adjustment to reduce slope
+                new_adj = abs_slope / 4.0;
+                if (new_adj > 1.0)
+                    new_adj = 1.0;
+                //sprintf(buf, "near target diff: %d, slope: %f, adj: %f\n", abs_diff, abs_slope, new_adj);
+                //OutputDebugString(buf);
+            }
 		}
-		else if (dir * slope > 0.0 || b == 0) //moving away from target or stuck behind play cursor
+		else if (trend == DIVERGING || b == 0) //moving away from target or stuck behind play cursor
 		{
 			//skew causes new_adj to increase faster when we're farther away from the target
-			double skew = (abs(diff) / (1600.0*2)) * 10.0;
-			new_adj = -((abs(slope) + skew) / 2.0);
+			double skew = (abs_diff / (1600.0*2)) * 10.0;
+			new_adj = -((abs_slope + skew) / 2.0);
 			if (new_adj < -2.0)
 				new_adj = -2.0;
+            //sprintf(buf, "slope: %f, skew: %f, adj: %f\n", abs(slope), skew, new_adj);
+            //OutputDebugString(buf);
 		}
+        int dir = (diff > 0) - (diff < 0);
 		new_adj *= dir;
 		freq += -new_adj;
-		if (freq < min_freq)
-			freq = min_freq;
-		if (freq > max_freq)
-			freq = max_freq;
+        freq = std::clamp(freq, min_freq, max_freq);
 		requested_freq = freq;
 	}
     return b;
 }
 
-void c_sound::clear()
-{
-	LPBYTE lpbuf1 = NULL;
-	LPBYTE lpbuf2 = NULL;
-	DWORD dwsize1;
-
-	buffer->Lock(0, 0, (LPVOID*)&lpbuf1, &dwsize1, NULL, NULL, DSBLOCK_ENTIREBUFFER);
-	for (int i = 0; i < (int)dwsize1; i++)
-	{
-		lpbuf1[i] = 0;
-	}
-	buffer->Unlock(lpbuf1, dwsize1, NULL, NULL);
-}
-
 int c_sound::copy(const short *left, const short *right, int numSamples)
 {
-	HRESULT hr;
-	LPBYTE lpbuf1 = NULL;
-	LPBYTE lpbuf2 = NULL;
-	DWORD dwsize1 = 0;
-	DWORD dwsize2 = 0;
-	DWORD dwbyteswritten1 = 0;
-	DWORD dwbyteswritten2 = 0;
+    int waited = 0;
 	int src_len = numSamples * wf.nBlockAlign;
-	
+
 	uint32_t *ib = interleave_buffer;
     const uint16_t *l = (uint16_t*)left;
     const uint16_t *r = right != NULL ? (uint16_t*)right : (uint16_t*)left;
     for (int i = 0; i < numSamples; i++) {
         *ib++ = *l++ | (*r++ << 16);
     }
-	
-	//wait until there's enough room in the DirectSound buffer for the new samples
-	while (get_max_write() < src_len);
-
-	// Lock the sound buffer
-	hr = buffer->Lock(write_cursor, (DWORD)src_len, (LPVOID *)&lpbuf1, &dwsize1, (LPVOID *)&lpbuf2, &dwsize2, 0);
-	if (hr == DS_OK)
-	{
-		memcpy(lpbuf1, interleave_buffer, dwsize1);
-		dwbyteswritten1 = dwsize1;
-		if (lpbuf2)
-		{
-			dwbyteswritten2 = src_len - dwsize1;
-			memcpy(lpbuf2, interleave_buffer + (dwsize1 / wf.nBlockAlign), dwbyteswritten2);
-		}
-
-		// Update our buffer offset and unlock sound buffer
-		write_cursor = (write_cursor + src_len) % bufferdesc.dwBufferBytes;
-		buffer->Unlock(lpbuf1, dwbyteswritten1, lpbuf2, dwbyteswritten2);
-	}
-    else {
-        int x = 1;
+    while (get_max_write() < src_len) {
+        waited = 1;
     }
-	return 0;		
+    if (waited) {
+        buffer_wait_count++;
+    }
+	BYTE *wasapi_buffer;
+    render_client->GetBuffer(numSamples, &wasapi_buffer);
+    uint32_t *wasapi_out = (uint32_t *)wasapi_buffer;
+    ib = interleave_buffer;
+    for (int i = 0; i < numSamples; i++) {
+        *wasapi_out++ = *ib++;
+    }
+    render_client->ReleaseBuffer(numSamples, 0);
+    return 0;	
 }
 
 int c_sound::get_max_write()
 {
-	DWORD playCursor;
-	buffer->GetCurrentPosition(&playCursor, NULL);
-
-	if (write_cursor <= playCursor)
-		return playCursor - write_cursor;
-	else
-		return bufferdesc.dwBufferBytes - write_cursor + playCursor;
+    UINT32 padding;
+    audio_client->GetCurrentPadding(&padding);
+    return (pNumBufferFrames - padding) * 4;
 }
 
 int c_sound::get_buffered_length()
 {
-    DWORD play_cursor;
-    buffer->GetCurrentPosition(&play_cursor, NULL);
-    if (write_cursor >= play_cursor) {
-        return write_cursor - play_cursor;
-    }
-    else {
-        return bufferdesc.dwBufferBytes - play_cursor + write_cursor;
-    }
+    UINT32 padding;
+    audio_client->GetCurrentPadding(&padding);
+    return padding * 4;
 }
