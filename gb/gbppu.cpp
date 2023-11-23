@@ -6,8 +6,6 @@
 #include <assert.h>
 #include <utility>
 
-
-
 const unsigned int c_gbppu::pal[][4] = {
 	{
 		//0 - lime green
@@ -156,21 +154,27 @@ const unsigned int c_gbppu::pal[][4] = {
 //	0xFF0C360C
 //};
 
+std::atomic<int> c_gbppu::color_lookup_built = 0;
+uint32_t c_gbppu::color_lookup[32];
 
 c_gbppu::c_gbppu(c_gb* gb)
 {
 	this->gb = gb;
 	vram = new uint8_t[16384];
+    vram1 = new uint8_t[16384];
 	oam = new uint8_t[160];
 	fb = new uint32_t[160 * 144];
 	fb_back = new uint32_t[160 * 144];
 	shades = pal[15];
+    generate_color_lookup();
 }
 
 c_gbppu::~c_gbppu()
 {
 	if (vram)
 		delete[] vram;
+    if (vram1)
+        delete[] vram1;
 	if (oam)
 		delete[] oam;
 	if (fb)
@@ -178,6 +182,22 @@ c_gbppu::~c_gbppu()
 	if (fb_back)
 		delete[] fb_back;
 
+}
+
+void c_gbppu::generate_color_lookup()
+{
+    int expected = 0;
+    if (color_lookup_built.compare_exchange_strong(expected, 1)) {
+        double gamma = 1.0 / 1.2;
+        for (int i = 0; i < 32; i++) {
+            double x = i;
+			//this curve is based off of sameboy's curve.  Dropped into excel and fit this polynomial to it.
+            color_lookup[i] =
+                std::clamp((uint32_t)(-.0148 * (x * x * x) + .6243 * (x * x) + 2.9731 * x), (uint32_t)0, (uint32_t)255);
+			//color_lookup[i] = std::clamp((uint32_t)(pow(((double)i / 31.0), gamma) * 255.0), (uint32_t)0, (uint32_t)255);
+        }
+    }
+    int x = 1;
 }
 
 void c_gbppu::reset()
@@ -229,11 +249,22 @@ void c_gbppu::reset()
 
 	memset(sprite_buffer, 0, sizeof(sprite_buffer));
 	memset(vram, 0, 16384);
+    memset(vram1, 0, 16384);
 
 	memset(fb, 0xFF, 160 * 144 * sizeof(uint32_t));
 	memset(fb_back, 0xFF, 160 * 144 * sizeof(uint32_t));
 
 	SCX_latch = 0;
+
+	cgb_vram_bank = 0;
+    BCPS = 0;
+    OBPS = 0;
+
+	cgb_bg_attr = 0;
+    KEY1 = 0;
+    double_speed = 0;
+
+	OPRI = 0;
 }
 
 void c_gbppu::eval_sprites(int y)
@@ -294,6 +325,14 @@ void c_gbppu::set_ly(int line)
 		STAT &= ~0x4;
 	}
 	update_stat();
+}
+
+void c_gbppu::on_stop()
+{
+    if (KEY1 & 0x1) {
+        double_speed ^= 0x1;
+        KEY1 = double_speed ? 0x80 : 0;
+    }
 }
 
 void c_gbppu::execute(int cycles)
@@ -418,11 +457,17 @@ void c_gbppu::execute(int cycles)
 						in_sprite_window = 0;
 						if (bg_latched) {
 							bg_latched = 0;
+							//horizontal flip
+                            int h_xor = cgb_bg_attr & 0x20 ? 7 : 0;
 							for (int i = 0; i < 8; i++)
 							{
-								int shift = 7 - i;
+								int shift = (7 - i) ^ h_xor;
 								uint8_t p = ((bg_p0 >> shift) & 0x1) | (((bg_p1 >> shift) & 0x1) << 1);
+                                p |= cgb_bg_attr & 0x80;
 								bg_fifo[bg_fifo_index] = p;
+                                if (gb->get_model() == GB_MODEL::CGB) {
+                                    bg_fifo_pal[bg_fifo_index] = cgb_bg_attr & 0x7;
+                                }
 								bg_fifo_index = (bg_fifo_index + 1) & 0x7;
 							}
 						}
@@ -444,26 +489,54 @@ void c_gbppu::execute(int cycles)
 
 					}
 					tile = vram[char_addr - 0x8000];
+                    if (gb->get_model() == GB_MODEL::CGB) {
+                        cgb_bg_attr = vram1[char_addr - 0x8000];
+                    }
 					fetch_phase++;
 					break;
 				case 2: //sleep
 					fetch_phase++;
 					break;
 				case 3: //fetch pt0
-					if (LCDC & 0x10) {
-						p0_addr = (tile << 4) | ((ybase & 0x7) << 1);
-					}
-					else {
-						p0_addr = 0x800 + (((int8_t)tile + 128) << 4) + ((ybase & 0x7) << 1);
-					}
-					bg_p0 = vram[p0_addr];
-					fetch_phase++;
+                {
+					//vertical flip
+                    uint32_t v_xor = cgb_bg_attr & 0x40 ? 7 : 0;
+                    uint32_t y_adj = (ybase & 0x7) ^ v_xor;
+                    if (LCDC & 0x10) {
+                        p0_addr = (tile << 4) | (y_adj << 1);
+                    }
+                    else {
+                        p0_addr = 0x800 + (((int8_t)tile + 128) << 4) + (y_adj << 1);
+                    }
+                    if (gb->get_model() == GB_MODEL::CGB) {
+                        if (cgb_bg_attr & 0x8) {
+                            bg_p0 = vram1[p0_addr];
+                        }
+                        else {
+                            bg_p0 = vram[p0_addr];
+                        }
+                    }
+                    else {
+                        bg_p0 = vram[p0_addr];
+                    }
+                    fetch_phase++;
+                }
 					break;
 				case 4: //sleep
 					fetch_phase++;
 					break;
 				case 5: //fetch pt1
-					bg_p1 = vram[p0_addr + 1];
+                    if (gb->get_model() == GB_MODEL::CGB) {
+                        if (cgb_bg_attr & 0x8) {
+                            bg_p1 = vram1[p0_addr + 1];
+                        }
+                        else {
+                            bg_p1 = vram[p0_addr + 1];
+                        }
+                    }
+                    else {
+                        bg_p1 = vram[p0_addr + 1];
+                    }
 					bg_latched = 1;
 					//increment lower 5 bits of char_addr
 					if (!first_tile || in_window) {
@@ -520,7 +593,17 @@ void c_gbppu::execute(int cycles)
 					case 3:
 					{
 						sprite_addr = (sprite_tile << 4) | (sprite_y_offset << 1);
-						obj_p0 = vram[sprite_addr];
+                        if (gb->get_model() == GB_MODEL::CGB) {
+                            if (sprite_buffer[current_sprite].flags & 0x8) {
+                                obj_p0 = vram1[sprite_addr];
+                            }
+                            else {
+                                obj_p0 = vram[sprite_addr];
+                            }
+                        }
+                        else {
+                            obj_p0 = vram[sprite_addr];
+                        }
 						obj_fetch_phase++;
 					}
 						break;
@@ -528,20 +611,40 @@ void c_gbppu::execute(int cycles)
 						obj_fetch_phase++;
 						break;
 					case 5:
-						obj_p1 = vram[sprite_addr + 1];
+                        if (gb->get_model() == GB_MODEL::CGB) {
+                            if (sprite_buffer[current_sprite].flags & 0x8) {
+                                obj_p1 = vram1[sprite_addr + 1];
+                            }
+                            else {
+                                obj_p1 = vram[sprite_addr + 1];
+                            }
+                        }
+                        else {
+                            obj_p1 = vram[sprite_addr + 1];
+                        }
 						{
-							int obj_pri = sprite_buffer[current_sprite].flags & 0x80;
-							int obj_pal = sprite_buffer[current_sprite].flags & 0x10;
+							uint32_t obj_pri = sprite_buffer[current_sprite].flags & 0x80;
+							uint32_t obj_pal = sprite_buffer[current_sprite].flags & 0x10;
 							for (int i = 0; i < 8; i++)
 							{
 								int shift = sprite_buffer[current_sprite].flags & 0x20 ? i : 7 - i;
 								uint8_t p = ((obj_p0 >> shift) & 0x1) | (((obj_p1 >> shift) & 0x1) << 1);
 
-								int* o = &obj_fifo[(obj_fifo_index + i) & 0x7];
-								if (p != 0 && !(*o & 0x80000000)) {
-									*o = (p | obj_pri | obj_pal | 0x80000000);
-									//*o = (*o & 0xFFFF00FF) | (sprite_buffer[current_sprite].x << 8);
-								}
+								uint32_t* o = &obj_fifo[(obj_fifo_index + i) & 0x7];
+								//1... .... .... .... .... .ccc R..P ..pp
+								//|                         |   |  |   +-pattern
+								//|                         |   |  +-DMG Pal
+								//|                         |   +-Priority
+								//|                         +-CGB Pal
+								//sprite here
+                                uint32_t has_priority = gb->get_model() == GB_MODEL::CGB || !(*o & 0x80000000);
+                                if (p != 0 && has_priority) {
+                                    uint32_t cgb_pal = 0;
+                                    if (gb->get_model() == GB_MODEL::CGB) {
+                                        cgb_pal = sprite_buffer[current_sprite].flags & 0x7;
+                                    }
+                                    *o = (p | obj_pri | obj_pal | 0x80000000 | (cgb_pal << 8));
+                                }
 							}
 						}
 						obj_fetch_phase = 0;
@@ -557,7 +660,16 @@ void c_gbppu::execute(int cycles)
 
 
 				if (!lcd_paused && bg_fifo[bg_fifo_index] != -1) {
-					int p = bg_fifo[bg_fifo_index];
+					int p = bg_fifo[bg_fifo_index] & 0x3;
+                    uint32_t cgb_bg_priority = bg_fifo[bg_fifo_index] & 0x80;
+                    int pal = BGP;
+                    uint32_t palx = 0;
+                    if (gb->get_model() == GB_MODEL::CGB) {
+						pal = bg_fifo_pal[bg_fifo_index];
+						uint8_t pal1 = cgb_bg_pal[pal * 8 + (p * 2)];
+						uint8_t pal2 = cgb_bg_pal[pal * 8 + (p * 2) + 1];
+						palx = pal1 | pal2 << 8;
+                    }
 					if (!(LCDC & 0x1)) {
 						p = 0;
 					}
@@ -568,28 +680,62 @@ void c_gbppu::execute(int cycles)
 					if (obj_fifo[obj_fifo_index] & 0x80000000) {
 						obj_fifo_count--;
 						int s = obj_fifo[obj_fifo_index];
+                        uint32_t sprite_priority = s & 0x80;
 						obj_fifo[obj_fifo_index] = 0;
 
-						if ((s & 0x80) == 0 || p == 0) {
-							p = s | 0x80000000;
-						}
+						//priority check
+                        if (gb->get_model() == GB_MODEL::CGB) {
+							if (p == 0 || (LCDC & 0x1) == 0 || (sprite_priority | cgb_bg_priority) == 0) {
+									p = s | 0x80000000;
+								}
+                        }
+                        else {
+							if (sprite_priority == 0 || p == 0) {
+								p = s | 0x80000000;
+							}
+                        }
 					}
 					obj_fifo_index = (obj_fifo_index + 1) & 0x7;
 
-					int pal = BGP;
 					if (p & 0x80000000) {
 						//sprite
-						pal = (p & 0x10) ? OBP1 : OBP0;
+                        if (gb->get_model() == GB_MODEL::CGB) {
+                            pal = (p >> 8) & 0x7;
+                            p &= 0x3;
+                            uint8_t pal1 = cgb_ob_pal[pal * 8 + (p * 2)];
+                            uint8_t pal2 = cgb_ob_pal[pal * 8 + (p * 2) + 1];
+                            palx = pal1 | pal2 << 8;
+                        }
+                        else {
+                            pal = (p & 0x10) ? OBP1 : OBP0;
+                        }
 						p &= 0x3;
 					}
 
-					if (current_pixel >= (8 + (SCX_latch & 0x7))) {
-						*f++ = shades[(pal >> (p * 2)) & 0x3];
-						pixels_out++;
-						if (pixels_out == 160) {
-							done_drawing = 1;
-						}
-					}
+					if (gb->get_model() == GB_MODEL::CGB) {
+                        if (current_pixel >= (8 + (SCX_latch & 0x7))) {
+                            uint8_t r = palx & 0x1F;
+                            uint8_t g = (palx >> 5) & 0x1F;
+                            uint8_t b = (palx >> 10) & 0x1F;
+
+                            uint32_t col =
+                                color_lookup[r] | (color_lookup[g] << 8) | (color_lookup[b] << 16) | (0xFF << 24);
+                            *f++ = col;
+                            pixels_out++;
+                            if (pixels_out == 160) {
+                                done_drawing = 1;
+                            }
+                        }
+                    }
+                    else {
+                        if (current_pixel >= (8 + (SCX_latch & 0x7))) {
+                            *f++ = shades[(pal >> (p * 2)) & 0x3];
+                            pixels_out++;
+                            if (pixels_out == 160) {
+                            done_drawing = 1;
+                            }
+                        }
+                    }
 
 					current_pixel++;
 				}
@@ -632,27 +778,35 @@ void c_gbppu::execute(int cycles)
 				}
 			}
 		}
-		//this is an optimization.  All cpu cycles are mutliple of 4
-		if (++cpu_divider == 4) {
-			if (dma_count) {
-				if (dma_count < 161) {
-					int x = 160 - dma_count;
-					oam[x] = gb->read_byte(DMA + x);
-				}
-				dma_count--;
-			}
-			gb->clock_timer();
-			gb->cpu->execute(4);
-			gb->apu->clock();
-			cpu_divider = 0;
-		}
-
+		cpu_divider = (cpu_divider + 1) & 0x3;
+        if (cpu_divider == 0 || (double_speed && cpu_divider == 2)) {
+            if (dma_count) {
+                if (dma_count < 161) {
+                int x = 160 - dma_count;
+                oam[x] = gb->read_byte(DMA + x);
+                }
+                dma_count--;
+            }
+            gb->clock_timer();
+            gb->cpu->execute(4);
+        }
+		if (cpu_divider == 0) {
+            gb->apu->clock();
+        }
 	}
 }
 
 uint8_t c_gbppu::read_byte(uint16_t address)
 {
 	if (address < 0xA000) {
+        if (gb->get_model() == GB_MODEL::CGB) {
+            if (cgb_vram_bank & 0x1) {
+                return vram1[address - 0x8000];
+            }
+            else {
+                return vram[address - 0x8000];
+            }
+        }
 		return vram[address - 0x8000];
 	}
 	else if (address >= 0xFE00 && address <= 0xFE9F) {
@@ -687,9 +841,24 @@ uint8_t c_gbppu::read_byte(uint16_t address)
 			return WY;
 		case 0xFF4B:
 			return WX;
+        case 0xFF4D:
+            return KEY1;
+        case 0xFF4F:
+            return cgb_vram_bank;
+        case 0xFF68:
+            return BCPS;
+        case 0xFF69:
+            return BCPS;
+        case 0xFF6A:
+            return OBPS;
+        case 0xFF6B:
+            return OBPS;
+        case 0xFF6C:
+            return OPRI;
 		default:
 			//printf("unhandled read from ppu\n");
 			//exit(0);
+            int x = 1;
 			break;
 		}
 	}
@@ -699,7 +868,17 @@ uint8_t c_gbppu::read_byte(uint16_t address)
 void c_gbppu::write_byte(uint16_t address, uint8_t data)
 {
 	if (address < 0xA000) {
-		vram[address - 0x8000] = data;
+        if (gb->get_model() == GB_MODEL::CGB) {
+			if (cgb_vram_bank & 0x1) {
+				vram1[address - 0x8000] = data;
+			}
+            else {
+                vram[address - 0x8000] = data;
+            }
+        }
+        else {
+            vram[address - 0x8000] = data;
+        }
 	}
 	else if (address >= 0xFE00 && address <= 0xFE9F) {
 		oam[address - 0xFE00] = data;
@@ -756,9 +935,47 @@ void c_gbppu::write_byte(uint16_t address, uint8_t data)
 		case 0xFF4B:
 			WX = data;
 			break;
+        case 0xFF4D:
+            KEY1 = (KEY1 & 0xFE) | data & 1;
+            break;
+        case 0xFF4F:
+            cgb_vram_bank = data & 0x1;
+            break;
+        case 0xFF68:
+            BCPS = data;
+            break;
+        case 0xFF69: {
+            int i = BCPS & 0x3F;
+            cgb_bg_pal[i] = data;
+            if (BCPS & 0x80) {
+                i += 1;
+                BCPS = 0x80 | (i & 0x3F);
+            }
+        } break;
+        case 0xFF6A:
+            OBPS = data;
+            break;
+        case 0xFF6B: {
+            int i = OBPS & 0x3F;
+            cgb_ob_pal[i] = data;
+            if (OBPS & 0x80) {
+                i += 1;
+                OBPS = 0x80 | (i & 0x3F);
+            }
+        } break;
+        case 0xFF6C:
+            OPRI = data & 1;
+            break;
+
 		default:
 			//printf("unhandled write to ppu\n");
 			//exit(0);
+            {
+                char buf[64];
+                sprintf(buf, "Unhandled PPU write 0x%02X -> 0x%04X\n", data, address);
+                OutputDebugString(buf);
+            }
+            int x = 1;
 			break;
 		}
 	}

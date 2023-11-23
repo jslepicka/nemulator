@@ -1,5 +1,6 @@
 #include "lr35902.h"
 #include "gb.h"
+#include "gbppu.h"
 #define DEBUG 0
 
 #define dprintf(fmt, ...) \
@@ -58,7 +59,7 @@ void c_lr35902::reset(uint16_t PC)
 	SP = 0xFFFE;
 	opcode = 0;
 	ins_start = 0;
-	AF.w = 0x01B0;
+	AF.w = gb->get_model() == GB_MODEL::CGB ? 0x11B0 : 0x01B0;
 	BC.w = 0x0013;
 	DE.w = 0x00D8;
 	HL.w = 0x014D;
@@ -186,7 +187,7 @@ void c_lr35902::execute_opcode()
 	case 0x00D: {DEC(BC.b.l); } break; //DEC C
 	case 0x00E: {BC.b.l = o; } break; //LD C, %02X
 	case 0x00F: {fc = AF.b.h & 0x1 ? 0x80 : 0; AF.b.h >>= 1; AF.b.h |= fc; fz = fn = fh = 0; } break; //RRCA
-	case 0x010: {printf("STOP\n");/*STOP until button pressed... ignore?*/} break; //STOP
+    case 0x010: {STOP();} break; //STOP
 	case 0x011: {DE.w = o; } break; //LD DE, %04X
 	case 0x012: {gb->write_byte(DE.w, AF.b.h); } break; //LD (DE), A
 	case 0x013: {DE.w++; } break; //INC DE
@@ -939,6 +940,11 @@ void c_lr35902::ADD16r(uint16_t& reg, int8_t d)
 	fn = 0;
 	fz = 0;
 	reg = reg + d;
+}
+
+void c_lr35902::STOP()
+{
+    gb->ppu->on_stop();
 }
 
 void c_lr35902::SWAP(uint8_t& reg)

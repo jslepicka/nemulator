@@ -52,6 +52,7 @@ private:
 
 	void CALL(uint16_t addr);
 	void DAA();
+    void STOP();
 
 	void push_word(uint16_t d);
 	uint16_t pop_word();

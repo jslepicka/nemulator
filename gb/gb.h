@@ -10,10 +10,16 @@ class c_gbmapper;
 class c_gbppu;
 class c_gbapu;
 
+enum GB_MODEL
+{
+    DMG,
+    CGB
+};
+
 class c_gb : public c_console
 {
 public:
-	c_gb();
+	c_gb(GB_MODEL model);
 	~c_gb();
 	//bool load_rom(std::string filename);
 	int load();
@@ -27,6 +33,7 @@ public:
 	int IF; //interrupt flag register
 	c_lr35902* cpu;
 	c_gbapu* apu;
+    c_gbppu *ppu;
 	uint32_t* get_fb();
 	void clock_timer();
 	void set_vblank_irq(int status);
@@ -46,9 +53,11 @@ public:
 	int get_fb_width() { return 160; }
 	int get_fb_height() { return 144; }
 
-private:
+	//int is_color() { return color; }
 
-	c_gbppu* ppu;
+	GB_MODEL get_model() const { return model; }
+
+private:
 	c_gbmapper* mapper;
 	uint8_t* ram;
 	uint8_t* hram;
@@ -71,6 +80,7 @@ private:
 	uint8_t rom_size;
 	uint8_t header_ram_size;
 	int ram_size;
+    int wram_bank;
 	char title[17] = { 0 };
 	
 	struct s_mapper {
@@ -89,5 +99,16 @@ private:
 
 	int serial_transfer_count;
 	int last_serial_clock;
+
+	int color;
+
+	uint8_t read_wram(uint16_t address);
+    void write_wram(uint16_t address, uint8_t data);
+    uint8_t read_io(uint16_t address);
+    void write_io(uint16_t address, uint8_t data);
+    uint8_t read_joy();
+    void write_joy(uint8_t data);
+
+	GB_MODEL model;
 };
 

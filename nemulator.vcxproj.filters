@@ -390,6 +390,9 @@
     <ClCompile Include="nes\game_genie.cpp">
       <Filter>Source Files\nes</Filter>
     </ClCompile>
+    <ClCompile Include="gb\mbc5.cpp">
+      <Filter>Source Files\gb</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="config.h">
@@ -781,6 +784,9 @@
     </ClInclude>
     <ClInclude Include="nes\game_genie.h">
       <Filter>Header Files\nes</Filter>
+    </ClInclude>
+    <ClInclude Include="gb\mbc5.h">
+      <Filter>Header Files\gb</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

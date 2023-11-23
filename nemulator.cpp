@@ -408,6 +408,7 @@ void c_nemulator::RunGames()
 			g->console->set_input(((c_nes_input_handler*)g_ih)->get_sms_input());
 			break;
 		case GAME_GB:
+        case GAME_GBC:
 			g->console->set_input(((c_nes_input_handler*)g_ih)->get_gb_input());
 			break;
 		default:
@@ -1248,7 +1249,7 @@ void c_nemulator::DrawScene()
 			double dim = mainPanel2->dim ? .25 : 1.0;
 			DrawText(font1, .05f, .85f, g->title, D3DXCOLOR((float)(1.0f * dim), 0.0f, 0.0f, 1.0f));
 
-			const char *subtitle[] = { "Nintendo NES", "Sega Master System", "Sega Game Gear", "Nintendo Game Boy" };
+			const char *subtitle[] = { "Nintendo NES", "Sega Master System", "Sega Game Gear", "Nintendo Game Boy", "Nintendo Game Boy Color" };
 
 			DrawText(font2, .0525f, .925f, subtitle[g->type], D3DXCOLOR((float)(.22f * dim), (float)(.22f * dim), (float)(.22f * dim), 1.0f));
 			//RECT r = { 0, 0, clientWidth, (LONG)(clientHeight*1.95) };
@@ -1364,6 +1365,7 @@ void c_nemulator::LoadGames()
 		{ GAME_SMS, "sms", "sms.rom_path", "sms.save_path", "c:\\roms\\sms" },
 		{ GAME_GG,   "gg",  "gg.rom_path",  "gg.save_path",  "c:\\roms\\gg" },
 		{ GAME_GB,   "gb",  "gb.rom_path",  "gb.save_path",  "c:\\roms\\gb" },
+        { GAME_GBC, "gbc", "gbc.rom_path", "gbc.save_path", "c:\\roms\\gbc" },
 		{ GAME_NES, "nsf", "nsf.rom_path", "nsf.save_path", "c:\\roms\\nsf" }
 	};
 
@@ -1503,6 +1505,7 @@ int c_nemulator::take_screenshot()
 			h = 240;
 			break;
 		case GAME_GB:
+        case GAME_GBC:
 			w = 160;
 			h = 144;
 			break;
@@ -1540,6 +1543,7 @@ int c_nemulator::take_screenshot()
 			ret = c_bmp_writer::write_bmp(buf + 256 * 8, 256, 192, filename);
 			break;
 		case GAME_GB:
+        case GAME_GBC:
 			ret = c_bmp_writer::write_bmp(buf, 160, 144, filename);
 			break;
 		}

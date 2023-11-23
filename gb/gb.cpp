@@ -6,6 +6,7 @@
 #include "mbc1.h"
 #include "mbc2.h"
 #include "mbc3.h"
+#include "mbc5.h"
 #include "gbppu.h"
 #include "gbapu.h"
 #include <algorithm>
@@ -19,22 +20,28 @@ const std::map<int, c_gb::s_mapper> c_gb::mapper_factory =
 	{2, {[]() {return new c_mbc1(); }, 1, 0}},
 	{3, {[]() {return new c_mbc1(); }, 1, 1}},
 	{5, {[]() {return new c_mbc2(); }, 0, 0}},
-	{6, {[]() {return new c_mbc2(); }, 0, 1}}
+	{6, {[]() {return new c_mbc2(); }, 0, 1}},
+	{0x1B, {[]() {return new c_mbc5(); }, 1, 1}},
 };
 
 
-c_gb::c_gb()
+c_gb::c_gb(GB_MODEL model)
 {
 	cpu = new c_lr35902(this);
 	ppu = new c_gbppu(this);
 	apu = new c_gbapu(this);
-	ram = new uint8_t[8192];
-	memset(ram, 0, 8192);
+	//ram = new uint8_t[8192];
+    const int RAM_SIZE = 32768;
+    ram = new uint8_t[RAM_SIZE];
+	memset(ram, 0x00, RAM_SIZE);
 	hram = new uint8_t[128];
 	memset(hram, 0, 128);
 	loaded = 0;
 	mapper = 0;
-	ram_size = 0;
+    ram_size = 0;
+    wram_bank = 1;
+    this->color = color;
+    this->model = model;
 }
 
 c_gb::~c_gb()
@@ -84,6 +91,7 @@ int c_gb::reset()
 	JOY = 0xFF;
 	serial_transfer_count = 0;
 	last_serial_clock = 0;
+    wram_bank = 1;
 	return 0;
 }
 
@@ -226,78 +234,208 @@ uint16_t c_gb::read_word(uint16_t address)
 	return lo | (hi << 8);
 }
 
+uint8_t c_gb::read_wram(uint16_t address)
+{
+    if (address & 0x1000) {
+        return ram[(address & 0xFFF) + (wram_bank * 0x1000)];
+    }
+    else {
+        return ram[address & 0xFFF];
+    }
+}
+
+void c_gb::write_wram(uint16_t address, uint8_t data)
+{
+    if (address & 0x1000) {
+        ram[(address & 0xFFF) + (wram_bank * 0x1000)] = data;
+    }
+    else {
+        ram[address & 0xFFF] = data;
+    }
+}
+
+uint8_t c_gb::read_joy()
+{
+    if ((JOY & 0x30) == 0x20) {
+        return 0xE0 | (input & 0xF);// | (JOY & 0x30);
+    }
+    else if ((JOY & 0x30) == 0x10) {
+        return 0xD0 | ((input >> 4) & 0xF);// | (JOY & 0x30);
+    }
+    else {
+        return 0xFF;
+    }
+}
+
+void c_gb::write_joy(uint8_t data)
+{
+    JOY = (JOY & (~0x30)) | (data & 0x30);
+}
+
+uint8_t c_gb::read_io(uint16_t address)
+{
+    switch ((address >> 4) & 0x7) {
+        case 0:
+            switch (address & 0xF) {
+                case 0:
+                    return read_joy();
+                case 1:
+					//serial
+                    return 0xFF;
+                case 2:
+					//serial
+                    return SC;
+                case 4:
+                    return (divider & 0xFF00) >> 8;
+                case 5:
+                    return TIMA;
+                case 6:
+                    return TMA;
+                case 7:
+                    return TAC;
+                case 0xF:
+                    return IF;
+                default:
+                    return 0;
+            }
+            break;
+        case 1:
+        case 2:
+        case 3:
+            return apu->read_byte(address);
+        case 4:
+        case 5:
+        case 6:
+            return ppu->read_byte(address);
+        case 7:
+            if (address == 0xFF70) {
+                return wram_bank;
+            }
+            else {
+                return 0;
+            }
+        default:
+            return 0;
+    }
+}
+
+void c_gb::write_io(uint16_t address, uint8_t data)
+{
+    switch ((address >> 4) & 0x7) {
+        case 0:
+            switch (address & 0xF) {
+                case 0:
+                    write_joy(data);
+                    break;
+                case 1:
+					//serial
+                    SB = data;
+                    break;
+                case 2:
+					//serial
+                    SC = data;
+                    if ((SC & 0x81) == 0x81) {
+                        serial_transfer_count = 8;
+                    }
+                    break;
+                case 4:
+                    divider = 0;
+                    break;
+                case 5:
+                    TIMA = data;
+                    break;
+                case 6:
+                    TMA = data;
+                    break;
+                case 7:
+                    TAC = data;
+                    break;
+                case 0xF:
+                    IF = data;
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case 1:
+        case 2:
+        case 3:
+            apu->write_byte(address, data);
+            break;
+        case 4:
+        case 5:
+        case 6:
+            ppu->write_byte(address, data);
+            break;
+        case 7:
+            if (address == 0xFF70) {
+                if (color) {
+                    wram_bank = data & 0x7;
+                    if (wram_bank == 0) {
+                        wram_bank = 1;
+                    }
+                }
+            }
+            else {
+                //nothing
+            }
+            break;
+        default:
+            break;
+    }
+}
+
 uint8_t c_gb::read_byte(uint16_t address)
 {
-	if (address < 0x8000) {
-		return mapper->read_byte(address);
-	}
-	else if (address < 0xA000) {
-		return ppu->read_byte(address);
-	}
-	else if (address < 0xC000) {
-		return mapper->read_byte(address);
-	}
-	else if (address < 0xFDFF) {
-		return ram[address & 0x1FFF];
-	}
-	else {
-		if (address >= 0xFE00 && address < 0xFF80) {
-			if (address == 0xFF00) {
-				if ((JOY & 0x30) == 0x20) {
-					return 0xE0 | (input & 0xF);// | (JOY & 0x30);
-				}
-				else if ((JOY & 0x30) == 0x10) {
-					return 0xD0 | ((input >> 4) & 0xF);// | (JOY & 0x30);
-				}
-				else {
-					return 0xFF;
-				}
-				//return 0xF;
-			}
-			if (address == 0xFF01) {
-				return 0xFF;
-			}
-			if (address == 0xFF02) {
-				return SC;
-			}
-			if (address == 0xFF04) {
-				return (divider & 0xFF00) >> 8;
-			}
-			if (address == 0xFF05) {
-				int x = 1;
-				return TIMA;
-			}
-			if (address == 0xFF06) {
-				int x = 1;
-				return TMA;
-			}
-			if (address == 0xFF07) {
-				int x = 1;
-				return TAC;
-			}
-			//OAM, unusable, IO Ports
-			if (address == 0xFF0F) {
-				return IF;
-			}
-			if (address >= 0xFF10 && address < 0xFF40) {
-				//sound
-				return apu->read_byte(address);
-			}
-			if ((address & 0xFF40) == 0xFF40) {
-				return ppu->read_byte(address);
-			}
-		}
-		else if (address == 0xFFFF) {
-			return IE;
-		}
-		else if (address >= 0xFF80) {
-			return hram[address - 0xFF80];
-		}
-		//else {
-		//	return ram[address & 0x1FFF];
-		//}
-	}
-	return 0;
+    switch (address >> 12) {
+        case 0: //0000 - 3FFF
+        case 1:
+        case 2:
+        case 3:
+        case 4: //4000 - 7FFF
+        case 5:
+        case 6:
+        case 7:
+            return mapper->read_byte(address);
+            break;
+        case 8:
+        case 9:
+            return ppu->read_byte(address);
+            break;
+        case 0xA:
+        case 0xB:
+            return mapper->read_byte(address);
+            break;
+        case 0xC:
+        case 0xD:
+            return read_wram(address);
+            break;
+        case 0xE:
+        case 0xF:
+            if (address <= 0xFDFF) {
+                return read_wram(address);
+            }
+            else if (address <= 0xFE9F) {
+				//OAM
+                return 0;
+            }
+            else if (address <= 0xFEFF) {
+				//unusable
+                return 0;
+            }
+            else if (address <= 0xFF7F) {
+                return read_io(address);
+            }
+            else if (address <= 0xFFFE) {
+                return hram[address - 0xFF80];
+            }
+            else {
+                return IE;
+            }
+            break;
+        default:
+            return 0;
+    }
 }
 
 void c_gb::write_word(uint16_t address, uint16_t data)
@@ -308,103 +446,54 @@ void c_gb::write_word(uint16_t address, uint16_t data)
 
 void c_gb::write_byte(uint16_t address, uint8_t data)
 {
-	if (address < 0x8000) {
-		//printf("write to cart\n");
-		mapper->write_byte(address, data);
-		//ignore?
-		return;
-	}
-	else if (address < 0xA000) {
-		//printf("write to vram\n");
-		ppu->write_byte(address, data);
-		return;
-	}
-	else if (address < 0xC000) {
-		//printf("write to cart ram\n");
-		mapper->write_byte(address, data);
-		return;
-	}
-	else if (address < 0xFDFF) {
-		ram[address & 0x1FFF] = data;
-		return;
-	}
-	else {
-		if (address >= 0xFE00 && address < 0xFF80) {
-			//OAM, unusable, IO Ports
-			//printf("write to io area\n");
-			if (address == 0xFF00) {
-				JOY = (JOY & (~0x30)) | (data & 0x30);
-				return;
-			}
-			if (address == 0xFF01) {
-				SB = data;
-				return;
-			}
-			if (address == 0xFF02) {
-				SC = data;
-				if ((SC & 0x81) == 0x81) {
-					serial_transfer_count = 8;
-				}
-				return;
-			}
-			if (address == 0xFF04) {
-				divider = 0;
-				return;
-			}
-			if (address == 0xFF05) {
-				TIMA = data;
-				return;
-			}
-			if (address == 0xFF06) {
-				int x = 1;
-				TMA = data;
-				return;
-			}
-			if (address == 0xFF07) {
-				int x = 1;
-				TAC = data;
-				return;
-			}
-			if (address == 0xFF0F) {
-				IF = data;
-				return;
-			}
-			if (address >= 0xFF10 && address < 0xFF40) {
-				//sound
-				apu->write_byte(address, data);
-				return;
-			}
-			if (address >= 0xFF40 && address < 0xFF50) {
-				ppu->write_byte(address, data);
-				return;
-			}
-			if (address >= 0xFE00 && address <= 0xFE9F) {
+    switch (address >> 12) {
+        case 0: //0000 - 3FFF
+        case 1:
+        case 2:
+        case 3:
+        case 4: //4000 - 7FFF
+        case 5:
+        case 6:
+        case 7:
+            mapper->write_byte(address, data);
+            break;
+        case 8:
+        case 9:
+            ppu->write_byte(address, data);
+            break;
+        case 0xA:
+        case 0xB:
+            mapper->write_byte(address, data);
+            break;
+        case 0xC:
+        case 0xD:
+            write_wram(address, data);
+            break;
+        case 0xE:
+        case 0xF:
+            if (address <= 0xFDFF) {
+                write_wram(address, data);
+            }
+            else if (address <= 0xFE9F) {
 				//OAM
-				ppu->write_byte(address, data);
-				return;
-			}
-			if (address >= 0xFEA0 && address <= 0xFEFF) {
-				//printf("unusuable memory area %04X ???\n", address);
-				return;
-			}
-			//printf("write to unhandled address %04X\n", address);
-			return;
-		}
-		else if (address == 0xFFFF) {
-			IE = data;
-			return;
-		}
-		else if (address >= 0xFF80) {
-			hram[address - 0xFF80] = data;
-			return;
-		}
-		else {
-			ram[address & 0x1FFF] = data;
-			return;
-		}
-	}
-	//MessageBox(NULL, "blah", "blah", MB_OK);
-	//exit(0);
+                ppu->write_byte(address, data);
+            }
+            else if (address <= 0xFEFF) {
+				//unusable
+            }
+            else if (address <= 0xFF7F) {
+                write_io(address, data);
+            }
+            else if (address <= 0xFFFE) {
+                hram[address - 0xFF80] = data;
+            }
+            else {
+                IE = data;
+            }
+            break;
+        default:
+            break;
+    }
 }
 
 void c_gb::clock_timer()
@@ -451,6 +540,7 @@ void c_gb::clock_timer()
 
 int c_gb::emulate_frame()
 {
+    static int frame_count = 0;
 	apu->clear_buffers();
 	//70224 PPU cycles per scanline
 	//divided by 4 to get CPU clock
@@ -475,6 +565,9 @@ int c_gb::emulate_frame()
 		}
 		ppu->execute(456);
 	}
+    if (++frame_count == 60) {
+        int x = 1;
+    }
 	return 0;
 }
 

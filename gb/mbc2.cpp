@@ -28,6 +28,7 @@ void c_mbc2::write_byte(uint16_t address, uint8_t data)
 			if (ram && (ram_enable & 0xF) == 0xA)
 				*(ram + (address & 0x1FF)) = data & 0xF;
 		}
+        break;
 	default:
 		int x = 1;
 		break;
