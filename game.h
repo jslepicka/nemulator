@@ -14,6 +14,7 @@ enum GAME_TYPE
 	GAME_SMS,
 	GAME_GG,
 	GAME_GB,
+	GAME_GBC,
 	GAME_NONE
 };
 

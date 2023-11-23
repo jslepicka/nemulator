@@ -208,9 +208,9 @@ int c_sound::sync()
 
     enum
     {
-        CONVERGING,
-        STEADY,
-        DIVERGING
+        CONVERGING = -1,
+        STEADY = 0,
+        DIVERGING = 1
     };
 	
     if (--adjustPeriod == 0)

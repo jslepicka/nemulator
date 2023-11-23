@@ -85,14 +85,17 @@ void c_game::OnActivate(bool load)
 				console = new c_nes();
 				break;
 			case GAME_SMS:
-				console = new c_sms(0);
+				console = new c_sms(SMS_MODEL::SMS);
 				break;
 			case GAME_GG:
-				console = new c_sms(1);
+				console = new c_sms(SMS_MODEL::GAMEGEAR);
 				break;
 			case GAME_GB:
-				console = new c_gb();
+				console = new c_gb(GB_MODEL::DMG);
 				break;
+            case GAME_GBC:
+                console = new c_gb(GB_MODEL::CGB);
+                break;
 			default:
 				break;
 			}
@@ -224,7 +227,7 @@ void c_game::create_vertex_buffer()
 		vertices[0].tex.x = vertices[1].tex.x = 48.0 / 256.0;
 		vertices[2].tex.x = vertices[3].tex.x = (256.0 - 48.0) / 256.0;
 	}
-	else if (type == GAME_GB)
+	else if (type == GAME_GB || type == GAME_GBC)
 	{
 		vertices[0].tex.y = vertices[2].tex.y = 144.0 / 256.0;
 		vertices[1].tex.y = vertices[3].tex.y = 0.0 / 256.0;
@@ -256,6 +259,7 @@ int c_game::get_width()
 	case GAME_GG:
 		return 160;
 	case GAME_GB:
+    case GAME_GBC:
 		return 160;
 	default:
 		return 256;
@@ -273,6 +277,7 @@ int c_game::get_height()
 	case GAME_GG:
 		return 144;
 	case GAME_GB:
+    case GAME_GBC:
 		return 144;
 	default:
 		return 256;

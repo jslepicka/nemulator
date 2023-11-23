@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <queue>
+#include <atomic>
 
 class c_gb;
 class c_gbppu
@@ -13,7 +14,9 @@ public:
 	uint8_t read_byte(uint16_t address);
 	void write_byte(uint16_t address, uint8_t data);
 	uint32_t* get_fb() { return fb; }
-private:
+    void on_stop();
+
+  private:
 	c_gb* gb;
 	int line;
 	int current_cycle;
@@ -30,6 +33,9 @@ private:
 	int WY;
 	int WX;
 	int DMA;
+    uint8_t BCPS;
+    uint8_t OBPS;
+    uint8_t cgb_vram_bank;
 	int frame = 0;
 	int fetch_x;
 	int window_tile;
@@ -39,6 +45,8 @@ private:
 	int cpu_divider;
 
 	uint8_t* vram;
+    uint8_t *vram1;
+
 	uint8_t* oam;
 
 	void eval_sprites(int y);
@@ -60,11 +68,13 @@ private:
 
 	std::queue<int> sprite_fifo;
 
-	int obj_fifo[8];
+	uint32_t obj_fifo[8];
+    uint8_t obj_fifo_pal[8];
 	int obj_fifo_index;
 	int obj_fifo_count;
 
-	int bg_fifo[8];
+	uint32_t bg_fifo[8];
+    uint8_t bg_fifo_pal[8];
 	int bg_fifo_index;
 
 	uint8_t tile;
@@ -114,6 +124,9 @@ private:
 	void update_stat();
 	void set_ly(int line);
 
+	void generate_color_lookup();
+    static std::atomic<int> color_lookup_built;
+
 	int in_window;
 
 	int fetching_sprites;
@@ -124,5 +137,16 @@ private:
 
 
 	int dots = 0;
+
+	uint8_t cgb_bg_pal[64];
+    uint8_t cgb_ob_pal[64];
+    uint8_t cgb_bg_attr;
+
+	static uint32_t color_lookup[32];
+
+	uint32_t KEY1;
+	uint32_t double_speed;
+
+	uint32_t OPRI;
 };
 

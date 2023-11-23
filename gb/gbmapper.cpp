@@ -34,6 +34,7 @@ void c_gbmapper::write_byte(uint16_t address, uint8_t data)
 
 void c_gbmapper::config_ram(int ram_size)
 {
+    this->ram_size = ram_size;
 	ram = new uint8_t[ram_size];
 	memset(ram, 0, ram_size);
 }

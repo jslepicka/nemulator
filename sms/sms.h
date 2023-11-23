@@ -5,10 +5,16 @@ class c_z80;
 class c_vdp;
 class c_psg;
 
+enum class SMS_MODEL
+{
+    SMS,
+    GAMEGEAR
+};
+
 class c_sms : public c_console
 {
 public:
-	c_sms(int variant);
+	c_sms(SMS_MODEL model);
 	~c_sms();
 	int emulate_frame();
 	unsigned char read_byte(unsigned short address);
@@ -32,8 +38,10 @@ public:
 	int get_overscan_color();
 	int get_fb_width() { return 256; }
 	int get_fb_height() { return 192; }
+    SMS_MODEL get_model() const { return model; }
+
 private:
-	int type = 0;
+    SMS_MODEL model;
 	int psg_cycles;
 	int has_sram = 0;
 	unsigned int crc = 0;

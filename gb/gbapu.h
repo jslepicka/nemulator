@@ -32,7 +32,7 @@ private:
 	int ticks;
 	int frame_seq_counter;
 	int frame_seq_step;
-	static const int CLOCKS_PER_FRAME_SEQ = 8192;
+	static const int CLOCKS_PER_FRAME_SEQ = 8192 / 2;
 	uint8_t NR50;
 	uint8_t NR51;
 	uint8_t NR52;
@@ -52,6 +52,8 @@ private:
 
 	void power_on();
 	void power_off();
+
+	uint32_t registers[64];
 
 	static const double GB_AUDIO_RATE;
 
@@ -154,6 +156,7 @@ private:
 		int envelope_period;
 		int calc_sweep();
 		int dac_power;
+        int clock_divider;
 	};
 
 	class c_noise
@@ -176,12 +179,15 @@ private:
 		int lfsr;
 		int starting_volume;
 		int envelope_period;
+        int envelope_mode;
 		c_timer timer;
 		c_length length;
 		c_envelope envelope;
 		int enabled;
 		static const int divisor_table[8];
 		int dac_power;
+        int clock_divider;
+        int next_length = 64;
 	};
 
 	class c_wave

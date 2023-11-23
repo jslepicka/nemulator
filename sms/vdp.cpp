@@ -13,10 +13,9 @@ std::atomic<int> c_vdp::pal_built = 0;
 uint32_t c_vdp::pal_sms[256];
 uint32_t c_vdp::pal_gg[4096];
 
-c_vdp::c_vdp(c_sms* sms, int type)
+c_vdp::c_vdp(c_sms* sms)
 {
 	this->sms = sms;
-	mode = type;
 	vram = new unsigned char[16384];
 	frame_buffer = new int[256 * 256];
 	generate_palette();
@@ -54,7 +53,7 @@ void c_vdp::write_data(unsigned char value)
 {
 	int a = 1;
 	read_buffer = value;
-	int cram_mask = mode == MODE_GG ? 0x3F : 0x1F;
+	int cram_mask = sms->get_model() == SMS_MODEL::GAMEGEAR ? 0x3F : 0x1F;
 	switch (control)
 	{
 	case 0x03: //CRAM
@@ -321,7 +320,7 @@ void c_vdp::draw_scanline()
 					}
 					//}
 
-					if (mode == MODE_GG && (y < 24 || y >= 168 || x < 48 || x >= 208))
+					if (sms->get_model() == SMS_MODEL::GAMEGEAR && (y < 24 || y >= 168 || x < 48 || x >= 208))
 					{
 						color = 0;
 					}
@@ -405,11 +404,11 @@ int* c_vdp::get_frame_buffer()
 
 __forceinline int c_vdp::lookup_color(int palette_index)
 {
-	switch (mode)
+	switch (sms->get_model())
 	{
-	case MODE_SMS:
+	case SMS_MODEL::SMS:
 		return pal_sms[cram[palette_index]];
-	case MODE_GG:
+	case SMS_MODEL::GAMEGEAR:
 		palette_index <<= 1;
 		return pal_gg[
 			(cram[palette_index] & 0xFF) |
@@ -461,11 +460,11 @@ void c_vdp::generate_palette()
 
 int c_vdp::get_overscan_color()
 {
-	switch (mode)
+	switch (sms->get_model())
 	{
-	case MODE_SMS:
+    case SMS_MODEL::SMS:
 		return pal_sms[cram[0x10 | (registers[7] & 0xF)]];
-	case MODE_GG:
+    case SMS_MODEL::GAMEGEAR:
 		//this is wrong
 		return pal_gg[cram[0x10 | (registers[7] & 0xF)]];
 	default:
