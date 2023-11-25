@@ -210,4 +210,7 @@ private:
 		NO_GAMES_LOADED = 16
 	};
 	static const s_button_handler button_handlers[];
+
+	const double SPLASH_TIMER_TOTAL_DURATION = 1000.0;
+    const double SPLASH_TIMER_FADE_DURATION = 500.0;
 };

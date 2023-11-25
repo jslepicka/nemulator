@@ -1,7 +1,7 @@
 #include "gbapu.h"
 #include "gb.h"
 
-const double c_gbapu::GB_AUDIO_RATE = (456.0f * 154.0f * 60.0f) / 2.0f;
+constexpr double c_gbapu::GB_AUDIO_RATE = (456.0f * 154.0f * 60.0f) / 2.0f;
 
 c_gbapu::c_gbapu(c_gb* gb)
 {
@@ -230,6 +230,11 @@ void c_gbapu::clock()
 
 	//effective rate = 1.05MHz
 
+	if (tick & 0x1) {
+		//512kHz
+        noise.clock_timer();
+    }
+
 	//For efficiency, we can clock everything at half rate
 	//All timer periods need to be divided by 2
 	//CLOCKS_PER_FRAME_SEQ also needs to be divided by 2
@@ -240,7 +245,7 @@ void c_gbapu::clock()
 		//clock timers
 		square1.clock_timer();
 		square2.clock_timer();
-		noise.clock_timer();
+		//noise.clock_timer();
 		wave.clock_timer();
         clock_count++;
 
@@ -278,6 +283,7 @@ void c_gbapu::clock()
 			mix();
 		}
 	}
+    tick++;
 }
 
 void c_gbapu::mix()
@@ -688,7 +694,7 @@ void c_gbapu::c_noise::reset()
 	enabled = 0;
 	clock_shift = 0;
 	width_mode = 0;
-	divisor_code = 0;
+	divisor = 1;
 	starting_volume = 0;
 	envelope_period = 0;
     envelope_mode = 0;
@@ -700,8 +706,6 @@ void c_gbapu::c_noise::reset()
 	dac_power = 0;
     clock_divider = 0;
 }
-
-const int c_gbapu::c_noise::divisor_table[8] = { 8, 16, 32, 48, 64, 80, 96, 112 };
 
 void c_gbapu::c_noise::write(uint16_t address, uint8_t data)
 {
@@ -735,10 +739,11 @@ void c_gbapu::c_noise::write(uint16_t address, uint8_t data)
 	case 2:
 		clock_shift = data >> 4;
 		width_mode = data & 0x8;
-		divisor_code = (data & 0x7) * 16;
-        if (divisor_code == 0)
-            divisor_code = 8;
-		timer.set_period((divisor_code << clock_shift)/2);
+		divisor = (data & 0x7) * 16;
+        if (divisor == 0)
+            divisor = 8;
+        divisor /= 8; //we're clocking the timer at 512kHz
+		timer.set_period(divisor << clock_shift);
 		break;
 	case 3:
 		length.set_enable(data & 0x40);

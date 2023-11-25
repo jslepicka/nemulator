@@ -2,6 +2,7 @@
 //#include "biquad4.hpp"
 #include <cmath>
 #include <stdlib.h>
+#include <algorithm>
 #include "audio_filter.h"
 
 class c_resampler
@@ -62,7 +63,7 @@ __forceinline void c_resampler::process(float sample)
 
 		static const float max_out = 32767.0f;
 		int s = (int)round(post_filter->process(j) * max_out);
-		s = s < -32768 ? -32768 : s > 32767 ? 32767 : s;
+        s = std::clamp(s, -32768, 32767);
 
 		output_buf[output_buf_index++] = (short)s;
 	}

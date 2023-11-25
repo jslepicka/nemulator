@@ -21,7 +21,12 @@ const std::map<int, c_gb::s_mapper> c_gb::mapper_factory =
 	{3, {[]() {return new c_mbc1(); }, 1, 1}},
 	{5, {[]() {return new c_mbc2(); }, 0, 0}},
 	{6, {[]() {return new c_mbc2(); }, 0, 1}},
+    {0x19, {[]() {return new c_mbc5(); }, 0, 0}},
+	{0x1A, {[]() {return new c_mbc5(); }, 1, 0}},
 	{0x1B, {[]() {return new c_mbc5(); }, 1, 1}},
+	{0x1C, {[]() {return new c_mbc5(); }, 0, 0}}, //rumble
+	{0x1D, {[]() {return new c_mbc5(); }, 1, 0}}, //rumble
+	{0x1E, {[]() {return new c_mbc5(); }, 1, 1}}, //rumble
 };
 
 

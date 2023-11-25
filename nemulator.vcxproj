@@ -317,7 +317,6 @@
     <ClCompile Include="nsf_stats.cpp" />
     <ClCompile Include="qam.cpp" />
     <ClCompile Include="resampler.cpp" />
-    <ClCompile Include="sms\z80.cpp" />
     <ClCompile Include="sms\psg.cpp" />
     <ClCompile Include="sms\sms.cpp" />
     <ClCompile Include="sms\vdp.cpp" />
@@ -334,6 +333,7 @@
     <ClCompile Include="nes\mapper.cpp" />
     <ClCompile Include="nes\nes.cpp" />
     <ClCompile Include="nes\ppu.cpp" />
+    <ClCompile Include="z80\z80.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="audio_filter.h" />
@@ -454,7 +454,6 @@
     <ClInclude Include="resampler.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="sms\crc.h" />
-    <ClInclude Include="sms\z80.h" />
     <ClInclude Include="sms\psg.h" />
     <ClInclude Include="sms\sms.h" />
     <ClInclude Include="sms\vdp.h" />
@@ -467,6 +466,7 @@
     <ClInclude Include="TexturePanel.h" />
     <ClInclude Include="TexturePanelItem.h" />
     <ClInclude Include="nes\nes.h" />
+    <ClInclude Include="z80\z80.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="effect.fx">

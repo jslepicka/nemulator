@@ -54,6 +54,7 @@ private:
 	void power_off();
 
 	uint32_t registers[64];
+    uint32_t tick;
 
 	static const double GB_AUDIO_RATE;
 
@@ -175,7 +176,7 @@ private:
 	private:
 		int clock_shift;
 		int width_mode;
-		int divisor_code;
+		int divisor;
 		int lfsr;
 		int starting_volume;
 		int envelope_period;
@@ -184,7 +185,6 @@ private:
 		c_length length;
 		c_envelope envelope;
 		int enabled;
-		static const int divisor_table[8];
 		int dac_power;
         int clock_divider;
         int next_length = 64;

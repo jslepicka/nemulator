@@ -1,6 +1,6 @@
 #include "sms.h"
 #include <fstream>
-#include "z80.h"
+#include "..\z80\z80.h"
 #include "vdp.h"
 #include "psg.h"
 #include <stdio.h>
@@ -19,7 +19,14 @@ void strip_extension(char *path);
 c_sms::c_sms(SMS_MODEL model)
 {
     this->model = model;
-	z80 = new c_z80(this);
+	z80 = new c_z80(
+		[this](uint16_t address) { return this->read_byte(address); }, //read_byte
+        [this](uint16_t address, uint8_t data) { this->write_byte(address, data); }, //write_byte
+        [this](uint8_t port) { return this->read_port(port); }, //read_port
+        [this](uint8_t port, uint8_t data) { this->write_port(port, data); }, //write_port
+		&nmi,
+		&irq
+	);
 	vdp = new c_vdp(this);
 	psg = new c_psg();
 	ram = new unsigned char[8192];
