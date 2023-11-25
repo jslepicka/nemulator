@@ -62,7 +62,7 @@ c_nemulator::c_nemulator()
 	audio_info = NULL;
 	qam = NULL;
 	splash_done = 0;
-	splash_timer = 2000.0;
+    splash_timer = SPLASH_TIMER_TOTAL_DURATION;
 #if defined(DEBUG)
 	splash_timer = 1.0f;
 #endif
@@ -1032,8 +1032,8 @@ void c_nemulator::UpdateScene(double dt)
 			break;
 		case 2:
 			splash_timer -= dt;
-			if (splash_timer < 1000.0)
-				splash_timer = 1000.0;
+			if (splash_timer < SPLASH_TIMER_FADE_DURATION)
+                splash_timer = SPLASH_TIMER_FADE_DURATION;
 			if (loaded)
 			{
 				if (preload)
@@ -1041,11 +1041,14 @@ void c_nemulator::UpdateScene(double dt)
 					CloseHandle(load_thread_handle);
 					load_thread_handle = 0;
 				}
-				if (splash_timer < 1000.0)
-					splash_timer = 1000.0;
+                if (splash_timer < SPLASH_TIMER_FADE_DURATION)
+                    splash_timer = SPLASH_TIMER_FADE_DURATION;
 				splash_stage++;
 				if (benchmark_mode || disable_splash) {
 					splash_done = 1;
+                    if (benchmark_mode) {
+						start_game();
+                    }
 				}
 			}
 			break;

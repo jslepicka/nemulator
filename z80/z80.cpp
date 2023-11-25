@@ -1,5 +1,4 @@
 #include "z80.h"
-#include "sms.h"
 #include <stdio.h>
 #include <cstdlib>
 #include <fstream>
@@ -15,12 +14,17 @@
 
 using namespace std;
 
-c_z80::c_z80(c_sms *sms)
+c_z80::c_z80(read_byte_t read_byte, write_byte_t write_byte, read_port_t read_port, write_port_t write_port, int *nmi, int *irq)
 {
 	pending_ei = 0;
 	pre_pc = 0;
 	int count = 0;
-	this->sms = sms;
+    this->read_byte = read_byte;
+    this->write_byte = write_byte;
+    this->read_port = read_port;
+    this->write_port = write_port;
+    this->nmi = nmi;
+    this->irq = irq;
 }
 
 
@@ -209,6 +213,19 @@ void c_z80::inc_r()
 	R = (R & 0x80) | ((R+1) & 0x7F);
 }
 
+uint16_t c_z80::read_word(uint16_t address)
+{
+    uint16_t lo = read_byte(address);
+    uint16_t hi = read_byte(address + 1);
+    return lo | (hi << 8);
+}
+
+void c_z80::write_word(uint16_t address, uint16_t data)
+{
+    write_byte(address, data & 0xFF);
+    write_byte(address + 1, data >> 8);
+}
+
 void c_z80::execute(int cycles)
 {
 	available_cycles += cycles;
@@ -225,12 +242,12 @@ void c_z80::execute(int cycles)
 			rp = rp_00;
 			rp2 = rp2_00;
 
-			if (sms->nmi && prev_nmi == 0)
+			if (*nmi && prev_nmi == 0)
 			{
 				opcode = 0x104;
 				halted = 0;
 			}
-			else if (sms->irq && IFF1)
+			else if (*irq && IFF1)
 			{
 				IFF1 = IFF2 = 0;
 				halted = 0;
@@ -253,7 +270,7 @@ void c_z80::execute(int cycles)
 			}
 			else
 			{
-				opcode = sms->read_byte(PC++);
+                opcode = read_byte(PC++);
 				if (pending_ei)
 				{
 					IFF1 = IFF2 = 1;
@@ -261,14 +278,14 @@ void c_z80::execute(int cycles)
 				}
 			}
 
-			prev_nmi = sms->nmi;
+			prev_nmi = *nmi;
 
 			switch (opcode)
 			{
 			case 0xCB:
 				inc_r();
 				opcode <<= 8;
-				opcode |= sms->read_byte(PC++);
+				opcode |= read_byte(PC++);
 				required_cycles += cb_cycle_table[opcode & 0xFF];
 				prefix = 0xCB;
 				break;
@@ -276,13 +293,13 @@ void c_z80::execute(int cycles)
 				inc_r();
 				ddfd_ptr = &IX.word;
 				opcode <<= 8;
-				opcode |= sms->read_byte(PC++);
+				opcode |= read_byte(PC++);
 				if ((opcode & 0xFF) == 0xCB)
 				{
 					opcode <<= 8;
-					opcode |= sms->read_byte(PC++);
+					opcode |= read_byte(PC++);
 					opcode <<= 8;
-					opcode |= sms->read_byte(PC++);
+					opcode |= read_byte(PC++);
 					required_cycles += ddcb_cycle_table[opcode & 0xFF];
 					prefix = 0xDDCB;
 				}
@@ -300,7 +317,7 @@ void c_z80::execute(int cycles)
 			case 0xED:
 				inc_r();
 				opcode <<= 8;
-				opcode |= sms->read_byte(PC++);
+				opcode |= read_byte(PC++);
 				required_cycles += ed_cycle_table[opcode & 0xFF];
 				prefix = 0xED;
 				break;
@@ -308,13 +325,13 @@ void c_z80::execute(int cycles)
 				inc_r();
 				opcode <<= 8;
 				ddfd_ptr = &IY.word;
-				opcode |= sms->read_byte(PC++);
+				opcode |= read_byte(PC++);
 				if ((opcode & 0xFF) == 0xCB)
 				{
 					opcode <<= 8;
-					opcode |= sms->read_byte(PC++);
+					opcode |= read_byte(PC++);
 					opcode <<= 8;
-					opcode |= sms->read_byte(PC++);
+					opcode |= read_byte(PC++);
 					required_cycles += ddcb_cycle_table[opcode & 0xFF];
 					prefix = 0xDDCB;
 				}
@@ -414,7 +431,7 @@ void c_z80::execute_opcode()
 					break;
 				case 2:
 					//DJNZ
-					d = (signed char)sms->read_byte(PC++);
+					d = (signed char)read_byte(PC++);
 					BC.byte.hi--;
 					if (BC.byte.hi != 0)
 					{
@@ -424,7 +441,7 @@ void c_z80::execute_opcode()
 					break;
 				case 3:
 					//JR
-					d = (signed char)sms->read_byte(PC++);
+					d = (signed char)read_byte(PC++);
 					PC += d;
 					break;
 				case 4:
@@ -432,7 +449,7 @@ void c_z80::execute_opcode()
 				case 6:
 				case 7:
 					//JR cc[y-4], d
-					d = (signed char)sms->read_byte(PC++);
+					d = (signed char)read_byte(PC++);
 					if (test_flag(y - 4))
 						PC += d;
 					break;
@@ -444,7 +461,7 @@ void c_z80::execute_opcode()
 				{
 				case 0:
 					//LD rp[p],nn
-					temp = sms->read_word(PC);
+					temp = read_word(PC);
 					PC += 2;
 					*rp[p] = temp;
 					break;
@@ -462,23 +479,23 @@ void c_z80::execute_opcode()
 					{
 					case 0:
 						//LD (BC), A
-						sms->write_byte(BC.word, AF.byte.hi);
+						write_byte(BC.word, AF.byte.hi);
 						break;
 					case 1:
 						//LD (DE), A
-						sms->write_byte(DE.word, AF.byte.hi);
+						write_byte(DE.word, AF.byte.hi);
 						break;
 					case 2:
 						//LD (nn), HL
-						temp = sms->read_word(PC);
+						temp = read_word(PC);
 						PC += 2;
-						sms->write_word(temp, *rp[2]);
+						write_word(temp, *rp[2]);
 						break;
 					case 3:
 						//LD (nn), A
-						temp = sms->read_word(PC);
+						temp = read_word(PC);
 						PC += 2;
-						sms->write_byte(temp, AF.byte.hi);
+						write_byte(temp, AF.byte.hi);
 						break;
 					}
 					break;
@@ -487,23 +504,23 @@ void c_z80::execute_opcode()
 					{
 					case 0:
 						//LD A, (BC)
-						AF.byte.hi = sms->read_byte(BC.word);
+						AF.byte.hi = read_byte(BC.word);
 						break;
 					case 1:
 						//LD A, (DE)
-						AF.byte.hi = sms->read_byte(DE.word);
+						AF.byte.hi = read_byte(DE.word);
 						break;
 					case 2:
 						//LD HL, (nn)
-						temp = sms->read_word(PC);
+						temp = read_word(PC);
 						PC += 2;
-						*rp[2] = sms->read_word(temp);
+						*rp[2] = read_word(temp);
 						break;
 					case 3:
 						//LD A, (nn)
-						temp = sms->read_word(PC);
+						temp = read_word(PC);
 						PC += 2;
-						AF.byte.hi = sms->read_byte(temp);
+						AF.byte.hi = read_byte(temp);
 						break;
 					}
 					break;
@@ -528,17 +545,17 @@ void c_z80::execute_opcode()
 				{
 					unsigned char temp;
 					if (ddfd_ptr) {
-						d = (signed char)sms->read_byte(PC++);
+						d = (signed char)read_byte(PC++);
 						unsigned short loc = *ddfd_ptr + d;
-						temp = sms->read_byte(loc);
+						temp = read_byte(loc);
 						INC(&temp);
-						sms->write_byte(loc, temp);
+						write_byte(loc, temp);
 					}
 					else
 					{
-						temp = sms->read_byte(*rp[2]);
+						temp = read_byte(*rp[2]);
 						INC(&temp);
-						sms->write_byte(*rp[2], temp);
+						write_byte(*rp[2], temp);
 					}
 				}
 				else
@@ -552,18 +569,18 @@ void c_z80::execute_opcode()
 				{
 					unsigned char temp;
 					if (ddfd_ptr) {
-						d = (signed char)sms->read_byte(PC++);
+						d = (signed char)read_byte(PC++);
 						unsigned short loc = *ddfd_ptr + d;
-						temp = sms->read_byte(loc);
+						temp = read_byte(loc);
 						DEC(&temp);
-						sms->write_byte(loc, temp);
+						write_byte(loc, temp);
 
 					}
 					else
 					{
-						temp = sms->read_byte(*rp[2]);
+						temp = read_byte(*rp[2]);
 						DEC(&temp);
-						sms->write_byte(*rp[2], temp);
+						write_byte(*rp[2], temp);
 					}
 				}
 				else
@@ -576,19 +593,19 @@ void c_z80::execute_opcode()
 				if (y == 6)
 				{
 					if (ddfd_ptr) {
-						d = (signed char)sms->read_byte(PC++);
-						temp = sms->read_byte(PC++);
-						sms->write_byte(*ddfd_ptr + d, temp);
+						d = (signed char)read_byte(PC++);
+						temp = read_byte(PC++);
+						write_byte(*ddfd_ptr + d, temp);
 					}
 					else
 					{
-						temp = sms->read_byte(PC++);
-						sms->write_byte(*rp[2], temp);
+						temp = read_byte(PC++);
+						write_byte(*rp[2], temp);
 					}
 				}
 				else
 				{
-					temp = sms->read_byte(PC++);
+					temp = read_byte(PC++);
 					*r[y] = temp;
 				}
 				break;
@@ -698,12 +715,12 @@ void c_z80::execute_opcode()
 				if (z == 6)
 				{
 					if (ddfd_ptr) {
-						d = (signed char)sms->read_byte(PC++);
-						src = sms->read_byte(*ddfd_ptr + d);
+						d = (signed char)read_byte(PC++);
+						src = read_byte(*ddfd_ptr + d);
 					}
 					else
 					{
-						src = sms->read_byte(HL.word);
+						src = read_byte(HL.word);
 					}
 				}
 				else
@@ -732,12 +749,12 @@ void c_z80::execute_opcode()
 				if (y == 6) //HL
 				{
 					if (ddfd_ptr) {
-						d = (signed char)sms->read_byte(PC++);
-						sms->write_byte(*ddfd_ptr + d, src);
+						d = (signed char)read_byte(PC++);
+						write_byte(*ddfd_ptr + d, src);
 					}
 					else
 					{
-						sms->write_byte(*rp[2], src);
+						write_byte(*rp[2], src);
 					}
 				}
 				else
@@ -769,12 +786,12 @@ void c_z80::execute_opcode()
 			if (z == 6)
 			{
 				if (ddfd_ptr) {
-					d = (signed char)sms->read_byte(PC++);
-					alu(y, sms->read_byte(*ddfd_ptr + d));
+					d = (signed char)read_byte(PC++);
+					alu(y, read_byte(*ddfd_ptr + d));
 				}
 				else
 				{
-					alu(y, sms->read_byte(*rp[2]));
+					alu(y, read_byte(*rp[2]));
 				}
 			}
 			else
@@ -826,7 +843,7 @@ void c_z80::execute_opcode()
 				break;
 			case 2:
 				//JP cc[y], nn
-				temp = sms->read_word(PC);
+				temp = read_word(PC);
 				PC += 2;
 				if (test_flag(y))
 					PC = temp;
@@ -836,7 +853,7 @@ void c_z80::execute_opcode()
 				{
 				case 0:
 					//JP nn
-					temp = sms->read_word(PC);
+					temp = read_word(PC);
 					PC += 2;
 					PC = temp;
 					break;
@@ -845,21 +862,21 @@ void c_z80::execute_opcode()
 					break;
 				case 2:
 					//OUT (n), A
-					temp = sms->read_byte(PC++);
-					sms->write_port(temp, AF.byte.hi);
+					temp = read_byte(PC++);
+					write_port(temp, AF.byte.hi);
 					break;
 				case 3:
 					//IN A, (n)
-					temp = sms->read_byte(PC++);
-					AF.byte.hi = sms->read_port(temp);
+					temp = read_byte(PC++);
+					AF.byte.hi = read_port(temp);
 					break;
 				case 4:
 					//EX (SP), HL
 				{
-					int sp0 = sms->read_byte(SP);
-					int sp1 = sms->read_byte(SP + 1);
-					sms->write_byte(SP, *r[5]);
-					sms->write_byte(SP + 1, *r[4]);
+					int sp0 = read_byte(SP);
+					int sp1 = read_byte(SP + 1);
+					write_byte(SP, *r[5]);
+					write_byte(SP + 1, *r[4]);
 					*r[5] = sp0;
 					*r[4] = sp1;
 				}
@@ -892,7 +909,7 @@ void c_z80::execute_opcode()
 				break;
 			case 4:
 				//CALL cc[y], nn
-				temp = sms->read_word(PC);
+				temp = read_word(PC);
 				PC += 2;
 				if (test_flag(y))
 				{
@@ -915,7 +932,7 @@ void c_z80::execute_opcode()
 					{
 					case 0:
 						//CALL nn
-						temp = sms->read_word(PC);
+						temp = read_word(PC);
 						PC += 2;
 						push_word(PC);
 						PC = temp;
@@ -935,7 +952,7 @@ void c_z80::execute_opcode()
 				break;
 			case 6:
 				//alu[y], n
-				alu(y, sms->read_byte(PC++));
+				alu(y, read_byte(PC++));
 				break;
 			case 7:
 				//RST y*8
@@ -978,7 +995,7 @@ void c_z80::execute_opcode()
 	case 0xCB:
 		if (z == 6)
 		{
-			tchar = sms->read_byte(HL.word);
+			tchar = read_byte(HL.word);
 		}
 		else
 		{
@@ -1005,7 +1022,7 @@ void c_z80::execute_opcode()
 		}
 		if (z == 6)
 		{
-			sms->write_byte(HL.word, tchar);
+			write_byte(HL.word, tchar);
 		}
 		else
 		{
@@ -1028,7 +1045,7 @@ void c_z80::execute_opcode()
 				if (y == 6)
 				{
 					//IN (C)
-					temp = sms->read_port(BC.byte.lo);
+					temp = read_port(BC.byte.lo);
 					set_n(0);
 					set_pv(get_parity(temp));
 					set_h(0);
@@ -1038,7 +1055,7 @@ void c_z80::execute_opcode()
 				else
 				{
 					//IN r[y], (C)
-					*r[y] = sms->read_port(BC.byte.lo);
+					*r[y] = read_port(BC.byte.lo);
 					set_n(0);
 					set_pv(get_parity(*r[y]));
 					set_h(0);
@@ -1050,12 +1067,12 @@ void c_z80::execute_opcode()
 				if (y == 6)
 				{
 					//OUT (C), 0
-					sms->write_port(BC.byte.lo, 0);
+					write_port(BC.byte.lo, 0);
 				}
 				else
 				{
 					//OUT (C), r[y]
-					sms->write_port(BC.byte.lo, *r[y]);
+					write_port(BC.byte.lo, *r[y]);
 				}
 				break;
 			case 2:
@@ -1076,15 +1093,15 @@ void c_z80::execute_opcode()
 				{
 				case 0:
 					//LD (nn), rp[p]
-					temp = sms->read_word(PC);
+					temp = read_word(PC);
 					PC += 2;
-					sms->write_word(temp, *rp[p]);
+					write_word(temp, *rp[p]);
 					break;
 				case 1:
 					//LD rp[p], (nn)
-					temp = sms->read_word(PC);
+					temp = read_word(PC);
 					PC += 2;
-					*rp[p] = sms->read_word(temp);
+					*rp[p] = read_word(temp);
 					break;
 				}
 				break;
@@ -1156,11 +1173,11 @@ void c_z80::execute_opcode()
 				case 4:
 					//RRD
 				{
-					int x = sms->read_byte(HL.word);
+					int x = read_byte(HL.word);
 					int x_lo = x & 0xF;
 					x >>= 4;
 					x |= ((AF.byte.hi & 0xF) << 4);
-					sms->write_byte(HL.word, x);
+					write_byte(HL.word, x);
 					AF.byte.hi &= 0xF0;
 					AF.byte.hi |= x_lo;
 					set_s(AF.byte.hi & 0x80);
@@ -1173,11 +1190,11 @@ void c_z80::execute_opcode()
 				case 5:
 					//RLD
 				{
-					int x = sms->read_byte(HL.word);
+					int x = read_byte(HL.word);
 					int x_hi = x & 0xF0;
 					x <<= 4;
 					x |= (AF.byte.hi & 0xF);
-					sms->write_byte(HL.word, x);
+					write_byte(HL.word, x);
 					AF.byte.hi &= 0xF0;
 					AF.byte.hi |= (x_hi >> 4);
 					set_s(AF.byte.hi & 0x80);
@@ -1206,7 +1223,7 @@ void c_z80::execute_opcode()
 					{
 					case 0:
 						//LDI
-						sms->write_byte(DE.word, sms->read_byte(HL.word));
+						write_byte(DE.word, read_byte(HL.word));
 						HL.word++;
 						DE.word++;
 						BC.word--;
@@ -1217,7 +1234,7 @@ void c_z80::execute_opcode()
 					case 1:
 						//CPI
 					{
-						unsigned short s = sms->read_byte(HL.word);
+						unsigned short s = read_byte(HL.word);
 						int z = AF.byte.hi == s;
 						int c = flag_c;
 						CP(s);
@@ -1230,7 +1247,7 @@ void c_z80::execute_opcode()
 					break;
 					case 2:
 						//INI
-						sms->write_byte(HL.word, sms->read_port(BC.byte.lo));
+						write_byte(HL.word, read_port(BC.byte.lo));
 						HL.word++;
 						BC.byte.hi--;
 						set_n(0);
@@ -1238,7 +1255,7 @@ void c_z80::execute_opcode()
 						break;
 					case 3:
 						//OUTI
-						sms->write_port(BC.byte.lo, sms->read_byte(HL.word));
+						write_port(BC.byte.lo, read_byte(HL.word));
 						HL.word++;
 						BC.byte.hi--;
 						set_n(1);
@@ -1251,7 +1268,7 @@ void c_z80::execute_opcode()
 					{
 					case 0:
 						//LDD
-						sms->write_byte(DE.word, sms->read_byte(HL.word));
+						write_byte(DE.word, read_byte(HL.word));
 						HL.word--;
 						DE.word--;
 						BC.word--;
@@ -1262,7 +1279,7 @@ void c_z80::execute_opcode()
 					case 1:
 						//CPD
 					{
-						unsigned short s = sms->read_byte(HL.word);
+						unsigned short s = read_byte(HL.word);
 						int z = AF.byte.hi == s;
 						int c = flag_c;
 						CP(s);
@@ -1275,7 +1292,7 @@ void c_z80::execute_opcode()
 					break;
 					case 2:
 						//IND
-						sms->write_byte(HL.word, sms->read_port(BC.byte.lo));
+						write_byte(HL.word, read_port(BC.byte.lo));
 						HL.word--;
 						BC.byte.hi--;
 						set_n(1);
@@ -1283,7 +1300,7 @@ void c_z80::execute_opcode()
 						break;
 					case 3:
 						//OUTD
-						sms->write_port(BC.byte.lo, sms->read_byte(HL.word));
+						write_port(BC.byte.lo, read_byte(HL.word));
 						HL.word--;
 						BC.byte.hi--;
 						set_n(1);
@@ -1296,7 +1313,7 @@ void c_z80::execute_opcode()
 					{
 					case 0:
 						//LDIR
-						sms->write_byte(DE.word, sms->read_byte(HL.word));
+						write_byte(DE.word, read_byte(HL.word));
 						HL.word++;
 						DE.word++;
 						BC.word--;
@@ -1316,7 +1333,7 @@ void c_z80::execute_opcode()
 					case 1:
 						//CPIR
 					{
-						tchar = sms->read_byte(HL.word);
+						tchar = read_byte(HL.word);
 						int z = AF.byte.hi == tchar;
 						int c = flag_c;
 						CP(tchar);
@@ -1333,7 +1350,7 @@ void c_z80::execute_opcode()
 						break;
 					case 2:
 						//INIR
-						sms->write_byte(HL.word, sms->read_port(BC.byte.lo));
+						write_byte(HL.word, read_port(BC.byte.lo));
 						HL.word++;
 						BC.byte.hi--;
 						set_z(BC.byte.hi == 0);
@@ -1346,7 +1363,7 @@ void c_z80::execute_opcode()
 						break;
 					case 3:
 						//OTIR
-						sms->write_port(BC.byte.lo, sms->read_byte(HL.word));
+						write_port(BC.byte.lo, read_byte(HL.word));
 						HL.word++;
 						BC.byte.hi--;
 						if (BC.byte.hi != 0)
@@ -1364,7 +1381,7 @@ void c_z80::execute_opcode()
 					{
 					case 0:
 						//LDDR
-						sms->write_byte(DE.word, sms->read_byte(HL.word));
+						write_byte(DE.word, read_byte(HL.word));
 						DE.word--;
 						HL.word--;
 						BC.word--;
@@ -1384,7 +1401,7 @@ void c_z80::execute_opcode()
 					case 1:
 						//CPDR
 					{
-						tchar = sms->read_byte(HL.word);
+						tchar = read_byte(HL.word);
 						int z = AF.byte.hi == tchar;
 						int c = flag_c;
 						CP(tchar);
@@ -1401,7 +1418,7 @@ void c_z80::execute_opcode()
 						break;
 					case 2:
 						//INDR
-						sms->write_byte(HL.word, BC.byte.lo);
+						write_byte(HL.word, BC.byte.lo);
 						HL.word--;
 						BC.byte.hi--;
 						set_z(BC.byte.hi == 0);
@@ -1414,7 +1431,7 @@ void c_z80::execute_opcode()
 						break;
 					case 3:
 						//OTDR
-						sms->write_port(BC.byte.lo, sms->read_byte(HL.word));
+						write_port(BC.byte.lo, read_byte(HL.word));
 						HL.word--;
 						BC.byte.hi--;
 						set_z(BC.byte.hi == 0);
@@ -1452,14 +1469,14 @@ void c_z80::execute_opcode()
 				//rot[y] (IX+d)
 				//temp = dd ? IX.word : IY.word;
 				unsigned short loc = *ddfd_ptr + d;
-				tchar = sms->read_byte(loc);
+				tchar = read_byte(loc);
 				ROT(y, &tchar);
-				sms->write_byte(loc, tchar);
+				write_byte(loc, tchar);
 			}
 			break;
 		case 1:
 			//BIT y, r[z]
-			BIT(y, sms->read_byte(*ddfd_ptr + d));
+			BIT(y, read_byte(*ddfd_ptr + d));
 			break;
 		case 2:
 			if (z != 6)
@@ -1472,9 +1489,9 @@ void c_z80::execute_opcode()
 				//RES y, (IX+d)
 				//temp = dd ? IX.word : IY.word;
 				unsigned short loc = *ddfd_ptr + d;
-				temp2 = sms->read_byte(loc);
+				temp2 = read_byte(loc);
 				temp2 &= ~(1 << y);
-				sms->write_byte(loc, temp2);
+				write_byte(loc, temp2);
 			}
 			break;
 		case 3:
@@ -1487,9 +1504,9 @@ void c_z80::execute_opcode()
 			{
 				//temp = dd ? IX.word : IY.word;
 				unsigned short loc = *ddfd_ptr + d;
-				tchar = sms->read_byte(loc);
+				tchar = read_byte(loc);
 				tchar = tchar | (1 << y);
-				sms->write_byte(loc, tchar);
+				write_byte(loc, tchar);
 			}
 			break;
 		default:
@@ -1506,12 +1523,12 @@ void c_z80::execute_opcode()
 void c_z80::push_word(unsigned short value)
 {
 	SP -= 2;
-	sms->write_word(SP, value);
+	write_word(SP, value);
 }
 
 unsigned short c_z80::pull_word()
 {
-	unsigned short ret = sms->read_word(SP);
+	unsigned short ret = read_word(SP);
 	SP += 2;
 	return ret;
 }

@@ -1,10 +1,15 @@
 #pragma once
-class c_sms;
+#include <functional>
 
 class c_z80
 {
-public:
-	c_z80(c_sms *sms);
+    typedef std::function<uint8_t(uint16_t)> read_byte_t;
+    typedef std::function<void(uint16_t, uint8_t)> write_byte_t;
+    typedef std::function<uint8_t(uint8_t)> read_port_t;
+    typedef std::function<void(uint8_t, uint8_t)> write_port_t;
+
+  public:
+	c_z80(read_byte_t read_byte, write_byte_t write_byte, read_port_t read_port, write_port_t write_port, int *nmi, int *irq);
 	~c_z80();
 	int emulate_frame();
 	int reset();
@@ -33,7 +38,6 @@ private:
 		int sp;
 	};
 	int pending_ei;
-	c_sms *sms;
 	int available_cycles;
 	int fetch_opcode;
 	int opcode;
@@ -104,6 +108,10 @@ private:
 	int IFF2;
 
 	int IM; //interrupt mode
+
+	int *nmi;
+    int *irq;
+
 	unsigned short SP;
 
 	union
@@ -121,4 +129,12 @@ private:
 	void update_f();
 	void update_flags();
 	int* flag_ptrs[8] = { &flag_z, &flag_z, &flag_c, &flag_c, &flag_pv, &flag_pv, &flag_s, &flag_s };
+
+	read_byte_t read_byte;
+    write_byte_t write_byte;
+    read_port_t read_port;
+    write_port_t write_port;
+
+	uint16_t read_word(uint16_t address);
+    void write_word(uint16_t address, uint16_t data);
 };

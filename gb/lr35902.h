@@ -89,8 +89,8 @@ private:
 
 	struct s_ins
 	{
-		int len;
-		int cycles;
+		uint8_t len;
+		uint8_t cycles;
 	};
 
 	int halted;

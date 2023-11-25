@@ -37,6 +37,12 @@
     <Filter Include="Source Files\gb">
       <UniqueIdentifier>{4afd6606-abc9-437f-bee7-24c26e86b3ac}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\z80">
+      <UniqueIdentifier>{b4da6ca1-02dd-4dfa-92ba-8c08b25c5b5f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\z80">
+      <UniqueIdentifier>{51cfebc0-e3b0-4687-807f-023aedfdaa99}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="config.cpp">
@@ -336,9 +342,6 @@
     <ClCompile Include="sms\vdp.cpp">
       <Filter>Source Files\sms</Filter>
     </ClCompile>
-    <ClCompile Include="sms\z80.cpp">
-      <Filter>Source Files\sms</Filter>
-    </ClCompile>
     <ClCompile Include="console.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -392,6 +395,9 @@
     </ClCompile>
     <ClCompile Include="gb\mbc5.cpp">
       <Filter>Source Files\gb</Filter>
+    </ClCompile>
+    <ClCompile Include="z80\z80.cpp">
+      <Filter>Source Files\z80</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -704,9 +710,6 @@
     <ClInclude Include="sms\vdp.h">
       <Filter>Header Files\sms</Filter>
     </ClInclude>
-    <ClInclude Include="sms\z80.h">
-      <Filter>Header Files\sms</Filter>
-    </ClInclude>
     <ClInclude Include="console.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -787,6 +790,9 @@
     </ClInclude>
     <ClInclude Include="gb\mbc5.h">
       <Filter>Header Files\gb</Filter>
+    </ClInclude>
+    <ClInclude Include="z80\z80.h">
+      <Filter>Header Files\z80</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
