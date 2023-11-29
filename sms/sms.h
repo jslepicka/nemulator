@@ -39,7 +39,6 @@ public:
 	int get_fb_width() { return 256; }
 	int get_fb_height() { return 192; }
     SMS_MODEL get_model() const { return model; }
-
 private:
     SMS_MODEL model;
 	int psg_cycles;

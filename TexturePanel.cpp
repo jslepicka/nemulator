@@ -175,8 +175,8 @@ void TexturePanel::Init()
 	hr = d3dDev->CreateBuffer(&bd, &initData, &vertexBuffer);
 
 	D3D10_TEXTURE2D_DESC texDesc;
-	texDesc.Width = 256;
-	texDesc.Height = 256;
+	texDesc.Width = 512;
+	texDesc.Height = 512;
 	texDesc.MipLevels = 1;
 	texDesc.ArraySize = 1;
 	texDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;

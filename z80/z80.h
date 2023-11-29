@@ -9,7 +9,7 @@ class c_z80
     typedef std::function<void(uint8_t, uint8_t)> write_port_t;
 
   public:
-	c_z80(read_byte_t read_byte, write_byte_t write_byte, read_port_t read_port, write_port_t write_port, int *nmi, int *irq);
+	c_z80(read_byte_t read_byte, write_byte_t write_byte, read_port_t read_port, write_port_t write_port, int *nmi, int *irq, uint8_t *data_bus = 0);
 	~c_z80();
 	int emulate_frame();
 	int reset();
@@ -20,7 +20,6 @@ private:
 	unsigned short PC;
 	int prev_nmi;
 	int halted;
-	int pre_pc;
 	struct s_log_entry
 	{
 		int inst;
@@ -111,6 +110,9 @@ private:
 
 	int *nmi;
     int *irq;
+
+	//latch for data bus value.  Used for IM2 (also needed for IM0 which is not currently implemented)
+    uint8_t *data_bus;
 
 	unsigned short SP;
 

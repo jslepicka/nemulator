@@ -328,6 +328,8 @@ void c_nemulator::configure_input()
 		{ BUTTON_RETURN,         "",        "",        VK_RETURN,                   0 },
 		{ BUTTON_DEC_SHARPNESS,  "",        "",        0x39,                        1 },
 		{ BUTTON_INC_SHARPNESS,  "",        "",        0x30,                        1 },
+
+		{ BUTTON_1COIN,          "",        "",        0x31,                        0 }
 	};
 
 	int num_buttons = sizeof(button_map) / sizeof(s_button_map);
@@ -411,6 +413,10 @@ void c_nemulator::RunGames()
         case GAME_GBC:
 			g->console->set_input(((c_nes_input_handler*)g_ih)->get_gb_input());
 			break;
+        case GAME_PACMAN:
+        case GAME_MSPACMAN:
+            g->console->set_input(((c_nes_input_handler *)g_ih)->get_pacman_input());
+            break;
 		default:
 			break;
 		}
@@ -1252,9 +1258,9 @@ void c_nemulator::DrawScene()
 			double dim = mainPanel2->dim ? .25 : 1.0;
 			DrawText(font1, .05f, .85f, g->title, D3DXCOLOR((float)(1.0f * dim), 0.0f, 0.0f, 1.0f));
 
-			const char *subtitle[] = { "Nintendo NES", "Sega Master System", "Sega Game Gear", "Nintendo Game Boy", "Nintendo Game Boy Color" };
+			const char *subtitle[] = { "Nintendo NES", "Sega Master System", "Sega Game Gear", "Nintendo Game Boy", "Nintendo Game Boy Color", "Arcade" };
 
-			DrawText(font2, .0525f, .925f, subtitle[g->type], D3DXCOLOR((float)(.22f * dim), (float)(.22f * dim), (float)(.22f * dim), 1.0f));
+			DrawText(font2, .0525f, .925f, g->console->get_system_name(), D3DXCOLOR((float)(.22f * dim), (float)(.22f * dim), (float)(.22f * dim), 1.0f));
 			//RECT r = { 0, 0, clientWidth, (LONG)(clientHeight*1.95) };
 			//ID3D10DepthStencilState *state;
 			//int oldref;
@@ -1369,7 +1375,9 @@ void c_nemulator::LoadGames()
 		{ GAME_GG,   "gg",  "gg.rom_path",  "gg.save_path",  "c:\\roms\\gg" },
 		{ GAME_GB,   "gb",  "gb.rom_path",  "gb.save_path",  "c:\\roms\\gb" },
         { GAME_GBC, "gbc", "gbc.rom_path", "gbc.save_path", "c:\\roms\\gbc" },
-		{ GAME_NES, "nsf", "nsf.rom_path", "nsf.save_path", "c:\\roms\\nsf" }
+		{ GAME_NES, "nsf", "nsf.rom_path", "nsf.save_path", "c:\\roms\\nsf" }, 
+		{ GAME_PACMAN, "", "pacman.rom_path", "", "c:\\roms\\pacman" },
+		{ GAME_MSPACMAN, "", "mspacman.rom_path", "", "c:\\roms\\mspacman" }
 	};
 
 	bool global_mask_sides = config->get_bool("mask_sides", false);
@@ -1382,21 +1390,26 @@ void c_nemulator::LoadGames()
 		if (!dir_exists(li.save_path))
 			li.save_path = li.rom_path;
 
-		_finddata64i32_t fd;
-		intptr_t f;
-		//char searchPath[MAX_PATH];
-		//sprintf_s(searchPath, MAX_PATH, "%s\\*.%s", li.rom_path, li.extension);
-		std::string searchPath = li.rom_path + "\\*." + li.extension;
-		if ((f = _findfirst(searchPath.c_str(), &fd)) != -1)
-		{
-			int find_result = 0;
-			while (find_result == 0)
-			{
-				rom_count++;
-				li.file_list.push_back(fd.name);
-				find_result = _findnext(f, &fd);
+		if (strcmp(li.extension.c_str(), "") == 0) {
+            if (dir_exists(li.rom_path)) {
+                li.file_list.push_back(li.rom_path + ".dir");
 			}
-		}
+        }
+        else {
+            _finddata64i32_t fd;
+            intptr_t f;
+            //char searchPath[MAX_PATH];
+            //sprintf_s(searchPath, MAX_PATH, "%s\\*.%s", li.rom_path, li.extension);
+            std::string searchPath = li.rom_path + "\\*." + li.extension;
+            if ((f = _findfirst(searchPath.c_str(), &fd)) != -1) {
+                int find_result = 0;
+                while (find_result == 0) {
+                rom_count++;
+                li.file_list.push_back(fd.name);
+                find_result = _findnext(f, &fd);
+                }
+            }
+        }
 	}
 
 	for (auto &li : loadinfo)
@@ -1420,7 +1433,15 @@ void c_nemulator::LoadGames()
 			}
 
 			c_game *g = new c_game(li.type, li.rom_path, fn, li.save_path);
-			g->set_description(fn);
+            if (li.type == GAME_PACMAN) {
+                strcpy(g->title, "Pac-Man");
+            }
+            else if (li.type == GAME_MSPACMAN) {
+                strcpy(g->title, "Ms. Pac-Man");
+            }
+            else {
+                g->set_description(fn);
+            }
 			std::string s = "\"" + fn + "\".";
 			bool mask_sides = config->get_bool(s + "mask_sides", global_mask_sides);
 			bool limit_sprites = config->get_bool(s + "limit_sprites", global_limit_sprites);

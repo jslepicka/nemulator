@@ -5,7 +5,7 @@ SamplerState samLinear
 	Filter = MIN_MAG_MIP_LINEAR;
 	AddressU = Border;
 	AddressV = Border;
-	BorderColor = float4(0.0f, 0.0f, 0.0f, 1.0f);
+	BorderColor = float4(0.0f, 0.0f, 0.0f, 0.0f);
 };
 
 matrix World;
@@ -55,7 +55,7 @@ float4 PS (PS_INPUT input) : SV_Target
 
  float2 p = input.Tex.xy;
 
- p = p * 256.0 + .5;
+ p = p * 512.0 + .5;
  float2 i = floor(p);
  float2 f = p - i;
 
@@ -63,7 +63,7 @@ float4 PS (PS_INPUT input) : SV_Target
  f = saturate(f);
 
  p = i + f;
- p = (p - .5) / 256.0;
+ p = (p - .5) / 512.0;
  float4 r = txDiffuse.Sample(samLinear, p) * color;
  //r = pow(r, 1.0/2.2);
  r.w = 1.0;

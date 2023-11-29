@@ -1,6 +1,7 @@
 #pragma once
 #include <Windows.h>
 #include <cstdint>
+#include <string>
 class c_console
 {
 public:
@@ -29,5 +30,8 @@ public:
 	char title[MAX_PATH];
 	char pathFile[MAX_PATH];
 	virtual int get_overscan_color() { return 0xFF000000; };
+    virtual std::string get_system_name() { return system_name; };
+  protected:
+    std::string system_name;
 };
 

@@ -45,6 +45,7 @@ enum BUTTONS
 	BUTTON_DEC_SOUND_DELAY,
 	BUTTON_INC_SOUND_DELAY,
 	BUTTON_SMS_PAUSE,
+    BUTTON_1COIN,
 	BUTTON_COUNT
 };
 
@@ -57,6 +58,7 @@ public:
 	unsigned char get_nes_byte(int controller);
 	int get_sms_input();
 	int get_gb_input();
+    int get_pacman_input();
 	void set_turbo_state(int button, int turbo_enabled);
 	int get_turbo_state(int button);
 	void set_turbo_rate(int button, int rate);

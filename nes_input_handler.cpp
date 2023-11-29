@@ -85,6 +85,33 @@ int c_nes_input_handler::get_sms_input()
 	return ret;
 }
 
+int c_nes_input_handler::get_pacman_input()
+{
+	uint32_t ret = 0;
+	struct s_keymap
+	{
+		int button;
+		int mask;
+	};
+
+	s_keymap keymap[] =
+	{
+		{ BUTTON_1UP,     0x01},
+		{ BUTTON_1LEFT,   0x02},
+		{ BUTTON_1RIGHT,  0x04},
+		{ BUTTON_1DOWN,   0x08},
+		{ BUTTON_1SELECT, 0x20},
+		{ BUTTON_1START,  0x80}
+	};
+
+	for (auto &k : keymap) {
+        if (!state[k.button].ack && state[k.button].state_cur) {
+            ret |= k.mask;
+        }
+    }
+    return ret;
+}
+
 int c_nes_input_handler::get_gb_input()
 {
 	uint32_t ret = -1;
