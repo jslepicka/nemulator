@@ -240,22 +240,25 @@ void c_game::create_vertex_buffer()
 		//aspect ratio adjustment
 		//gb ratio = 4.7f/4.3f
 		//(((1.3333 / 1.093) * 160) - 160) / 2
+		//game boy screen dimensions = 4.7 cm x 4.3 cm
 		auto adjust = (((4.0 / 3.0) / (4.7 / 4.3) * 160.0) - 160.0) / 2.0;
 		vertices[0].tex.x = vertices[1].tex.x = -adjust / 256.0;
 		vertices[2].tex.x = vertices[3].tex.x = (256.0 - 96.0 + adjust) / 256.0;
 	}
     else if (type == GAME_PACMAN || type == GAME_MSPACMAN) {
+
+		auto adjust = ((4.0 / 3.0) * 288.0 - 224.0) / 2.0;
         vertices[0].tex.x = 288.0/512.0;
-        vertices[0].tex.y = 300.0/512.0; //224/256
+        vertices[0].tex.y = (224.0 + adjust)/ 512.0; //224/256
         
 		vertices[1].tex.x = 0.0;
-        vertices[1].tex.y = 300.0/512.0;
+        vertices[1].tex.y = (224.0 + adjust)/ 512.0;
         
 		vertices[2].tex.x = 288.0/512.0;
-        vertices[2].tex.y = -76.0/512.0;
+        vertices[2].tex.y = -adjust/512.0;
 
         vertices[3].tex.x = 0.0;
-        vertices[3].tex.y = -76.0/512.0;  //todo: figure out aspect ratio adjustment
+        vertices[3].tex.y = -adjust/512.0;
 
     }
 
