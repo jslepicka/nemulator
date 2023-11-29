@@ -18,6 +18,7 @@ void strip_extension(char *path);
 
 c_sms::c_sms(SMS_MODEL model)
 {
+    system_name = model == SMS_MODEL::GAMEGEAR ? "Sega Game Gear" : "Sega Master System";
     this->model = model;
 	z80 = new c_z80(
 		[this](uint16_t address) { return this->read_byte(address); }, //read_byte

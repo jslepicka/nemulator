@@ -315,6 +315,10 @@
     <ClCompile Include="nes\mappers\vrc7_audio.cpp" />
     <ClCompile Include="nes_input_handler.cpp" />
     <ClCompile Include="nsf_stats.cpp" />
+    <ClCompile Include="pacman\mspacman.cpp" />
+    <ClCompile Include="pacman\pacman.cpp" />
+    <ClCompile Include="pacman\pacman_psg.cpp" />
+    <ClCompile Include="pacman\pacman_vid.cpp" />
     <ClCompile Include="qam.cpp" />
     <ClCompile Include="resampler.cpp" />
     <ClCompile Include="sms\psg.cpp" />
@@ -450,6 +454,10 @@
     <ClInclude Include="nes\ppu.h" />
     <ClInclude Include="nes_input_handler.h" />
     <ClInclude Include="nsf_stats.h" />
+    <ClInclude Include="pacman\mspacman.h" />
+    <ClInclude Include="pacman\pacman.h" />
+    <ClInclude Include="pacman\pacman_psg.h" />
+    <ClInclude Include="pacman\pacman_vid.h" />
     <ClInclude Include="qam.h" />
     <ClInclude Include="resampler.h" />
     <ClInclude Include="resource.h" />

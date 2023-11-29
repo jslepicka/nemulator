@@ -43,6 +43,12 @@
     <Filter Include="Source Files\z80">
       <UniqueIdentifier>{51cfebc0-e3b0-4687-807f-023aedfdaa99}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\pacman">
+      <UniqueIdentifier>{98fa7a18-be0f-41be-8e6c-2e4eda6b89ee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\pacman">
+      <UniqueIdentifier>{95faead8-8887-4118-91fe-29a0085d7ad8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="config.cpp">
@@ -398,6 +404,18 @@
     </ClCompile>
     <ClCompile Include="z80\z80.cpp">
       <Filter>Source Files\z80</Filter>
+    </ClCompile>
+    <ClCompile Include="pacman\pacman.cpp">
+      <Filter>Source Files\pacman</Filter>
+    </ClCompile>
+    <ClCompile Include="pacman\pacman_vid.cpp">
+      <Filter>Source Files\pacman</Filter>
+    </ClCompile>
+    <ClCompile Include="pacman\pacman_psg.cpp">
+      <Filter>Source Files\pacman</Filter>
+    </ClCompile>
+    <ClCompile Include="pacman\mspacman.cpp">
+      <Filter>Source Files\pacman</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -793,6 +811,18 @@
     </ClInclude>
     <ClInclude Include="z80\z80.h">
       <Filter>Header Files\z80</Filter>
+    </ClInclude>
+    <ClInclude Include="pacman\pacman.h">
+      <Filter>Header Files\pacman</Filter>
+    </ClInclude>
+    <ClInclude Include="pacman\pacman_vid.h">
+      <Filter>Header Files\pacman</Filter>
+    </ClInclude>
+    <ClInclude Include="pacman\pacman_psg.h">
+      <Filter>Header Files\pacman</Filter>
+    </ClInclude>
+    <ClInclude Include="pacman\mspacman.h">
+      <Filter>Header Files\pacman</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -14,10 +14,8 @@
 
 using namespace std;
 
-c_z80::c_z80(read_byte_t read_byte, write_byte_t write_byte, read_port_t read_port, write_port_t write_port, int *nmi, int *irq)
+c_z80::c_z80(read_byte_t read_byte, write_byte_t write_byte, read_port_t read_port, write_port_t write_port, int *nmi, int *irq, uint8_t *data_bus)
 {
-	pending_ei = 0;
-	pre_pc = 0;
 	int count = 0;
     this->read_byte = read_byte;
     this->write_byte = write_byte;
@@ -25,6 +23,7 @@ c_z80::c_z80(read_byte_t read_byte, write_byte_t write_byte, read_port_t read_po
     this->write_port = write_port;
     this->nmi = nmi;
     this->irq = irq;
+    this->data_bus = data_bus;
 }
 
 
@@ -34,6 +33,7 @@ c_z80::~c_z80()
 
 int c_z80::reset()
 {
+    pending_ei = 0;
 	pending_psg_cycles = 0;
 	needed_cycles = 0;
 	prev_nmi = 0;
@@ -120,7 +120,8 @@ const int c_z80::cycle_table[262] = {
 	/*D*/	5, 10, 10, 11, 10, 11,  7, 11,  5,  4, 10, 11, 10, 99,  7, 11,
 	/*E*/	5, 10, 10, 19, 10, 11,  7, 11,  5,  4, 10,  4, 10, 99,  7, 11,
 	/*F*/	5, 10, 10,  4, 10, 11,  7, 11,  5,  6, 10,  4, 10, 99,  7, 11,
-	/*10*/  1, 13,  1,  4, 11, 13 //check value
+	/*10*/  1, 13, 13,  4, 11, 13 //check value
+	//check value for im2 (0x102).  setting to 13 for now, but it likely should be higher
 };
 
 const int c_z80::cb_cycle_table[256] = {
@@ -234,7 +235,6 @@ void c_z80::execute(int cycles)
 		if (fetch_opcode)
 		{
 			inc_r();
-			pre_pc = PC;
 			ddfd_ptr = 0;
 			//dd = 0;
 			//fd = 0;
@@ -257,7 +257,8 @@ void c_z80::execute(int cycles)
 					opcode = 0x105;
 					break;
 				case 2:
-					//Invalid interrupt mode
+					//Invalid interrupt mode for sms
+                    opcode = 0x102;
 					break;
 				case 1:
 					opcode = 0x101;
@@ -347,7 +348,7 @@ void c_z80::execute(int cycles)
 				}
 				break;
 			default:
-				if (opcode == 0x101 || opcode == 0x103 || opcode == 0x104 || opcode == 0x105)
+				if (opcode == 0x101 || opcode == 0x103 || opcode == 0x104 || opcode == 0x105 || opcode == 0x102)
 					prefix = 0x01;
 				else
 					prefix = 0;
@@ -971,6 +972,15 @@ void c_z80::execute_opcode()
 			push_word(PC);
 			PC = 0x38;
 			break;
+        case 2:
+		{
+			//IM2
+            uint16_t v = 0;
+            push_word(PC);
+            v = *data_bus | (I << 8);
+            PC = read_word(v & 0xFFFE); //is this mask correct?
+        }
+            break;
 		case 3: //halt
 		{
 			int x = 1;

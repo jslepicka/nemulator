@@ -109,6 +109,7 @@ const std::map<int, std::function<c_mapper*()> > c_nes::mapper_factory =
 
 c_nes::c_nes()
 {
+    system_name = "Nintendo NES";
 	cpuRam = 0;
 	sram = 0;
 	cpu = 0;

@@ -3,6 +3,8 @@
 #include "nes\nes.h"
 #include "sms\sms.h"
 #include "gb\gb.h"
+#include "pacman\pacman.h"
+#include "pacman\mspacman.h"
 #include <string>
 #include <random>
 #include "TexturePanelItem.h"
@@ -15,6 +17,8 @@ enum GAME_TYPE
 	GAME_GG,
 	GAME_GB,
 	GAME_GBC,
+	GAME_PACMAN,
+	GAME_MSPACMAN,
 	GAME_NONE
 };
 

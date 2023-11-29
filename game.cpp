@@ -43,7 +43,6 @@ c_game::c_game(GAME_TYPE type, std::string path, std::string filename, std::stri
 	bd.BindFlags = D3D10_BIND_VERTEX_BUFFER;
 	bd.CPUAccessFlags = 0;
 	bd.MiscFlags = 0;
-
 }
 
 c_game::~c_game()
@@ -95,6 +94,12 @@ void c_game::OnActivate(bool load)
 				break;
             case GAME_GBC:
                 console = new c_gb(GB_MODEL::CGB);
+                break;
+            case GAME_PACMAN:
+                console = new c_pacman();
+                break;
+            case GAME_MSPACMAN:
+                console = new c_mspacman();
                 break;
 			default:
 				break;
@@ -167,13 +172,13 @@ void c_game::DrawToTexture(ID3D10Texture2D *tex)
 			for (; x < fb_width; x++) {
 				*p++ = *fb++;
 			}
-			for (; x < 256; x++) {
+			for (; x < 512; x++) {
 				*p++ = 0xFF000000;
 			}
 		}
-		for (; y < 256; y++) {
+		for (; y < 512; y++) {
 			p = (int*)map.pData + (y) * (map.RowPitch / 4);
-			for (int x = 0; x < fb_width; x++) {
+			for (int x = 0; x < 512; x++) {
 				*p++ = 0xFF000000;
 			}
 		}
@@ -239,6 +244,28 @@ void c_game::create_vertex_buffer()
 		vertices[0].tex.x = vertices[1].tex.x = -adjust / 256.0;
 		vertices[2].tex.x = vertices[3].tex.x = (256.0 - 96.0 + adjust) / 256.0;
 	}
+    else if (type == GAME_PACMAN || type == GAME_MSPACMAN) {
+        vertices[0].tex.x = 288.0/512.0;
+        vertices[0].tex.y = 300.0/512.0; //224/256
+        
+		vertices[1].tex.x = 0.0;
+        vertices[1].tex.y = 300.0/512.0;
+        
+		vertices[2].tex.x = 288.0/512.0;
+        vertices[2].tex.y = -76.0/512.0;
+
+        vertices[3].tex.x = 0.0;
+        vertices[3].tex.y = -76.0/512.0;  //todo: figure out aspect ratio adjustment
+
+    }
+
+	//using 512x512 texture
+    if (type != GAME_PACMAN && type != GAME_MSPACMAN) {
+        for (auto &v : vertices) {
+            v.tex.x /= 2.0;
+            v.tex.y /= 2.0;
+        }
+    }
 
 
 	D3D10_SUBRESOURCE_DATA initData;
@@ -286,6 +313,7 @@ int c_game::get_height()
 
 ID3D10Buffer* c_game::get_vertex_buffer(int stretched)
 {
+    return vertex_buffer;
 	if (console && !console->is_loaded()) {
 		return default_vertex_buffer;
 	}

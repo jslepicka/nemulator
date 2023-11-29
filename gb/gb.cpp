@@ -32,6 +32,7 @@ const std::map<int, c_gb::s_mapper> c_gb::mapper_factory =
 
 c_gb::c_gb(GB_MODEL model)
 {
+    system_name = model == GB_MODEL::CGB ? "Nintendo Game Boy Color" : "Nintendo Game Boy";
 	cpu = new c_lr35902(this);
 	ppu = new c_gbppu(this);
 	apu = new c_gbapu(this);
