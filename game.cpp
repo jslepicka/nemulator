@@ -288,6 +288,9 @@ int c_game::get_width()
 	case GAME_GB:
     case GAME_GBC:
 		return 160;
+    case GAME_PACMAN:
+    case GAME_MSPACMAN:
+        return 288;
 	default:
 		return 256;
 	}
@@ -306,6 +309,9 @@ int c_game::get_height()
 	case GAME_GB:
     case GAME_GBC:
 		return 144;
+    case GAME_PACMAN:
+    case GAME_MSPACMAN:
+        return 224;
 	default:
 		return 256;
 	}
