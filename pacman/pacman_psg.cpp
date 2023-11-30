@@ -5,14 +5,34 @@ c_pacman_psg::c_pacman_psg()
 {
     sound_rom = new uint8_t[512];
 
+    /*
+    lowpass elliptical, 20kHz
+    d = fdesign.lowpass('N,Fp,Ap,Ast', 8, 20000, .1, 80, 760320);
+    Hd = design(d, 'ellip', 'FilterStructure', 'df2tsos');
+    set(Hd, 'Arithmetic', 'single');
+    g = regexprep(num2str(reshape(Hd.ScaleValues(1 : 4), [1 4]), '%.16ff '), '\s+', ',')
+    b2 = regexprep(num2str(Hd.sosMatrix(5 : 8), '%.16ff '), '\s+', ',')
+    a2 = regexprep(num2str(Hd.sosMatrix(17 : 20), '%.16ff '), '\s+', ',')
+    a3 = regexprep(num2str(Hd.sosMatrix(21 : 24), '%.16ff '), '\s+', ',')
+    */
 
-    lpf = new c_biquad4({0.5067407488822937f, 0.3315044939517975f, 0.1230754777789116f, 0.0055863345041871f},
-                        {-1.9293240308761597f, -1.8632467985153198f, -1.1734478473663330f, -1.9444166421890259f},
-                        {-1.9303381443023682f, -1.9000983238220215f, -1.8756747245788574f, -1.9571375846862793f},
-                        {0.9537956714630127f, 0.9141353368759155f, 0.8811427354812622f, 0.9859519004821777f});
-    post_filter = new c_biquad(0.5648277401924133f, {1.0000000000000000f, 0.0000000000000000f, -1.0000000000000000f},
-                               {1.0000000000000000f, -0.8659016489982605f, -0.1296554803848267f});
-    resampler = new c_resampler(754560.0 / 48000.0, lpf, post_filter);
+    lpf = new c_biquad4({0.5067391395568848f, 0.3314585983753204f, 0.1227479130029678f, 0.0055860662832856f},
+                        {-1.9303771257400513f, -1.8652504682540894f, -1.1834223270416260f, -1.9452478885650635f},
+                        {-1.9310271739959717f, -1.9009269475936890f, -1.8766038417816162f, -1.9576745033264160f},
+                        {0.9541351795196533f, 0.9147564172744751f, 0.8819914460182190f, 0.9860565066337585f});
+    /*
+    post-filter is butterworth bandpass, 30Hz - 12kHz
+    d = fdesign.bandpass('N,F3dB1,F3dB2', 2, 30, 12000, 48000);
+    Hd = design(d,'butter', 'FilterStructure', 'df2tsos');
+    set(Hd, 'Arithmetic', 'single');
+    g = num2str(Hd.ScaleValues(1), '%.16ff ')
+    b = regexprep(num2str(Hd.sosMatrix(1:3), '%.16ff '), '\s+', ',')
+    a = regexprep(num2str(Hd.sosMatrix(4:6), '%.16ff '), '\s+', ',')
+    */
+    post_filter = new c_biquad(0.4990182518959045f, {1.0000000000000000f, 0.0000000000000000f, -1.0000000000000000f},
+                               {1.0000000000000000f, -0.9980365037918091f, 0.0019634978380054f});
+    resampler = new c_resampler(audio_rate / 48000.0, lpf, post_filter);
+    mixer_enabled = 0;
     reset();
 }
 
@@ -26,7 +46,7 @@ c_pacman_psg::~c_pacman_psg()
 
 void c_pacman_psg::set_audio_rate(double freq)
 {
-    double x = 754560.0 / freq;
+    double x = audio_rate / freq;
     resampler->set_m(x);
 }
 
@@ -77,11 +97,12 @@ void c_pacman_psg::execute(int cycles)
             sample += muted ? 0.0f : (float)((sound_rom[waveform * 32 + wave_index] & 0xF) * volume);
 
         }
-
-        sample /= 225.0f;
-        //8x oversampled to ~768kHz
-        for (int i = 0; i < 8; i++) {
-            resampler->process(sample);
+        if (mixer_enabled) {
+            sample /= 225.0f;
+            //8x oversampled to ~768kHz
+            for (int i = 0; i < 8; i++) {
+                resampler->process(sample);
+            }
         }
     }
 }

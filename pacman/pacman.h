@@ -23,6 +23,8 @@ class c_pacman : public c_console
     virtual ~c_pacman();
     c_z80 *z80;
     void set_irq(int irq);
+    void enable_mixer();
+    void disable_mixer();
   protected:
 
     virtual uint8_t read_byte(uint16_t address);

@@ -5,7 +5,7 @@
 #include <functional>
 #include "../console.h"
 
-class c_lr35902;
+class c_sm83;
 class c_gbmapper;
 class c_gbppu;
 class c_gbapu;
@@ -31,7 +31,7 @@ public:
 	int emulate_frame();
 	int IE; //interrput enable register
 	int IF; //interrupt flag register
-	c_lr35902* cpu;
+	c_sm83* cpu;
 	c_gbapu* apu;
     c_gbppu *ppu;
 	uint32_t* get_fb();
