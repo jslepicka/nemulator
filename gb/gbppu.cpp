@@ -1,6 +1,6 @@
 #include "gbppu.h"
 #include "gb.h"
-#include "lr35902.h"
+#include "sm83.h"
 #include "gbapu.h"
 #include <iostream>
 #include <assert.h>

@@ -1,7 +1,7 @@
 #define NOMINMAX
 //#include "windows.h"
 #include "gb.h"
-#include "lr35902.h"
+#include "sm83.h"
 #include "gbmapper.h"
 #include "mbc1.h"
 #include "mbc2.h"
@@ -33,7 +33,7 @@ const std::map<int, c_gb::s_mapper> c_gb::mapper_factory =
 c_gb::c_gb(GB_MODEL model)
 {
     system_name = model == GB_MODEL::CGB ? "Nintendo Game Boy Color" : "Nintendo Game Boy";
-	cpu = new c_lr35902(this);
+	cpu = new c_sm83(this);
 	ppu = new c_gbppu(this);
 	apu = new c_gbapu(this);
 	//ram = new uint8_t[8192];

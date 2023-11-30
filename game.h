@@ -70,6 +70,7 @@ private:
 	ID3D10Buffer *vertex_buffer = NULL;
 	ID3D10Buffer *stretched_vertex_buffer = NULL;
 	ID3D10Buffer* default_vertex_buffer = NULL;
+    ID3D10Buffer *unloaded_vertex_buffer = NULL;
 
 	std::mt19937 mt;
 };

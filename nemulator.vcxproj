@@ -230,7 +230,7 @@
     <ClCompile Include="gb\gb.cpp" />
     <ClCompile Include="gb\gbmapper.cpp" />
     <ClCompile Include="gb\gbppu.cpp" />
-    <ClCompile Include="gb\lr35902.cpp" />
+    <ClCompile Include="gb\sm83.cpp" />
     <ClCompile Include="gb\mbc1.cpp" />
     <ClCompile Include="gb\mbc3.cpp" />
     <ClCompile Include="input_handler.cpp" />
@@ -357,7 +357,7 @@
     <ClInclude Include="gb\gbapu.h" />
     <ClInclude Include="gb\gbmapper.h" />
     <ClInclude Include="gb\gbppu.h" />
-    <ClInclude Include="gb\lr35902.h" />
+    <ClInclude Include="gb\sm83.h" />
     <ClInclude Include="gb\mbc1.h" />
     <ClInclude Include="gb\mbc2.h" />
     <ClInclude Include="gb\mbc3.h" />

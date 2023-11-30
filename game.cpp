@@ -72,9 +72,23 @@ void c_game::OnActivate(bool load)
 {
 	if (ref == 0)
 	{
+        SimpleVertex temp[4];
+        memcpy(temp, default_vertices, sizeof(SimpleVertex) * 4);
+        for (auto &v : temp) {
+            v.tex.x /= 2.0;
+            v.tex.y /= 2.0;
+        }
 		D3D10_SUBRESOURCE_DATA initData;
-		initData.pSysMem = default_vertices;
+		initData.pSysMem = temp;
 		HRESULT hr = d3dDev->CreateBuffer(&bd, &initData, &default_vertex_buffer);
+
+		SimpleVertex unloaded_vertices[4] = {{D3DXVECTOR3(-4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2(0.0f, 0.5f)},
+                                             {D3DXVECTOR3(-4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2(0.0f, 0.0f)},
+                                             {D3DXVECTOR3(4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2(.5f, 0.5f)},
+                                             {D3DXVECTOR3(4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2(.5f, 0.0f)}};
+
+        initData.pSysMem = unloaded_vertices;
+        hr = d3dDev->CreateBuffer(&bd, &initData, &unloaded_vertex_buffer);
 
 		if (!console)
 		{
@@ -280,6 +294,9 @@ void c_game::create_vertex_buffer()
 
 int c_game::get_width()
 {
+    if (console && !console->is_loaded()) {
+        return 256;
+    }
 	switch (type)
 	{
 	case GAME_NES:
@@ -301,6 +318,9 @@ int c_game::get_width()
 
 int c_game::get_height()
 {
+    if (console && !console->is_loaded()) {
+		return 256;
+    }
 	switch (type)
 	{
 	case GAME_NES:
@@ -322,9 +342,8 @@ int c_game::get_height()
 
 ID3D10Buffer* c_game::get_vertex_buffer(int stretched)
 {
-    return vertex_buffer;
 	if (console && !console->is_loaded()) {
-		return default_vertex_buffer;
+		return unloaded_vertex_buffer;
 	}
 	if (stretched) return stretched_vertex_buffer; else return vertex_buffer;
 };

@@ -12,18 +12,14 @@ class c_pacman_vid
     uint8_t read_byte(uint16_t address);
     void write_byte(uint16_t address, uint8_t data);
     void execute(int cycles);
-    uint32_t irq_enabled;
-    int *fb;
+    void build_color_lookup();
 
+    uint32_t *fb;
     uint8_t *tile_rom;
     uint8_t *sprite_rom;
     uint8_t *color_rom;
     uint8_t *pal_rom;
-
-    uint8_t *sprite_ram;
-
     uint8_t *sprite_locs;
-    uint32_t irq_asserted;
   
 private:
     c_pacman *pacman;
@@ -31,8 +27,9 @@ private:
     int *irq;
     uint32_t vid_address;
     uint8_t *vram;
+    uint8_t *sprite_ram;
     
-    void draw_tile(int *&f);
+    void draw_tile(uint32_t *&f);
 
     void draw_background_line(int line);
     void draw_sprite_line(int line);
@@ -44,4 +41,6 @@ private:
 
     static const uint8_t rg_weights[];
     static const uint8_t b_weights[];
+
+    uint32_t colors[32];
 };

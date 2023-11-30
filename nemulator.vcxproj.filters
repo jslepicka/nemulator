@@ -372,7 +372,7 @@
     <ClCompile Include="gb\gbppu.cpp">
       <Filter>Source Files\gb</Filter>
     </ClCompile>
-    <ClCompile Include="gb\lr35902.cpp">
+    <ClCompile Include="gb\sm83.cpp">
       <Filter>Source Files\gb</Filter>
     </ClCompile>
     <ClCompile Include="gb\mbc1.cpp">
@@ -761,7 +761,7 @@
     <ClInclude Include="gb\gbppu.h">
       <Filter>Header Files\gb</Filter>
     </ClInclude>
-    <ClInclude Include="gb\lr35902.h">
+    <ClInclude Include="gb\sm83.h">
       <Filter>Header Files\gb</Filter>
     </ClInclude>
     <ClInclude Include="gb\mbc1.h">
