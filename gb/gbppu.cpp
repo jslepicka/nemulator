@@ -970,11 +970,6 @@ void c_gbppu::write_byte(uint16_t address, uint8_t data)
 		default:
 			//printf("unhandled write to ppu\n");
 			//exit(0);
-            {
-                char buf[64];
-                sprintf(buf, "Unhandled PPU write 0x%02X -> 0x%04X\n", data, address);
-                OutputDebugString(buf);
-            }
             int x = 1;
 			break;
 		}
