@@ -1454,8 +1454,8 @@ void c_nemulator::LoadGames()
 	}
 
 	std::sort(gameList.begin(), gameList.end(), [](const c_game* a, const c_game* b) {
-		std::string aa = a->filename;
-		std::string bb = b->filename;
+		std::string aa = a->title;
+		std::string bb = b->title;
 		for (auto & a_upper : aa) a_upper = toupper(a_upper);
 		for (auto & b_upper : bb) b_upper = toupper(b_upper);
 		return aa < bb;

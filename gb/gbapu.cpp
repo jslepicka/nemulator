@@ -194,11 +194,7 @@ void c_gbapu::write_byte(uint16_t address, uint8_t data)
 
 uint8_t c_gbapu::read_byte(uint16_t address)
 {
-    char buf[64];
-    sprintf(buf, "apu read 0x%04x\n", address);
-    OutputDebugString(buf);
     if (address == 0xFF26) {
-		OutputDebugString("NR52 read\n");
 		return NR52;
     }
     else {
@@ -716,9 +712,6 @@ void c_gbapu::c_noise::write(uint16_t address, uint8_t data)
 	NR44 FF23 TL-- ---- Trigger, Length enable
 	*/
 
-	char buf[64];
-    sprintf(buf, "write to noise: 0x%02x -> 0x%04x\n", data, address);
-    OutputDebugString(buf);
     uint32_t temp;
 	switch (address) {
 	case 0:

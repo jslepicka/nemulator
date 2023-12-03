@@ -42,7 +42,7 @@ int c_pacman::load()
         std::string filename;
         uint8_t *loc;
     } roms[] = {
-        {4096,      0, 0xc1e6ab11, "pacman.6e", prg_rom},
+        {4096,      0, 0xc1e6ab10, "pacman.6e", prg_rom},
         {4096, 0x1000, 0x1a6fb2d4, "pacman.6f", prg_rom},
         {4096, 0x2000, 0xbcdd1beb, "pacman.6h", prg_rom},
         {4096, 0x3000, 0x817d94e3, "pacman.6j", prg_rom},
