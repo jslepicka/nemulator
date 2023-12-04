@@ -451,8 +451,10 @@ void c_z80::execute_opcode()
 				case 7:
 					//JR cc[y-4], d
 					d = (signed char)read_byte(PC++);
-					if (test_flag(y - 4))
-						PC += d;
+                    if (test_flag(y - 4)) {
+                        PC += d;
+                        required_cycles += 5;
+                    }
 					break;
 				}
 				break;
