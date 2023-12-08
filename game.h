@@ -75,4 +75,9 @@ private:
 
 	double width;
     double height;
+
+	int tex_width = 512;
+    int tex_height = 512;
+    int static_width = 256;
+    int static_height = 256;
 };

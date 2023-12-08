@@ -65,10 +65,10 @@ void c_game::OnActivate(bool load)
 {
 	if (ref == 0)
 	{
-		SimpleVertex unloaded_vertices[4] = {{D3DXVECTOR3(-4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2(0.0f, 0.5f)},
+		SimpleVertex unloaded_vertices[4] = {{D3DXVECTOR3(-4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2(0.0f, (double)static_height/tex_height)},
                                              {D3DXVECTOR3(-4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2(0.0f, 0.0f)},
-                                             {D3DXVECTOR3(4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2(.5f, 0.5f)},
-                                             {D3DXVECTOR3(4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2(.5f, 0.0f)}};
+                                             {D3DXVECTOR3(4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2((double)static_width/tex_width, (double)static_height/tex_height)},
+                                             {D3DXVECTOR3(4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2((double)static_width/tex_width, 0.0f)}};
 
         D3D10_SUBRESOURCE_DATA initData;
 		initData.pSysMem = unloaded_vertices;
@@ -170,13 +170,13 @@ void c_game::DrawToTexture(ID3D10Texture2D *tex)
 			for (; x < fb_width; x++) {
 				*p++ = *fb++;
 			}
-			for (; x < 512; x++) {
+			for (; x < tex_width; x++) {
 				*p++ = 0xFF000000;
 			}
 		}
-		for (; y < 512; y++) {
+		for (; y < tex_height; y++) {
 			p = (int*)map.pData + (y) * (map.RowPitch / 4);
-			for (int x = 0; x < 512; x++) {
+			for (int x = 0; x < tex_width; x++) {
 				*p++ = 0xFF000000;
 			}
 		}
@@ -185,10 +185,10 @@ void c_game::DrawToTexture(ID3D10Texture2D *tex)
 	else
 	{
 		unsigned char c = 0;
-		for (int y = 0; y < 256; ++y)
+		for (int y = 0; y < static_height; ++y)
 		{
 			p = (int*)map.pData + y * (map.RowPitch / 4);
-			for (int x = 0; x < 256; ++x)
+			for (int x = 0; x < static_width; ++x)
 			{
 				c = mt() & 0xFF;
 				*p++ = 0xFF << 24 | c << 16 | c << 8 | c;
@@ -215,8 +215,6 @@ void c_game::create_vertex_buffer()
 	}
 
 	//width and height of texture we're drawing to
-	double tex_width = 512.0;
-	double tex_height = 512.0;
 
 	int h = console->get_fb_height();
     int w = console->get_fb_width();
@@ -273,7 +271,7 @@ void c_game::create_vertex_buffer()
 double c_game::get_width()
 {
     if (console && !console->is_loaded()) {
-        return 256.0;
+        return static_width;
     }
     return width;
 }
@@ -281,7 +279,7 @@ double c_game::get_width()
 double c_game::get_height()
 {
     if (console && !console->is_loaded()) {
-		return 256.0;
+        return static_height;
     }
     return height;
 }
