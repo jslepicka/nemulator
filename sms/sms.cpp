@@ -47,11 +47,6 @@ c_sms::~c_sms()
 		delete rom;
 }
 
-int c_sms::get_overscan_color()
-{
-	return vdp->get_overscan_color();
-}
-
 int c_sms::load()
 {
 	sprintf_s(pathFile, "%s\\%s", path, filename);

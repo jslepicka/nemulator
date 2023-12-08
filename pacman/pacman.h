@@ -17,14 +17,17 @@ class c_pacman : public c_console
     int get_sound_bufs(const short **buf_l, const short **buf_r);
     void set_audio_freq(double freq);
     void set_input(int input);
-    int get_fb_height() { return 512; }      
-    int get_fb_width() { return 512; }
+    int get_fb_width() { return 288; }
+    int get_fb_height() { return 224; }
     int *get_video();
     virtual ~c_pacman();
     c_z80 *z80;
     void set_irq(int irq);
     void enable_mixer();
     void disable_mixer();
+    bool is_rotated() { return true; }
+    double get_aspect_ratio() { return 3.0 / 4.0; }
+
   protected:
 
     virtual uint8_t read_byte(uint16_t address);

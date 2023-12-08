@@ -45,8 +45,8 @@ public:
 	std::string filename;
 	GAME_TYPE type;
 	int played = 0;
-	int get_height();
-	int get_width();
+	double get_height();
+	double get_width();
 	struct SimpleVertex
 	{
 		D3DXVECTOR3 pos;
@@ -65,7 +65,6 @@ private:
 	std::string path;
 	std::string sram_path;
 
-	static const SimpleVertex default_vertices[4];
 	D3D10_BUFFER_DESC bd;
 	ID3D10Buffer *vertex_buffer = NULL;
 	ID3D10Buffer *stretched_vertex_buffer = NULL;
@@ -73,4 +72,7 @@ private:
     ID3D10Buffer *unloaded_vertex_buffer = NULL;
 
 	std::mt19937 mt;
+
+	double width;
+    double height;
 };

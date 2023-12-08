@@ -17,7 +17,6 @@ class c_vdp
     void draw_scanline();
     int get_scanline();
     void eval_sprites();
-    int get_overscan_color();
 
   private:
     int sprite_count; //number of sprites on line

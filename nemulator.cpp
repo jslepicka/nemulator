@@ -1052,7 +1052,7 @@ void c_nemulator::UpdateScene(double dt)
 				splash_stage++;
 				if (benchmark_mode || disable_splash) {
 					splash_done = 1;
-                    if (benchmark_mode) {
+                    if (gameList.size() > 0 && benchmark_mode) {
 						start_game();
                     }
 				}
