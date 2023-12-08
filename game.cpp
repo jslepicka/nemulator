@@ -15,13 +15,6 @@ std::string c_game::get_filename()
 	return filename;
 }
 
-const c_game::SimpleVertex c_game::default_vertices[4] = {
-		{ D3DXVECTOR3(-4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2(0.0f, 0.90625f) },
-		{ D3DXVECTOR3(-4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2(0.0f, 0.03125f) },
-		{ D3DXVECTOR3(4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2(1.0f, 0.90625f) },
-		{ D3DXVECTOR3(4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2(1.0f, 0.03125f) },
-};
-
 c_game::c_game(GAME_TYPE type, std::string path, std::string filename, std::string sram_path) :
 	mt(time(0))
 {
@@ -72,23 +65,14 @@ void c_game::OnActivate(bool load)
 {
 	if (ref == 0)
 	{
-        SimpleVertex temp[4];
-        memcpy(temp, default_vertices, sizeof(SimpleVertex) * 4);
-        for (auto &v : temp) {
-            v.tex.x /= 2.0;
-            v.tex.y /= 2.0;
-        }
-		D3D10_SUBRESOURCE_DATA initData;
-		initData.pSysMem = temp;
-		HRESULT hr = d3dDev->CreateBuffer(&bd, &initData, &default_vertex_buffer);
-
 		SimpleVertex unloaded_vertices[4] = {{D3DXVECTOR3(-4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2(0.0f, 0.5f)},
                                              {D3DXVECTOR3(-4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2(0.0f, 0.0f)},
                                              {D3DXVECTOR3(4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2(.5f, 0.5f)},
                                              {D3DXVECTOR3(4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2(.5f, 0.0f)}};
 
-        initData.pSysMem = unloaded_vertices;
-        hr = d3dDev->CreateBuffer(&bd, &initData, &unloaded_vertex_buffer);
+        D3D10_SUBRESOURCE_DATA initData;
+		initData.pSysMem = unloaded_vertices;
+        HRESULT hr = d3dDev->CreateBuffer(&bd, &initData, &unloaded_vertex_buffer);
 
 		if (!console)
 		{
@@ -230,114 +214,76 @@ void c_game::create_vertex_buffer()
 		vertex_buffer = NULL;
 	}
 
-	SimpleVertex vertices[4];
-	memcpy(vertices, default_vertices, sizeof(default_vertices));
+	//width and height of texture we're drawing to
+	double tex_width = 512.0;
+	double tex_height = 512.0;
 
-	if (type == GAME_SMS)
-	{
-		vertices[0].tex.y = vertices[2].tex.y = (192.0 + 14.0) / 256.0;
-		vertices[1].tex.y = vertices[3].tex.y = -14.0 / 256.0;
-	}
-	else if (type == GAME_GG)
-	{
-		vertices[0].tex.y = vertices[2].tex.y = (144.0 + 24.0) / 256.0;
-		vertices[1].tex.y = vertices[3].tex.y = 24.0 / 256.0;
+	int h = console->get_fb_height();
+    int w = console->get_fb_width();
+    auto [crop_l, crop_r, crop_t, crop_b] = console->get_crop();
 
-		vertices[0].tex.x = vertices[1].tex.x = 48.0 / 256.0;
-		vertices[2].tex.x = vertices[3].tex.x = (256.0 - 48.0) / 256.0;
-	}
-	else if (type == GAME_GB || type == GAME_GBC)
-	{
-		vertices[0].tex.y = vertices[2].tex.y = 144.0 / 256.0;
-		vertices[1].tex.y = vertices[3].tex.y = 0.0 / 256.0;
+	double w_adjust = 0.0;
+    double h_adjust = 0.0;
+	
+	double aspect_ratio = console->get_aspect_ratio();
 
-		//aspect ratio adjustment
-		//gb ratio = 4.7f/4.3f
-		//(((1.3333 / 1.093) * 160) - 160) / 2
-		//game boy screen dimensions = 4.7 cm x 4.3 cm
-		auto adjust = (((4.0 / 3.0) / (4.7 / 4.3) * 160.0) - 160.0) / 2.0;
-		vertices[0].tex.x = vertices[1].tex.x = -adjust / 256.0;
-		vertices[2].tex.x = vertices[3].tex.x = (256.0 - 96.0 + adjust) / 256.0;
-	}
-    else if (type == GAME_PACMAN || type == GAME_MSPACMAN) {
-
-		auto adjust = ((4.0 / 3.0) * 288.0 - 224.0) / 2.0;
-        vertices[0].tex.x = 288.0/512.0;
-        vertices[0].tex.y = (224.0 + adjust)/ 512.0; //224/256
-        
-		vertices[1].tex.x = 0.0;
-        vertices[1].tex.y = (224.0 + adjust)/ 512.0;
-        
-		vertices[2].tex.x = 288.0/512.0;
-        vertices[2].tex.y = -adjust/512.0;
-
-        vertices[3].tex.x = 0.0;
-        vertices[3].tex.y = -adjust/512.0;
-
-    }
-
-	//using 512x512 texture
-    if (type != GAME_PACMAN && type != GAME_MSPACMAN) {
-        for (auto &v : vertices) {
-            v.tex.x /= 2.0;
-            v.tex.y /= 2.0;
+    if (aspect_ratio != 0.0) {
+        if (aspect_ratio > 1.0) {
+            w_adjust = ((4.0 / 3.0) / aspect_ratio * w - w) / 2.0;
+        }
+        else {
+            h_adjust = ((4.0 / 3.0) / aspect_ratio * h - h) / 2.0;
         }
     }
 
+	double w_start = (crop_l - w_adjust);
+    double w_end = (w - crop_r + w_adjust);
+    double h_start = (crop_t - h_adjust);
+    double h_end = (h - crop_b + h_adjust);
+    width = w_end - w_start;
+    height = h_end - h_start;
+
+	w_start /= tex_width;
+    w_end /= tex_width;
+    h_start /= tex_height;
+    h_end /= tex_height;
+
+	SimpleVertex vertices[4] = {
+        {D3DXVECTOR3(-4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2(w_start, h_end)},
+        {D3DXVECTOR3(-4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2(w_start, h_start)},
+        {D3DXVECTOR3(4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2(w_end, h_end)},
+        {D3DXVECTOR3(4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2(w_end, h_start)},
+    };
+
+	if (console->is_rotated()) {
+        vertices[0].tex.x = vertices[2].tex.x = w_end;
+        vertices[1].tex.x = vertices[3].tex.x = w_start;
+        vertices[0].tex.y = vertices[1].tex.y = h_end;
+        vertices[2].tex.y = vertices[3].tex.y = h_start;
+    }
 
 	D3D10_SUBRESOURCE_DATA initData;
 	initData.pSysMem = vertices;
 	HRESULT hr = d3dDev->CreateBuffer(&bd, &initData, &vertex_buffer);
 }
 
-//TODO: this should probably be handled by console
-
-int c_game::get_width()
+//return the pixel width/height accounting for cropping and aspect ratio adjustment
+//this is the number of visible pixels in the texture.  It's needed by the shader
+//for scaling purposes.
+double c_game::get_width()
 {
     if (console && !console->is_loaded()) {
-        return 256;
+        return 256.0;
     }
-	switch (type)
-	{
-	case GAME_NES:
-		return 256;
-	case GAME_SMS:
-		return 256;
-	case GAME_GG:
-		return 160;
-	case GAME_GB:
-    case GAME_GBC:
-		return 160;
-    case GAME_PACMAN:
-    case GAME_MSPACMAN:
-        return 288;
-	default:
-		return 256;
-	}
+    return width;
 }
 
-int c_game::get_height()
+double c_game::get_height()
 {
     if (console && !console->is_loaded()) {
-		return 256;
+		return 256.0;
     }
-	switch (type)
-	{
-	case GAME_NES:
-		return 224;
-	case GAME_SMS:
-		return 192 + 28;
-	case GAME_GG:
-		return 144;
-	case GAME_GB:
-    case GAME_GBC:
-		return 144;
-    case GAME_PACMAN:
-    case GAME_MSPACMAN:
-        return 224;
-	default:
-		return 256;
-	}
+    return height;
 }
 
 ID3D10Buffer* c_game::get_vertex_buffer(int stretched)

@@ -457,17 +457,3 @@ void c_vdp::generate_palette()
 		}
 	}
 }
-
-int c_vdp::get_overscan_color()
-{
-	switch (sms->get_model())
-	{
-    case SMS_MODEL::SMS:
-		return pal_sms[cram[0x10 | (registers[7] & 0xF)]];
-    case SMS_MODEL::GAMEGEAR:
-		//this is wrong
-		return pal_gg[cram[0x10 | (registers[7] & 0xF)]];
-	default:
-		return 0;
-	}
-}

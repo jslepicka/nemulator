@@ -56,6 +56,7 @@ public:
 	//int is_color() { return color; }
 
 	GB_MODEL get_model() const { return model; }
+	double get_aspect_ratio() { return 4.7 / 4.3; }
 
 private:
 	c_gbmapper* mapper;

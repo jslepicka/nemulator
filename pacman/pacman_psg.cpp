@@ -98,7 +98,7 @@ void c_pacman_psg::execute(int cycles)
 
         }
         if (mixer_enabled) {
-            sample /= 225.0f;
+            sample /= (225.0f * 3.0f); //this scaling is arbitrary
             //8x oversampled to ~768kHz
             for (int i = 0; i < 8; i++) {
                 resampler->process(sample);

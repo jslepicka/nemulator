@@ -8,8 +8,8 @@ c_pacman_vid::c_pacman_vid(c_pacman *pacman, int *irq)
 {
     this->pacman = pacman;
     this->irq = irq;
-    fb = new uint32_t[512 * 512];
-    memset(fb, 0x00, sizeof(uint32_t) * 512 * 512);
+    fb = new uint32_t[288 * 224];
+    memset(fb, 0x00, sizeof(uint32_t) * 288 * 224);
     vram = new uint8_t[2048];
     memset(vram, 0, 2048);
     sprite_ram = new uint8_t[16];
@@ -74,7 +74,7 @@ void c_pacman_vid::write_byte(uint16_t address, uint8_t data)
 
 void c_pacman_vid::draw_background_line(int line)
 {
-    uint32_t *f = fb + line * 512;
+    uint32_t *f = fb + line * 288;
 
     vid_address = 0x3C2;
     vid_address += 0x1 * (line / 8);
@@ -159,7 +159,7 @@ void c_pacman_vid::draw_sprite_line(int line)
 
             uint8_t chr_offset = sprite_y_flip ? 0 : 8;
             uint8_t chr_data;
-            uint32_t *f = fb + line * 512 + sprite_x;
+            uint32_t *f = fb + line * 288 + sprite_x;
             for (int x = 0; x < 16; x++) {
                 if ((x & 0x3) == 0) {
                     int a = chr_loc + chr_offset;

@@ -52,6 +52,11 @@ public:
 	void disable_mixer();
 	int get_fb_width() { return 256; }
 	int get_fb_height() { return 240; }
+    std::tuple<int, int, int, int> get_crop()
+    {
+		//l, r, t, b
+        return {0, 0, 8, 8};
+    }
 
 private:
 	int num_apu_samples;

@@ -18,8 +18,8 @@ public:
 	std::string get_description() { return description; }
 	int is_active;
 	virtual ID3D10Buffer *get_vertex_buffer(int stretched) = 0;
-	virtual int get_height() = 0;
-	virtual int get_width() = 0;
+	virtual double get_height() = 0;
+	virtual double get_width() = 0;
 private:
 	virtual void OnActivate(bool load) {};
 	virtual void OnDeactivate() {};

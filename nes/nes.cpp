@@ -403,9 +403,10 @@ int c_nes::reset()
 	mapper->CloseSram();
 	cpu->nes = this;
 	apu2->reset();
+    ppu->cpu = cpu;
 	ppu->reset();
 	ppu->mapper = mapper;
-	ppu->cpu = cpu;
+	
 	ppu->apu2 = apu2;
 	ppu->limit_sprites = limit_sprites;
 	mapper->ppu = ppu;
