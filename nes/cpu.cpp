@@ -3,11 +3,6 @@
 #include "nes.h"
 #include "ppu.h"
 
-#if defined(DEBUG) | defined(_DEBUG)
-#define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
-#define new DEBUG_NEW
-#endif
-
 #define INLINE __forceinline
 //#define INLINE
 #define PUSH(x) nes->write_byte(SP-- | 0x100, x)
@@ -135,8 +130,8 @@ void c_cpu::do_sprite_dma(unsigned char* dst, int source_address)
 
 void c_cpu::execute_opcode()
 {
-	int sl = nes->ppu->current_scanline;
-	int c = nes->ppu->current_cycle;
+	//int sl = nes->ppu->current_scanline;
+	//int c = nes->ppu->current_cycle;
 	switch (opcode)
 	{
 	case 0x00: BRK(); break;
@@ -460,8 +455,8 @@ int c_cpu::irq_checked()
 
 void c_cpu::execute_nmi()
 {
-	int sl = nes->ppu->current_scanline;
-	int c = nes->ppu->current_cycle;
+	//int sl = nes->ppu->current_scanline;
+	//int c = nes->ppu->current_cycle;
 	nmi_delay = irq_checked();
 	do_nmi = true;
 }

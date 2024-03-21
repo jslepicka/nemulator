@@ -1,9 +1,7 @@
 #include "Game.h"
 #include <crtdbg.h>
-#if defined(DEBUG) | defined(_DEBUG)
-#define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
-#define new DEBUG_NEW
-#endif
+#include <immintrin.h>
+
 extern HANDLE g_start_event;
 
 extern ID3D10Device *d3dDev;
@@ -40,8 +38,8 @@ c_game::c_game(GAME_TYPE type, std::string path, std::string filename, std::stri
 
 c_game::~c_game()
 {
-	if (console)
-		delete console;
+	/*if (console)
+		delete console;*/
 	if (vertex_buffer)
 	{
 		vertex_buffer->Release();
@@ -79,31 +77,32 @@ void c_game::OnActivate(bool load)
 			switch (type)
 			{
 			case GAME_NES:
-				console = new c_nes();
+                console = std::make_unique<c_nes>();
 				break;
 			case GAME_SMS:
-				console = new c_sms(SMS_MODEL::SMS);
+                console = std::make_unique<c_sms>(SMS_MODEL::SMS);
 				break;
 			case GAME_GG:
-				console = new c_sms(SMS_MODEL::GAMEGEAR);
+                console = std::make_unique<c_sms>(SMS_MODEL::GAMEGEAR);
 				break;
 			case GAME_GB:
-				console = new c_gb(GB_MODEL::DMG);
+                console = std::make_unique<c_gb>(GB_MODEL::DMG);
 				break;
             case GAME_GBC:
-                console = new c_gb(GB_MODEL::CGB);
+                console = std::make_unique<c_gb>(GB_MODEL::CGB);
                 break;
             case GAME_PACMAN:
-                console = new c_pacman();
+                console = std::make_unique<c_pacman>();
                 break;
             case GAME_MSPACMAN:
-                console = new c_mspacman();
+                console = std::make_unique<c_mspacman>();
                 break;
 			default:
 				break;
 			}
 			if (console)
 			{
+				console->get_display_info(&display_info);
 				console->set_emulation_mode(emulation_mode);
 				strcpy_s(console->filename, MAX_PATH, filename.c_str());
 				strcpy_s(console->path, MAX_PATH, path.c_str());
@@ -113,8 +112,6 @@ void c_game::OnActivate(bool load)
 				if (console->is_loaded())
 					console->disable_mixer();
 				create_vertex_buffer();
-				fb_width = console->get_fb_width();
-				fb_height = console->get_fb_height();
 			}
 		}
 		is_active = 1;
@@ -131,8 +128,9 @@ void c_game::OnDeactivate()
 	{
 		if (console)
 		{
-			delete console;
-			console = 0;
+			//delete console;
+            console.reset();
+			//console = 0;
 		}
 		if (vertex_buffer)
 		{
@@ -164,10 +162,10 @@ void c_game::DrawToTexture(ID3D10Texture2D *tex)
 	{
 		int *fb = console->get_video();
 		int y = 0;
-		for (; y < fb_height; y++) {
+		for (; y < display_info.fb_height; y++) {
 			p = (int*)map.pData + (y) * (map.RowPitch / 4);
 			int x = 0;
-			for (; x < fb_width; x++) {
+			for (; x < display_info.fb_width; x++) {
 				*p++ = *fb++;
 			}
 			for (; x < tex_width; x++) {
@@ -176,9 +174,14 @@ void c_game::DrawToTexture(ID3D10Texture2D *tex)
 		}
 		for (; y < tex_height; y++) {
 			p = (int*)map.pData + (y) * (map.RowPitch / 4);
-			for (int x = 0; x < tex_width; x++) {
-				*p++ = 0xFF000000;
-			}
+            __m128i *p2 = (__m128i*)((int *)map.pData + (y) * (map.RowPitch / 4));
+            __m128i blank = _mm_set1_epi32(0xFF000000);
+			//for (int x = 0; x < tex_width; x++) {
+			//	*p++ = 0xFF000000;
+			//}
+            for (int x = 0; x < tex_width / 4; x++) {
+                *p2++ = blank;
+            }
 		}
 
 	}
@@ -215,15 +218,13 @@ void c_game::create_vertex_buffer()
 	}
 
 	//width and height of texture we're drawing to
-
-	int h = console->get_fb_height();
-    int w = console->get_fb_width();
-    auto [crop_l, crop_r, crop_t, crop_b] = console->get_crop();
+	int h = display_info.fb_height;
+    int w = display_info.fb_width;
 
 	double w_adjust = 0.0;
     double h_adjust = 0.0;
-	
-	double aspect_ratio = console->get_aspect_ratio();
+
+	double aspect_ratio = display_info.aspect_ratio;
 
     if (aspect_ratio != 0.0) {
         if (aspect_ratio > 1.0) {
@@ -234,10 +235,10 @@ void c_game::create_vertex_buffer()
         }
     }
 
-	double w_start = (crop_l - w_adjust);
-    double w_end = (w - crop_r + w_adjust);
-    double h_start = (crop_t - h_adjust);
-    double h_end = (h - crop_b + h_adjust);
+	double w_start = (display_info.crop_left - w_adjust);
+    double w_end = (w - display_info.crop_right + w_adjust);
+    double h_start = (display_info.crop_top - h_adjust);
+    double h_end = (h - display_info.crop_bottom + h_adjust);
     width = w_end - w_start;
     height = h_end - h_start;
 
@@ -253,7 +254,7 @@ void c_game::create_vertex_buffer()
         {D3DXVECTOR3(4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2(w_end, h_start)},
     };
 
-	if (console->is_rotated()) {
+	if (display_info.rotated) {
         vertices[0].tex.x = vertices[2].tex.x = w_end;
         vertices[1].tex.x = vertices[3].tex.x = w_start;
         vertices[0].tex.y = vertices[1].tex.y = h_end;

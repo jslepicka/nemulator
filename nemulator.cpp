@@ -422,6 +422,11 @@ void c_nemulator::RunGames()
 		}
 
 		g->console->emulate_frame();
+        if (benchmark_mode) {
+            if (++benchmark_frame_count == benchmark_frames) {
+                exit(0);
+            }
+        }
 	}
 
 }
@@ -839,7 +844,7 @@ void c_nemulator::leave_game()
 	joy1 = NULL;
 	joy2 = NULL;
 	sound->stop();
-	c_console *n = ((c_game*)texturePanels[selectedPanel]->GetSelected())->console;
+	c_console *n = ((c_game*)texturePanels[selectedPanel]->GetSelected())->console.get();
 	n->disable_mixer();
 	inGame = false;
 	for (int i = 0; i < num_texture_panels; i++)
@@ -851,7 +856,7 @@ void c_nemulator::leave_game()
 	c_game* g = (c_game*)texturePanels[selectedPanel]->GetSelected();
 	if (g->type == GAME_NES)
 	{
-		c_nes* n = (c_nes*)g->console;
+		c_nes* n = (c_nes*)g->console.get();
 		if (n->get_mapper_number() == 258) { //NFS
 			nsf_stats->dead = true;
 			nsf_stats = NULL;
@@ -863,7 +868,7 @@ void c_nemulator::start_game()
 {
 	//todo: come back and fix has played logic
 	c_game *g = (c_game*)texturePanels[selectedPanel]->GetSelected();
-	c_console *n = g->console;
+	c_console *n = g->console.get();
 	if (n && n->is_loaded())
 	{
 		g->played = 1;
@@ -882,13 +887,13 @@ void c_nemulator::start_game()
 
 		if (g->type == GAME_NES)
 		{
-			c_nes* n = (c_nes*)g->console;
+			c_nes* n = (c_nes*)g->console.get();
 			if (n->get_mapper_number() == 258) { //NFS
 				nsf_stats = new c_nsf_stats();
 				nsf_stats->x = eye_x;
 				nsf_stats->y = eye_y;
 				nsf_stats->z = (float)(eye_z + (1.0 / tan(fov_h / 2)));
-				add_task(nsf_stats, g->console);
+				add_task(nsf_stats, g->console.get());
 			}
 
 		}
@@ -986,7 +991,7 @@ int c_nemulator::update(double dt, int child_result, void *params)
 					break;
 				case 1: //reset
 					{
-						c_console *n = ((c_game*)texturePanels[selectedPanel]->GetSelected())->console;
+						c_console *n = ((c_game *)texturePanels[selectedPanel]->GetSelected())->console.get();
 						n->reset();
 						input_buffer_index = 0;
 						input_buffer_playback = 0;
@@ -1098,7 +1103,7 @@ void c_nemulator::UpdateScene(double dt)
 	{
 		if (inGame)
 		{
-			c_console *console = ((c_game*)texturePanels[selectedPanel]->GetSelected())->console;
+			c_console *console = ((c_game*)texturePanels[selectedPanel]->GetSelected())->console.get();
 
 			const short* buf_l;
 			const short* buf_r;
@@ -1146,7 +1151,7 @@ void c_nemulator::UpdateScene(double dt)
 		if (stats)
 		{
 			c_game* game = (c_game*)texturePanels[selectedPanel]->GetSelected();
-			c_console *console = game->console;
+			c_console *console = game->console.get();
 			stats->report_stat("fps", fps);
 			stats->report_stat("freq", sound->get_freq());
 			stats->report_stat("audio position", s);
@@ -1198,7 +1203,7 @@ void c_nemulator::UpdateScene(double dt)
 		}
 		if (nsf_stats) { //NSF
 			c_game* game = (c_game*)texturePanels[selectedPanel]->GetSelected();
-			c_console* console = game->console;
+			c_console* console = game->console.get();
 			c_nes* n = (c_nes*)console;
 			nsf_stats->report_stat("song #", n->read_byte(0x54F7) + 1);
 		}
@@ -1421,15 +1426,14 @@ void c_nemulator::LoadGames()
 
 			if (preload)
 			{
-				char *buf = new char[65536];
+                auto buf = std::make_unique_for_overwrite<char[]>(65536);
 				std::ifstream file;
 				file.open(filename, std::ios_base::in | std::ios_base::binary);
 				if (file.is_open())
 				{
-					while (file.read(buf, 65536));
+					while (file.read(buf.get(), 65536));
 					file.close();
 				}
-				delete[] buf;
 			}
 
 			c_game *g = new c_game(li.type, li.rom_path, fn, li.save_path);
@@ -1481,7 +1485,7 @@ int c_nemulator::take_screenshot()
 {
 	bool mask_sides = ((c_game*)texturePanels[selectedPanel]->GetSelected())->mask_sides;
 	c_game *g = (c_game*)texturePanels[selectedPanel]->GetSelected();
-	c_console *n = g->console;
+	c_console *n = g->console.get();
 	if (n->is_loaded())
 	{
 		std::string screenshot_path = config->get_string("screenshot_path", "c:\\roms\\screenshots");

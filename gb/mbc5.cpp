@@ -27,7 +27,8 @@ void c_mbc5::write_byte(uint16_t address, uint8_t data)
         case 0xA:
         case 0xB:
             if (ram && ram_enable)
-                *(ram + (((address & 0x1FFF) + ram_bank * 0x2000) % ram_size)) = data;
+                 //*(ram + (((address & 0x1FFF) + ram_bank * 0x2000) % ram_size)) = data;
+                ram[((address & 0x1FFF) + ram_bank * 0x2000) % ram_size] = data;
             break;
         default: {
             int x = 1;
@@ -51,7 +52,8 @@ uint8_t c_mbc5::read_byte(uint16_t address)
             break;
         case 5: //A000-BFFF ram
             if (ram && ram_enable)
-                return *(ram + (((address & 0x1FFF) + ram_bank * 0x2000) % ram_size));
+                 //return *(ram + (((address & 0x1FFF) + ram_bank * 0x2000) % ram_size));
+                return ram[((address & 0x1FFF) + ram_bank * 0x2000) % ram_size];
             break;
     }
     return 0;

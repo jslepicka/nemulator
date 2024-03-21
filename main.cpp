@@ -1,21 +1,17 @@
 #include "D3d10App.h"
 #include "nemulator.h"
 #include "benchmark.h""
+#include <memory>
 
-D3d10App *app;
+std::unique_ptr<D3d10App> app;
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdPline, int nShowCmd)
 {
-//#if defined(DEBUG) | defined(_DEBUG)
-//	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF | _CRTDBG_CHECK_ALWAYS_DF | _CRTDBG_DELAY_FREE_MEM_DF);
-//#define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
-//#define new DEBUG_NEW
-//#endif
-	app = new D3d10App(hInstance);
-	app->Init((char*)"nemulator.ini", new c_nemulator(), NULL);
+	app = std::make_unique<D3d10App>(hInstance);
+    auto nemulator = std::make_unique<c_nemulator>();
+	app->Init((char*)"nemulator.ini", nemulator.get(), NULL);
 	app->SetCaption("nemulator 4.5");
 	int retval = app->Run();
-	delete app;
 	return retval;
 }
 

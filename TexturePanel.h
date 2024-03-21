@@ -8,12 +8,6 @@
 
 #define ReleaseCOM(x) { if(x) {x->Release(); x = 0; } }
 
-#include <crtdbg.h>
-#if defined(DEBUG) | defined(_DEBUG)
-#define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
-#define new DEBUG_NEW
-#endif
-
 class TexturePanel
 {
 public:
@@ -36,8 +30,7 @@ public:
 	void move_to_column(int column);
 	void move_to_char(char c);
 	void Zoom();
-	bool Changed();
-	bool in_focus; //is this panel selected/does it have focus?
+    bool Changed();
 	int GetSelectedColumn();
 	TexturePanelItem* GetSelected();
 	TexturePanel *prev;
@@ -61,6 +54,7 @@ public:
 	int state;
 	bool dim;
 	bool selectable;
+    bool in_focus; //is this panel selected/does it have focus?
 	float camera_distance;
 	int *get_valid_chars();
 	void set_sharpness(float factor);
@@ -94,18 +88,13 @@ private:
 	};
 
 	int scrolls;
-
-	bool changed; //has the panel's items changed?
-	bool prev_in_focus; //previous selected state
-
 	int rows;
 	int columns;
-
-
 	int prevState;
-
 	int numItems;
 
+	bool changed; //has the panel's items changed?
+    bool prev_in_focus; //previous selected state
 	bool on_first_page; //are we on the first page of this panel?
 	int first_item; //index to the first item on the current page
 	int last_item; //index to the last item on the current page
@@ -115,6 +104,8 @@ private:
 	void DrawItem(c_item_container *item, int draw_border, float x, float y, float z, float c = 1.0f);
 
 	float scrollOffset;
+    bool scroll_changed_page;
+    bool scrollRepeat;
 	void update_scroll(double dt);
 
 	void update_menu(double dt);
@@ -132,10 +123,7 @@ private:
 		SCROLL_RIGHT
 	};
 	int scroll_dir;
-	double scrollTimer;
-	bool scroll_changed_page;
-	bool scrollRepeat;
-
+    double scrollTimer;
 	double zoomTimer;
 	enum {
 		ZOOMING_OUT,

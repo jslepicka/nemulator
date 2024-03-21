@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <queue>
 #include <atomic>
+#include <memory>
 
 class c_gb;
 class c_gbppu
@@ -13,7 +14,7 @@ public:
 	void reset();
 	uint8_t read_byte(uint16_t address);
 	void write_byte(uint16_t address, uint8_t data);
-	uint32_t* get_fb() { return fb; }
+	uint32_t* get_fb() { return fb.get(); }
     void on_stop();
 
   private:
@@ -44,10 +45,11 @@ public:
 
 	int cpu_divider;
 
-	uint8_t* vram;
-    uint8_t *vram1;
-
-	uint8_t* oam;
+	std::unique_ptr<uint8_t[]> vram;
+    std::unique_ptr<uint8_t[]> vram1;
+    std::unique_ptr<uint8_t[]> oam;
+    std::unique_ptr<uint32_t[]> fb;
+    std::unique_ptr<uint32_t[]> fb_back;
 
 	void eval_sprites(int y);
 	struct s_sprite {
@@ -58,9 +60,6 @@ public:
 	};
 
 	s_sprite sprite_buffer[10];
-
-	uint32_t* fb;
-	uint32_t* fb_back;
 
 	uint32_t* f;
 

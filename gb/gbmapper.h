@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <fstream>
 #include <string>
+#include <memory>
 
 class c_gbmapper
 {
@@ -15,7 +16,7 @@ class c_gbmapper
     virtual void reset();
     virtual void config_ram(int ram_size);
     uint8_t *rom;
-    uint8_t *ram;
+    std::unique_ptr<uint8_t[]> ram;
 
   private:
   protected:

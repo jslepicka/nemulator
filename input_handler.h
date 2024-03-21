@@ -3,6 +3,7 @@
 #include "windows.h"
 #include "mmsystem.h"
 #include <stdint.h>
+#include <memory>
 
 class c_input_handler
 {
@@ -66,7 +67,9 @@ protected:
 		int joy;
 		int joy_button;
 		int ack;
-	} *state;
+	};
+
+	std::unique_ptr<s_state[]> state;
 
 	int get_key_state(int key);
 	int get_joy_state(int joy, int joy_button);

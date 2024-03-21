@@ -2,6 +2,7 @@
 #include "ines.h"
 #include "windows.h"
 #include "mirroring_types.h"
+#include <memory>
 
 class c_ppu;
 class c_cpu;
@@ -69,7 +70,7 @@ protected:
 	unsigned char vram[4096];
 	unsigned char *name_table[8];
 
-	unsigned char *sram;
+    std::unique_ptr<unsigned char[]> sram;
 	int prgRomPageCount8k;
 	int prgRomPageCount16k;
 	int prgRomPageCount32k;

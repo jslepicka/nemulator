@@ -7,6 +7,12 @@
 c_pacman::c_pacman()
 {
     system_name = "Arcade";
+
+    display_info.fb_width = 288;
+    display_info.fb_height = 224;
+    display_info.aspect_ratio = 3.0 / 4.0;
+    display_info.rotated = true;
+
     prg_rom = new uint8_t[16 * 1024];
     work_ram = new uint8_t[1 * 1024];
     memset(prg_rom, 0, 16 * 1024);
@@ -46,10 +52,10 @@ int c_pacman::load()
         {4096, 0x1000, 0x1a6fb2d4, "pacman.6f", prg_rom},
         {4096, 0x2000, 0xbcdd1beb, "pacman.6h", prg_rom},
         {4096, 0x3000, 0x817d94e3, "pacman.6j", prg_rom},
-        {4096,      0, 0x0c944964, "pacman.5e", pacman_vid->tile_rom},
-        {4096,      0, 0x958fedf9, "pacman.5f", pacman_vid->sprite_rom},
-        {  32,      0, 0x2fc650bd, "82s123.7f", pacman_vid->color_rom},
-        { 256,      0, 0x3eb3a8e4, "82s126.4a", pacman_vid->pal_rom},
+        {4096,      0, 0x0c944964, "pacman.5e", pacman_vid->tile_rom.get()},
+        {4096,      0, 0x958fedf9, "pacman.5f", pacman_vid->sprite_rom.get()},
+        {  32,      0, 0x2fc650bd, "82s123.7f", pacman_vid->color_rom.get()},
+        { 256,      0, 0x3eb3a8e4, "82s126.4a", pacman_vid->pal_rom.get()},
         { 256,      0, 0xa9cc86bf, "82s126.1m", pacman_psg->sound_rom},
         { 256,  0x100, 0x77245b66, "82s126.3m", pacman_psg->sound_rom},
     };
@@ -127,7 +133,7 @@ void c_pacman::set_input(int input)
 
 int *c_pacman::get_video()
 {
-    return (int*)pacman_vid->fb;
+    return (int*)pacman_vid->fb.get();
 }
 
 /*

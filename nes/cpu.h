@@ -21,6 +21,7 @@ public:
 	void add_cycle();
 
 private:
+    int cycles;
 	unsigned char A;				//Accumulator
 	unsigned char X;				//X Index Register
 	unsigned char Y;				//Y Index Register
@@ -39,6 +40,7 @@ private:
 	unsigned char M;				//Memory
 	unsigned short PC;			//Program Counter
 	unsigned short address;
+    bool fetch_opcode;
 	int nmi_delay;
 	int irq_delay;
 	int do_apu_dma;
@@ -47,18 +49,17 @@ private:
 	bool irq_pending;
 	bool nmi_pending;
 	int dma_pos;
+    int required_cycles;
 	unsigned char* dma_dst;
 	int dma_src;
 
 	int opcode;
-	int required_cycles;
 	void execute_opcode();
-	bool fetch_opcode;
+	
 
 	static const int cycle_table[260];
 
 	void branch(int Condition);
-	int cycles;
 
 	//Addressing modes
 	void immediate();

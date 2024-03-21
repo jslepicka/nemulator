@@ -16,16 +16,15 @@ uint32_t c_vdp::pal_gg[4096];
 c_vdp::c_vdp(c_sms* sms)
 {
 	this->sms = sms;
-	vram = new unsigned char[16384];
-	frame_buffer = new int[256 * 256];
+	//vram = new unsigned char[16384];
+    vram = std::make_unique_for_overwrite<unsigned char[]>(16384);
+	frame_buffer = std::make_unique_for_overwrite<int[]>(256 * 256);
 	generate_palette();
 }
 
 
 c_vdp::~c_vdp()
 {
-	delete[] frame_buffer;
-	delete[] vram;
 }
 
 void c_vdp::reset()
@@ -43,9 +42,9 @@ void c_vdp::reset()
 	read_buffer = 0;
 	vram_write = 0;
 	memset(registers, 0, sizeof(registers));
-	memset(vram, 0, 16384);
+	//memset(vram, 0, 16384);
 	memset(cram, 0, sizeof(cram));
-	memset(frame_buffer, 0, 256 * 256);
+	//memset(frame_buffer, 0, 256 * 256);
 	status = 0;
 }
 
@@ -399,7 +398,7 @@ int c_vdp::get_scanline()
 
 int* c_vdp::get_frame_buffer()
 {
-	return frame_buffer;
+	return frame_buffer.get();
 }
 
 __forceinline int c_vdp::lookup_color(int palette_index)

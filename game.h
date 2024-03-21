@@ -9,6 +9,7 @@
 #include <random>
 #include "TexturePanelItem.h"
 #include "d3dx10.h"
+#include <memory>
 
 enum GAME_TYPE
 {
@@ -31,7 +32,8 @@ public:
 	~c_game();
 	HANDLE eventStart;
 	HANDLE eventDone;
-	c_console* console;
+	//c_console* console;
+    std::unique_ptr<c_console> console;
 	void DrawToTexture(ID3D10Texture2D *tex);
 	ID3D10Buffer *get_vertex_buffer(int stretched);
 	bool Selectable();
@@ -59,8 +61,6 @@ private:
 	void create_vertex_buffer();
 
 	int ref;
-	int fb_width;
-	int fb_height;
 
 	std::string path;
 	std::string sram_path;
@@ -80,4 +80,6 @@ private:
     int tex_height = 512;
     int static_width = 256;
     int static_height = 256;
+
+	c_console::display_info_t display_info;
 };

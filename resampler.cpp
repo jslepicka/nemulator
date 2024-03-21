@@ -13,12 +13,9 @@ c_resampler::c_resampler(float m, i_audio_filter* pre_filter, i_audio_filter* po
 
 	mf = m - (int)m;
 	samples_required = (int)m + 2;
-	//lpf = new c_biquad4(g, b2, a2, a3);
 
-	output_buf = new short[OUTPUT_BUF_LEN];
-	filtered_buf = new float[FILTERED_BUF_LEN * 2];
-
-	memset(output_buf, 0, sizeof(output_buf));
+    output_buf = std::make_unique<short[]>(OUTPUT_BUF_LEN);
+    filtered_buf = std::make_unique<float[]>(FILTERED_BUF_LEN * 2);
 
 	for (int i = 0; i < FILTERED_BUF_LEN * 2; i++)
 		filtered_buf[i] = 0.0f;
@@ -30,9 +27,6 @@ c_resampler::c_resampler(float m, i_audio_filter* pre_filter, i_audio_filter* po
 
 c_resampler::~c_resampler()
 {
-	//delete lpf;
-	delete[] output_buf;
-	delete[] filtered_buf;
 }
 
 void c_resampler::set_m(float m)
@@ -42,7 +36,7 @@ void c_resampler::set_m(float m)
 
 int c_resampler::get_output_buf(const short **sample_buf)
 {
-	*sample_buf = this->output_buf;
+	*sample_buf = this->output_buf.get();
 	return output_buf_index;
 }
 

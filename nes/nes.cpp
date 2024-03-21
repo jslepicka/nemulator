@@ -10,106 +10,103 @@
 
 #include <fstream>
 
-#include <crtdbg.h>
-//#if defined(DEBUG) | defined(_DEBUG)
-//#define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
-//#define new DEBUG_NEW
-//#endif
-
 extern int mem_viewer_active;
 
 void strip_extension(char *path);
 
-const std::map<int, std::function<c_mapper*()> > c_nes::mapper_factory = 
+const std::map<int, std::function<std::unique_ptr<c_mapper>()> > c_nes::mapper_factory = 
 {
-	{ 0, []() {return new c_mapper(); } },
-	{ 1, []() {return new c_mapper1(); } },
-	{ 2, []() {return new c_mapper2(); } },
-	{ 3, []() {return new c_mapper3(); } },
-	{ 4, []() {return new c_mapper4(); } },
-	{ 5, []() {return new c_mapper5(); } },
-	{ 7, []() {return new c_mapper7(); } },
-	{ 8, []() {return new c_mapper8(); } },
-	{ 9, []() {return new c_mapper9(); } },
-	{ 10, []() {return new c_mapper10(); } },
-	{ 11, []() {return new c_mapper11(); } },
-	{ 13, []() {return new c_mapper13(); } },
-	{ 15, []() {return new c_mapper15(); } },
-	{ 16, []() {return new c_mapper16(); } },
-	{ 18, []() {return new c_mapper18(); } },
-	{ 19, []() {return new c_mapper19(); } },
-	{ 21, []() {return new c_mapper_vrc4(1); } },
-	{ 22, []() {return new c_mapper_vrc4(3); } },
-	{ 23, []() {return new c_mapper_vrc4(); } },
-	{ 24, []() {return new c_mapper24(); } },
-	{ 25, []() {return new c_mapper_vrc4(2); } },
-	{ 26, []() {return new c_mapper24(1); } },
-	{ 32, []() {return new c_mapper32(); } },
-	{ 33, []() {return new c_mapper33(); } },
-	{ 34, []() {return new c_mapper34(); } },
-	{ 40, []() {return new c_mapper40(); } },
-	{ 41, []() {return new c_mapper41(); } },
-	{ 42, []() {return new c_mapper42(); } },
-	{ 44, []() {return new c_mapper44(); } },
-	{ 47, []() {return new c_mapper47(); } },
-	{ 64, []() {return new c_mapper64(); } },
-	{ 65, []() {return new c_mapper65(); } },
-	{ 66, []() {return new c_mapper66(); } },
-	{ 67, []() {return new c_mapper67(); } },
-	{ 68, []() {return new c_mapper68(); } },
-	{ 69, []() {return new c_mapper69(); } },
-	{ 70, []() {return new c_mapper70(); } },
-	{ 71, []() {return new c_mapper71(); } },
-	{ 72, []() {return new c_mapper72(); } },
-	{ 73, []() {return new c_mapper73(); } },
-	{ 75, []() {return new c_mapper75(); } },
-	{ 76, []() {return new c_mapper76(); } },
-	{ 77, []() {return new c_mapper77(); } },
-	{ 78, []() {return new c_mapper78(); } },
-	{ 79, []() {return new c_mapper79(); } },
-	{ 80, []() {return new c_mapper80(); } },
-	{ 82, []() {return new c_mapper82(); } },
-	{ 85, []() {return new c_mapper85(); } },
-	{ 86, []() {return new c_mapper86(); } },
-	{ 87, []() {return new c_mapper87(); } },
-	{ 88, []() {return new c_mapper88(); } },
-	{ 89, []() {return new c_mapper89(); } },
-	{ 92, []() {return new c_mapper92(); } },
-	{ 93, []() {return new c_mapper93(); } },
-	{ 94, []() {return new c_mapper94(); } },
-	{ 95, []() {return new c_mapper95(); } },
-	{ 97, []() {return new c_mapper97(); } },
-	{ 103, []() {return new c_mapper103(); } },
-	{ 105, []() {return new c_mapper105(); } },
-	{ 112, []() {return new c_mapper112(); } },
-	{ 113, []() {return new c_mapper113(); } },
-	{ 115, []() {return new c_mapper115(); } },
-	{ 118, []() {return new c_mapper118(); } },
-	{ 119, []() {return new c_mapper119(); } },
-	{ 140, []() {return new c_mapper140(); } },
-	{ 146, []() {return new c_mapper146(); } },
-	{ 152, []() {return new c_mapper152(); } },
-	{ 159, []() {return new c_mapper16(1); } },
-	{ 180, []() {return new c_mapper180(); } },
-	{ 184, []() {return new c_mapper184(); } },
-	{ 185, []() {return new c_mapper185(); } },
-	{ 189, []() {return new c_mapper189(); } },
-	{ 190, []() {return new c_mapper190(); } },
-	{ 193, []() {return new c_mapper193(); } },
-	{ 220, []() {return new c_mapper4(); } },
-	{ 228, []() {return new c_mapper228(); } },
-	{ 232, []() {return new c_mapper232(); } },
-	{ 243, []() {return new c_mapper243(); } },
-	{ 0x100, []() {return new c_mapper_mmc6(); }},
-	{ 0x101, []() {return new c_mapper_mc_acc(); }},
-	{ 0x102, []() {return new c_mapper_nsf(); }}
-
-};
+    {0, []() { return std::make_unique<c_mapper>(); }},
+    {1, []() { return std::make_unique<c_mapper1>(); }},
+    {2, []() { return std::make_unique<c_mapper2>(); }},
+    {3, []() { return std::make_unique<c_mapper3>(); }},
+    {4, []() { return std::make_unique<c_mapper4>(); }},
+    {5, []() { return std::make_unique<c_mapper5>(); }},
+    {7, []() { return std::make_unique<c_mapper7>(); }},
+    {8, []() { return std::make_unique<c_mapper8>(); }},
+    {9, []() { return std::make_unique<c_mapper9>(); }},
+    {10, []() { return std::make_unique<c_mapper10>(); }},
+    {11, []() { return std::make_unique<c_mapper11>(); }},
+    {13, []() { return std::make_unique<c_mapper13>(); }},
+    {15, []() { return std::make_unique<c_mapper15>(); }},
+    {16, []() { return std::make_unique<c_mapper16>(); }},
+    {18, []() { return std::make_unique<c_mapper18>(); }},
+    {19, []() { return std::make_unique<c_mapper19>(); }},
+    {21, []() { return std::make_unique<c_mapper_vrc4>(1); }},
+    {22, []() { return std::make_unique<c_mapper_vrc4>(3); }},
+    {23, []() { return std::make_unique<c_mapper_vrc4>(); }},
+    {24, []() { return std::make_unique<c_mapper24>(); }},
+    {25, []() { return std::make_unique<c_mapper_vrc4>(2); }},
+    {26, []() { return std::make_unique<c_mapper24>(1); }},
+    {32, []() { return std::make_unique<c_mapper32>(); }},
+    {33, []() { return std::make_unique<c_mapper33>(); }},
+    {34, []() { return std::make_unique<c_mapper34>(); }},
+    {40, []() { return std::make_unique<c_mapper40>(); }},
+    {41, []() { return std::make_unique<c_mapper41>(); }},
+    {42, []() { return std::make_unique<c_mapper42>(); }},
+    {44, []() { return std::make_unique<c_mapper44>(); }},
+    {47, []() { return std::make_unique<c_mapper47>(); }},
+    {64, []() { return std::make_unique<c_mapper64>(); }},
+    {65, []() { return std::make_unique<c_mapper65>(); }},
+    {66, []() { return std::make_unique<c_mapper66>(); }},
+    {67, []() { return std::make_unique<c_mapper67>(); }},
+    {68, []() { return std::make_unique<c_mapper68>(); }},
+    {69, []() { return std::make_unique<c_mapper69>(); }},
+    {70, []() { return std::make_unique<c_mapper70>(); }},
+    {71, []() { return std::make_unique<c_mapper71>(); }},
+    {72, []() { return std::make_unique<c_mapper72>(); }},
+    {73, []() { return std::make_unique<c_mapper73>(); }},
+    {75, []() { return std::make_unique<c_mapper75>(); }},
+    {76, []() { return std::make_unique<c_mapper76>(); }},
+    {77, []() { return std::make_unique<c_mapper77>(); }},
+    {78, []() { return std::make_unique<c_mapper78>(); }},
+    {79, []() { return std::make_unique<c_mapper79>(); }},
+    {80, []() { return std::make_unique<c_mapper80>(); }},
+    {82, []() { return std::make_unique<c_mapper82>(); }},
+    {85, []() { return std::make_unique<c_mapper85>(); }},
+    {86, []() { return std::make_unique<c_mapper86>(); }},
+    {87, []() { return std::make_unique<c_mapper87>(); }},
+    {88, []() { return std::make_unique<c_mapper88>(); }},
+    {89, []() { return std::make_unique<c_mapper89>(); }},
+    {92, []() { return std::make_unique<c_mapper92>(); }},
+    {93, []() { return std::make_unique<c_mapper93>(); }},
+    {94, []() { return std::make_unique<c_mapper94>(); }},
+    {95, []() { return std::make_unique<c_mapper95>(); }},
+    {97, []() { return std::make_unique<c_mapper97>(); }},
+    {103, []() { return std::make_unique<c_mapper103>(); }},
+    {105, []() { return std::make_unique<c_mapper105>(); }},
+    {112, []() { return std::make_unique<c_mapper112>(); }},
+    {113, []() { return std::make_unique<c_mapper113>(); }},
+    {115, []() { return std::make_unique<c_mapper115>(); }},
+    {118, []() { return std::make_unique<c_mapper118>(); }},
+    {119, []() { return std::make_unique<c_mapper119>(); }},
+    {140, []() { return std::make_unique<c_mapper140>(); }},
+    {146, []() { return std::make_unique<c_mapper146>(); }},
+    {152, []() { return std::make_unique<c_mapper152>(); }},
+    {159, []() { return std::make_unique<c_mapper16>(1); }},
+    {180, []() { return std::make_unique<c_mapper180>(); }},
+    {184, []() { return std::make_unique<c_mapper184>(); }},
+    {185, []() { return std::make_unique<c_mapper185>(); }},
+    {189, []() { return std::make_unique<c_mapper189>(); }},
+    {190, []() { return std::make_unique<c_mapper190>(); }},
+    {193, []() { return std::make_unique<c_mapper193>(); }},
+    {220, []() { return std::make_unique<c_mapper4>(); }},
+    {228, []() { return std::make_unique<c_mapper228>(); }},
+    {232, []() { return std::make_unique<c_mapper232>(); }},
+    {243, []() { return std::make_unique<c_mapper243>(); }},
+    {0x100, []() { return std::make_unique<c_mapper_mmc6>(); }},
+    {0x101, []() { return std::make_unique<c_mapper_mc_acc>(); }},
+    {0x102, []() { return std::make_unique<c_mapper_nsf>(); }}};
 
 
 c_nes::c_nes()
 {
     system_name = "Nintendo NES";
+    display_info.fb_width = 256;
+    display_info.fb_height = 240;
+    display_info.crop_top = 8;
+    display_info.crop_bottom = 8;
+
 	cpuRam = 0;
 	sram = 0;
 	cpu = 0;
@@ -120,29 +117,11 @@ c_nes::c_nes()
 	loaded = false;
 	limit_sprites = false;
 	crc32 = 0;
-	game_genie = new c_game_genie();
+    game_genie = std::make_unique<c_game_genie>();
 }
 
 c_nes::~c_nes()
 {
-    if (image)
-        delete[] image;
-    if (cpuRam)
-        delete[] cpuRam;
-    if (sram)
-        delete[] sram;
-    if (cpu)
-        delete cpu;
-    if (ppu)
-        delete ppu;
-    if (mapper)
-        delete mapper;
-    if (apu2)
-        delete apu2;
-    if (joypad)
-        delete joypad;
-    if (game_genie)
-        delete game_genie;
 }
 
 void c_nes::enable_mixer()
@@ -257,7 +236,7 @@ void c_nes::write_byte(unsigned short address, unsigned char value)
 	case 4:
 		if (address == 0x4014)
 		{
-			cpu->do_sprite_dma(ppu->pSpriteMemory, (value & 0xFF) << 8);
+			cpu->do_sprite_dma(ppu->pSpriteMemory.get(), (value & 0xFF) << 8);
 		}
 		else if (address == 0x4016)
 		{
@@ -288,13 +267,13 @@ int c_nes::LoadImage(char *pathFile)
 	file.seekg(0, std::ios_base::end);
 	file_length = (int)file.tellg();
 	file.seekg(0, std::ios_base::beg);
-	image = new unsigned char[file_length];
-	file.read((char*)image, file_length);
+    image = std::make_unique_for_overwrite<unsigned char[]>(file_length);
+	file.read((char*)image.get(), file_length);
 	file.close();
 	if (file_length < sizeof(iNesHeader)) {
 		return -1;
 	}
-	header = (iNesHeader *)image;
+	header = (iNesHeader *)image.get();
 
 	char ines_signature[] = {'N', 'E', 'S', 0x1a};
 	char fds_signature[] = "*NINTENDO-HVC*";
@@ -322,18 +301,18 @@ int c_nes::LoadImage(char *pathFile)
 			*h = 0;
 		m = (header->Rcb1.mapper_lo) | (header->Rcb2.mapper_hi << 4);
 	}
-	else if (memcmp(image + 1, fds_signature, 14) == 0)
+	else if (memcmp(image.get() + 1, fds_signature, 14) == 0)
 	{
 		//m = 0x101;
 		m = -1;
 	}
-	else if (memcmp(image, nsf_signature, 5) == 0) {
+	else if (memcmp(image.get(), nsf_signature, 5) == 0) {
 		m = 0x102;
 	}
 
 	if (m != -1 && m != 0x102)
 	{
-		crc32 = get_crc32((unsigned char*)image + sizeof(iNesHeader), file_length - sizeof(iNesHeader));
+		crc32 = get_crc32((unsigned char*)image.get() + sizeof(iNesHeader), file_length - sizeof(iNesHeader));
 	}
 	return m;
 }
@@ -348,10 +327,10 @@ int c_nes::load()
 	strip_extension(sram_path_file);
 	sprintf_s(sramFilename, "%s.ram", sram_path_file);
 
-	cpu = new c_cpu();
-	ppu = new c_ppu();
-	joypad = new c_joypad();
-	apu2 = new c_apu2();
+    cpu = std::make_unique<c_cpu>();
+    ppu = std::make_unique<c_ppu>();
+    joypad = std::make_unique<c_joypad>();
+    apu2 = std::make_unique<c_apu2>();
 	apu2->set_nes(this);
 
 	mapperNumber = LoadImage(pathFile);
@@ -396,25 +375,26 @@ int c_nes::load()
 
 int c_nes::reset()
 {
-	if (!cpuRam)
-		cpuRam = new unsigned char[2048];
-	memset(cpuRam, 0xFF, 2048);
+    if (!cpuRam) {
+        cpuRam = std::make_unique_for_overwrite<unsigned char[]>(2048);
+    }
+	memset(cpuRam.get(), 0xFF, 2048);
 
 	mapper->CloseSram();
 	cpu->nes = this;
 	apu2->reset();
-    ppu->cpu = cpu;
+    ppu->cpu = cpu.get();
 	ppu->reset();
-	ppu->mapper = mapper;
+	ppu->mapper = mapper.get();
 	
-	ppu->apu2 = apu2;
+	ppu->apu2 = apu2.get();
 	ppu->limit_sprites = limit_sprites;
-	mapper->ppu = ppu;
-	mapper->cpu = cpu;
-	mapper->apu2 = apu2;
+	mapper->ppu = ppu.get();
+	mapper->cpu = cpu.get();
+	mapper->apu2 = apu2.get();
 	mapper->nes = this;
 	mapper->header = header;
-	mapper->image = image;
+	mapper->image = image.get();
 	if (mapper->LoadImage() == -1) {
 		return 1;
 	}
@@ -457,7 +437,7 @@ int c_nes::emulate_frame()
 
 int *c_nes::get_video()
 {
-	return ppu->pFrameBuffer;
+	return ppu->get_frame_buffer();
 }
 
 void c_nes::set_audio_freq(double freq)

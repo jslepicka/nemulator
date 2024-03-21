@@ -26,7 +26,7 @@ void c_mbc2::write_byte(uint16_t address, uint8_t data)
 	case 0xA:
 		if (address < 0xA200) {
 			if (ram && (ram_enable & 0xF) == 0xA)
-				*(ram + (address & 0x1FF)) = data & 0xF;
+				*(ram.get() + (address & 0x1FF)) = data & 0xF;
 		}
         break;
 	default:
@@ -54,8 +54,8 @@ uint8_t c_mbc2::read_byte(uint16_t address)
 		break;
 	case 0xA: //A000-BFFF ram
 		if (address < 0xA200) {
-			if (ram && (ram_enable & 0xF) == 0xA)
-				return *(ram + (address & 0x1FF)) & 0xF;
+            if (ram && (ram_enable & 0xF) == 0xA)
+                return ram[address & 0x1FF] & 0xF;
 		}
 		return 0;
 		break;

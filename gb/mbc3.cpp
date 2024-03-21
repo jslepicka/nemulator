@@ -25,8 +25,9 @@ void c_mbc3::write_byte(uint16_t address, uint8_t data)
 		x = 1;
 		break;
 	case 5: //A000-BFFF RAM
-		if (ram_enable == 0x0A)
-            *(ram + (((address & 0x1FFF) + ram_bank * 0x2000) % ram_size)) = data;
+        if (ram_enable == 0x0A)
+             //*(ram.get + (((address & 0x1FFF) + ram_bank * 0x2000) % ram_size)) = data;
+            ram[((address & 0x1FFF) + ram_bank * 0x2000) % ram_size] = data;
 		break;
 	default:
 		int x = 1;
@@ -47,7 +48,8 @@ uint8_t c_mbc3::read_byte(uint16_t address)
 		break;
 	case 5: //A000-BFFF ram
         if (ram_enable == 0x0A)
-            return *(ram + (((address & 0x1FFF) + ram_bank * 0x2000) % ram_size));
+             //return *(ram + (((address & 0x1FFF) + ram_bank * 0x2000) % ram_size));
+            return ram[((address & 0x1FFF) + ram_bank * 0x2000) % ram_size];
 		break;
 	}
     return 0;

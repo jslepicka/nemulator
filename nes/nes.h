@@ -9,6 +9,7 @@
 #include "..\biquad4.hpp"
 #include "..\biquad.hpp"
 #include "game_genie.h"
+#include <memory>
 
 class c_cpu;
 class c_ppu;
@@ -42,35 +43,37 @@ public:
 	bool get_sprite_limit();
 	void set_submapper(int submapper);
 	int get_crc() {return crc32;};
-	c_cpu *cpu;
-	c_ppu *ppu;
-	c_mapper *mapper;
+	//c_cpu *cpu;
+	//c_ppu *ppu;
+	//c_mapper *mapper;
+    std::unique_ptr<c_cpu> cpu;
+    std::unique_ptr<c_ppu> ppu;
+    std::unique_ptr<c_mapper> mapper;
 	void write_byte(unsigned short address, unsigned char value);
 	unsigned char read_byte(unsigned short address);
 	iNesHeader *header;
 	void enable_mixer();
 	void disable_mixer();
-	int get_fb_width() { return 256; }
-	int get_fb_height() { return 240; }
-    std::tuple<int, int, int, int> get_crop()
-    {
-		//l, r, t, b
-        return {0, 0, 8, 8};
-    }
 
 private:
 	int num_apu_samples;
-	c_apu2* apu2;
-	c_joypad *joypad;
-	c_game_genie* game_genie;
+	//c_apu2* apu2;
+	//c_joypad *joypad;
+	//c_game_genie* game_genie;
+    std::unique_ptr<c_apu2> apu2;
+    std::unique_ptr<c_joypad> joypad;
+    std::unique_ptr<c_game_genie> game_genie;
 	int crc32;
 	int mapperNumber;
 	char sramFilename[MAX_PATH];
-	unsigned char *image;
-	unsigned char *cpuRam;
-	unsigned char *sram;
+	//unsigned char *image;
+	//unsigned char *cpuRam;
+	//unsigned char *sram;
+    std::unique_ptr<unsigned char[]> image;
+    std::unique_ptr<unsigned char[]> cpuRam;
+    std::unique_ptr<unsigned char[]> sram;
 	int LoadImage(char *pathFile);
 	bool limit_sprites;
 	int file_length;
-	const static std::map<int, std::function<c_mapper*()> > mapper_factory;
+	const static std::map<int, std::function<std::unique_ptr<c_mapper>()> > mapper_factory;
 };

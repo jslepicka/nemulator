@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include <atomic>
+#include <memory>
 class c_sms;
 
 class c_vdp
@@ -40,10 +41,12 @@ class c_vdp
     int address_flip_flop;
     int registers[16];
     int vram_write;
-    unsigned char *vram;
+    std::unique_ptr<unsigned char[]> vram;
+    std::unique_ptr<int[]> frame_buffer;
+    //unsigned char *vram;
     unsigned char cram[64];
     unsigned char read_buffer;
-    int *frame_buffer;
+    //int *frame_buffer;
 
     int lookup_color(int palette_index);
 

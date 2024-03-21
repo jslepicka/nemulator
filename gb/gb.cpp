@@ -15,33 +15,34 @@ void strip_extension(char* path);
 
 const std::map<int, c_gb::s_mapper> c_gb::mapper_factory =
 {
-	{0, {[]() {return new c_gbmapper(); }, 0, 0}},
-	{1, {[]() {return new c_mbc1(); }, 0, 0}},
-	{2, {[]() {return new c_mbc1(); }, 1, 0}},
-	{3, {[]() {return new c_mbc1(); }, 1, 1}},
-	{5, {[]() {return new c_mbc2(); }, 0, 0}},
-	{6, {[]() {return new c_mbc2(); }, 0, 1}},
-    {0x19, {[]() {return new c_mbc5(); }, 0, 0}},
-	{0x1A, {[]() {return new c_mbc5(); }, 1, 0}},
-	{0x1B, {[]() {return new c_mbc5(); }, 1, 1}},
-	{0x1C, {[]() {return new c_mbc5(); }, 0, 0}}, //rumble
-	{0x1D, {[]() {return new c_mbc5(); }, 1, 0}}, //rumble
-	{0x1E, {[]() {return new c_mbc5(); }, 1, 1}}, //rumble
+    {0, {[]() { return std::make_unique<c_gbmapper>(); }, 0, 0}},
+    {1, {[]() { return std::make_unique<c_mbc1>(); }, 0, 0}},
+    {2, {[]() { return std::make_unique<c_mbc1>(); }, 1, 0}},
+    {3, {[]() { return std::make_unique<c_mbc1>(); }, 1, 1}},
+    {5, {[]() { return std::make_unique<c_mbc2>(); }, 0, 0}},
+    {6, {[]() { return std::make_unique<c_mbc2>(); }, 0, 1}},
+    {0x19, {[]() { return std::make_unique<c_mbc5>(); }, 0, 0}},
+    {0x1A, {[]() { return std::make_unique<c_mbc5>(); }, 1, 0}},
+    {0x1B, {[]() { return std::make_unique<c_mbc5>(); }, 1, 1}},
+    {0x1C, {[]() { return std::make_unique<c_mbc5>(); }, 0, 0}}, //rumble
+    {0x1D, {[]() { return std::make_unique<c_mbc5>(); }, 1, 0}}, //rumble
+    {0x1E, {[]() { return std::make_unique<c_mbc5>(); }, 1, 1}}, //rumble
 };
 
 
 c_gb::c_gb(GB_MODEL model)
 {
     system_name = model == GB_MODEL::CGB ? "Nintendo Game Boy Color" : "Nintendo Game Boy";
-	cpu = new c_sm83(this);
-	ppu = new c_gbppu(this);
-	apu = new c_gbapu(this);
-	//ram = new uint8_t[8192];
+    display_info.fb_width = 160;
+    display_info.fb_height = 144;
+    display_info.aspect_ratio = 4.7 / 4.3;
+
+    cpu = std::make_unique<c_sm83>(this);
+    ppu = std::make_unique<c_gbppu>(this);
+    apu = std::make_unique<c_gbapu>(this);
     const int RAM_SIZE = 32768;
-    ram = new uint8_t[RAM_SIZE];
-	memset(ram, 0x00, RAM_SIZE);
-	hram = new uint8_t[128];
-	memset(hram, 0, 128);
+    ram = std::make_unique<uint8_t[]>(RAM_SIZE);
+	hram = std::make_unique<uint8_t[]>(128);
 	loaded = 0;
 	mapper = 0;
     ram_size = 0;
@@ -55,20 +56,6 @@ c_gb::~c_gb()
 	if (loaded && m->has_battery) {
 		save_sram();
 	}
-	if (ram)
-		delete[] ram;
-	if (hram)
-		delete[] hram;
-	if (mapper)
-		delete mapper;
-	if (cpu)
-		delete cpu;
-	if (apu)
-		delete apu;
-	if (ppu)
-		delete ppu;
-	if (rom)
-		delete rom;
 }
 
 int c_gb::reset()
@@ -142,16 +129,16 @@ int c_gb::load()
 
 	//printf("read %d bytes\n", file_length);
 	file.seekg(0, std::ios_base::beg);
-	rom = new uint8_t[std::max(32768, file_length)];
+    rom = std::make_unique_for_overwrite<uint8_t[]>(std::max(32768, file_length));
 	//memcpy(rom + 0x104, logo, sizeof(logo));
 
-	file.read((char*)rom, file_length);
+	file.read((char*)rom.get(), file_length);
 	file.close();
 
-	memcpy(title, rom + 0x134, 16);
-	cart_type = *(rom + 0x147);
-	rom_size = *(rom + 0x148);
-	header_ram_size = *(rom + 0x149);
+	memcpy(title, rom.get() + 0x134, 16);
+	cart_type = *(rom.get() + 0x147);
+	rom_size = *(rom.get() + 0x148);
+	header_ram_size = *(rom.get() + 0x149);
 
 	if (file_length != (32768 << rom_size)) {
 		return 0;
@@ -169,14 +156,10 @@ int c_gb::load()
 	m = (s_mapper*)&(i->second);
 	mapper = m->mapper();
 
-	mapper->rom = rom;
+	mapper->rom = rom.get();
 
 	if (m->has_ram && header_ram_size && header_ram_size < 6) {
 		const int size[] = { 0, 2 * 1024, 8 * 1024, 32 * 1024, 128 * 1024, 64 * 1024 };
-		//int s = size[ram_size];
-		//cart_ram = new uint8_t[s];
-		//memset(cart_ram, 0, s);
-		//mapper->ram = cart_ram;
 		ram_size = size[header_ram_size];
 		mapper->config_ram(ram_size);
 		if (m->has_battery) {
@@ -215,7 +198,7 @@ int c_gb::load_sram()
 		return 0;
 	}
 
-	file.read((char*)mapper->ram, ram_size);
+	file.read((char*)mapper->ram.get(), ram_size);
 	file.close();
 	return 1;
 }
@@ -228,7 +211,7 @@ int c_gb::save_sram()
 		return 0;
 	}
 
-	file.write((char*)mapper->ram, ram_size);
+	file.write((char*)mapper->ram.get(), ram_size);
 	file.close();
 	return 1;
 }

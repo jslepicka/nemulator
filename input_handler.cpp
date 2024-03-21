@@ -1,17 +1,11 @@
 #include "input_handler.h"
 #include "windows.h"
 
-#include <crtdbg.h>
-#if defined(DEBUG) | defined(_DEBUG)
-#define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
-#define new DEBUG_NEW
-#endif
-
 c_input_handler::c_input_handler(int buttons)
 {
 	num_buttons = buttons;
-	state = new s_state[num_buttons];
-	s_state *s = state;
+	state = std::make_unique<s_state[]>(num_buttons);
+	s_state *s = state.get();
 	for (int i = 0; i < num_buttons; i++)
 	{
 		s->type = 0;
@@ -48,7 +42,6 @@ c_input_handler::c_input_handler(int buttons)
 
 c_input_handler::~c_input_handler()
 {
-	delete[] state;
 }
 
 double c_input_handler::get_hold_time(int button)
@@ -186,7 +179,7 @@ void c_input_handler::poll(double dt, int ignore_input)
 		}
 	}
 
-	s_state *s = state;
+	s_state *s = state.get();
 	unsigned char result = 0;
 	for (int i = 0; i < num_buttons; i++)
 	{

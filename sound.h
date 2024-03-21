@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <mmdeviceapi.h>
 #include <string>
+#include <memory>
 
 class c_sound
 {
@@ -16,10 +17,6 @@ class c_sound
     double get_freq()
     {
         return freq;
-    }
-    int get_max_freq()
-    {
-        return max_freq;
     }
     int rate;
     int sync();
@@ -63,7 +60,8 @@ class c_sound
     double ema;
     int first_b;
 
-    uint32_t *interleave_buffer;
+    //uint32_t *interleave_buffer;
+    std::unique_ptr<uint32_t[]> interleave_buffer;
     const int INTERLEAVE_BUFFER_LEN = 1024;
 
     const CLSID CLSID_MMDeviceEnumerator = __uuidof(MMDeviceEnumerator);
