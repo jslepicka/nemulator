@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <atomic>
+#include <memory>
 #include "..\resampler.h"
 #include "..\biquad.hpp"
 #include "..\biquad4.hpp"
@@ -252,18 +253,22 @@ public:
 
 private:
 	static const float NES_AUDIO_RATE;
-	c_resampler* resampler;
-	c_biquad4* lpf;
-	c_biquad* post_filter;
+	//c_resampler* resampler;
+	//c_biquad4* lpf;
+	//c_biquad* post_filter;
+    std::unique_ptr<c_resampler> resampler;
+    std::unique_ptr<c_biquad4> lpf;
+    std::unique_ptr<c_biquad> post_filter;
+    std::unique_ptr<int32_t[]> sound_buffer;
 	static const int CLOCKS_PER_FRAME_SEQ = 89489;
 	int mixer_enabled;
+    int square_clock;
 	c_nes *nes;
 	int frame_irq_enable;
 	int frame_irq_flag;
 	int frame_irq_asserted;
 	int mix_external_audio;
 	float *external_audio;
-	int32_t* sound_buffer;
 
 	int ticks;
 	int frame_seq_counter;
@@ -287,8 +292,6 @@ private:
 	c_triangle triangle;
 	c_noise noise;
 	c_dmc dmc;
-
-	int square_clock;
 
 	static std::atomic<int> lookup_tables_built;
 	static float tnd_lut[203];

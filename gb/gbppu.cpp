@@ -160,28 +160,17 @@ uint32_t c_gbppu::color_lookup[32];
 c_gbppu::c_gbppu(c_gb* gb)
 {
 	this->gb = gb;
-	vram = new uint8_t[16384];
-    vram1 = new uint8_t[16384];
-	oam = new uint8_t[160];
-	fb = new uint32_t[160 * 144];
-	fb_back = new uint32_t[160 * 144];
+    vram = std::make_unique_for_overwrite<uint8_t[]>(16384);
+    vram1 = std::make_unique_for_overwrite<uint8_t[]>(16384);
+    oam = std::make_unique_for_overwrite<uint8_t[]>(160);
+    fb = std::make_unique_for_overwrite<uint32_t[]>(160 * 144);
+    fb_back = std::make_unique_for_overwrite<uint32_t[]>(160 * 144);
 	shades = pal[15];
     generate_color_lookup();
 }
 
 c_gbppu::~c_gbppu()
 {
-	if (vram)
-		delete[] vram;
-    if (vram1)
-        delete[] vram1;
-	if (oam)
-		delete[] oam;
-	if (fb)
-		delete[] fb;
-	if (fb_back)
-		delete[] fb_back;
-
 }
 
 void c_gbppu::generate_color_lookup()
@@ -248,11 +237,11 @@ void c_gbppu::reset()
 	start_hblank = 0;
 
 	memset(sprite_buffer, 0, sizeof(sprite_buffer));
-	memset(vram, 0, 16384);
-    memset(vram1, 0, 16384);
+	memset(vram.get(), 0, 16384);
+    memset(vram1.get(), 0, 16384);
 
-	memset(fb, 0xFF, 160 * 144 * sizeof(uint32_t));
-	memset(fb_back, 0xFF, 160 * 144 * sizeof(uint32_t));
+	memset(fb.get(), 0xFF, 160 * 144 * sizeof(uint32_t));
+	memset(fb_back.get(), 0xFF, 160 * 144 * sizeof(uint32_t));
 
 	SCX_latch = 0;
 
@@ -274,7 +263,7 @@ void c_gbppu::eval_sprites(int y)
 		int x = 1;
 	}
 	memset(sprite_buffer, 0, sizeof(sprite_buffer));
-	s_sprite* s = (s_sprite*)oam;
+	s_sprite* s = (s_sprite*)oam.get();
 	sprite_count = 0;
 	for (int i = 0; i < 40; i++) {
 		int sprite_y = s->y - 16;
@@ -385,7 +374,7 @@ void c_gbppu::execute(int cycles)
 					first_tile = 1;
 					fetch_phase = 0;
 					current_pixel = 0;
-					f = fb_back + (line * 160);
+					f = fb_back.get() + (line * 160);
 					if (!(LCDC & 0x80)) {
 						for (int j = 0; j < 160; j++) {
 							*(f + j) = 0xFFFFFFFF;

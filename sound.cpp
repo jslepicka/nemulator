@@ -32,7 +32,7 @@ c_sound::c_sound()
     slope = 0.0;
     value_index = 0;
 
-	interleave_buffer = new uint32_t[INTERLEAVE_BUFFER_LEN];
+	interleave_buffer = std::make_unique<uint32_t[]>(INTERLEAVE_BUFFER_LEN);
     buffer_wait_count = 0;
 }
 
@@ -102,10 +102,6 @@ int c_sound::init_wasapi()
 
 c_sound::~c_sound()
 {
-    if (interleave_buffer) {
-        delete[] interleave_buffer;
-    }
-
     ReleaseCOM(audio_clock);
     ReleaseCOM(render_client);
     ReleaseCOM(audio_client);
@@ -285,7 +281,7 @@ int c_sound::copy(const short *left, const short *right, int numSamples)
     int waited = 0;
 	int src_len = numSamples * wf.nBlockAlign;
 
-	uint32_t *ib = interleave_buffer;
+	uint32_t *ib = interleave_buffer.get();
     const uint16_t *l = (uint16_t*)left;
     const uint16_t *r = right != NULL ? (uint16_t*)right : (uint16_t*)left;
     for (int i = 0; i < numSamples; i++) {
@@ -300,7 +296,7 @@ int c_sound::copy(const short *left, const short *right, int numSamples)
 	BYTE *wasapi_buffer;
     render_client->GetBuffer(numSamples, &wasapi_buffer);
     uint32_t *wasapi_out = (uint32_t *)wasapi_buffer;
-    ib = interleave_buffer;
+    ib = interleave_buffer.get();
     for (int i = 0; i < numSamples; i++) {
         *wasapi_out++ = *ib++;
     }

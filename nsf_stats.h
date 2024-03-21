@@ -3,6 +3,7 @@
 #include "console.h"
 #include "biquad.hpp"
 #include "meow_fft.h"
+#include <memory>
 
 class c_nsf_stats :
 	public c_stats
@@ -65,10 +66,12 @@ private:
 	float out2[fft_length];
 	double bucket_update_timer;
 	double mag_adjust;
-	c_biquad* biquad1;
-	c_biquad* biquad2;
-	c_biquad* biquad3;
-
+	//c_biquad* biquad1;
+	//c_biquad* biquad2;
+	//c_biquad* biquad3;
+    std::unique_ptr<c_biquad> biquad1;
+    std::unique_ptr<c_biquad> biquad2;
+    std::unique_ptr<c_biquad> biquad3;
 	double scroll_timer;
 	double scroll_offset;
 	Meow_FFT_Complex* meow_out;

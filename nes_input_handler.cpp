@@ -1,11 +1,5 @@
 #include "nes_input_handler.h"
 
-#include <crtdbg.h>
-#if defined(DEBUG) | defined(_DEBUG)
-#define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
-#define new DEBUG_NEW
-#endif
-
 c_nes_input_handler::c_nes_input_handler(int buttons)
 	: c_input_handler(buttons)
 {
@@ -14,17 +8,14 @@ c_nes_input_handler::c_nes_input_handler(int buttons)
 		prev_temp[i] = 0;
 		mask[i] = ~0x50;
 	}
-	turbo_state = new int[buttons];
-	turbo_rate = new int[buttons];
-	memset(turbo_state, 0, sizeof(int) * buttons);
+    turbo_state = std::make_unique<int[]>(buttons);
+    turbo_rate = std::make_unique<int[]>(buttons);
 	for (int i = 0; i < buttons; i++)
 		turbo_rate[i] = 10;
 }
 
 c_nes_input_handler::~c_nes_input_handler()
 {
-	delete[] turbo_state;
-	delete[] turbo_rate;
 }
 
 void c_nes_input_handler::set_turbo_state(int button, int turbo_enabled)
@@ -154,7 +145,7 @@ unsigned char c_nes_input_handler::get_nes_byte(int controller)
 
 	int offset = controller * 8;
 	unsigned char temp = 0;
-	s_state *s = state + offset;
+	s_state *s = state.get() + offset;
 	for (int i = offset; i < (offset + 8); i++)
 	{
 		temp |= (s->ack ? 0 : (s->state_cur & (!(turbo_state[i] && s->depressed_count % turbo_rate[i] >= (turbo_rate[i]/2)))) << (i - offset));

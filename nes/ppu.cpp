@@ -3,25 +3,19 @@
 #include "memory.h"
 #include "mapper.h"
 #include "apu2.h"
-#include <new>
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <algorithm>
+#include <immintrin.h>
 
 #define INLINE __forceinline
 
 #include <crtdbg.h>
-//#if defined(DEBUG) | defined(_DEBUG)
-//#define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
-//#define new DEBUG_NEW
-//#endif
 
 std::atomic<int> c_ppu::lookup_tables_built = 0;
-uint8_t c_ppu::attr_shift_table[0x400];
-uint8_t c_ppu::attr_loc[0x400];
+
 uint64_t c_ppu::morton_odd_64[256];
 uint64_t c_ppu::morton_even_64[256];
-
 uint32_t c_ppu::pal[512];
 
 c_ppu::c_ppu()
@@ -30,6 +24,14 @@ c_ppu::c_ppu()
 	mapper = 0;
 	build_lookup_tables();
 	limit_sprites = false; //don't change this on reset
+
+	image_palette = std::make_unique_for_overwrite<unsigned char[]>(32);
+    pSpriteMemory = std::make_unique_for_overwrite<unsigned char[]>(256);
+    sprite_buffer = std::make_unique_for_overwrite<unsigned char[]>(256);
+    sprite_memory = std::make_unique_for_overwrite<unsigned char[]>(256);
+    sprite_index_buffer = std::make_unique_for_overwrite<unsigned char[]>(512);
+    index_buffer = std::make_unique_for_overwrite<unsigned char[]>(272);
+    frame_buffer = std::make_unique_for_overwrite<int[]>(256 * 256);
 }
 
 void c_ppu::generate_palette()
@@ -121,11 +123,11 @@ void c_ppu::build_lookup_tables()
 	int expected = 0;
 	if (lookup_tables_built.compare_exchange_strong(expected, 1))
 	{
-		for (int i = 0; i < 0x400; ++i)
-		{
-			attr_shift_table[i] = ((i >> 4) & 0x04) | (i & 0x02);
-			attr_loc[i] = ((i >> 4) & 0x38) | ((i >> 2) & 0x07);
-		}
+		//for (int i = 0; i < 0x400; ++i)
+		//{
+		//	attr_shift_table[i] = ((i >> 4) & 0x04) | (i & 0x02);
+		//	attr_loc[i] = ((i >> 4) & 0x38) | ((i >> 2) & 0x07);
+		//}
 
 		for (int i = 0; i < 256; i++)
 		{
@@ -147,8 +149,8 @@ void c_ppu::build_lookup_tables()
 
 c_ppu::~c_ppu()
 {
-	if (pSpriteMemory)
-		delete[] pSpriteMemory;
+	//if (pSpriteMemory)
+	//	delete[] pSpriteMemory;
 }
 
 INLINE uint64_t c_ppu::interleave_bits_64(unsigned char odd, unsigned char even)
@@ -318,7 +320,7 @@ void c_ppu::write_byte(int address, unsigned char value)
 	}
 	case 0x2004:    //Sprite Memory Data
 	{
-		*(pSpriteMemory + spriteMemAddress) = value;
+		*(pSpriteMemory.get() + spriteMemAddress) = value;
 		spriteMemAddress++;
 		spriteMemAddress &= 0xFF;
 		break;
@@ -421,11 +423,10 @@ void c_ppu::reset()
 	control1 = (unsigned char*)&ppuControl1;
 	control2 = (unsigned char*)&ppuControl2;
 	status = (unsigned char*)&ppuStatus;
-	if (!pSpriteMemory)
-		pSpriteMemory = new unsigned char[256];
-	memset(pSpriteMemory, 0, 256);
-	pFrameBuffer = (int*)&frameBuffer;
-	memset(pFrameBuffer, 0, 256 * 256 * sizeof(int));
+
+	memset(pSpriteMemory.get(), 0, 256);
+	memset(frame_buffer.get(), 0, 256 * 256 * sizeof(int));
+
 	readValue = 0;
 	*control1 = 0;
 	*control2 = 0;
@@ -436,13 +437,11 @@ void c_ppu::reset()
 	vramAddress = vramAddressLatch = fineX = 0;
 	drawingBg = 0;
 	executed_cycles = 3;
-	pattern1 = pattern2 = 0;
-
 	pattern_address = attribute_address = 0;
 
-	memset(index_buffer, 0xFF, sizeof(index_buffer));
-	memset(image_palette, 0x3F, 32);
-	memset(sprite_buffer, 0, sizeof(sprite_buffer));
+	memset(index_buffer.get(), 0xFF, sizeof(index_buffer));
+	memset(image_palette.get(), 0x3F, 32);
+	memset(sprite_buffer.get(), 0, sizeof(sprite_buffer));
 
 	sprites_visible = 0;
 	fetch_state = FETCH_IDLE;
@@ -549,7 +548,7 @@ void c_ppu::do_cycle_events()
 	switch (current_cycle) {
 	case 1:
 		if (current_scanline == 0) [[unlikely]] {
-			p_frame = pFrameBuffer;
+            p_frame = frame_buffer.get();
 			hit = 0;
 		}
 		else if (current_scanline == 240) [[unlikely]] {
@@ -624,37 +623,82 @@ INLINE void c_ppu::fetch()
 	case (1 | FETCH_BG): //NT byte 2
 		drawingBg = true;
 		tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
-		pattern_address = (tile << 4) + ((vramAddress & 0x7000) >> 12) + (ppuControl1.screenPatternTableAddress * 0x1000);
+		#ifdef NES_PPU_USE_SIMD
+        pattern_address =
+            (tile << 4) + _bextr_u32(vramAddress, 12, 3) + (ppuControl1.screenPatternTableAddress * 0x1000);
+        #else
+        pattern_address =
+            (tile << 4) + ((vramAddress & 0x7000) >> 12) + (ppuControl1.screenPatternTableAddress * 0x1000);
+		#endif
 		break;
+
 	case (2 | FETCH_BG): //AT byte 1
 		break;
 	case (3 | FETCH_BG): //AT byte 2
 		attribute_address = 0x23C0 |
 			(vramAddress & 0xC00) |
-			(attr_loc[vramAddress & 0x3FF]);
-		attribute_shift = attr_shift_table[vramAddress & 0x3FF];
-		attribute = mapper->ppu_read(attribute_address);
+			(((vramAddress >> 4) & 0x38) | ((vramAddress >> 2) & 0x07));
+
+		#ifdef NES_PPU_USE_SIMD
+		//load attribute and store 8 copies of it over 128-bit int
+		//only 64-bits are ultimately used
+		__m128i t = _mm_set1_epi8(mapper->ppu_read(attribute_address));
+        
+		attribute_shift = ((vramAddress >> 4) & 0x04) | (vramAddress & 0x02);		
+		//shift all 16 attributes by attribute_shift
+        t = _mm_srli_epi64(t, attribute_shift);
+		//mask all 16 attributes with 0x3
+        t = _mm_and_si128(t, _mm_set1_epi8(0x3));
+		//shift all values left by 2
+        t = _mm_slli_epi64(t, 2);
+		//assign the lower 64-bits to attribute
+        attribute = _mm_cvtsi128_si64(t);
+		#else
+        attribute = mapper->ppu_read(attribute_address);
+        //attribute_shift = attr_shift_table[vramAddress & 0x3FF];
+        attribute_shift = ((vramAddress >> 4) & 0x04) | (vramAddress & 0x02);
 		attribute >>= attribute_shift;
 		attribute &= 0x03;
+        attribute *= 0x0404040404040404ULL;
+		#endif
 		break;
 	case (4 | FETCH_BG): //Low BG byte 1
 		break;
 	case (5 | FETCH_BG): //Low BG byte 2
 		drawingBg = true;
+		#ifdef NES_PPU_USE_SIMD
+        pattern1 = _pdep_u64(mapper->ppu_read(pattern_address),
+                             0b00000001'00000001'00000001'00000001'00000001'00000001'00000001'00000001);
+		#else
 		pattern1 = mapper->ppu_read(pattern_address);
+        #endif
 		break;
 	case (6 | FETCH_BG): //High BG byte 1
 		break;
 	case (7 | FETCH_BG): //High BG byte 2
 		drawingBg = true;
+		#ifdef NES_PPU_USE_SIMD
+        pattern2 = _pdep_u64(mapper->ppu_read(pattern_address + 8),
+                             0b00000010'00000010'00000010'00000010'00000010'00000010'00000010'00000010);
+		#else
 		pattern2 = mapper->ppu_read(pattern_address + 8);
+		#endif
+        
 		{
 			unsigned int l = current_cycle + 8;
 
 			if (l >= 336)
 				l -= 336;
 			uint64_t* ib64 = (uint64_t*)&index_buffer[l];
-			uint64_t c = interleave_bits_64(pattern1, pattern2) | (attribute * 0x0404040404040404ULL);
+            uint64_t c = 0;
+			
+			//pdep is slow on amd platforms < zen 3.  The lookup table approach should probably be default.
+			#ifdef NES_PPU_USE_SIMD
+            c = pattern1 | pattern2 | attribute;
+			c = _byteswap_uint64(c);
+			#else
+            c = interleave_bits_64(pattern1, pattern2) | attribute;
+            #endif
 			*ib64 = c;
 		}
 		if (current_cycle == 256) {
@@ -737,6 +781,7 @@ void c_ppu::run_ppu_line()
 	int done = 0;
 	vid_out = 0;
 	reload_v = 0;
+
 
 	while (true)
 	{
@@ -851,26 +896,26 @@ int c_ppu::eval_sprites()
 	int sprite0_x = -1;
 	sprite0_index = -1;
 	sprite_count = 0;
-	memset(sprite_buffer, 0xFF, sizeof(sprite_buffer));
+	memset(sprite_buffer.get(), 0xFF, sizeof(sprite_buffer));
 	int sprite_line = current_scanline;
 	for (int i = 0; i < 64/* && sprite_count < max_sprites*/; i++)
 	{
 		int sprite_offset = i * 4;
-		int y = *(pSpriteMemory + sprite_offset) + 1;
+		int y = *(pSpriteMemory.get() + sprite_offset) + 1;
 		int sprite_height = 8 << (int)ppuControl1.spriteSize;
 		if (((sprite_line) >= y) && ((sprite_line) < (y + sprite_height)))
 		{
 			if (i == 0)
 			{
-				sprite0_x = *(pSpriteMemory + sprite_offset + 3);
+				sprite0_x = *(pSpriteMemory.get() + sprite_offset + 3);
 				sprite0_index = sprite_count;
 			}
-			memcpy(&sprite_buffer[sprite_count * 4], pSpriteMemory + sprite_offset, 4);
+			memcpy(&sprite_buffer[sprite_count * 4], pSpriteMemory.get() + sprite_offset, 4);
 
 
-			int sprite_tile = *(pSpriteMemory + sprite_offset + 1);
+			int sprite_tile = *(pSpriteMemory.get() + sprite_offset + 1);
 			int sprite_y = (sprite_line)-y;
-			int sprite_attribute = *(pSpriteMemory + sprite_offset + 2);
+			int sprite_attribute = *(pSpriteMemory.get() + sprite_offset + 2);
 
 			if (sprite_attribute & 0x80)
 			{

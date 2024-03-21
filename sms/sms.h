@@ -35,23 +35,7 @@ public:
 	void enable_mixer();
 	void disable_mixer();
 	void set_input(int input);
-	int get_fb_width() {
-		return 256; 
-	}
-	int get_fb_height() {
-		return 192;
-	}
     SMS_MODEL get_model() const { return model; }
-    std::tuple<int, int, int, int> get_crop()
-    {
-        if (model == SMS_MODEL::SMS) {
-            return {0, 0, -14, -14};
-        }
-        else if (model == SMS_MODEL::GAMEGEAR) {
-            return {48, 48, 24, 24};
-        }
-
-    };
 
   private:
     SMS_MODEL model;

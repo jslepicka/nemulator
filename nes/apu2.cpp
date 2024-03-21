@@ -25,10 +25,7 @@ c_apu2::c_apu2()
 #ifdef AUDIO_LOG
 	file.open("c:\\log\\audio.out", std::ios_base::trunc | std::ios_base::binary);
 #endif
-	sound_buffer = new int32_t[1024];
-	resampler = 0;
-	lpf = 0;
-	post_filter = 0;
+    sound_buffer = std::make_unique<int32_t[]>(1024);
 	build_lookup_tables();
 }
 
@@ -37,14 +34,6 @@ c_apu2::~c_apu2()
 #ifdef AUDIO_LOG
 	file.close();
 #endif
-	if (sound_buffer)
-		delete[] sound_buffer;
-	if (resampler)
-		delete resampler;
-	if (lpf)
-		delete lpf;
-	if (post_filter)
-		delete post_filter;
 }
 
 void c_apu2::build_lookup_tables()
@@ -96,7 +85,6 @@ void c_apu2::reset()
 	noise.reset();
 	dmc.reset();
 	square_clock = 0;
-	memset(sound_buffer, 0, sizeof(int32_t) * 1024);
 	/*
 	lowpass elliptical, 20kHz
 	d = fdesign.lowpass('N,Fp,Ap,Ast', 8, 20000, .1, 80, 1786840);
@@ -107,12 +95,11 @@ void c_apu2::reset()
 	a2 = regexprep(num2str(Hd.sosMatrix(17:20), '%.16ff '), '\s+', ',')
 	a3 = regexprep(num2str(Hd.sosMatrix(21:24), '%.16ff '), '\s+', ',')
 	*/
-	lpf = new c_biquad4(
-		{ 0.5086284279823303f,0.3313708603382111f,0.1059221103787422f,0.0055782101117074f },
-		{ -1.9872593879699707f,-1.9750031232833862f,-1.8231037855148315f,-1.9900115728378296f },
-		{ -1.9759204387664795f,-1.9602127075195313f,-1.9470522403717041f,-1.9888486862182617f },
-		{ 0.9801648259162903f,0.9627774357795715f,0.9480593800544739f,0.9940192103385925f }
-	);
+    lpf = std::make_unique<c_biquad4>(
+		std::initializer_list<float>{0.5086284279823303f, 0.3313708603382111f, 0.1059221103787422f, 0.0055782101117074f},
+        std::initializer_list<float>{-1.9872593879699707f, -1.9750031232833862f, -1.8231037855148315f, -1.9900115728378296f},
+        std::initializer_list<float>{-1.9759204387664795f, -1.9602127075195313f, -1.9470522403717041f, -1.9888486862182617f},
+        std::initializer_list<float>{0.9801648259162903f, 0.9627774357795715f, 0.9480593800544739f, 0.9940192103385925f});
 	/*
 	post-filter is butterworth bandpass, 30Hz - 14kHz
 	d = fdesign.bandpass('N,F3dB1,F3dB2', 2, 30, 14000, 48000);
@@ -129,13 +116,12 @@ void c_apu2::reset()
 	);*/
 
 	//12kHz
-	post_filter = new c_biquad(
-		0.4990182518959045f,
-		{ 1.0000000000000000f,0.0000000000000000f,-1.0000000000000000f },
-		{ 1.0000000000000000f,-0.9980365037918091f,0.0019634978380054f }
-	);
+    post_filter = std::make_unique<c_biquad>(
+        0.4990182518959045f,
+        std::initializer_list<float>{1.0000000000000000f, 0.0000000000000000f, -1.0000000000000000f},
+        std::initializer_list<float>{1.0000000000000000f, -0.9980365037918091f, 0.0019634978380054f});
 
-	resampler = new c_resampler(NES_AUDIO_RATE / 48000.0f, lpf, post_filter);
+	resampler = std::make_unique<c_resampler>(NES_AUDIO_RATE / 48000.0f, lpf.get(), post_filter.get());
 }
 
 int c_apu2::get_buffer(const short** buf)

@@ -3,6 +3,7 @@
 #include <cmath>
 #include <stdlib.h>
 #include <algorithm>
+#include <memory>
 #include "audio_filter.h"
 
 class c_resampler
@@ -28,8 +29,8 @@ private:
 	static const int OUTPUT_BUF_LEN = 1024;
 	static const int FILTERED_BUF_LEN = 4;
 	int filtered_buf_index;
-	short *output_buf;
-	float *filtered_buf;
+    std::unique_ptr<short[]> output_buf;
+    std::unique_ptr<float[]> filtered_buf;
 
 	i_audio_filter* pre_filter;
 	i_audio_filter* post_filter;

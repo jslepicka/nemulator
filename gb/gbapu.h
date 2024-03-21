@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <memory>
 #include "..\resampler.h"
 #include "..\biquad.hpp"
 #include "..\biquad4.hpp"
@@ -22,12 +23,21 @@ public:
 	void set_audio_rate(double freq);
 private:
 	c_gb* gb;
-	c_resampler* resampler_l;
-	c_resampler* resampler_r;
-	c_biquad4* lpf_l;
-	c_biquad* post_filter_l;
-	c_biquad4* lpf_r;
-	c_biquad* post_filter_r;
+	//c_resampler* resampler_l;
+	//c_resampler* resampler_r;
+	//c_biquad4* lpf_l;
+	//c_biquad* post_filter_l;
+	//c_biquad4* lpf_r;
+	//c_biquad* post_filter_r;
+
+	std::unique_ptr<c_resampler> resampler_l;
+    std::unique_ptr<c_resampler> resampler_r;
+    std::unique_ptr<c_biquad4> lpf_l;
+    std::unique_ptr<c_biquad> post_filter_l;
+    std::unique_ptr<c_biquad4> lpf_r;
+    std::unique_ptr<c_biquad> post_filter_r;
+    std::unique_ptr<int32_t[]> sound_buffer;
+
 	int mixer_enabled;
 	int ticks;
 	int frame_seq_counter;
@@ -38,7 +48,6 @@ private:
 	uint8_t NR52;
 	int left_vol;
 	int right_vol;
-	int32_t* sound_buffer;
 
 	int enable_n_l;
 	int enable_n_r;

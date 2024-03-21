@@ -4,6 +4,7 @@
 #include "gb\gb.h"
 #include "game.h"
 #include <vector>
+#include <memory>
 #include <list>
 #include <stack>
 #include <fstream>
@@ -213,4 +214,5 @@ private:
 
 	const double SPLASH_TIMER_TOTAL_DURATION = 1000.0;
     const double SPLASH_TIMER_FADE_DURATION = 500.0;
+    unsigned int benchmark_frame_count = 0;
 };

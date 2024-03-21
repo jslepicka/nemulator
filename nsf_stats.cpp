@@ -12,9 +12,6 @@ extern c_input_handler* g_ih;
 
 c_nsf_stats::c_nsf_stats()
 {
-	biquad1 = NULL;
-	biquad2 = NULL;
-	biquad3 = NULL;
 	meow_out = NULL;
 	fft_real = NULL;
 	visualization = 0;
@@ -22,15 +19,6 @@ c_nsf_stats::c_nsf_stats()
 
 c_nsf_stats::~c_nsf_stats()
 {
-	if (biquad1) {
-		delete biquad1;
-	}
-	if (biquad2) {
-		delete biquad2;
-	}
-	if (biquad3) {
-		delete biquad3;
-	}
 	if (meow_out) {
 		free(meow_out);
 	}
@@ -169,15 +157,15 @@ void c_nsf_stats::init(void* params)
 	}
 
 	//a weighting filter
-	biquad1 = new c_biquad(1,
-		{ 0.197012037038803, 0.394024074077606, 0.197012037038803 },
-		{ 1.0, -0.224558457732201, 0.012606625445187 });
-	biquad2 = new c_biquad(1,
-		{ 1.0, -2.0, 1.0 },
-		{ 1.0, -1.893870472908020, 0.895159780979157 });
-	biquad3 = new c_biquad(1,
-		{ 1.0, -2.0, 1.0 },
-		{ 1.0, -1.994614481925964, 0.994621694087982 });
+	biquad1 = std::make_unique<c_biquad>(1,
+		std::initializer_list<float>{ 0.197012037038803, 0.394024074077606, 0.197012037038803 },
+		std::initializer_list<float>{ 1.0, -0.224558457732201, 0.012606625445187 });
+	biquad2 = std::make_unique<c_biquad>(1,
+		std::initializer_list<float>{ 1.0, -2.0, 1.0 },
+		std::initializer_list<float>{ 1.0, -1.893870472908020, 0.895159780979157 });
+	biquad3 = std::make_unique<c_biquad>(1,
+		std::initializer_list<float>{ 1.0, -2.0, 1.0 },
+		std::initializer_list<float>{ 1.0, -1.994614481925964, 0.994621694087982 });
 
 	scroll_offset = 1.5;
 	scroll_timer = 0.0;

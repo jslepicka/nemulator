@@ -18,7 +18,24 @@ void strip_extension(char *path);
 
 c_sms::c_sms(SMS_MODEL model)
 {
-    system_name = model == SMS_MODEL::GAMEGEAR ? "Sega Game Gear" : "Sega Master System";
+	switch (model) {
+        case SMS_MODEL::SMS:
+            system_name = "Sega Master System";
+            display_info.crop_top = -14;
+            display_info.crop_bottom = -14;
+            break;
+        case SMS_MODEL::GAMEGEAR:
+            system_name = "Sega Game Gear";
+            display_info.crop_left = 48;
+            display_info.crop_right = 48;
+            display_info.crop_top = 24;
+            display_info.crop_bottom = 24;
+            break;
+    }
+	
+	display_info.fb_width = 256;
+    display_info.fb_height = 192;
+
     this->model = model;
 	z80 = new c_z80(
 		[this](uint16_t address) { return this->read_byte(address); }, //read_byte

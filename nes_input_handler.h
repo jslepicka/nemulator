@@ -1,4 +1,5 @@
 #include "input_handler.h"
+#include <memory>
 
 enum BUTTONS
 {
@@ -66,8 +67,8 @@ public:
 private:
 	int prev_temp[2];
 	int mask[2];
-	int *turbo_state;
-	int *turbo_rate;
+    std::unique_ptr<int[]> turbo_state;
+    std::unique_ptr<int[]> turbo_rate;
 	static const int turbo_rate_max = 20;
 	static const int turbo_rate_min = 2;
 };

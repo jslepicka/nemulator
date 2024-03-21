@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #include "..\resampler.h"
 #include "..\biquad4.hpp"
 #include "..\biquad.hpp"
@@ -19,7 +20,6 @@ public:
 private:
 	int available_cycles;
 	int mixer_enabled = 0;
-	c_resampler *resampler;
 	int tick;
 	int sample_count;
 	short *sample_buffer;
@@ -42,8 +42,9 @@ private:
 		TYPE_TONE = 0,
 		TYPE_VOLUME = 0x10
 	};
-	c_biquad4* lpf;
-	c_biquad* post_filter;
-	int32_t* sound_buffer;
+    std::unique_ptr<c_biquad4> lpf;
+    std::unique_ptr<c_biquad> post_filter;
+    std::unique_ptr<int32_t[]> sound_buffer;
+    std::unique_ptr<c_resampler> resampler;
 };
 

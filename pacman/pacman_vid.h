@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <memory>
 
 class c_pacman;
 
@@ -14,20 +15,26 @@ class c_pacman_vid
     void execute(int cycles);
     void build_color_lookup();
 
-    uint32_t *fb;
+    /*uint32_t *fb;
     uint8_t *tile_rom;
     uint8_t *sprite_rom;
     uint8_t *color_rom;
     uint8_t *pal_rom;
-    uint8_t *sprite_locs;
+    uint8_t *sprite_locs;*/
+    std::unique_ptr<uint32_t[]> fb;
+    std::unique_ptr<uint8_t[]> tile_rom;
+    std::unique_ptr<uint8_t[]> sprite_rom;
+    std::unique_ptr<uint8_t[]> color_rom;
+    std::unique_ptr<uint8_t[]> pal_rom;
+    std::unique_ptr<uint8_t[]> sprite_locs;
   
 private:
     c_pacman *pacman;
-    int line;
     int *irq;
+    int line;
     uint32_t vid_address;
-    uint8_t *vram;
-    uint8_t *sprite_ram;
+    std::unique_ptr<uint8_t[]> vram;
+    std::unique_ptr<uint8_t[]> sprite_ram;
     
     void draw_tile(uint32_t *&f);
 
@@ -43,4 +50,5 @@ private:
     static const uint8_t b_weights[];
 
     uint32_t colors[32];
+    uint32_t state = 0;
 };

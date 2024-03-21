@@ -2,12 +2,6 @@
 #include <math.h>
 #include <stdio.h>
 
-#include <crtdbg.h>
-//#if defined(DEBUG) | defined(_DEBUG)
-//#define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
-//#define new DEBUG_NEW
-//#endif
-
 c_psg::c_psg()
 {
 	float db2 = powf(10.0f, -(2.0f / 20.f));
@@ -29,32 +23,24 @@ c_psg::c_psg()
 	a2 = regexprep(num2str(Hd.sosMatrix(17:20), '%.16ff '), '\s+', ',')
 	a3 = regexprep(num2str(Hd.sosMatrix(21:24), '%.16ff '), '\s+', ',')
 	*/
-	lpf = new c_biquad4(
-		{ 0.5068508386611939f,0.3307863473892212f,0.1168005615472794f,0.0055816280655563f },
-		{ -1.9496889114379883f,-1.9021773338317871f,-1.3770858049392700f,-1.9604763984680176f },
-		{ -1.9442052841186523f,-1.9171522855758667f,-1.8950747251510620f,-1.9676681756973267f },
-		{ 0.9609073400497437f,0.9271715879440308f,0.8989855647087097f,0.9881398081779480f }
+	lpf = std::make_unique<c_biquad4>(
+		std::initializer_list<float>{ 0.5068508386611939f,0.3307863473892212f,0.1168005615472794f,0.0055816280655563f },
+		std::initializer_list<float>{ -1.9496889114379883f,-1.9021773338317871f,-1.3770858049392700f,-1.9604763984680176f },
+		std::initializer_list<float>{ -1.9442052841186523f,-1.9171522855758667f,-1.8950747251510620f,-1.9676681756973267f },
+		std::initializer_list<float>{ 0.9609073400497437f,0.9271715879440308f,0.8989855647087097f,0.9881398081779480f }
 	);
-	post_filter = new c_biquad(
+	post_filter = std::make_unique<c_biquad>(
 		0.5648277401924133f,
-		{ 1.0000000000000000f,0.0000000000000000f,-1.0000000000000000f },
-		{ 1.0000000000000000f,-0.8659016489982605f,-0.1296554803848267f }
+		std::initializer_list<float>{ 1.0000000000000000f,0.0000000000000000f,-1.0000000000000000f },
+		std::initializer_list<float>{ 1.0000000000000000f,-0.8659016489982605f,-0.1296554803848267f }
 	);
-	resampler = new c_resampler(((228.0 * 262.0 * 60.0) / 4.0) / 48000.0, lpf, post_filter);
-	sound_buffer = new int32_t[1024];
+	resampler = std::make_unique<c_resampler>(((228.0 * 262.0 * 60.0) / 4.0) / 48000.0, lpf.get(), post_filter.get());
+	sound_buffer = std::make_unique<int32_t[]>(1024);
 }
 
 
 c_psg::~c_psg()
 {
-	if (resampler)
-		delete resampler;
-	if (lpf)
-		delete lpf;
-	if (post_filter)
-		delete post_filter;
-	if (sound_buffer)
-		delete[] sound_buffer;
 }
 
 
@@ -88,7 +74,7 @@ void c_psg::reset()
 	lfsr_out = 0;
 	channel = 0;
 	type = 0;
-	memset(sound_buffer, 0, sizeof(int32_t) * 1024);
+	memset(sound_buffer.get(), 0, sizeof(int32_t) * 1024);
 }
 
 void c_psg::set_audio_rate(double freq)

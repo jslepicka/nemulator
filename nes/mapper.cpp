@@ -45,8 +45,6 @@ c_mapper::~c_mapper()
 	CloseSram();
 	if (chrRam)
 		delete[] chrRom;
-	if (sram)
-		delete[] sram;
 }
 
 unsigned char c_mapper::ReadByte(unsigned short address)
@@ -183,8 +181,7 @@ int c_mapper::OpenSram()
 {
 	if (!sram)
 	{
-		sram = new unsigned char[8192];
-		memset(sram, 0, 8192);
+		sram = std::make_unique<unsigned char[]>(8192);
 	}
 
 	if (header->Rcb1.Sram)
@@ -194,7 +191,7 @@ int c_mapper::OpenSram()
 		file.open(sramFilename, std::ios_base::in | std::ios_base::binary);
 		if (file.is_open())
 		{
-			file.read((char *)sram, 8192);
+			file.read((char *)sram.get(), 8192);
 			file.close();
 		}
 	}
@@ -210,13 +207,12 @@ int c_mapper::CloseSram()
 		file.open(sramFilename, std::ios_base::trunc | std::ios_base::binary);
 		if (file.is_open())
 		{
-			file.write((char *)sram, 8192);
+			file.write((char *)sram.get(), 8192);
 			file.close();
 		}
 	}
-	if (sram)
-		delete[] sram;
-	sram = 0;
+    if (sram)
+        sram.reset();
 	return 0;
 }
 

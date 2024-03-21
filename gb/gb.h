@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <map>
 #include <functional>
+#include <memory>
 #include "../console.h"
 
 class c_sm83;
@@ -31,9 +32,9 @@ public:
 	int emulate_frame();
 	int IE; //interrput enable register
 	int IF; //interrupt flag register
-	c_sm83* cpu;
-	c_gbapu* apu;
-    c_gbppu *ppu;
+    std::unique_ptr<c_sm83> cpu;
+    std::unique_ptr<c_gbapu> apu;
+    std::unique_ptr<c_gbppu> ppu;
 	uint32_t* get_fb();
 	void clock_timer();
 	void set_vblank_irq(int status);
@@ -50,18 +51,16 @@ public:
 	void enable_mixer();
 	void disable_mixer();
 
-	int get_fb_width() { return 160; }
-	int get_fb_height() { return 144; }
-
-	//int is_color() { return color; }
-
 	GB_MODEL get_model() const { return model; }
-	double get_aspect_ratio() { return 4.7 / 4.3; }
 
 private:
-	c_gbmapper* mapper;
-	uint8_t* ram;
-	uint8_t* hram;
+	//c_gbmapper* mapper;
+	//uint8_t* ram;
+	//uint8_t* hram;
+    std::unique_ptr<c_gbmapper> mapper;
+	std::unique_ptr<uint8_t[]> ram;
+    std::unique_ptr<uint8_t[]> hram;
+    std::unique_ptr<uint8_t[]> rom;
 	//uint8_t* cart_ram;
 	int SB; //serial transfer data
 	int SC; //serial transfer control
@@ -75,7 +74,7 @@ private:
 	int last_TAC_out;
 	int input;
 	int next_input;
-	uint8_t* rom;
+	
 
 	uint8_t cart_type;
 	uint8_t rom_size;
@@ -85,7 +84,7 @@ private:
 	char title[17] = { 0 };
 	
 	struct s_mapper {
-		std::function<c_gbmapper * ()> mapper;
+		std::function<std::unique_ptr<c_gbmapper>()> mapper;
 		int has_ram;
 		int has_battery;
 	};

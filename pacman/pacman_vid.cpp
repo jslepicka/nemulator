@@ -8,33 +8,19 @@ c_pacman_vid::c_pacman_vid(c_pacman *pacman, int *irq)
 {
     this->pacman = pacman;
     this->irq = irq;
-    fb = new uint32_t[288 * 224];
-    memset(fb, 0x00, sizeof(uint32_t) * 288 * 224);
-    vram = new uint8_t[2048];
-    memset(vram, 0, 2048);
-    sprite_ram = new uint8_t[16];
-    memset(sprite_ram, 0, 16);
-
-    tile_rom = new uint8_t[4096];
-    sprite_rom = new uint8_t[4096];
-
-    color_rom = new uint8_t[32];
-    pal_rom = new uint8_t[256];
-
-    sprite_locs = new uint8_t[16];
-    memset(sprite_locs, 0, 16);
+    fb = std::make_unique<uint32_t[]>(288 * 224);
+    vram = std::make_unique<uint8_t[]>(2048);
+    sprite_ram = std::make_unique<uint8_t[]>(16);
+    
+    tile_rom = std::make_unique<uint8_t[]>(4096);
+    sprite_rom = std::make_unique<uint8_t[]>(4096);
+    color_rom = std::make_unique<uint8_t[]>(32);
+    pal_rom = std::make_unique<uint8_t[]>(256);
+    sprite_locs = std::make_unique<uint8_t[]>(16);
 }
 
 c_pacman_vid::~c_pacman_vid()
 {
-    delete[] fb;
-    delete[] vram;
-    delete[] tile_rom;
-    delete[] sprite_ram;
-    delete[] sprite_rom;
-    delete[] color_rom;
-    delete[] pal_rom;
-    delete[] sprite_locs;
 }
 
 
@@ -42,6 +28,7 @@ void c_pacman_vid::reset()
 {
     line = 248;
     vid_address = 0;
+    state = 0;
 }
 
 uint8_t c_pacman_vid::read_byte(uint16_t address)
@@ -74,7 +61,7 @@ void c_pacman_vid::write_byte(uint16_t address, uint8_t data)
 
 void c_pacman_vid::draw_background_line(int line)
 {
-    uint32_t *f = fb + line * 288;
+    uint32_t *f = fb.get() + line * 288;
 
     vid_address = 0x3C2;
     vid_address += 0x1 * (line / 8);
@@ -108,16 +95,16 @@ void c_pacman_vid::draw_tile(uint32_t *&f)
     uint32_t chr_loc = tile_number * 16;
     chr_loc += (line % 8) + 8;
     uint8_t chr_data = tile_rom[chr_loc];
-    for (int x = 0; x < 8; x++) {
-        if (x == 4) {
-            chr_data = tile_rom[chr_loc - 8];
+    for (int i = 0; i < 2; i++) {
+        for (int x = 0; x < 4; x++) {
+            uint8_t pixel = ((chr_data & 0x8) >> 3) | ((chr_data & 0x80) >> 6);
+            chr_data <<= 1;
+            //lookup color
+            uint8_t color = lookup_color(pal_number, pixel);
+            uint32_t rgb = colors[color];
+            *f++ = rgb;
         }
-        uint8_t pixel = ((chr_data & 0x8) >> 3) | ((chr_data & 0x80) >> 6);
-        chr_data <<= 1;
-        //lookup color
-        uint32_t color = lookup_color(pal_number, pixel);
-        uint32_t rgb = colors[color];
-        *f++ = rgb;
+        chr_data = tile_rom[chr_loc - 8];
     }
 }
 
@@ -159,7 +146,7 @@ void c_pacman_vid::draw_sprite_line(int line)
 
             uint8_t chr_offset = sprite_y_flip ? 0 : 8;
             uint8_t chr_data;
-            uint32_t *f = fb + line * 288 + sprite_x;
+            uint32_t *f = fb.get() + line * 288 + sprite_x;
             for (int x = 0; x < 16; x++) {
                 if ((x & 0x3) == 0) {
                     int a = chr_loc + chr_offset;
