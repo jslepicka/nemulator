@@ -33,7 +33,7 @@ c_mapper85::c_mapper85()
 	for (int i = 0; i < 256; i++)
 	{
 		
-		float sinx = sin(pi*i / 256.0f);
+		float sinx = (float)sin(pi*i / 256.0f);
 		if (!sinx)
 			sin_table[i] = (1 << 23);
 		else
@@ -42,7 +42,7 @@ c_mapper85::c_mapper85()
 			if (sinx >(1 << 23))
 				sin_table[i] = (1 << 23);
 			else
-				sin_table[i] = sinx;
+				sin_table[i] = (int)sinx;
 		}
 		//sin_table[i] = linear2db(sin(pi * i / 256.0f));
 	}
@@ -294,7 +294,7 @@ void c_mapper85::clock_audio()
 			//phase[slot] &= 0x3FFFF;
 			/*uint32_t mod = 0;*/
 			if (inst[is_carrier] & 0x40)
-				phase[slot] += (freq_rate / 2 * fm_output);
+				phase[slot] += (unsigned int)(freq_rate / 2 * fm_output);
 			else
 				phase[slot] += freq_rate / 2;
 			if (is_carrier)
@@ -332,7 +332,7 @@ void c_mapper85::clock_audio()
 				}
 				if (is_carrier && out != 0)
 				{
-					float f = (out / 1048576.0);
+					float f = (float)(out / 1048576.0);
 					if (f > 1.0)
 					{
 						int x = 1;
@@ -363,13 +363,13 @@ void c_mapper85::clock_audio()
 
 float c_mapper85::mix_audio(float sample)
 {
-	float v = va.audio_out / 50000.0;
+	float v = (float)(va.audio_out / 50000.0);
 	return (sample *.5f) + (v * .5f);
 }
 
 float c_mapper85::linear2db(float in)
 {
-	return -20.0f * log10(in) * ((1 << 23) / 48.0f);
+	return (float)(-20.0f * log10(in) * ((1 << 23) / 48.0f));
 }
 
 float c_mapper85::db2linear(float in)
@@ -378,7 +378,7 @@ float c_mapper85::db2linear(float in)
 	double inscale = (1 << 23) / 48.0 / (1 << 3);
 	double lin = pow(10.0, (in / -20.0 / inscale));
 	//return lin * outscale;
-	return pow(10.0f, (in / -20.0f / ((1 << 23) / 48.0f)));
+	return (float)pow(10.0f, (in / -20.0f / ((1 << 23) / 48.0f)));
 }
 
 uint32_t c_mapper85::clock_envelope(int slot, const int *inst)

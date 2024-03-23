@@ -23,7 +23,7 @@ extern HWND hWnd;
 extern D3d10App *app;
 
 extern c_config *config;
-extern c_input_handler *g_ih;
+extern std::unique_ptr<c_input_handler> g_ih;
 
 int mode;
 int prevMode;
@@ -36,8 +36,6 @@ HANDLE g_start_event;
 c_nemulator::c_nemulator()
 {
 	prevMode = mode = MODE_MENU;
-	startEvents = NULL;
-	doneEvents = NULL;
 	done_events = NULL;
 	runnableCount = 0;
 	updateEvents = true;
@@ -53,7 +51,6 @@ c_nemulator::c_nemulator()
 	for (int i = 0; i < fps_records; i++)
 		fps_history[i] = 0.0;
 	fps_index = 0;
-	ih = 0;
 	menu = 0;
 	paused = false;
 	g_start_event = CreateEvent(NULL, TRUE, TRUE, NULL);
@@ -93,26 +90,15 @@ void c_nemulator::kill_threads()
 		CloseHandle(game_thread->start_event);
 		CloseHandle(game_thread->done_event);
 		CloseHandle(game_thread->thread_handle);
-		delete game_thread;
 	}
+    game_threads.clear();
 }
 
 c_nemulator::~c_nemulator()
 {
-	//if (stats)
-	//	delete stats;
-	if (startEvents)
-		delete[] startEvents;
-	if (doneEvents)
-		delete[] doneEvents;
-	if (done_events)
-		delete[] done_events;
 	ReleaseCOM(font1);
 	ReleaseCOM(font2);
 	ReleaseCOM(font3);
-	delete (mainPanel2);
-	if (sound)
-		delete sound;
 	kill_threads();
 	for (auto &game : gameList)
 	{
@@ -194,13 +180,14 @@ int c_nemulator::init_threads()
 	num_threads = 0;
 	for (int i = 0; i < (int)(num_procs * 2) && i < 64; i++)
 	{
-		s_game_thread *t = new s_game_thread;
+		//s_game_thread *t = new s_game_thread;
+        auto t = std::make_unique<s_game_thread>();
 		t->start_event = CreateEvent(NULL, FALSE, FALSE, NULL);
 		t->done_event = CreateEvent(NULL, FALSE, FALSE, NULL);
 		t->kill = 0;
-		t->thread_handle = CreateThread(NULL, 0, c_nemulator::game_thread, t, 0, NULL);
+		t->thread_handle = CreateThread(NULL, 0, c_nemulator::game_thread, t.get(), 0, NULL);
 		num_threads++;
-		game_threads.push_back(t);
+		game_threads.push_back(std::move(t));
 	}
 
 	return 0;
@@ -214,7 +201,7 @@ void c_nemulator::Init()
 	//add_task(mem_viewer, NULL);
 
 	LoadFonts();
-	sound = new c_sound();
+	sound = std::make_unique<c_sound>();
     if (!sound->init()) {
         MessageBox(NULL, "Sound initialization failed", "Error", MB_OK);
         exit(1);
@@ -229,14 +216,15 @@ void c_nemulator::Init()
 		panel_columns = 3;
 	int panel_rows = (int)((panel_columns-1) * tile_width / ((double)clientWidth/clientHeight) * .82 / 2.04);
 
-	mainPanel2 = new TexturePanel(panel_rows, panel_columns);
+	//mainPanel2 = new TexturePanel(panel_rows, panel_columns);
+    mainPanel2 = std::make_unique<TexturePanel>(panel_rows, panel_columns);
 	mainPanel2->x = 0.0f;
 	mainPanel2->y = 0.0f;
 	mainPanel2->z = 0.0f;
 	mainPanel2->in_focus = true;
-	sharpness = std::clamp(config->get_double("sharpness", .8), 0.0, 1.0);
+	sharpness = (float)std::clamp(config->get_double("sharpness", .8), 0.0, 1.0);
 	mainPanel2->set_sharpness(sharpness);
-	texturePanels[0] = mainPanel2;
+	texturePanels[0] = mainPanel2.get();
 
 
 	QueryPerformanceFrequency(&liFreq);
@@ -333,7 +321,7 @@ void c_nemulator::configure_input()
 	};
 
 	int num_buttons = sizeof(button_map) / sizeof(s_button_map);
-	g_ih = new c_nes_input_handler(BUTTON_COUNT);
+    g_ih = std::make_unique<c_nes_input_handler>(BUTTON_COUNT);
 
 	for (int i = 0; i < num_buttons; i++)
 	{
@@ -391,31 +379,31 @@ void c_nemulator::RunGames()
 			{
 				SetEvent(game_thread->start_event);
 			}
-			WaitForMultipleObjects(game_threads.size(), done_events, TRUE, INFINITE);
+			WaitForMultipleObjects((DWORD)game_threads.size(), done_events.get(), TRUE, INFINITE);
 		}
 	}
 	else
 	{
-		//c_console *n = ((Game*)texturePanels[selectedPanel]->GetSelected())->console;
 		c_game *g = (c_game*)texturePanels[selectedPanel]->GetSelected();
+        auto ih = (c_nes_input_handler *)g_ih.get();
 		switch (g->type)
 		{
 		case GAME_NES:
 			g->console->set_input(
-				((c_nes_input_handler*)g_ih)->get_nes_byte(0) |
-				(((c_nes_input_handler*)g_ih)->get_nes_byte(1) << 8));
+				ih->get_nes_byte(0) |
+				(ih->get_nes_byte(1) << 8));
 			break;
 		case GAME_SMS:
 		case GAME_GG:
-			g->console->set_input(((c_nes_input_handler*)g_ih)->get_sms_input());
+			g->console->set_input(ih->get_sms_input());
 			break;
 		case GAME_GB:
         case GAME_GBC:
-			g->console->set_input(((c_nes_input_handler*)g_ih)->get_gb_input());
+			g->console->set_input(ih->get_gb_input());
 			break;
         case GAME_PACMAN:
         case GAME_MSPACMAN:
-            g->console->set_input(((c_nes_input_handler *)g_ih)->get_pacman_input());
+            g->console->set_input(ih->get_pacman_input());
             break;
 		default:
 			break;
@@ -811,27 +799,25 @@ void c_nemulator::show_qam()
 
 void c_nemulator::do_turbo_press(int button, std::string button_name)
 {
-
+    auto nih = (c_nes_input_handler *)g_ih.get();
 	if (g_ih->get_result(BUTTON_LEFT_SHIFT) & c_input_handler::RESULT_DEPRESSED)
 	{
-		((c_nes_input_handler*)g_ih)->set_turbo_rate(button,
-			((c_nes_input_handler*)g_ih)->get_turbo_rate(button) + 2);
+		nih->set_turbo_rate(button, nih->get_turbo_rate(button) + 2);
 	}
 	else if (g_ih->get_result(BUTTON_RIGHT_SHIFT) & c_input_handler::RESULT_DEPRESSED)
 	{
-		((c_nes_input_handler*)g_ih)->set_turbo_rate(button,
-			((c_nes_input_handler*)g_ih)->get_turbo_rate(button) - 2);
+		nih->set_turbo_rate(button, nih->get_turbo_rate(button) - 2);
 	}
 	else
 	{
-		int turbo_state = ((c_nes_input_handler*)g_ih)->get_turbo_state(button);
-		((c_nes_input_handler*)g_ih)->set_turbo_state(button, !turbo_state);
+		int turbo_state = nih->get_turbo_state(button);
+		nih->set_turbo_state(button, !turbo_state);
 		status->add_message(button_name + " turbo " + (turbo_state ? "disabled" : "enabled"));
 		return;
 	}
 	char message[64];
 	sprintf_s(message, "%s turbo rate: %d/s", button_name.c_str(),
-		60/((c_nes_input_handler*)g_ih)->get_turbo_rate(button));
+		60/nih->get_turbo_rate(button));
 	status->add_message(message);
 }
 
@@ -1131,7 +1117,7 @@ void c_nemulator::UpdateScene(double dt)
 	if (audio_info != NULL && elapsed >= 10.0)
 	{
 		if (inGame)
-			audio_info->report((int)sound->get_freq(), s, 0, sound->max_freq, sound->min_freq);
+			audio_info->report((int)sound->get_freq(), s, 0, (int)sound->max_freq, (int)sound->min_freq);
 	}
 
 	if (elapsed >= 250.0)
@@ -1203,9 +1189,8 @@ void c_nemulator::UpdateScene(double dt)
 		}
 		if (nsf_stats) { //NSF
 			c_game* game = (c_game*)texturePanels[selectedPanel]->GetSelected();
-			c_console* console = game->console.get();
-			c_nes* n = (c_nes*)console;
-			nsf_stats->report_stat("song #", n->read_byte(0x54F7) + 1);
+            c_nes &n = (c_nes&)game->console;
+			nsf_stats->report_stat("Song #", n.read_byte(0x54F7) + 1);
 		}
 		framesDrawn = 0;
 		elapsed = 0.0;
@@ -1324,8 +1309,7 @@ void c_nemulator::GetEvents()
 {
 	if (done_events)
 	{
-		delete[] done_events;
-		done_events = 0;
+        done_events.reset();
 	}
 
 	std::list<TexturePanelItem*> panelItems;
@@ -1336,7 +1320,7 @@ void c_nemulator::GetEvents()
 
 	if (panelItems.size() > 0)
 	{
-		done_events = new HANDLE[game_threads.size()];
+        done_events = std::make_unique<HANDLE[]>(game_threads.size());
 		int x = 0;
 		int y = 0;
 		for (auto &game_thread : game_threads)
@@ -1505,7 +1489,7 @@ int c_nemulator::take_screenshot()
 				find_result = _findnext(f, &fd);
 			}
 			file_list.sort();
-			int length = strlen(file_list.back().c_str());
+			int length = (int)strlen(file_list.back().c_str());
 			char temp[8];
 			strcpy_s(temp, file_list.back().c_str() + length-7);
 			temp[3] = '\0';

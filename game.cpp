@@ -14,7 +14,7 @@ std::string c_game::get_filename()
 }
 
 c_game::c_game(GAME_TYPE type, std::string path, std::string filename, std::string sram_path) :
-	mt(time(0))
+	mt((unsigned int)time(0))
 {
 	limit_sprites = false;
 	this->path = path;
@@ -63,10 +63,10 @@ void c_game::OnActivate(bool load)
 {
 	if (ref == 0)
 	{
-		SimpleVertex unloaded_vertices[4] = {{D3DXVECTOR3(-4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2(0.0f, (double)static_height/tex_height)},
+		SimpleVertex unloaded_vertices[4] = {{D3DXVECTOR3(-4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2(0.0f, (FLOAT)((double)static_height/tex_height))},
                                              {D3DXVECTOR3(-4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2(0.0f, 0.0f)},
-                                             {D3DXVECTOR3(4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2((double)static_width/tex_width, (double)static_height/tex_height)},
-                                             {D3DXVECTOR3(4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2((double)static_width/tex_width, 0.0f)}};
+                                             {D3DXVECTOR3(4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2((FLOAT)((double)static_width/tex_width), (FLOAT)((double)static_height/tex_height))},
+                                             {D3DXVECTOR3(4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2((FLOAT)((double)static_width/tex_width), 0.0f)}};
 
         D3D10_SUBRESOURCE_DATA initData;
 		initData.pSysMem = unloaded_vertices;
@@ -165,6 +165,11 @@ void c_game::DrawToTexture(ID3D10Texture2D *tex)
 		for (; y < display_info.fb_height; y++) {
 			p = (int*)map.pData + (y) * (map.RowPitch / 4);
 			int x = 0;
+            //for (; x < display_info.fb_width / 64; x += 64) {
+            //    memcpy(p, fb, 64 * sizeof(int));
+            //    p += 64;
+            //    fb += 64;
+            //}
 			for (; x < display_info.fb_width; x++) {
 				*p++ = *fb++;
 			}
@@ -248,17 +253,17 @@ void c_game::create_vertex_buffer()
     h_end /= tex_height;
 
 	SimpleVertex vertices[4] = {
-        {D3DXVECTOR3(-4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2(w_start, h_end)},
-        {D3DXVECTOR3(-4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2(w_start, h_start)},
-        {D3DXVECTOR3(4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2(w_end, h_end)},
-        {D3DXVECTOR3(4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2(w_end, h_start)},
+        {D3DXVECTOR3(-4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2((FLOAT)w_start, (FLOAT)h_end)},
+        {D3DXVECTOR3(-4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2((FLOAT)w_start, (FLOAT)h_start)},
+        {D3DXVECTOR3(4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2((FLOAT)w_end, (FLOAT)h_end)},
+        {D3DXVECTOR3(4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2((FLOAT)w_end, (FLOAT)h_start)},
     };
 
 	if (display_info.rotated) {
-        vertices[0].tex.x = vertices[2].tex.x = w_end;
-        vertices[1].tex.x = vertices[3].tex.x = w_start;
-        vertices[0].tex.y = vertices[1].tex.y = h_end;
-        vertices[2].tex.y = vertices[3].tex.y = h_start;
+        vertices[0].tex.x = vertices[2].tex.x = (FLOAT)w_end;
+        vertices[1].tex.x = vertices[3].tex.x = (FLOAT)w_start;
+        vertices[0].tex.y = vertices[1].tex.y = (FLOAT)h_end;
+        vertices[2].tex.y = vertices[3].tex.y = (FLOAT)h_start;
     }
 
 	D3D10_SUBRESOURCE_DATA initData;

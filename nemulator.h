@@ -120,7 +120,7 @@ private:
 	void start_game();
 	void leave_game();
 	int menu;
-	c_nes_input_handler *ih;
+	//c_nes_input_handler *ih;
 	char romPath[MAX_PATH];
 	bool fastscroll;
 	double scroll_fade_timer;
@@ -136,11 +136,12 @@ private:
 	double menu_delay;
 
 	bool inGame;
-	c_sound *sound;
+    std::unique_ptr<c_sound> sound;
 
 	unsigned char *joy1, *joy2;
 
-	TexturePanel *mainPanel2;
+	//TexturePanel *mainPanel2;
+    std::unique_ptr<TexturePanel> mainPanel2;
 	static const int num_texture_panels = 1;
 	TexturePanel *texturePanels[num_texture_panels];
 
@@ -162,8 +163,6 @@ private:
 	LARGE_INTEGER liCurrent;
 	LARGE_INTEGER liLast;
 
-	HANDLE *startEvents;
-	HANDLE *doneEvents;
 	int runnableCount;
 
 	double max_fps;
@@ -186,9 +185,11 @@ private:
 		int kill;
 		std::vector<c_game*> game_list;
 	};
-	std::vector<s_game_thread*> game_threads;
+	//std::vector<s_game_thread*> game_threads;
+    std::vector<std::unique_ptr<s_game_thread>> game_threads;
 	int num_threads;
-	HANDLE *done_events;
+	//HANDLE *done_events;
+    std::unique_ptr<HANDLE[]> done_events;
 
 	bool show_suspend;
 

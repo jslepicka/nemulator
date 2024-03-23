@@ -1,6 +1,7 @@
 #pragma once
 #include "..\console.h"
 #include "..\z80\z80.h"
+#include <memory>
 
 class c_pacman_vid;
 class c_pacman_psg;
@@ -19,7 +20,7 @@ class c_pacman : public c_console
     void set_input(int input);
     int *get_video();
     virtual ~c_pacman();
-    c_z80 *z80;
+    
     void set_irq(int irq);
     void enable_mixer();
     void disable_mixer();
@@ -31,15 +32,17 @@ class c_pacman : public c_console
     uint8_t read_port(uint8_t port);
     void write_port(uint8_t port, uint8_t data);
 
-    uint8_t *prg_rom;
-    uint8_t *work_ram;
+    std::unique_ptr<c_z80> z80;
+    std::unique_ptr<c_pacman_vid> pacman_vid;
+    std::unique_ptr<c_pacman_psg> pacman_psg;
+    std::unique_ptr<uint8_t[]> prg_rom;
+    std::unique_ptr<uint8_t[]> work_ram;
 
     int nmi;
     int irq;
     uint8_t data_bus;
 
-    c_pacman_vid *pacman_vid;
-    c_pacman_psg *pacman_psg;
+    
     uint8_t IN0;
     uint8_t IN1;
     uint64_t frame_counter;

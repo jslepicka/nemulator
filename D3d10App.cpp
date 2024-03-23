@@ -22,7 +22,8 @@ bool aspectLock;
 double aspectRatio;
 HWND hWnd;
 c_config *config = NULL;
-c_input_handler *g_ih = NULL;
+//c_input_handler *g_ih = NULL;
+std::unique_ptr<c_input_handler> g_ih;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -69,7 +70,6 @@ D3d10App::D3d10App(HINSTANCE hInstance)
     aspectRatio = 0.0;
 
     config = NULL;
-    g_ih = NULL;
 
     power_request = NULL;
 }
@@ -97,8 +97,6 @@ D3d10App::~D3d10App()
 
     if (config)
         delete config;
-    if (g_ih)
-        delete g_ih;
     if (power_request)
         CloseHandle(power_request);
 }
@@ -505,10 +503,10 @@ int D3d10App::InitD3d()
     IDXGIOutput *pOutput;
     hr2 = pAdapter->EnumOutputs(0, &pOutput);
     UINT num_modes = 0;
-    DXGI_MODE_DESC mode;
     hr2 = pOutput->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, 0, &num_modes, 0);
-    DXGI_MODE_DESC *pDescs = new DXGI_MODE_DESC[num_modes];
-    hr2 = pOutput->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, 0, &num_modes, pDescs);
+    //DXGI_MODE_DESC *pDescs = new DXGI_MODE_DESC[num_modes];
+    auto pDescs = std::make_unique<DXGI_MODE_DESC[]>(num_modes);
+    hr2 = pOutput->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, 0, &num_modes, pDescs.get());
 
     UINT createDeviceFlags = 0;
     //#if defined(DEBUG) || defined(_DEBUG)
@@ -556,8 +554,6 @@ int D3d10App::InitD3d()
     ReleaseCOM(pOutput);
     ReleaseCOM(pAdapter);
     ReleaseCOM(pFactory);
-
-    delete[] pDescs;
 
     return 1;
 }

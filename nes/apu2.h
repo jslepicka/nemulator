@@ -8,6 +8,7 @@
 #include "..\biquad4.hpp"
 
 class c_nes;
+class c_mapper;
 
 class c_apu2
 {
@@ -264,6 +265,7 @@ private:
 	int mixer_enabled;
     int square_clock;
 	c_nes *nes;
+    c_mapper *mapper;
 	int frame_irq_enable;
 	int frame_irq_flag;
 	int frame_irq_asserted;

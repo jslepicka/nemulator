@@ -175,7 +175,7 @@ void c_audio_info::draw()
 
 			if (y <= min && y >= max)
 			{
-				int trans = (1.0 - ((double)abs(y - target) / ((min-max)/2))) * 0xFF;
+				int trans = (int)((1.0 - ((double)abs(y - target) / ((min-max)/2))) * 0xFF);
 				//trans <<= 24;
 
 				if (stable)
@@ -193,7 +193,7 @@ void c_audio_info::draw()
 	{
 		if (freq[read_pointer] != -1)
 		{
-			int range = (48000*1.02)-(48000*.98);
+			int range = (int)((48000*1.02)-(48000*.98));
 			int y = (int)(((range - ((48000*1.02) - freq[read_pointer]))/(double)range) * (tex_size - 1));
 			y = ((tex_size - 1) - y);
 			if (y > (tex_size - 1))

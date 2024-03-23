@@ -28,7 +28,7 @@ private:
 	{
 	public:
 		c_channel() {};
-		~c_channel() {};
+		virtual ~c_channel() {};
 		virtual void clock();
 		virtual int get_output();
 		virtual void reset();

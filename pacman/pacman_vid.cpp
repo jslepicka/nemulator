@@ -1,6 +1,12 @@
 #include "pacman_vid.h"
 #include "pacman.h"
 
+#define USE_BMI
+
+#ifdef USE_BMI
+#include <immintrin.h>
+#endif
+
 const uint8_t c_pacman_vid::rg_weights[] = {0x0, 0x21, 0x47, 0x68, 0x97, 0xB8, 0xDE, 0xFF};
 const uint8_t c_pacman_vid::b_weights[] = {0x0, 0x51, 0xAE, 0xFF};
 
@@ -97,7 +103,11 @@ void c_pacman_vid::draw_tile(uint32_t *&f)
     uint8_t chr_data = tile_rom[chr_loc];
     for (int i = 0; i < 2; i++) {
         for (int x = 0; x < 4; x++) {
-            uint8_t pixel = ((chr_data & 0x8) >> 3) | ((chr_data & 0x80) >> 6);
+            #ifdef USE_BMI
+            uint32_t pixel = _pext_u32(chr_data, 0x88);
+            #else
+            uint32_t pixel = ((chr_data & 0x8) >> 3) | ((chr_data & 0x80) >> 6);
+            #endif
             chr_data <<= 1;
             //lookup color
             uint8_t color = lookup_color(pal_number, pixel);
@@ -155,13 +165,22 @@ void c_pacman_vid::draw_sprite_line(int line)
                     int chr_offset_adjust = sprite_y_flip ? -8 : 8;
                     chr_offset = (chr_offset + chr_offset_adjust) & 0x1F;
                 }
-                uint8_t pixel = 0;
+                //uint8_t pixel = 0;
+                uint32_t pixel = 0;
                 if (sprite_y_flip) {
+                    #ifdef USE_BMI
+                    pixel = _pext_u32(chr_data, 0x11);
+                    #else
                     pixel = ((chr_data & 0x1) >> 0) | ((chr_data & 0x10) >> 3);
+                    #endif
                     chr_data >>= 1;
                 }
                 else {
+                    #ifdef USE_BMI
+                    pixel = _pext_u32(chr_data, 0x88);
+                    #else
                     pixel = ((chr_data & 0x8) >> 3) | ((chr_data & 0x80) >> 6);
+                    #endif
                     chr_data <<= 1;
                 }
                 uint8_t color = lookup_color(sprite_pal, pixel);

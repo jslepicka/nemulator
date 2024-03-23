@@ -32,6 +32,7 @@ c_ppu::c_ppu()
     sprite_index_buffer = std::make_unique_for_overwrite<unsigned char[]>(512);
     index_buffer = std::make_unique_for_overwrite<unsigned char[]>(272);
     frame_buffer = std::make_unique_for_overwrite<int[]>(256 * 256);
+    p_frame = frame_buffer.get();
 }
 
 void c_ppu::generate_palette()
