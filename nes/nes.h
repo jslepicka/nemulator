@@ -43,9 +43,6 @@ public:
 	bool get_sprite_limit();
 	void set_submapper(int submapper);
 	int get_crc() {return crc32;};
-	//c_cpu *cpu;
-	//c_ppu *ppu;
-	//c_mapper *mapper;
     std::unique_ptr<c_cpu> cpu;
     std::unique_ptr<c_ppu> ppu;
     std::unique_ptr<c_mapper> mapper;
@@ -56,24 +53,18 @@ public:
 	void disable_mixer();
 
 private:
-	int num_apu_samples;
-	//c_apu2* apu2;
-	//c_joypad *joypad;
-	//c_game_genie* game_genie;
+    int LoadImage(char *pathFile);
     std::unique_ptr<c_apu2> apu2;
     std::unique_ptr<c_joypad> joypad;
     std::unique_ptr<c_game_genie> game_genie;
-	int crc32;
-	int mapperNumber;
-	char sramFilename[MAX_PATH];
-	//unsigned char *image;
-	//unsigned char *cpuRam;
-	//unsigned char *sram;
     std::unique_ptr<unsigned char[]> image;
     std::unique_ptr<unsigned char[]> cpuRam;
     std::unique_ptr<unsigned char[]> sram;
-	int LoadImage(char *pathFile);
-	bool limit_sprites;
+    const static std::map<int, std::function<std::unique_ptr<c_mapper>()>> mapper_factory;
+    int crc32;
+    int mapperNumber;
+    int num_apu_samples;
 	int file_length;
-	const static std::map<int, std::function<std::unique_ptr<c_mapper>()> > mapper_factory;
+    char sramFilename[MAX_PATH];
+    bool limit_sprites;
 };

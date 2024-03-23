@@ -22,8 +22,8 @@ c_gbapu::c_gbapu(c_gb* gb)
     post_filter_r = std::make_unique<c_biquad>(post_g, post_b, post_a);
 
 
-	resampler_l = std::make_unique<c_resampler>(GB_AUDIO_RATE / 48000.0, lpf_l.get(), post_filter_l.get());
-    resampler_r = std::make_unique<c_resampler>(GB_AUDIO_RATE / 48000.0, lpf_r.get(), post_filter_r.get());
+	resampler_l = std::make_unique<c_resampler>((float)(GB_AUDIO_RATE / 48000.0), lpf_l.get(), post_filter_l.get());
+    resampler_r = std::make_unique<c_resampler>((float)(GB_AUDIO_RATE / 48000.0), lpf_r.get(), post_filter_r.get());
 	sound_buffer = std::make_unique_for_overwrite<int32_t[]>(1024);
 }
 
@@ -50,8 +50,8 @@ void c_gbapu::reset()
 void c_gbapu::set_audio_rate(double freq)
 {
 	double x = GB_AUDIO_RATE / freq;
-	resampler_l->set_m(x);
-	resampler_r->set_m(x);
+	resampler_l->set_m((float)x);
+	resampler_r->set_m((float)x);
 }
 
 void c_gbapu::enable_mixer()
@@ -274,10 +274,10 @@ void c_gbapu::mix()
 	float right_sample = 0.0f;
 
 	//output range of each channel is 0 - 15
-	float square1_out = square1.get_output();
-	float square2_out = square2.get_output();
-	float wave_out = wave.get_output();
-	float noise_out = noise.get_output();
+	float square1_out = (float)square1.get_output();
+	float square2_out = (float)square2.get_output();
+	float wave_out = (float)wave.get_output();
+	float noise_out = (float)noise.get_output();
 
 	left_sample += square1_out * enable_1_l +
 		square2_out * enable_2_l +
@@ -293,8 +293,8 @@ void c_gbapu::mix()
 	//right_sample = 0;
 
 	//divide by 60 (max 15/channel * 4), then normalize to -1..1
-	left_sample = (left_sample / 60.0) * 2.0 - 1.0;
-	right_sample = (right_sample / 60.0) * 2.0 - 1.0;
+	left_sample = (left_sample / 60.0f) * 2.0f - 1.0f;
+	right_sample = (right_sample / 60.0f) * 2.0f - 1.0f;
 	
 	right_sample /= 16.0f;
 	left_sample /= 16.0f;
@@ -698,7 +698,6 @@ void c_gbapu::c_noise::write(uint16_t address, uint8_t data)
 	NR44 FF23 TL-- ---- Trigger, Length enable
 	*/
 
-    uint32_t temp;
 	switch (address) {
 	case 0:
 		//length.set_length(64 - (data & 0x3F));

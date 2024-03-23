@@ -19,7 +19,7 @@ std::string c_config::trim(std::string s)
 	int start = 0;
 	while (start < (int) s.length() && s[start++] < 33);
 	if (start > 0) start--;
-	int end = s.length() - 1;
+	int end = (int)s.length() - 1;
 	while (end >= 0 && s[end--] < 33);
 	end++;
 	return s.substr(start, end-start + 1);

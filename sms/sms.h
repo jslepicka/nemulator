@@ -1,5 +1,6 @@
 #pragma once
 #include "..\console.h"
+#include <memory>
 
 class c_z80;
 class c_vdp;
@@ -46,11 +47,11 @@ public:
 	int loaded = 0;
 	int ram_select;
 	int nationalism;
-	unsigned char *rom;
-	c_z80 *z80;
-	c_vdp *vdp;
-	c_psg *psg;
-	unsigned char *ram;
+    std::unique_ptr<c_z80> z80;
+    std::unique_ptr<c_vdp> vdp;
+    std::unique_ptr<c_psg> psg;
+    std::unique_ptr<unsigned char[]> ram;
+    std::unique_ptr<unsigned char[]> rom;
 	int file_length;
 	unsigned char *page[3];
 	unsigned char cart_ram[16384];

@@ -7,7 +7,6 @@ c_mbc2::c_mbc2()
 
 void c_mbc2::write_byte(uint16_t address, uint8_t data)
 {
-	int x;
 	switch (address >> 12) {
 	case 0:
 	case 1: //0000-1FFF ram enable

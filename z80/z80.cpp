@@ -1240,7 +1240,7 @@ void c_z80::execute_opcode()
 					case 1:
 						//CPI
 					{
-						unsigned short s = read_byte(HL.word);
+						unsigned char s = read_byte(HL.word);
 						int z = AF.byte.hi == s;
 						int c = flag_c;
 						CP(s);
@@ -1285,7 +1285,7 @@ void c_z80::execute_opcode()
 					case 1:
 						//CPD
 					{
-						unsigned short s = read_byte(HL.word);
+						unsigned char s = read_byte(HL.word);
 						int z = AF.byte.hi == s;
 						int c = flag_c;
 						CP(s);

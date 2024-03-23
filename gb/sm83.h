@@ -95,6 +95,6 @@ private:
 
 	int halted;
 
-	static const s_ins ins_info[517];
+	alignas(64) static const s_ins ins_info[517];
 };
 

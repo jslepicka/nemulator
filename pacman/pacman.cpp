@@ -13,29 +13,22 @@ c_pacman::c_pacman()
     display_info.aspect_ratio = 3.0 / 4.0;
     display_info.rotated = true;
 
-    prg_rom = new uint8_t[16 * 1024];
-    work_ram = new uint8_t[1 * 1024];
-    memset(prg_rom, 0, 16 * 1024);
-    memset(work_ram, 0, 1 * 1024);
+    prg_rom = std::make_unique<uint8_t[]>(16 * 1024);
+    work_ram = std::make_unique<uint8_t[]>(1 * 1024);
 
-   	z80 = new c_z80([this](uint16_t address) { return this->read_byte(address); }, //read_byte
+   	z80 = std::make_unique<c_z80>([this](uint16_t address) { return this->read_byte(address); }, //read_byte
                     [this](uint16_t address, uint8_t data) { this->write_byte(address, data); }, //write_byte
                     [this](uint8_t port) { return this->read_port(port); }, //read_port
                     [this](uint8_t port, uint8_t data) { this->write_port(port, data); }, //write_port
                     &nmi, &irq, &data_bus);
-    pacman_vid = new c_pacman_vid(this, &irq);
-    pacman_psg = new c_pacman_psg();
+    pacman_vid = std::make_unique<c_pacman_vid>(this, &irq);
+    pacman_psg = std::make_unique<c_pacman_psg>();
     loaded = 0;
     reset();
 }
 
 c_pacman::~c_pacman()
 {
-    delete[] prg_rom;
-    delete[] work_ram;
-    delete z80;
-    delete pacman_vid;
-    delete pacman_psg;
 }
 
 int c_pacman::load()
@@ -44,14 +37,14 @@ int c_pacman::load()
     {
         uint32_t length;
         uint32_t offset;
-        int crc32;
+        uint32_t crc32;
         std::string filename;
         uint8_t *loc;
     } roms[] = {
-        {4096,      0, 0xc1e6ab10, "pacman.6e", prg_rom},
-        {4096, 0x1000, 0x1a6fb2d4, "pacman.6f", prg_rom},
-        {4096, 0x2000, 0xbcdd1beb, "pacman.6h", prg_rom},
-        {4096, 0x3000, 0x817d94e3, "pacman.6j", prg_rom},
+        {4096,      0, 0xc1e6ab10, "pacman.6e", prg_rom.get()},
+        {4096, 0x1000, 0x1a6fb2d4, "pacman.6f", prg_rom.get()},
+        {4096, 0x2000, 0xbcdd1beb, "pacman.6h", prg_rom.get()},
+        {4096, 0x3000, 0x817d94e3, "pacman.6j", prg_rom.get()},
         {4096,      0, 0x0c944964, "pacman.5e", pacman_vid->tile_rom.get()},
         {4096,      0, 0x958fedf9, "pacman.5f", pacman_vid->sprite_rom.get()},
         {  32,      0, 0x2fc650bd, "82s123.7f", pacman_vid->color_rom.get()},

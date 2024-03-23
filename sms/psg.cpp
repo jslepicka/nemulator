@@ -34,7 +34,7 @@ c_psg::c_psg()
 		std::initializer_list<float>{ 1.0000000000000000f,0.0000000000000000f,-1.0000000000000000f },
 		std::initializer_list<float>{ 1.0000000000000000f,-0.8659016489982605f,-0.1296554803848267f }
 	);
-	resampler = std::make_unique<c_resampler>(((228.0 * 262.0 * 60.0) / 4.0) / 48000.0, lpf.get(), post_filter.get());
+	resampler = std::make_unique<c_resampler>((float)(((228.0 * 262.0 * 60.0) / 4.0) / 48000.0), lpf.get(), post_filter.get());
 	sound_buffer = std::make_unique<int32_t[]>(1024);
 }
 

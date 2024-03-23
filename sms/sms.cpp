@@ -37,7 +37,7 @@ c_sms::c_sms(SMS_MODEL model)
     display_info.fb_height = 192;
 
     this->model = model;
-	z80 = new c_z80(
+    z80 = std::make_unique<c_z80>(
 		[this](uint16_t address) { return this->read_byte(address); }, //read_byte
         [this](uint16_t address, uint8_t data) { this->write_byte(address, data); }, //write_byte
         [this](uint8_t port) { return this->read_port(port); }, //read_port
@@ -45,23 +45,15 @@ c_sms::c_sms(SMS_MODEL model)
 		&nmi,
 		&irq
 	);
-	vdp = new c_vdp(this);
-	psg = new c_psg();
-	ram = new unsigned char[8192];
-	memset(cart_ram, 0, 16384);
-	rom = 0;
+	vdp = std::make_unique<c_vdp>(this);
+	psg = std::make_unique<c_psg>();
+	ram = std::make_unique<unsigned char[]>(8192);
 }
 
 c_sms::~c_sms()
 {
 	if (has_sram)
 		save_sram();
-	delete[] ram;
-	delete psg;
-	delete vdp;
-	delete z80;
-	if (rom)
-		delete rom;
 }
 
 int c_sms::load()
@@ -87,10 +79,10 @@ int c_sms::load()
 		return 0;
 	}
 	int alloc_size = file_length < 0x4000 ? 0x4000 : file_length;
-	rom = new unsigned char[alloc_size];
-	file.read((char *)rom, file_length);
+    rom = std::make_unique_for_overwrite<unsigned char[]>(alloc_size);
+	file.read((char *)rom.get(), file_length);
 	file.close();
-	crc = get_crc32(rom, file_length);
+	crc = get_crc32(rom.get(), file_length);
 
 	for (auto &c : crc_table)
 	{
@@ -103,7 +95,7 @@ int c_sms::load()
 
 	if (file_length == 0x2000)
 	{
-		memcpy(rom + 0x2000, rom, 0x2000);
+		memcpy(rom.get() + 0x2000, rom.get(), 0x2000);
 	}
 	loaded = 1;
 	reset();
@@ -158,12 +150,12 @@ int c_sms::reset()
 	z80->reset();
 	vdp->reset();
 	psg->reset();
-	memset(ram, 0x00, 8192);
+	memset(ram.get(), 0x00, 8192);
 	irq = 0;
 	nmi = 0;
-	page[0] = rom;
-	page[1] = file_length > 0x4000 ? rom + 0x4000 : rom;
-	page[2] = file_length > 0x8000 ? rom + 0x8000 : rom;
+	page[0] = rom.get();
+	page[1] = file_length > 0x4000 ? rom.get() + 0x4000 : rom.get();
+	page[2] = file_length > 0x8000 ? rom.get() + 0x8000 : rom.get();
 	nationalism = 0;
 	ram_select = 0;
 	joy = 0xFFFF;
@@ -250,7 +242,7 @@ void c_sms::write_byte(unsigned short address, unsigned char value)
 			{
 				int p = (address & 0x3) - 1;
 				int o = (0x4000 * (value)) % file_length;
-				page[p] = rom + o;
+				page[p] = rom.get() + o;
 			}
 			break;
 			}

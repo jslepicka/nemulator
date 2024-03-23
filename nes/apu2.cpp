@@ -63,6 +63,7 @@ void c_apu2::disable_mixer()
 void c_apu2::set_nes(c_nes* nes)
 {
 	this->nes = nes;
+    mapper = nes->mapper.get();
 	dmc.set_nes(nes);
 };
 
@@ -138,7 +139,7 @@ void c_apu2::clear_buffer()
 void c_apu2::set_audio_rate(double freq)
 {
 	double x = NES_AUDIO_RATE / freq;
-	resampler->set_m(x);
+	resampler->set_m((float)x);
 }
 
 void c_apu2::write_byte(unsigned short address, unsigned char value)
@@ -301,7 +302,7 @@ void c_apu2::mix()
 
 	float sample = square_out + tnd_out;
 	/*if (nes->mapper->has_expansion_audio())*/
-	sample = nes->mapper->mix_audio(sample);
+	sample = mapper->mix_audio(sample);
 	resampler->process(sample);
 }
 

@@ -4,7 +4,7 @@
 extern int clientHeight;
 extern int clientWidth;
 extern ID3D10Device *d3dDev;
-extern c_input_handler *g_ih;
+extern std::unique_ptr<c_input_handler> g_ih;
 
 c_menu::c_menu()
 {
@@ -40,7 +40,7 @@ void c_menu::init(void *params)
 
 	for (int i = 0; i < menu_items->num_items; i++)
 	{
-		int len = strlen(passed_menu_items->items[i]);
+		int len = (int)strlen(passed_menu_items->items[i]);
 		menu_items->items[i] = new char[len+1];
 		strcpy(menu_items->items[i], passed_menu_items->items[i]);
 	}

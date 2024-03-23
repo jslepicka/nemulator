@@ -4,7 +4,7 @@
 extern ID3D10Device *d3dDev;
 extern int clientHeight;
 extern int clientWidth;
-extern c_input_handler *g_ih;
+extern std::unique_ptr<c_input_handler> g_ih;
 
 //const char *c_qam::c = "#abcdefghijklmnopqrstuvwxyz";
 
@@ -69,7 +69,7 @@ void c_qam::load_fonts()
 void c_qam::resize()
 {
 	load_fonts();
-	scroll_target = clientHeight * .1;
+	scroll_target = (int)(clientHeight * .1);
 	if (state == STATE_READY)
 		scroll_pos = scroll_target;
 }
@@ -185,8 +185,8 @@ void c_qam::draw()
 	for (int i = 0; i < 27; i++)
 	{
 		j[0] = c[i];
-		r.left = (clientWidth / 29.0) * (i + 1);
-		r.right = (clientWidth / 29.0) * (i + 2);
+		r.left = (LONG)((clientWidth / 29.0) * (i + 1));
+		r.right = (LONG)((clientWidth / 29.0) * (i + 2));
 		D3DXCOLOR color;
 		font->DrawText(NULL, j, -1, &r, DT_NOCLIP | DT_CENTER | DT_SINGLELINE | DT_VCENTER, 
 			i == selected ? D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f) : valid_chars[i] ? D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f) : D3DXCOLOR(.13f, .13f, .13f, 1.0f));

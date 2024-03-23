@@ -32,10 +32,10 @@ int c_mspacman::load()
         std::string filename;
         uint8_t *loc;
     } roms[] = {
-        {4096,      0, "pacman.6e", prg_rom},
-        {4096, 0x1000, "pacman.6f", prg_rom},
-        {4096, 0x2000, "pacman.6h", prg_rom},
-        {4096, 0x3000, "pacman.6j", prg_rom},
+        {4096,      0, "pacman.6e", prg_rom.get()},
+        {4096, 0x1000, "pacman.6f", prg_rom.get()},
+        {4096, 0x2000, "pacman.6h", prg_rom.get()},
+        {4096, 0x3000, "pacman.6j", prg_rom.get()},
         {4096,      0,        "5e", pacman_vid->tile_rom.get()},
         {4096,      0,        "5f", pacman_vid->sprite_rom.get()},
         {  32,      0, "82s123.7f", pacman_vid->color_rom.get()},

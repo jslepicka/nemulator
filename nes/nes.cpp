@@ -331,7 +331,7 @@ int c_nes::load()
     ppu = std::make_unique<c_ppu>();
     joypad = std::make_unique<c_joypad>();
     apu2 = std::make_unique<c_apu2>();
-	apu2->set_nes(this);
+	
 
 	mapperNumber = LoadImage(pathFile);
 
@@ -360,7 +360,7 @@ int c_nes::load()
 	if (m == mapper_factory.end())
 		return 0;
 	mapper = (m->second)();
-
+    apu2->set_nes(this);
 	if (submapper != -1) {
 		mapper->set_submapper(submapper);
 	}

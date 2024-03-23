@@ -16,7 +16,6 @@ void c_mbc1::fixup_bank()
 
 void c_mbc1::write_byte(uint16_t address, uint8_t data)
 {
-	int x;
 	switch (address >> 13) {
 	case 0: //0000-1FFF ram enable
 		ram_enable = data;

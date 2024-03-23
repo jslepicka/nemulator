@@ -4,7 +4,7 @@
 extern ID3D10Device *d3dDev;
 extern int clientHeight;
 extern int clientWidth;
-extern c_input_handler *g_ih;
+extern std::unique_ptr<c_input_handler> g_ih;
 
 c_task1::c_task1()
 {

@@ -197,7 +197,7 @@ int c_sound::sync()
 	}
 	else {
 		ema = (b - ema) * alpha + ema;
-		b = ema;
+		b = (int)ema;
 	}
 	values[value_index] = b;
 	value_index = (value_index + 1) % num_values;
@@ -230,7 +230,6 @@ int c_sound::sync()
         }
 		
 		double new_adj = 0.0;
-        char buf[64];
 
 		if (false && b > (8000*2)) //near underflow
 		{
