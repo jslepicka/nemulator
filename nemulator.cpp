@@ -197,9 +197,6 @@ void c_nemulator::Init()
 	status = new c_status();
 	add_task(status, NULL);
 
-	//mem_viewer = new c_mem_viewer();
-	//add_task(mem_viewer, NULL);
-
 	LoadFonts();
 	sound = std::make_unique<c_sound>();
     if (!sound->init()) {
@@ -216,7 +213,6 @@ void c_nemulator::Init()
 		panel_columns = 3;
 	int panel_rows = (int)((panel_columns-1) * tile_width / ((double)clientWidth/clientHeight) * .82 / 2.04);
 
-	//mainPanel2 = new TexturePanel(panel_rows, panel_columns);
     mainPanel2 = std::make_unique<TexturePanel>(panel_rows, panel_columns);
 	mainPanel2->x = 0.0f;
 	mainPanel2->y = 0.0f;
@@ -301,8 +297,7 @@ void c_nemulator::configure_input()
 		{ BUTTON_2SELECT,       "joy2",     "select",  0,                           0 },
 		{ BUTTON_2START,        "joy2",     "start",   0,                           0 },
 
-		//{ BUTTON_INPUT_REPLAY,   "",        "",        VK_F12,                      0 },
-		//{ BUTTON_INPUT_SAVE,     "",        "",        VK_F11,                      0 },
+
 		{ BUTTON_STATS,          "",        "",        VK_F9,                       0 },
 		{ BUTTON_MASK_SIDES,     "",        "",        VK_F8,                       0 },
 		{ BUTTON_SPRITE_LIMIT,   "",        "",        VK_F7,                       0 },
@@ -509,13 +504,11 @@ void c_nemulator::handle_button_stats(s_button_handler_params *params)
 	{
 		stats->dead = true;
 		stats = NULL;
-		//status->add_message("stats disabled");
 	}
 	else
 	{
 		stats = new c_stats();
 		add_task(stats, NULL);
-		//status->add_message("stats enabled");
 	}
 }
 
@@ -749,7 +742,6 @@ void c_nemulator::ProcessInput(double dt)
 			{
 				fastscroll = false;
 				scroll_fade_timer = 333.0;
-				//texturePanels[selectedPanel]->load_items();
 			}
 		}
 	}
@@ -858,9 +850,6 @@ void c_nemulator::start_game()
 	if (n && n->is_loaded())
 	{
 		g->played = 1;
-		//joy1 = n->GetJoy1();
-		//joy2 = n->GetJoy2();
-		//sound->Reset();
 		sound->play();
 		inGame = true;
 		n->enable_mixer();
@@ -881,9 +870,7 @@ void c_nemulator::start_game()
 				nsf_stats->z = (float)(eye_z + (1.0 / tan(fov_h / 2)));
 				add_task(nsf_stats, g->console.get());
 			}
-
 		}
-		
 	}
 }
 
@@ -1178,14 +1165,7 @@ void c_nemulator::UpdateScene(double dt)
 				default:
 					break;
 				}
-				//if (n->get_mapper_number() == 258) { //NFS
-				//	stats->report_stat("song #", n->ReadByte(0x54F7));
-				//	stats->report_stat("input.current", n->ReadByte(0x54FA));
-				//	stats->report_stat("input.previous", n->ReadByte(0x54F9));
-				//}
-
 			}
-
 		}
 		if (nsf_stats) { //NSF
 			c_game* game = (c_game*)texturePanels[selectedPanel]->GetSelected();
@@ -1247,16 +1227,7 @@ void c_nemulator::DrawScene()
 		{
 			double dim = mainPanel2->dim ? .25 : 1.0;
 			DrawText(font1, .05f, .85f, g->title, D3DXCOLOR((float)(1.0f * dim), 0.0f, 0.0f, 1.0f));
-
-			const char *subtitle[] = { "Nintendo NES", "Sega Master System", "Sega Game Gear", "Nintendo Game Boy", "Nintendo Game Boy Color", "Arcade" };
-
 			DrawText(font2, .0525f, .925f, g->console->get_system_name(), D3DXCOLOR((float)(.22f * dim), (float)(.22f * dim), (float)(.22f * dim), 1.0f));
-			//RECT r = { 0, 0, clientWidth, (LONG)(clientHeight*1.95) };
-			//ID3D10DepthStencilState *state;
-			//int oldref;
-			//d3dDev->OMGetDepthStencilState(&state, (UINT *)&oldref);
-			//font2->DrawText(NULL, "www.nemulator.com", -1, &r, DT_NOCLIP | DT_CENTER | DT_VCENTER, D3DXCOLOR((float)(.006f*dim), (float)(.006f*dim), (float)(.006f*dim), 1.0f));
-			//d3dDev->OMSetDepthStencilState(state, oldref);
 		}
 
 		if (!inGame && !menu && (fastscroll || scroll_fade_timer > 0.0))
@@ -1274,7 +1245,6 @@ void c_nemulator::DrawScene()
 		if (inGame && g->type == GAME_NES && g->console->get_crc() == 0x0B0E128F)
 		{
 			char time[6];
-			//int nwc_time = n->get_nwc_time();
 			int nwc_time = 0;
 			sprintf_s(time, "%2d:%.2d", nwc_time / 60, nwc_time % 60);
 			RECT r = { (LONG)(clientWidth * .02), 0, clientWidth, (LONG)(clientHeight*1.95) };
@@ -1387,8 +1357,6 @@ void c_nemulator::LoadGames()
         else {
             _finddata64i32_t fd;
             intptr_t f;
-            //char searchPath[MAX_PATH];
-            //sprintf_s(searchPath, MAX_PATH, "%s\\*.%s", li.rom_path, li.extension);
             std::string searchPath = li.rom_path + "\\*." + li.extension;
             if ((f = _findfirst(searchPath.c_str(), &fd)) != -1) {
                 int find_result = 0;

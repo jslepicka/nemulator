@@ -167,7 +167,8 @@ void c_audio_info::draw()
 		for (int x = 0; x < tex_size; x++)
 		{
 			int range = MAX-0;
-			int t = 1600*3*2;
+            int t = 3200;
+            //1600 * 3 * 2;
 			int min = (int)((tex_size - 1) - (((range - (MAX - (t-(1600*2))))/(double)range) * (tex_size - 1)));
 			int max = (int)((tex_size - 1) - (((range - (MAX - (t+(1600*2))))/(double)range) * (tex_size - 1)));
 			int target = (int)((tex_size - 1) - (((range - (MAX - t))/(double)range) * (tex_size - 1)));

@@ -165,10 +165,11 @@ void c_game::DrawToTexture(ID3D10Texture2D *tex)
 		for (; y < display_info.fb_height; y++) {
 			p = (int*)map.pData + (y) * (map.RowPitch / 4);
 			int x = 0;
-            //for (; x < display_info.fb_width / 64; x += 64) {
-            //    memcpy(p, fb, 64 * sizeof(int));
-            //    p += 64;
-            //    fb += 64;
+            //constexpr int memcpy_block_size = 64;
+            //for (; x < display_info.fb_width / memcpy_block_size; x += memcpy_block_size) {
+            //    memcpy(p, fb, memcpy_block_size * sizeof(int));
+            //    p += memcpy_block_size;
+            //    fb += memcpy_block_size;
             //}
 			for (; x < display_info.fb_width; x++) {
 				*p++ = *fb++;
@@ -179,14 +180,9 @@ void c_game::DrawToTexture(ID3D10Texture2D *tex)
 		}
 		for (; y < tex_height; y++) {
 			p = (int*)map.pData + (y) * (map.RowPitch / 4);
-            __m128i *p2 = (__m128i*)((int *)map.pData + (y) * (map.RowPitch / 4));
-            __m128i blank = _mm_set1_epi32(0xFF000000);
-			//for (int x = 0; x < tex_width; x++) {
-			//	*p++ = 0xFF000000;
-			//}
-            for (int x = 0; x < tex_width / 4; x++) {
-                *p2++ = blank;
-            }
+            for (int x = 0; x < tex_width; x++) {
+				*p++ = 0xff000000;
+			}
 		}
 
 	}

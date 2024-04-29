@@ -34,6 +34,7 @@ c_sound::c_sound()
 
 	interleave_buffer = std::make_unique<uint32_t[]>(INTERLEAVE_BUFFER_LEN);
     buffer_wait_count = 0;
+    memset(values, 0xFF, sizeof(values));
 }
 
 int c_sound::init_wasapi()
@@ -144,9 +145,7 @@ void c_sound::reset_slope()
 {
     slope = 0.0;
     value_index = 0;
-    for (int i = 0; i < num_values; i++)
-        values[i] = -1;
-
+    memset(values, 0xFF, sizeof(values));
     ema = 0.0;
     first_b = 1;
 }
@@ -217,12 +216,12 @@ int c_sound::sync()
 		int diff = b - target;
         int abs_diff = abs(diff);
 
-        int trend = (diff * slope > 0.0) - (diff * slope < 0.0);
+        auto trend = (diff * slope) <=> 0.0;
 
-        if (trend == CONVERGING) {
+        if (trend == std::partial_ordering::less) {
             state = "converging";
         }
-        else if (trend == DIVERGING) {
+        else if (trend == std::partial_ordering::greater) {
             state = "diverging";
         }
         else {
@@ -236,7 +235,7 @@ int c_sound::sync()
 			reset();
 			resets++;
 		}
-		else if (trend == CONVERGING) //moving towards target at a abs(slope) > 1.0
+        else if (trend == std::partial_ordering::less) //moving towards target at a abs(slope) > 1.0
 		{
 			//if we're more than 1000 bytes away from target, increase adjustment to cause us to converge faster
             //unless abs(slope) is above 3.0
@@ -256,7 +255,7 @@ int c_sound::sync()
                 //OutputDebugString(buf);
             }
 		}
-		else if (trend == DIVERGING || b == 0) //moving away from target or stuck behind play cursor
+		else if (trend == std::partial_ordering::greater || b == 0) //moving away from target or stuck behind play cursor
 		{
 			//skew causes new_adj to increase faster when we're farther away from the target
 			double skew = (abs_diff / (1600.0*2)) * 10.0;

@@ -3,10 +3,9 @@
 #include <memory>
 #include <algorithm>
 
-#include <crtdbg.h>
-#if defined(DEBUG) | defined(_DEBUG)
-#define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
-#define new DEBUG_NEW
+#define USE_BMI
+#ifdef USE_BMI
+#include <immintrin.h>
 #endif
 
 std::atomic<int> c_vdp::pal_built = 0;
@@ -223,9 +222,6 @@ void c_vdp::draw_scanline()
 	//Bock's Birthday 2006
 	int sprite_width = registers[0x1] & 0x1 ? 16 : 8;
 
-
-
-
 	int y = line_number;
 
 	if (y < 192)
@@ -264,17 +260,12 @@ void c_vdp::draw_scanline()
 				int palette_select = (tile_data & 0x800) >> 7;
 				int pattern_number = tile_data & 0x1FF;
 				int pattern_base = (registers[4] & 0x7) << 11;
-				int h_flip = tile_data & 0x0200;
-				int v_flip = tile_data & 0x0400;
+                int h_flip = tile_data & 0x0200 ? 7 : 0;
+                int v_flip = tile_data & 0x0400 ? 7 : 0;
 				int priority = tile_data & 0x1000;
 				unsigned char* pattern = &vram[(pattern_number * 32)];
 
-				int y_offset2 = y_offset;
-
-				if (v_flip)
-					y_offset2 = 7 - y_offset2;
-
-				pattern += (y_offset2 * 4);
+				pattern += ((y_offset ^ v_flip) * 4);
 				int x = ((column * 8) + x_fine) & 0xFF;
 
 				int pat = *((int*)pattern);
@@ -284,20 +275,19 @@ void c_vdp::draw_scanline()
 				{
 
 					//int pal_index = 0;
-					int p2 = p;
-					if (h_flip)
-						p2 = 7 - p2;
 
-					int pat2 = pat >> (7 - p2);
-					pat2 &= 0b00000001'00000001'00000001'00000001;
-					int pal_index = pat2 | (pat2 >> 7) | (pat2 >> 14) | (pat2 >> 21);
+					int pat2 = pat << (p ^ h_flip);
+					
+					#ifdef USE_BMI
+                    int pal_index = _pext_u32(pat2, 0b10000000'10000000'10000000'10000000);
+					#else
+					pat2 &= 0b10000000'10000000'10000000'10000000;
+					int pal_index = (pat2 >> 7) | (pat2 >> 14) | (pat2 >> 21) | (pat2 >> 28);
 					pal_index &= 0xF;
-					//int pal_index = _pext_u32(pat2, 0b00000001'00000001'00000001'00000001);
+					#endif
 
 					//sprites
 					int color = 0;
-					//if (sprite_count)
-					//{
 					for (int i = 0; i < sprite_count; i++)
 					{
 						//int s_x = x;// (column * 8) + p;
@@ -317,7 +307,6 @@ void c_vdp::draw_scanline()
 							}
 						}
 					}
-					//}
 
 					if (sms->get_model() == SMS_MODEL::GAMEGEAR && (y < 24 || y >= 168 || x < 48 || x >= 208))
 					{
@@ -334,7 +323,6 @@ void c_vdp::draw_scanline()
 					else
 						color = lookup_color(color | 0x10);
 
-					//frame_buffer[y * 256 + x] = color;
 					*fb++ = color;
 				}
 			}
