@@ -76,10 +76,10 @@ private:
 	double width;
     double height;
 
-	int tex_width = 512;
-    int tex_height = 512;
-    int static_width = 256;
-    int static_height = 256;
+	static const int tex_width = 512;
+    static const int tex_height = 512;
+    static const int static_width = 256;
+    static const int static_height = 256;
 
 	c_console::display_info_t display_info;
 };

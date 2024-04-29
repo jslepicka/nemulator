@@ -15,12 +15,6 @@ class c_pacman_vid
     void execute(int cycles);
     void build_color_lookup();
 
-    /*uint32_t *fb;
-    uint8_t *tile_rom;
-    uint8_t *sprite_rom;
-    uint8_t *color_rom;
-    uint8_t *pal_rom;
-    uint8_t *sprite_locs;*/
     std::unique_ptr<uint32_t[]> fb;
     std::unique_ptr<uint8_t[]> tile_rom;
     std::unique_ptr<uint8_t[]> sprite_rom;
@@ -29,26 +23,25 @@ class c_pacman_vid
     std::unique_ptr<uint8_t[]> sprite_locs;
   
 private:
-    c_pacman *pacman;
-    int *irq;
-    int line;
-    uint32_t vid_address;
-    std::unique_ptr<uint8_t[]> vram;
-    std::unique_ptr<uint8_t[]> sprite_ram;
-    
-    void draw_tile(uint32_t *&f);
-
-    void draw_background_line(int line);
-    void draw_sprite_line(int line);
-
-    int pixels_out;
-
     uint8_t lookup_color(int pal_number, int index);
     uint32_t lookup_rgb(uint8_t color);
+    void draw_background_line(int line);
+    void draw_sprite_line(int line);
+    void draw_tile();
 
+    c_pacman *pacman;
+    int *irq;
+    uint32_t *f;
+    std::unique_ptr<uint8_t[]> vram;
+    std::unique_ptr<uint8_t[]> sprite_ram;
+
+    int line;
+    uint32_t state = 0;
+    uint32_t vid_address;
+    int pixels_out;
+    
     static const uint8_t rg_weights[];
     static const uint8_t b_weights[];
 
     uint32_t colors[32];
-    uint32_t state = 0;
 };

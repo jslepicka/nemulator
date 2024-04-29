@@ -18,7 +18,6 @@ class c_sound
     {
         return freq;
     }
-    int rate;
     int sync();
     int resets;
     double max_freq;
@@ -54,7 +53,6 @@ class c_sound
 
     static const int num_values = 60;
     int values[num_values];
-    int freq_values[num_values];
     int value_index;
 
     double ema;

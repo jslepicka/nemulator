@@ -67,13 +67,13 @@ void c_pacman_vid::write_byte(uint16_t address, uint8_t data)
 
 void c_pacman_vid::draw_background_line(int line)
 {
-    uint32_t *f = fb.get() + line * 288;
+    f = fb.get() + line * 288;
 
     vid_address = 0x3C2;
     vid_address += 0x1 * (line / 8);
 
     for (int i = 0; i < 2; i++) {
-        draw_tile(f);
+        draw_tile();
         vid_address += 0x20;
     }
 
@@ -81,7 +81,7 @@ void c_pacman_vid::draw_background_line(int line)
     vid_address += 0x20 * (line / 8);
 
     for (int i = 0; i < 32; i++) {
-        draw_tile(f);
+        draw_tile();
         vid_address++;
     }
 
@@ -89,12 +89,12 @@ void c_pacman_vid::draw_background_line(int line)
     vid_address += 0x1 * (line / 8);
 
     for (int i = 0; i < 2; i++) {
-        draw_tile(f);
+        draw_tile();
         vid_address += 0x20;
     }
 }
 
-void c_pacman_vid::draw_tile(uint32_t *&f)
+void c_pacman_vid::draw_tile()
 {
     uint8_t tile_number = vram[vid_address];
     uint8_t pal_number = vram[vid_address + 0x400] & 0x3F;

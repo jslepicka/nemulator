@@ -239,6 +239,7 @@ void c_gbapu::clock()
 			case 6:
 				//clock sweep
 				square1.clock_sweep();
+                [[fallthrough]];
 			case 0:
 			case 4:
 				//length

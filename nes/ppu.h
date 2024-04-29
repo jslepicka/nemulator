@@ -40,6 +40,7 @@ private:
 	void output_blank_pixel();
 	void begin_vblank();
 	void end_vblank();
+
 	void fetch();
 	void do_cycle_events();
 
@@ -128,6 +129,8 @@ private:
 		bool hitFlag : 1;
 		bool vBlank : 1;
 	} ppuStatus;
+
+
 
 	static uint32_t pal[512];
     std::unique_ptr<unsigned char[]> image_palette;

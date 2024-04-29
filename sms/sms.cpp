@@ -200,7 +200,8 @@ unsigned char c_sms::read_byte(unsigned short address)
 			int p = (address >> 14) & 0x3;
 			if (p == 2 && (ram_select & 0x8))
 				return cart_ram[address & 0x1FFF];
-			return page[p][address & 0x3FFF];
+			__assume(p < 3);
+            return page[p][address & 0x3FFF];
 		}
 	}
 	else
