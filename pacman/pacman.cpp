@@ -4,7 +4,7 @@
 #include "../crc32.h"
 #include <fstream>
 
-c_pacman::c_pacman()
+c_pacman::c_pacman(PACMAN_MODEL model)
 {
     system_name = "Arcade";
 
@@ -13,7 +13,7 @@ c_pacman::c_pacman()
     display_info.aspect_ratio = 3.0 / 4.0;
     display_info.rotated = true;
 
-    prg_rom = std::make_unique<uint8_t[]>(16 * 1024);
+    prg_rom = std::make_unique<uint8_t[]>(64 * 1024);
     work_ram = std::make_unique<uint8_t[]>(1 * 1024);
 
    	z80 = std::make_unique<c_z80>([this](uint16_t address) { return this->read_byte(address); }, //read_byte
@@ -24,6 +24,7 @@ c_pacman::c_pacman()
     pacman_vid = std::make_unique<c_pacman_vid>(this, &irq);
     pacman_psg = std::make_unique<c_pacman_psg>();
     loaded = 0;
+    this->model = model;
     reset();
 }
 
@@ -33,14 +34,16 @@ c_pacman::~c_pacman()
 
 int c_pacman::load()
 {
-    struct
+    struct s_roms
     {
         uint32_t length;
         uint32_t offset;
         uint32_t crc32;
         std::string filename;
         uint8_t *loc;
-    } roms[] = {
+    };
+    
+    s_roms pacman_roms[] = {
         {4096,      0, 0xc1e6ab10, "pacman.6e", prg_rom.get()},
         {4096, 0x1000, 0x1a6fb2d4, "pacman.6f", prg_rom.get()},
         {4096, 0x2000, 0xbcdd1beb, "pacman.6h", prg_rom.get()},
@@ -53,19 +56,50 @@ int c_pacman::load()
         { 256,  0x100, 0x77245b66, "82s126.3m", pacman_psg->sound_rom},
     };
 
-    for (auto &r : roms) {
+    s_roms mspacmab_roms[] = {
+        {4096,      0, 0xd16b31b7,     "boot1", prg_rom.get()},
+        {4096, 0x1000, 0x0d32de5e,     "boot2", prg_rom.get()},
+        {4096, 0x2000, 0x1821ee0b,     "boot3", prg_rom.get()},
+        {4096, 0x3000, 0x165a9dd8,     "boot4", prg_rom.get()},
+        {4096, 0x8000, 0x8c3e6de6,     "boot5", prg_rom.get()},
+        {4096, 0x9000, 0x368cb165,     "boot6", prg_rom.get()},
+        {4096,      0, 0x5c281d01,        "5e", pacman_vid->tile_rom.get()},
+        {4096,      0, 0x615af909,        "5f", pacman_vid->sprite_rom.get()},
+        {  32,      0, 0x2fc650bd, "82s123.7f", pacman_vid->color_rom.get()},
+        { 256,      0, 0x3eb3a8e4, "82s126.4a", pacman_vid->pal_rom.get()},
+        { 256,      0, 0xa9cc86bf, "82s126.1m", pacman_psg->sound_rom},
+        { 256,  0x100, 0x77245b66, "82s126.3m", pacman_psg->sound_rom},
+    };
+
+    s_roms *romset;
+    int romset_length = 0;
+
+    switch (model) {
+        case PACMAN_MODEL::MSPACMAB:
+            romset = mspacmab_roms;
+            romset_length = sizeof(mspacmab_roms) / sizeof(s_roms);
+            prg_mask = 0xFFFF;
+            break;
+        default:
+            romset = pacman_roms;
+            romset_length = sizeof(pacman_roms) / sizeof(s_roms);
+            prg_mask = 0x7FFF;
+            break;
+    }
+
+    for (int i = 0; i < romset_length; i++) {
         std::ifstream file;
-        std::string fn = (std::string)path + (std::string)"\\" + r.filename;
+        std::string fn = (std::string)path + (std::string)"/" + romset[i].filename;
         file.open(fn, std::ios_base::in | std::ios_base::binary);
         if (file.is_open()) {
-            file.read((char*)(r.loc + r.offset), r.length);
+            file.read((char*)(romset[i].loc + romset[i].offset), romset[i].length);
             file.close();
         }
         else {
             return 0;
         }
-        int crc = get_crc32((unsigned char *)(r.loc + r.offset), r.length);
-        if (crc != r.crc32) {
+        int crc = get_crc32((unsigned char *)(romset[i].loc + romset[i].offset), romset[i].length);
+        if (crc != romset[i].crc32) {
             return 0;
         }
         int x = 1;
@@ -163,8 +197,8 @@ int *c_pacman::get_video()
 
 uint8_t c_pacman::read_byte(uint16_t address)
 {
-    address &= 0x7FFF;
-    if (address <= 0x3FFF) {
+    address &= prg_mask;
+    if (address <= 0x3FFF || address >= 0x8000) {
         return prg_rom[address];
     }
     address &= 0x5FFF;
@@ -199,8 +233,8 @@ uint8_t c_pacman::read_byte(uint16_t address)
 
 void c_pacman::write_byte(uint16_t address, uint8_t data)
 {
-    address &= 0x7FFF;
-    if (address <= 0x3FFF) {
+    address &= prg_mask;
+    if (address <= 0x3FFF || address >= 0x8000) {
         return;
     }
     address &= 0x5FFF;

@@ -397,6 +397,7 @@ void c_nemulator::RunGames()
 			g->console->set_input(ih->get_gb_input());
 			break;
         case GAME_PACMAN:
+        case GAME_MSPACMAB:
         case GAME_MSPACMAN:
             g->console->set_input(ih->get_pacman_input());
             break;
@@ -1336,7 +1337,7 @@ void c_nemulator::LoadGames()
         { GAME_GBC, "gbc", "gbc.rom_path", "gbc.save_path", "c:\\roms\\gbc" },
 		{ GAME_NES, "nsf", "nsf.rom_path", "nsf.save_path", "c:\\roms\\nsf" }, 
 		{ GAME_PACMAN, "", "pacman.rom_path", "", "c:\\roms\\pacman" },
-		{ GAME_MSPACMAN, "", "mspacman.rom_path", "", "c:\\roms\\mspacman" }
+		{ GAME_MSPACMAB, "", "mspacmab.rom_path", "", "c:\\roms\\mspacmab" }
 	};
 
 	bool global_mask_sides = config->get_bool("mask_sides", false);
@@ -1389,15 +1390,19 @@ void c_nemulator::LoadGames()
 			}
 
 			c_game *g = new c_game(li.type, li.rom_path, fn, li.save_path);
-            if (li.type == GAME_PACMAN) {
-                strcpy(g->title, "Pac-Man");
+            switch (li.type) {
+                case GAME_PACMAN:
+                    strcpy(g->title, "Pac-Man");
+                    break;
+                case GAME_MSPACMAN:
+                case GAME_MSPACMAB:
+                    strcpy(g->title, "Ms. Pac-Man");
+                    break;
+                default:
+                    g->set_description(fn);
+                    break;
             }
-            else if (li.type == GAME_MSPACMAN) {
-                strcpy(g->title, "Ms. Pac-Man");
-            }
-            else {
-                g->set_description(fn);
-            }
+
 			std::string s = "\"" + fn + "\".";
 			bool mask_sides = config->get_bool(s + "mask_sides", global_mask_sides);
 			bool limit_sprites = config->get_bool(s + "limit_sprites", global_limit_sprites);
