@@ -94,8 +94,8 @@ void c_game::OnActivate(bool load)
             case GAME_PACMAN:
                 console = std::make_unique<c_pacman>();
                 break;
-            case GAME_MSPACMAN:
-                console = std::make_unique<c_mspacman>();
+            case GAME_MSPACMAB:
+                console = std::make_unique<c_pacman>(PACMAN_MODEL::MSPACMAB);
                 break;
 			default:
 				break;

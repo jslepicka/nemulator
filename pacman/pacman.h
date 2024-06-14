@@ -6,10 +6,16 @@
 class c_pacman_vid;
 class c_pacman_psg;
 
+enum class PACMAN_MODEL
+{
+    PACMAN,
+    MSPACMAB
+};
+
 class c_pacman : public c_console
 {
   public:
-    c_pacman();
+    c_pacman(PACMAN_MODEL model = PACMAN_MODEL::PACMAN);
     virtual int load();
     int is_loaded();
     int emulate_frame();
@@ -50,4 +56,6 @@ class c_pacman : public c_console
     int irq_input;
     int loaded;
 
+    PACMAN_MODEL model;
+    int prg_mask;
 };

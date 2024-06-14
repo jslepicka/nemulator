@@ -216,7 +216,7 @@ void D3d10App::Init(char *config_file_name, c_task *init_task, void *params)
 
     SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
     avrt_handle = AvSetMmThreadCharacteristics("Pro Audio", &task_index);
-    //AvSetMmThreadPriority(avrt_handle, AVRT_PRIORITY_CRITICAL);
+    AvSetMmThreadPriority(avrt_handle, AVRT_PRIORITY_CRITICAL);
     clientHeight = (int)(clientWidth / aspectRatio);
 
     fullscreen = startFullscreen;
@@ -244,6 +244,14 @@ void D3d10App::Init(char *config_file_name, c_task *init_task, void *params)
     QueryPerformanceFrequency(&liFreq);
     QueryPerformanceCounter(&liPrev);
     QueryPerformanceCounter(&liCurrent);
+
+    PROCESS_POWER_THROTTLING_STATE PowerThrottling;
+    RtlZeroMemory(&PowerThrottling, sizeof(PowerThrottling));
+    PowerThrottling.Version = PROCESS_POWER_THROTTLING_CURRENT_VERSION;
+
+    PowerThrottling.ControlMask = PROCESS_POWER_THROTTLING_EXECUTION_SPEED;
+    PowerThrottling.StateMask = 0;
+    SetProcessInformation(GetCurrentProcess(), ProcessPowerThrottling, &PowerThrottling, sizeof(PowerThrottling));
 }
 
 void D3d10App::disable_screensaver()

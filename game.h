@@ -20,6 +20,7 @@ enum GAME_TYPE
 	GAME_GBC,
 	GAME_PACMAN,
 	GAME_MSPACMAN,
+	GAME_MSPACMAB, //ms pac man pre-decrypted roms
 	GAME_NONE
 };
 
