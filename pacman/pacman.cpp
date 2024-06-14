@@ -42,8 +42,7 @@ int c_pacman::load()
         std::string filename;
         uint8_t *loc;
     };
-    
-    s_roms pacman_roms[] = {
+    std::vector<s_roms> pacman_roms = {
         {4096,      0, 0xc1e6ab10, "pacman.6e", prg_rom.get()},
         {4096, 0x1000, 0x1a6fb2d4, "pacman.6f", prg_rom.get()},
         {4096, 0x2000, 0xbcdd1beb, "pacman.6h", prg_rom.get()},
@@ -56,7 +55,7 @@ int c_pacman::load()
         { 256,  0x100, 0x77245b66, "82s126.3m", pacman_psg->sound_rom},
     };
 
-    s_roms mspacmab_roms[] = {
+    std::vector<s_roms> mspacmab_roms = {
         {4096,      0, 0xd16b31b7,     "boot1", prg_rom.get()},
         {4096, 0x1000, 0x0d32de5e,     "boot2", prg_rom.get()},
         {4096, 0x2000, 0x1821ee0b,     "boot3", prg_rom.get()},
@@ -71,35 +70,33 @@ int c_pacman::load()
         { 256,  0x100, 0x77245b66, "82s126.3m", pacman_psg->sound_rom},
     };
 
-    s_roms *romset;
+    std::vector<s_roms> romset;
     int romset_length = 0;
 
     switch (model) {
         case PACMAN_MODEL::MSPACMAB:
             romset = mspacmab_roms;
-            romset_length = sizeof(mspacmab_roms) / sizeof(s_roms);
             prg_mask = 0xFFFF;
             break;
         default:
             romset = pacman_roms;
-            romset_length = sizeof(pacman_roms) / sizeof(s_roms);
             prg_mask = 0x7FFF;
             break;
     }
 
-    for (int i = 0; i < romset_length; i++) {
+    for (auto &r : romset) {
         std::ifstream file;
-        std::string fn = (std::string)path + (std::string)"/" + romset[i].filename;
+        std::string fn = (std::string)path + (std::string)"/" + r.filename;
         file.open(fn, std::ios_base::in | std::ios_base::binary);
         if (file.is_open()) {
-            file.read((char*)(romset[i].loc + romset[i].offset), romset[i].length);
+            file.read((char*)(r.loc + r.offset), r.length);
             file.close();
         }
         else {
             return 0;
         }
-        int crc = get_crc32((unsigned char *)(romset[i].loc + romset[i].offset), romset[i].length);
-        if (crc != romset[i].crc32) {
+        int crc = get_crc32((unsigned char *)(r.loc + r.offset), r.length);
+        if (crc != r.crc32) {
             return 0;
         }
         int x = 1;
