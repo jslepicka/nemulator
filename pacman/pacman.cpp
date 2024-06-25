@@ -36,42 +36,41 @@ int c_pacman::load()
 {
     struct s_roms
     {
+        std::string filename;
+        uint32_t crc32;
         uint32_t length;
         uint32_t offset;
-        uint32_t crc32;
-        std::string filename;
         uint8_t *loc;
     };
     std::vector<s_roms> pacman_roms = {
-        {4096,      0, 0xc1e6ab10, "pacman.6e", prg_rom.get()},
-        {4096, 0x1000, 0x1a6fb2d4, "pacman.6f", prg_rom.get()},
-        {4096, 0x2000, 0xbcdd1beb, "pacman.6h", prg_rom.get()},
-        {4096, 0x3000, 0x817d94e3, "pacman.6j", prg_rom.get()},
-        {4096,      0, 0x0c944964, "pacman.5e", pacman_vid->tile_rom.get()},
-        {4096,      0, 0x958fedf9, "pacman.5f", pacman_vid->sprite_rom.get()},
-        {  32,      0, 0x2fc650bd, "82s123.7f", pacman_vid->color_rom.get()},
-        { 256,      0, 0x3eb3a8e4, "82s126.4a", pacman_vid->pal_rom.get()},
-        { 256,      0, 0xa9cc86bf, "82s126.1m", pacman_psg->sound_rom},
-        { 256,  0x100, 0x77245b66, "82s126.3m", pacman_psg->sound_rom},
+        {"pacman.6e", 0xc1e6ab10, 4096,      0, prg_rom.get()},
+        {"pacman.6f", 0x1a6fb2d4, 4096, 0x1000, prg_rom.get()},
+        {"pacman.6h", 0xbcdd1beb, 4096, 0x2000, prg_rom.get()},
+        {"pacman.6j", 0x817d94e3, 4096, 0x3000, prg_rom.get()},
+        {"pacman.5e", 0x0c944964, 4096,      0, pacman_vid->tile_rom.get()},
+        {"pacman.5f", 0x958fedf9, 4096,      0, pacman_vid->sprite_rom.get()},
+        {"82s123.7f", 0x2fc650bd,   32,      0, pacman_vid->color_rom.get()},
+        {"82s126.4a", 0x3eb3a8e4,  256,      0, pacman_vid->pal_rom.get()},
+        {"82s126.1m", 0xa9cc86bf,  256,      0, pacman_psg->sound_rom},
+        {"82s126.3m", 0x77245b66,  256,  0x100, pacman_psg->sound_rom},
     };
 
     std::vector<s_roms> mspacmab_roms = {
-        {4096,      0, 0xd16b31b7,     "boot1", prg_rom.get()},
-        {4096, 0x1000, 0x0d32de5e,     "boot2", prg_rom.get()},
-        {4096, 0x2000, 0x1821ee0b,     "boot3", prg_rom.get()},
-        {4096, 0x3000, 0x165a9dd8,     "boot4", prg_rom.get()},
-        {4096, 0x8000, 0x8c3e6de6,     "boot5", prg_rom.get()},
-        {4096, 0x9000, 0x368cb165,     "boot6", prg_rom.get()},
-        {4096,      0, 0x5c281d01,        "5e", pacman_vid->tile_rom.get()},
-        {4096,      0, 0x615af909,        "5f", pacman_vid->sprite_rom.get()},
-        {  32,      0, 0x2fc650bd, "82s123.7f", pacman_vid->color_rom.get()},
-        { 256,      0, 0x3eb3a8e4, "82s126.4a", pacman_vid->pal_rom.get()},
-        { 256,      0, 0xa9cc86bf, "82s126.1m", pacman_psg->sound_rom},
-        { 256,  0x100, 0x77245b66, "82s126.3m", pacman_psg->sound_rom},
+        {    "boot1", 0xd16b31b7, 4096,      0, prg_rom.get()},
+        {    "boot2", 0x0d32de5e, 4096, 0x1000, prg_rom.get()},
+        {    "boot3", 0x1821ee0b, 4096, 0x2000, prg_rom.get()},
+        {    "boot4", 0x165a9dd8, 4096, 0x3000, prg_rom.get()},
+        {    "boot5", 0x8c3e6de6, 4096, 0x8000, prg_rom.get()},
+        {    "boot6", 0x368cb165, 4096, 0x9000, prg_rom.get()},
+        {       "5e", 0x5c281d01, 4096,      0, pacman_vid->tile_rom.get()},
+        {       "5f", 0x615af909, 4096,      0, pacman_vid->sprite_rom.get()},
+        {"82s123.7f", 0x2fc650bd,   32,      0, pacman_vid->color_rom.get()},
+        {"82s126.4a", 0x3eb3a8e4,  256,      0, pacman_vid->pal_rom.get()},
+        {"82s126.1m", 0xa9cc86bf,  256,      0, pacman_psg->sound_rom},
+        {"82s126.3m", 0x77245b66,  256,  0x100, pacman_psg->sound_rom},
     };
 
     std::vector<s_roms> romset;
-    int romset_length = 0;
 
     switch (model) {
         case PACMAN_MODEL::MSPACMAB:
