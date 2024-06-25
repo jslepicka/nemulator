@@ -784,16 +784,16 @@ void c_z80::execute_opcode()
 			{
 				if (ddfd_ptr) {
 					d = (signed char)read_byte(PC++);
-					alu(y, read_byte(*ddfd_ptr + d));
+					alu((ALU_OP)y, read_byte(*ddfd_ptr + d));
 				}
 				else
 				{
-					alu(y, read_byte(*rp[2]));
+                    alu((ALU_OP)y, read_byte(*rp[2]));
 				}
 			}
 			else
 			{
-				alu(y, *r[z]);
+                alu((ALU_OP)y, *r[z]);
 			}
 			break;
 		case 3: //x=3
@@ -949,7 +949,7 @@ void c_z80::execute_opcode()
 				break;
 			case 6:
 				//alu[y], n
-				alu(y, read_byte(PC++));
+                alu((ALU_OP)y, read_byte(PC++));
 				break;
 			case 7:
 				//RST y*8
@@ -1495,9 +1495,9 @@ void c_z80::execute_opcode()
 				//RES y, (IX+d)
 				//temp = dd ? IX.word : IY.word;
 				unsigned short loc = *ddfd_ptr + d;
-				temp2 = read_byte(loc);
-				temp2 &= ~(1 << y);
-				write_byte(loc, temp2);
+				temp = read_byte(loc);
+				temp &= ~(1 << y);
+				write_byte(loc, temp);
 			}
 			break;
 		case 3:
@@ -1872,32 +1872,32 @@ void c_z80::ADC16(unsigned short operand)
 }
 
 
-void c_z80::alu(int op, unsigned char operand)
+void c_z80::alu(ALU_OP op, unsigned char operand)
 {
 	switch (op)
 	{
-	case 0: //ADD
+    case ALU_OP::ADD: //ADD
 		ADD8(operand);
 		break;
-	case 1: //ADC
+    case ALU_OP::ADC: //ADC
 		ADD8(operand, flag_c ? 1 : 0);
 		break;
-	case 2: //SUB
+    case ALU_OP::SUB: //SUB
 		SUB8(operand);
 		break;
-	case 3: //SBC
+    case ALU_OP::SBC: //SBC
 		SUB8(operand, flag_c ? 1 : 0);
 		break;
-	case 4: //AND
+    case ALU_OP::AND: //AND
 		AND(operand);
 		break;
-	case 5: //XOR
+    case ALU_OP::XOR: //XOR
 		XOR(operand);
 		break;
-	case 6: //OR
+    case ALU_OP::OR: //OR
 		OR(operand);
 		break;
-	case 7: //CP
+    case ALU_OP::CP: //CP
 		CP(operand);
 		break;
 	}

@@ -43,7 +43,6 @@ private:
 	int prefix;
 	int required_cycles;
 	int temp;
-	int temp2;
 
 	int x, y, z, p, q;
 	signed char d;
@@ -96,7 +95,19 @@ private:
 	void ROT(int y, unsigned char *operand);
 	void inc_r();
 
-	void alu(int op, unsigned char operand);
+	enum class ALU_OP
+    {
+        ADD,
+        ADC,
+        SUB,
+        SBC,
+        AND,
+        XOR,
+        OR,
+        CP
+    };
+
+	void alu(ALU_OP op, unsigned char operand);
 	int test_flag(int f);
 
 	void swap_register(unsigned short *first, unsigned short *second);
