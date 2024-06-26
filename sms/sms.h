@@ -59,6 +59,7 @@ public:
 	int save_sram();
 	void get_sram_path(char *path);
 	char sram_file_name[MAX_PATH];
-	void catchup_psg(int end_frame);
+	void catchup_psg();
+    uint64_t last_psg_run;
 };
 
