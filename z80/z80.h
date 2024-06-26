@@ -14,9 +14,9 @@ class c_z80
 	int emulate_frame();
 	int reset();
 	void execute(int cycles);
-	int pending_psg_cycles;
-private:
-	int needed_cycles;
+    uint64_t retired_cycles;
+
+  private:
 	unsigned short PC;
 	int prev_nmi;
 	int halted;

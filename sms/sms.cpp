@@ -160,21 +160,12 @@ int c_sms::reset()
 	ram_select = 0;
 	joy = 0xFFFF;
 	psg_cycles = 0;
+    last_psg_run = 0;
 	return 0;
 }
 
 int c_sms::emulate_frame()
 {
-	//for (int i = 0; i < 262; i++)
-	//{
-	//	for (int j = 0; j < 228; j++)
-	//	{
-	//		z80->execute(1);
-	//		psg->clock(1);
-	//	}
-	//	vdp->eval_sprites();
-	//	vdp->draw_scanline();
-	//}
 	psg->clear_buffer();
 	for (int i = 0; i < 262; i++)
 	{
@@ -182,8 +173,7 @@ int c_sms::emulate_frame()
 		vdp->eval_sprites();
 		vdp->draw_scanline();
 	}
-	//z80->end_frame();
-	catchup_psg(228*262);
+    catchup_psg();
 	return 0;
 }
 
@@ -259,22 +249,11 @@ void c_sms::write_word(unsigned short address, unsigned short value)
 	write_byte(address + 1, value >> 8);
 }
 
-void c_sms::catchup_psg(int end_frame)
+void c_sms::catchup_psg()
 {
-	//return;
-	int num_cycles = 0;
-	if (end_frame)
-	{
-		num_cycles = end_frame - psg_cycles;
-		psg_cycles = 0;
-	}
-	else
-	{
-		num_cycles = z80->pending_psg_cycles;
-		psg_cycles += num_cycles;
-	}
+    int num_cycles = z80->retired_cycles - last_psg_run;
+    last_psg_run = z80->retired_cycles;
 	psg->clock(num_cycles);
-	z80->pending_psg_cycles = 0;
 }
 
 void c_sms::write_port(int port, unsigned char value)
@@ -292,7 +271,7 @@ void c_sms::write_port(int port, unsigned char value)
 		break;
 	case 1:
 		//printf("Port write to PSG\n");
-		catchup_psg(0);
+		catchup_psg();
 		psg->write(value);
 		break;
 	case 2:
