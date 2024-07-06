@@ -46,6 +46,9 @@ uint8_t c_mbc5::read_byte(uint16_t address)
             break;
         case 2: //4000-7FFF rom bank
         case 3:
+            if (bank > 63) {
+                int x = 1;
+            }
             a = (address & 0x3FFF);
             a += (bank % rom_banks) * 0x4000;
             return *(rom + a);

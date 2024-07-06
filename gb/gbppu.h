@@ -1,10 +1,10 @@
 #pragma once
 #include <cstdint>
-#include <queue>
 #include <atomic>
 #include <memory>
 
 class c_gb;
+
 class c_gbppu
 {
 public:
@@ -34,10 +34,7 @@ public:
 	int WY;
 	int WX;
 	int DMA;
-    uint8_t BCPS;
-    uint8_t OBPS;
-    uint8_t cgb_vram_bank;
-	int frame = 0;
+
 	int fetch_x;
 	int window_tile;
 	int window_start_line;
@@ -57,44 +54,45 @@ public:
 		uint8_t x;
 		uint8_t tile;
 		uint8_t flags;
-	};
-
-	s_sprite sprite_buffer[10];
+	} sprite_buffer[10];
 
 	uint32_t* f;
 
-	int oam_index;
+	struct s_bg_fifo_entry
+    {
+        uint8_t valid;
+		uint8_t pattern;
+        uint8_t cgb_pal;
+        uint8_t priority;
+    } bg_fifo[8];
 
-	std::queue<int> sprite_fifo;
+	struct s_obj_fifo_entry
+    {
+        uint8_t valid;
+        uint8_t pattern;
+        uint8_t dmg_pal;
+        uint8_t priority;
+        uint8_t cgb_pal;
+        uint8_t oam_index;
+    } obj_fifo[8];
 
-	uint32_t obj_fifo[8];
-    uint8_t obj_fifo_pal[8];
 	int obj_fifo_index;
-	int obj_fifo_count;
 
-	uint32_t bg_fifo[8];
-    uint8_t bg_fifo_pal[8];
 	int bg_fifo_index;
 
-	uint8_t tile;
 	int p0_addr;
 	int p1_addr;
-	uint8_t obj_p0;
-	uint8_t obj_p1;
 	int first_tile;
 	int char_addr;
 	int fetch_phase;
 	int obj_fetch_phase;
 	int ybase;
-	uint8_t render_buf[8];
-	int render_buf_index;
+	
 	int current_pixel;
 	int start_vblank;
 	int dma_count;
 	int sprite_count;
 	int lcd_paused;
-	//int fetch_sprite;
-	int fetched_sprite;
 	int bg_latched;
 
 	int in_sprite_window;
@@ -106,14 +104,7 @@ public:
 
 	int start_hblank;
 
-	uint8_t bg_p0;
-	uint8_t bg_p1;
-
-	int current_sprite;
-
-	//int fetching_sprites;
-	uint8_t sprite_tile;
-	int pixels_out = 0;
+	int pixels_out;
 
 	int stat_irq;
 	int prev_stat_irq;
@@ -131,15 +122,8 @@ public:
 	int fetching_sprites;
 	int SCX_latch;
 
-	static const unsigned int pal[][4];
-	const unsigned int* shades;
-
-
-	int dots = 0;
-
-	uint8_t cgb_bg_pal[64];
-    uint8_t cgb_ob_pal[64];
-    uint8_t cgb_bg_attr;
+	static const unsigned int palettes[][4];
+	
 
 	static uint32_t color_lookup[32];
 
@@ -147,5 +131,41 @@ public:
 	uint32_t double_speed;
 
 	uint32_t OPRI;
+
+
+    int hdma_general_count;
+    int hdma_hblank_count;
+    int hdma_length;
+
+	uint8_t BCPS;
+    uint8_t OBPS;
+    uint8_t cgb_vram_bank;
+    uint8_t tile;
+    uint8_t obj_p0;
+    uint8_t obj_p1;
+    uint8_t bg_p0;
+    uint8_t bg_p1;
+    int8_t current_sprite;
+    uint8_t sprite_tile;
+	uint8_t HDMA1;
+    uint8_t HDMA2;
+    uint8_t HDMA3;
+    uint8_t HDMA4;
+    uint8_t HDMA5;
+    uint8_t cgb_bg_attr;
+    uint16_t hdma_source;
+    uint16_t hdma_dest;
+    
+	const unsigned int *palette;
+    alignas(8) uint8_t cgb_bg_pal[64];
+    alignas(8) uint8_t cgb_ob_pal[64];
+
+	void do_bg_fetch();
+    void do_obj_fetch();
+    void output_pixel();
+    void exec_mode0();
+    void exec_mode1();
+    void exec_mode2();
+    void exec_mode3();
 };
 

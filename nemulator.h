@@ -57,7 +57,6 @@ private:
 	int input_buffer_playback;
 	int input_buffer_end;
 	void do_turbo_press(int button, std::string button_name);
-	int take_screenshot();
 	int splash_done;
 	int splash_stage;
 	double splash_timer;

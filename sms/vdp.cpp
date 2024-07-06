@@ -412,15 +412,17 @@ void c_vdp::generate_palette()
 	int expected = 0;
 	if (pal_built.compare_exchange_strong(expected, 1))
 	{
+        double gamma = 2.2;
 		for (int i = 0; i < 256; i++)
 		{
-			int r_bits = i & 0x3;
-			int g_bits = (i >> 2) & 0x3;
-			int b_bits = (i >> 4) & 0x3;
+            int num_bits = 3;
+			int r_bits = i & num_bits;
+            int g_bits = (i >> 2) & num_bits;
+            int b_bits = (i >> 4) & num_bits;
 
-			double r = pow(std::clamp(r_bits * (1.0 / 3.0), 0.0, 1.0), 2.2);
-			double g = pow(std::clamp(g_bits * (1.0 / 3.0), 0.0, 1.0), 2.2);
-			double b = pow(std::clamp(b_bits * (1.0 / 3.0), 0.0, 1.0), 2.2);
+			double r = pow(std::clamp(r_bits * (1.0 / (double)num_bits), 0.0, 1.0), gamma);
+            double g = pow(std::clamp(g_bits * (1.0 / (double)num_bits), 0.0, 1.0), gamma);
+            double b = pow(std::clamp(b_bits * (1.0 / (double)num_bits), 0.0, 1.0), gamma);
 
 			pal_sms[i] = (int)(255.0 * r)
 				| ((int)(255.0 * g) << 8)
@@ -429,13 +431,14 @@ void c_vdp::generate_palette()
 		}
 		for (int i = 0; i < 4096; i++)
 		{
-			int r_bits = i & 0xF;
-			int g_bits = (i >> 4) & 0xF;
-			int b_bits = (i >> 8) & 0xF;
-
-			double r = pow(std::clamp(r_bits * (1.0 / 15.0), 0.0, 1.0), 2.2);
-			double g = pow(std::clamp(g_bits * (1.0 / 15.0), 0.0, 1.0), 2.2);
-			double b = pow(std::clamp(b_bits * (1.0 / 15.0), 0.0, 1.0), 2.2);
+            int num_bits = 15;
+			int r_bits = i & num_bits;
+            int g_bits = (i >> 4) & num_bits;
+            int b_bits = (i >> 8) & num_bits;
+						
+			double r = pow(std::clamp(r_bits * (1.0 / (double)num_bits), 0.0, 1.0), gamma);
+            double g = pow(std::clamp(g_bits * (1.0 / (double)num_bits), 0.0, 1.0), gamma);
+            double b = pow(std::clamp(b_bits * (1.0 / (double)num_bits), 0.0, 1.0), gamma);
 
 			pal_gg[i] = (int)(255.0 * r)
 				| ((int)(255.0 * g) << 8)

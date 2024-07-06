@@ -16,15 +16,10 @@ public:
 	int get_output_buf(const short **output_buf);
 	void clear_buf();
 	void process(float sample);
-	int output_buf_index;
 private:
-	float input_rate;
-	float output_rate;
 	float m, mf;
 	int samples_required;
-
-	float last_sample = 0.0f;
-	float last_out = 0.0f;
+    int output_buf_index;
 
 	static const int OUTPUT_BUF_LEN = 1024;
 	static const int FILTERED_BUF_LEN = 4;
