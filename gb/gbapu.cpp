@@ -181,7 +181,14 @@ void c_gbapu::write_byte(uint16_t address, uint8_t data)
 uint8_t c_gbapu::read_byte(uint16_t address)
 {
     if (address == 0xFF26) {
-		return NR52;
+		//return NR52;
+		uint8_t return_value =
+			NR52 & 0xF0 |
+			(square1.enabled ? 1 << 0 : 0) |
+			(square2.enabled ? 1 << 1 : 0) |
+			(wave.enabled ? 1 << 2 : 0) |
+			(noise.enabled ? 1 << 3 : 0);
+        return return_value;
     }
     else {
 		return registers[address & 0x3F];

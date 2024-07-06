@@ -27,7 +27,6 @@ uint8_t c_gbmapper::read_byte(uint16_t address)
 
 void c_gbmapper::write_byte(uint16_t address, uint8_t data)
 {
-
 }
 
 void c_gbmapper::config_ram(int ram_size)

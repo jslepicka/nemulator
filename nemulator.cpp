@@ -20,7 +20,7 @@ extern bool startFullscreen;
 extern bool aspectLock;
 extern double aspectRatio;
 extern HWND hWnd;
-extern D3d10App *app;
+extern const char *app_title;
 
 extern c_config *config;
 extern std::unique_ptr<c_input_handler> g_ih;
@@ -268,10 +268,10 @@ void c_nemulator::configure_input()
 		BUTTONS button;
 		std::string config_base;
 		std::string config_name;
-		int default_key;
+		unsigned int default_key;
 		int repeat_mode;
 	};
-	static const int button_mask = 0x80000000;
+	static const unsigned int button_mask = 0x80000000;
 	s_button_map button_map[] =
 	{
 		{ BUTTON_1LEFT,         "joy1",     "left",    VK_LEFT,                     1 },
@@ -301,7 +301,6 @@ void c_nemulator::configure_input()
 		{ BUTTON_STATS,          "",        "",        VK_F9,                       0 },
 		{ BUTTON_MASK_SIDES,     "",        "",        VK_F8,                       0 },
 		{ BUTTON_SPRITE_LIMIT,   "",        "",        VK_F7,                       0 },
-		{ BUTTON_SCREENSHOT,     "",        "",        VK_F6,                       0 },
 		{ BUTTON_MEM_VIEWER,     "",        "",        VK_F5,                       0 },
 		{ BUTTON_AUDIO_INFO,     "",        "",        VK_F4,                       0 },
 		{ BUTTON_RESET,          "",        "",        VK_F2,                       0 },
@@ -524,14 +523,6 @@ void c_nemulator::handle_button_mask_sides(s_button_handler_params *params)
 
 }
 
-void c_nemulator::handle_button_screenshot(s_button_handler_params *params)
-{
-	if (take_screenshot() == 0)
-		status->add_message("saved screenshot");
-	else
-		status->add_message("screenshot failed");
-}
-
 void c_nemulator::handle_button_sprite_limit(s_button_handler_params *params)
 {
 	c_game* g = (c_game*)texturePanels[selectedPanel]->GetSelected();
@@ -701,7 +692,6 @@ const c_nemulator::s_button_handler c_nemulator::button_handlers[] =
 	{ SCOPE::GAMES_LOADED, {BUTTON_AUDIO_INFO}, true, RESULT_DOWN, &c_nemulator::handle_button_audio_info },
 	{ SCOPE::GAMES_LOADED, {BUTTON_STATS}, true, RESULT_DOWN, &c_nemulator::handle_button_stats },
 	{ SCOPE::GAMES_LOADED, {BUTTON_MASK_SIDES}, true, RESULT_DOWN ,&c_nemulator::handle_button_mask_sides },
-	{ SCOPE::GAMES_LOADED, {BUTTON_SCREENSHOT}, true, RESULT_DOWN, &c_nemulator::handle_button_screenshot },
 	{ SCOPE::GAMES_LOADED, {BUTTON_SPRITE_LIMIT}, true, RESULT_DOWN, &c_nemulator::handle_button_sprite_limit },
 	{ SCOPE::GAMES_LOADED, {BUTTON_DEC_SHARPNESS}, true, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_dec_sharpness },
 	{ SCOPE::GAMES_LOADED, {BUTTON_INC_SHARPNESS}, true, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_inc_sharpness },
@@ -841,6 +831,7 @@ void c_nemulator::leave_game()
 			nsf_stats = NULL;
 		}
 	}
+    SetWindowText(hWnd, app_title);
 }
 
 void c_nemulator::start_game()
@@ -872,6 +863,9 @@ void c_nemulator::start_game()
 				add_task(nsf_stats, g->console.get());
 			}
 		}
+        SetWindowText(
+            hWnd,
+            (std::string(app_title) + " - " + texturePanels[selectedPanel]->GetSelected()->get_description()).c_str());
 	}
 }
 
@@ -1336,8 +1330,8 @@ void c_nemulator::LoadGames()
 		{ GAME_GB,   "gb",  "gb.rom_path",  "gb.save_path",  "c:\\roms\\gb" },
         { GAME_GBC, "gbc", "gbc.rom_path", "gbc.save_path", "c:\\roms\\gbc" },
 		{ GAME_NES, "nsf", "nsf.rom_path", "nsf.save_path", "c:\\roms\\nsf" }, 
-		{ GAME_PACMAN, "", "pacman.rom_path", "", "c:\\roms\\pacman" },
-		{ GAME_MSPACMAB, "", "mspacmab.rom_path", "", "c:\\roms\\mspacmab" }
+		{ GAME_PACMAN, "", "pacman.rom_path", "", "c:\\roms\\arcade\\pacman" },
+		{ GAME_MSPACMAB, "", "mspacmab.rom_path", "", "c:\\roms\\arcade\\mspacmab" }
 	};
 
 	bool global_mask_sides = config->get_bool("mask_sides", false);
@@ -1393,33 +1387,36 @@ void c_nemulator::LoadGames()
             switch (li.type) {
                 case GAME_PACMAN:
                     strcpy(g->title, "Pac-Man");
+                    g->set_description(g->title);
                     break;
                 case GAME_MSPACMAN:
                 case GAME_MSPACMAB:
                     strcpy(g->title, "Ms. Pac-Man");
+                    g->set_description(g->title);
                     break;
                 default:
                     g->set_description(fn);
                     break;
             }
 
-			std::string s = "\"" + fn + "\".";
-			bool mask_sides = config->get_bool(s + "mask_sides", global_mask_sides);
-			bool limit_sprites = config->get_bool(s + "limit_sprites", global_limit_sprites);
-			int submapper = config->get_int(s + "mapper_variant", 0);
-			g->submapper = submapper;
-			g->mask_sides = mask_sides;
-			g->limit_sprites = limit_sprites;
+			//std::string s = "\"" + fn + "\".";
+			//bool mask_sides = config->get_bool(s + "mask_sides", global_mask_sides);
+			//bool limit_sprites = config->get_bool(s + "limit_sprites", global_limit_sprites);
+			//int submapper = config->get_int(s + "mapper_variant", 0);
+			//g->submapper = submapper;
+			//g->mask_sides = mask_sides;
+			//g->limit_sprites = limit_sprites;
 			gameList.push_back(g);
 		}
 	}
 
 	std::sort(gameList.begin(), gameList.end(), [](const c_game* a, const c_game* b) {
-		std::string aa = a->title;
-		std::string bb = b->title;
-		for (auto & a_upper : aa) a_upper = toupper(a_upper);
-		for (auto & b_upper : bb) b_upper = toupper(b_upper);
-		return aa < bb;
+
+		std::string a_title = a->title;
+		std::string b_title = b->title;
+        std::transform(a_title.begin(), a_title.end(), a_title.begin(), tolower);
+        std::transform(b_title.begin(), b_title.end(), b_title.begin(), tolower);
+		return a_title < b_title;
 	});
 	for (auto &game : gameList)
 	{
@@ -1436,107 +1433,4 @@ int c_nemulator::dir_exists(const std::string &path)
 	if (0 == stat(p.c_str(), &s))
 		return 1;
 	return 0;
-}
-
-int c_nemulator::take_screenshot()
-{
-	bool mask_sides = ((c_game*)texturePanels[selectedPanel]->GetSelected())->mask_sides;
-	c_game *g = (c_game*)texturePanels[selectedPanel]->GetSelected();
-	c_console *n = g->console.get();
-	if (n->is_loaded())
-	{
-		std::string screenshot_path = config->get_string("screenshot_path", "c:\\roms\\screenshots");
-		_finddata64i32_t fd;
-		intptr_t f;
-		char search_path[MAX_PATH];
-		sprintf_s(search_path, MAX_PATH, (screenshot_path + "\\" + n->filename + ".???.bmp").c_str());
-
-		int file_number;
-		if ((f=_findfirst(search_path, &fd)) != -1)
-		{
-			int find_result = 0;
-			std::list<std::string> file_list;
-			while(find_result == 0)
-			{
-				file_list.push_back(fd.name);
-				find_result = _findnext(f, &fd);
-			}
-			file_list.sort();
-			int length = (int)strlen(file_list.back().c_str());
-			char temp[8];
-			strcpy_s(temp, file_list.back().c_str() + length-7);
-			temp[3] = '\0';
-			file_number = atoi(temp) + 1;
-			if (file_number > 999)
-				return 1;
-			_findclose(f);
-		}
-		else
-			file_number = 0;
-
-		char temp[4];
-		sprintf_s(temp, 4, "%03d", file_number);
-
-		std::string filename = screenshot_path + "\\" + n->filename + "." + temp + ".bmp";
-
-		int w = 0;
-		int h = 0;
-
-		switch (g->type) {
-		case GAME_NES:
-		case GAME_SMS:
-		case GAME_GG:
-			w = 256;
-			h = 240;
-			break;
-		case GAME_GB:
-        case GAME_GBC:
-			w = 160;
-			h = 144;
-			break;
-		default:
-			return 1;
-		}
-
-		int *buf = new int[w*h];
-		int *b_ptr = buf;
-		int *fb = n->get_video();
-		for (int y = 0; y < h; y++)
-		{
-			for (int x = 0; x < w; x++)
-			{
-				int col = 0;
-				if (mask_sides && (x < 8 || x > 247)) {
-					fb++;
-					col = 0xFF000000;
-				}
-				else {
-					col = *fb++ | 0xFF000000;
-				}
-				*b_ptr++ = col;
-			}
-		}
-
-		int ret = 0;
-		switch (g->type)
-		{
-		case GAME_NES:
-			ret = c_bmp_writer::write_bmp(buf + 256 * 8, 256, 224, filename);
-			break;
-		case GAME_SMS:
-		case GAME_GG:
-			ret = c_bmp_writer::write_bmp(buf + 256 * 8, 256, 192, filename);
-			break;
-		case GAME_GB:
-        case GAME_GBC:
-			ret = c_bmp_writer::write_bmp(buf, 160, 144, filename);
-			break;
-		}
-		delete[] buf;
-		if (ret == 0)
-			return 0;
-		else
-			return 1;
-	}
-	return 1;
 }

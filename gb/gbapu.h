@@ -147,6 +147,7 @@ private:
 		void reset();
 		void power_on();
 		void trigger();
+        int enabled;
 	private:
 		c_timer timer;
 		c_duty duty;
@@ -162,7 +163,6 @@ private:
 		int starting_volume;
 		int period_hi;
 		int period_lo;
-		int enabled;
 		int envelope_period;
 		int calc_sweep();
 		int dac_power;
@@ -182,6 +182,7 @@ private:
 		void clock_length();
 		void clock_envelope();
 		void power_on();
+        int enabled;
 	private:
 		int clock_shift;
 		int width_mode;
@@ -193,7 +194,6 @@ private:
 		c_timer timer;
 		c_length length;
 		c_envelope envelope;
-		int enabled;
 		int dac_power;
         int clock_divider;
         int next_length = 64;
@@ -212,13 +212,14 @@ private:
 		void clock_timer();
 		void clock_length();
 		void power_on();
+        int enabled;
 	private:
 
 		int starting_volume;
 		int envelope_period;
 		c_timer timer;
 		c_length length;
-		int enabled;
+		
 		int timer_period;
 		int sample_buffer;
 		int wave_table[32];
