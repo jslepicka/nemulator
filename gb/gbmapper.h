@@ -15,6 +15,7 @@ class c_gbmapper
     virtual uint8_t read_byte(uint16_t address);
     virtual void reset();
     virtual void config_ram(int ram_size);
+    bool rumble;
     uint8_t *rom;
     std::unique_ptr<uint8_t[]> ram;
 

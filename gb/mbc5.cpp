@@ -22,12 +22,11 @@ void c_mbc5::write_byte(uint16_t address, uint8_t data)
             break;
         case 4:
         case 5:
-            ram_bank = data;
+            ram_bank = data & (rumble ? 0xE : 0xF);
             break;
         case 0xA:
         case 0xB:
             if (ram && ram_enable)
-                 //*(ram + (((address & 0x1FFF) + ram_bank * 0x2000) % ram_size)) = data;
                 ram[((address & 0x1FFF) + ram_bank * 0x2000) % ram_size] = data;
             break;
         default: {
@@ -46,16 +45,12 @@ uint8_t c_mbc5::read_byte(uint16_t address)
             break;
         case 2: //4000-7FFF rom bank
         case 3:
-            if (bank > 63) {
-                int x = 1;
-            }
             a = (address & 0x3FFF);
             a += (bank % rom_banks) * 0x4000;
             return *(rom + a);
             break;
         case 5: //A000-BFFF ram
             if (ram && ram_enable)
-                 //return *(ram + (((address & 0x1FFF) + ram_bank * 0x2000) % ram_size));
                 return ram[((address & 0x1FFF) + ram_bank * 0x2000) % ram_size];
             break;
     }

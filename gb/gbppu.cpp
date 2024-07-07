@@ -682,7 +682,6 @@ void c_gbppu::exec_mode3()
 {
     //if any sprites on current line, set fetch_sprite to number of sprites
     //and pause lcd
-
     if ((LCDC & 0x2) && !first_tile && current_pixel != 0 && sprites_here == 0) {
         for (int i = 0; i < sprite_count; i++) {
             if (sprite_buffer[i].x == current_pixel - (SCX_latch & 0x7)) {
@@ -797,6 +796,8 @@ void c_gbppu::execute(int cycles)
             gb->clock_timer();
             if (hdma_length) {
                 hdma_length--;
+                assert(hdma_source < 0x8000 || (hdma_source >= 0xA000 && hdma_source < 0xE000));
+                assert(hdma_dest >= 0x8000 && hdma_dest < 0xA000);
                 write_byte(hdma_dest++, gb->read_byte(hdma_source++));
             }
             else {
@@ -869,7 +870,8 @@ uint8_t c_gbppu::read_byte(uint16_t address)
             return 0xFE | (cgb_vram_bank & 0x1);
         case 0xFF55:
             if (HDMA5 & 0x80 && hdma_hblank_count) {
-                return (hdma_hblank_count >> 4) - 1;
+                int remaining_blocks = (hdma_hblank_count >> 4) - 1;
+                return remaining_blocks;
             }
             return 0xFF;
         case 0xFF68:

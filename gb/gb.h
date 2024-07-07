@@ -87,6 +87,7 @@ private:
 		std::function<std::unique_ptr<c_gbmapper>()> mapper;
 		int has_ram;
 		int has_battery;
+        int has_rumble;
 	};
 
 	int load_sram();

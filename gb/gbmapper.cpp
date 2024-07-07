@@ -3,6 +3,7 @@
 c_gbmapper::c_gbmapper()
 {
 	ram = NULL;
+    rumble = false;
 }
 
 c_gbmapper::~c_gbmapper()
