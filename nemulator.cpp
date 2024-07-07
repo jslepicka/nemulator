@@ -1414,8 +1414,8 @@ void c_nemulator::LoadGames()
 
         std::string a_title = a->title;
         std::string b_title = b->title;
-        std::transform(a_title.begin(), a_title.end(), a_title.begin(), tolower);
-        std::transform(b_title.begin(), b_title.end(), b_title.begin(), tolower);
+        std::transform(a_title.begin(), a_title.end(), a_title.begin(), toupper);
+        std::transform(b_title.begin(), b_title.end(), b_title.begin(), toupper);
         return a_title < b_title;
     });
     for (auto &game : gameList)
