@@ -2,14 +2,14 @@
 #include "..\mapper.h"
 
 class c_mapper190 :
-	public c_mapper
+    public c_mapper
 {
 public:
-	c_mapper190();
-	~c_mapper190();
-	void WriteByte(unsigned short address, unsigned char value);
-	unsigned char ReadByte(unsigned short address);
-	void reset();
+    c_mapper190();
+    ~c_mapper190();
+    void WriteByte(unsigned short address, unsigned char value);
+    unsigned char ReadByte(unsigned short address);
+    void reset();
 private:
-	unsigned char *ram;
+    unsigned char *ram;
 };

@@ -2,14 +2,14 @@
 #include "..\mapper.h"
 
 class c_mapper75 :
-	public c_mapper
+    public c_mapper
 {
 public:
-	c_mapper75();
-	~c_mapper75() {};
-	void WriteByte(unsigned short address, unsigned char value);
-	void reset();
+    c_mapper75();
+    ~c_mapper75() {};
+    void WriteByte(unsigned short address, unsigned char value);
+    void reset();
 private:
-	void sync();
-	int chr0, chr1;
+    void sync();
+    int chr0, chr1;
 };

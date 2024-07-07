@@ -206,8 +206,8 @@ int Vrc7Audio::clock( int ticks )
 
         mTicksToNextClock += ClockDiv;
    /* }*/
-		audio_out = out;
-		return out;
+        audio_out = out;
+        return out;
 }
 
 ///////////////////////////////////////////////////////////
@@ -318,8 +318,8 @@ inline int Vrc7Audio::Slot::Clock(uint32_t mod)
     mOutput[0] = DoClock(mod);
 
     mFeedbackOutput = (mOutput[0] + mOutput[1]) / 2;
-	//mFeedbackOutput = mOutput[0];
-	return mFeedbackOutput;
+    //mFeedbackOutput = mOutput[0];
+    return mFeedbackOutput;
 }
 
 int Vrc7Audio::Slot::DoClock(uint32_t mod)

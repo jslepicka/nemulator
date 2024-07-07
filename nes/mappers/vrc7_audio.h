@@ -13,7 +13,7 @@ public:
     void            Reset(bool hard);
     void            Write( uint16_t a, uint8_t v );
     int            clock( int ticks );
-	int audio_out = 0;
+    int audio_out = 0;
 
 private:
     uint8_t         mAddr;

@@ -1,20 +1,19 @@
 #define NOMINMAX
-//#include "windows.h"
+ //#include "windows.h"
 #include "gb.h"
-#include "sm83.h"
+#include "gbapu.h"
 #include "gbmapper.h"
+#include "gbppu.h"
 #include "mbc1.h"
 #include "mbc2.h"
 #include "mbc3.h"
 #include "mbc5.h"
-#include "gbppu.h"
-#include "gbapu.h"
+#include "sm83.h"
 #include <algorithm>
 
-void strip_extension(char* path);
+void strip_extension(char *path);
 
-const std::map<int, c_gb::s_mapper> c_gb::mapper_factory =
-{
+const std::map<int, c_gb::s_mapper> c_gb::mapper_factory = {
     {0, {[]() { return std::make_unique<c_gbmapper>(); }, 0, 0, 0}},
     {1, {[]() { return std::make_unique<c_mbc1>(); }, 0, 0, 0}},
     {2, {[]() { return std::make_unique<c_mbc1>(); }, 1, 0, 0}},
@@ -29,7 +28,6 @@ const std::map<int, c_gb::s_mapper> c_gb::mapper_factory =
     {0x1E, {[]() { return std::make_unique<c_mbc5>(); }, 1, 1, 1}}, //rumble
 };
 
-
 c_gb::c_gb(GB_MODEL model)
 {
     system_name = model == GB_MODEL::CGB ? "Nintendo Game Boy Color" : "Nintendo Game Boy";
@@ -40,191 +38,191 @@ c_gb::c_gb(GB_MODEL model)
     cpu = std::make_unique<c_sm83>(this);
     ppu = std::make_unique<c_gbppu>(this);
     apu = std::make_unique<c_gbapu>(this);
-    const int RAM_SIZE = 32768;
     ram = std::make_unique<uint8_t[]>(RAM_SIZE);
-	hram = std::make_unique<uint8_t[]>(128);
-	loaded = 0;
-	mapper = 0;
+    hram = std::make_unique<uint8_t[]>(128);
+    loaded = 0;
+    mapper = 0;
     ram_size = 0;
     wram_bank = 1;
-    this->color = color;
     this->model = model;
 }
 
 c_gb::~c_gb()
 {
-	if (loaded && m->has_battery) {
-		save_sram();
-	}
+    if (loaded && m->has_battery) {
+        save_sram();
+    }
 }
 
 int c_gb::reset()
 {
-	//if (m->has_battery)
-	//{
-	//	save_sram();
-	//}
-	cpu->reset(0x100);
-	mapper->reset();
-	ppu->reset();
-	apu->reset();
-	IE = 0;
-	IF = 0;
-	SB = 0;
-	SC = 0;
+  //if (m->has_battery)
+  //{
+  //    save_sram();
+  //}
+    cpu->reset(0x100);
+    mapper->reset();
+    ppu->reset();
+    apu->reset();
+    IE = 0;
+    IF = 0;
+    SB = 0;
+    SC = 0;
 
-	DIV = 0;
-	TIMA = 0;
-	TMA = 0;
-	TAC = 0;
-	divider = 0;
-	last_TAC_out = 0;
-	next_input = input = -1;
+    DIV = 0;
+    TIMA = 0;
+    TMA = 0;
+    TAC = 0;
+    divider = 0;
+    last_TAC_out = 0;
+    next_input = input = -1;
 
-	JOY = 0xFF;
-	serial_transfer_count = 0;
-	last_serial_clock = 0;
+    JOY = 0xFF;
+    serial_transfer_count = 0;
+    last_serial_clock = 0;
     wram_bank = 1;
-	return 0;
+
+    memset(ram.get(), 0, RAM_SIZE);
+    memset(hram.get(), 0, 128);
+    return 0;
 }
 
 int *c_gb::get_video()
 {
-	return (int*)ppu->get_fb();
+    return (int *)ppu->get_fb();
 }
 
 void c_gb::set_audio_freq(double freq)
 {
-	apu->set_audio_rate(freq);
+    apu->set_audio_rate(freq);
 }
 
-int c_gb::get_sound_bufs(const short** buf_l, const short** buf_r)
+int c_gb::get_sound_bufs(const short **buf_l, const short **buf_r)
 {
-	return apu->get_buffers(buf_l, buf_r);
+    return apu->get_buffers(buf_l, buf_r);
 }
 
 int c_gb::load()
 {
 
-	sprintf_s(pathFile, "%s\\%s", path, filename);
-	char temp[MAX_PATH];
-	sprintf_s(temp, "%s\\%s", sram_path, filename);
-	strip_extension(temp);
-	sprintf_s(sramPath, "%s.sav", temp);
+    sprintf_s(pathFile, "%s\\%s", path, filename);
+    char temp[MAX_PATH];
+    sprintf_s(temp, "%s\\%s", sram_path, filename);
+    strip_extension(temp);
+    sprintf_s(sramPath, "%s.sav", temp);
 
-	//uint8_t logo[] = {
-	//0xCE,0xED,0x66,0x66,0xCC,0x0D,0x00,0x0B,
-	//0x03,0x73,0x00,0x83,0x00,0x0C,0x00,0x0D,
-	//0x00,0x08,0x11,0x1F,0x88,0x89,0x00,0x0E,
-	//0xDC,0xCC,0x6E,0xE6,0xDD,0xDD,0xD9,0x99,
-	//0xBB,0xBB,0x67,0x63,0x6E,0x0E,0xEC,0xCC,
-	//0xDD,0xDC,0x99,0x9F,0xBB,0xB9,0x33,0x3E
-	//};
-	std::ifstream file;
-	file.open(pathFile, std::fstream::in | std::fstream::binary);
-	if (file.fail())
-		return false;
-	file.seekg(0, std::ios_base::end);
-	int file_length = (int)file.tellg();
+   //uint8_t logo[] = {
+  //0xCE,0xED,0x66,0x66,0xCC,0x0D,0x00,0x0B,
+  //0x03,0x73,0x00,0x83,0x00,0x0C,0x00,0x0D,
+  //0x00,0x08,0x11,0x1F,0x88,0x89,0x00,0x0E,
+  //0xDC,0xCC,0x6E,0xE6,0xDD,0xDD,0xD9,0x99,
+  //0xBB,0xBB,0x67,0x63,0x6E,0x0E,0xEC,0xCC,
+  //0xDD,0xDC,0x99,0x9F,0xBB,0xB9,0x33,0x3E
+  //};
+    std::ifstream file;
+    file.open(pathFile, std::fstream::in | std::fstream::binary);
+    if (file.fail())
+        return false;
+    file.seekg(0, std::ios_base::end);
+    int file_length = (int)file.tellg();
 
-	//printf("read %d bytes\n", file_length);
-	file.seekg(0, std::ios_base::beg);
+   //printf("read %d bytes\n", file_length);
+    file.seekg(0, std::ios_base::beg);
     rom = std::make_unique_for_overwrite<uint8_t[]>(std::max(32768, file_length));
-	//memcpy(rom + 0x104, logo, sizeof(logo));
+  //memcpy(rom + 0x104, logo, sizeof(logo));
 
-	file.read((char*)rom.get(), file_length);
-	file.close();
+    file.read((char *)rom.get(), file_length);
+    file.close();
 
-	memcpy(title, rom.get() + 0x134, 16);
-	cart_type = *(rom.get() + 0x147);
-	rom_size = *(rom.get() + 0x148);
-	header_ram_size = *(rom.get() + 0x149);
+    memcpy(title, rom.get() + 0x134, 16);
+    cart_type = *(rom.get() + 0x147);
+    rom_size = *(rom.get() + 0x148);
+    header_ram_size = *(rom.get() + 0x149);
 
-	if (file_length != (32768 << rom_size)) {
-		return 0;
-	}
+    if (file_length != (32768 << rom_size)) {
+        return 0;
+    }
 
+    //printf("title: %s\n", title);
+  //printf("cart_type: %d\n", cart_type);
+  //printf("rom_size: %d\n", 32768 << rom_size);
+  //printf("ram_size: %d\n", ram_size);
+    auto i = mapper_factory.find(cart_type);
+    if (i == mapper_factory.end()) {
+        return false;
+    }
+    m = (s_mapper *)&(i->second);
+    mapper = m->mapper();
 
-	//printf("title: %s\n", title);
-	//printf("cart_type: %d\n", cart_type);
-	//printf("rom_size: %d\n", 32768 << rom_size);
-	//printf("ram_size: %d\n", ram_size);
-	auto i = mapper_factory.find(cart_type);
-	if (i == mapper_factory.end()) {
-		return false;
-	}
-	m = (s_mapper*)&(i->second);
-	mapper = m->mapper();
+    mapper->rom = rom.get();
 
-	mapper->rom = rom.get();
-
-	if (m->has_ram && header_ram_size && header_ram_size < 6) {
-		const int size[] = { 0, 2 * 1024, 8 * 1024, 32 * 1024, 128 * 1024, 64 * 1024 };
-		ram_size = size[header_ram_size];
-		mapper->config_ram(ram_size);
-		if (m->has_battery) {
-			load_sram();
-		}
-	}
-	else if (cart_type == 5 || cart_type == 6) {
-		//mbc2 has 512x4bits of RAM
-		ram_size = 512;
-		mapper->config_ram(ram_size);
-		if (cart_type == 6)
-			load_sram();
-	}
-	else {
-		//disable battery save if anything is invalid
-		m->has_battery = 0;
-	}
+    if (m->has_ram && header_ram_size && header_ram_size < 6) {
+        const int size[] = {0, 2 * 1024, 8 * 1024, 32 * 1024, 128 * 1024, 64 * 1024};
+        ram_size = size[header_ram_size];
+        mapper->config_ram(ram_size);
+        if (m->has_battery) {
+            load_sram();
+        }
+    }
+    else if (cart_type == 5 || cart_type == 6) {
+   //mbc2 has 512x4bits of RAM
+        ram_size = 512;
+        mapper->config_ram(ram_size);
+        if (cart_type == 6)
+            load_sram();
+    }
+    else {
+   //disable battery save if anything is invalid
+        m->has_battery = 0;
+    }
 
     if (m->has_rumble) {
         mapper->rumble = true;
     }
-	
-	reset();
-	loaded = 1;
-	return file_length;
+
+    reset();
+    loaded = 1;
+    return file_length;
 }
 
 int c_gb::load_sram()
 {
-	std::ifstream file;
-	file.open(sramPath, std::fstream::in | std::fstream::binary);
-	if (file.fail()) {
-		return 0;
-	}
-	file.seekg(0, std::ios_base::end);
-	int file_length = (int)file.tellg();
-	file.seekg(0, std::ios_base::beg);
+    std::ifstream file;
+    file.open(sramPath, std::fstream::in | std::fstream::binary);
+    if (file.fail()) {
+        return 0;
+    }
+    file.seekg(0, std::ios_base::end);
+    int file_length = (int)file.tellg();
+    file.seekg(0, std::ios_base::beg);
 
-	if (file_length != ram_size) {
-		return 0;
-	}
+    if (file_length != ram_size) {
+        return 0;
+    }
 
-	file.read((char*)mapper->ram.get(), ram_size);
-	file.close();
-	return 1;
+    file.read((char *)mapper->ram.get(), ram_size);
+    file.close();
+    return 1;
 }
 
 int c_gb::save_sram()
 {
-	std::ofstream file;
-	file.open(sramPath, std::fstream::trunc | std::fstream::binary);
-	if (file.fail()) {
-		return 0;
-	}
+    std::ofstream file;
+    file.open(sramPath, std::fstream::trunc | std::fstream::binary);
+    if (file.fail()) {
+        return 0;
+    }
 
-	file.write((char*)mapper->ram.get(), ram_size);
-	file.close();
-	return 1;
+    file.write((char *)mapper->ram.get(), ram_size);
+    file.close();
+    return 1;
 }
 
 uint16_t c_gb::read_word(uint16_t address)
 {
-	uint8_t lo = read_byte(address);
-	uint8_t hi = read_byte(address + 1);
-	return lo | (hi << 8);
+    uint8_t lo = read_byte(address);
+    uint8_t hi = read_byte(address + 1);
+    return lo | (hi << 8);
 }
 
 uint8_t c_gb::read_wram(uint16_t address)
@@ -273,10 +271,10 @@ uint8_t c_gb::read_io(uint16_t address)
                 case 0:
                     return read_joy();
                 case 1:
-					//serial
+      //serial
                     return 0xFF;
                 case 2:
-					//serial
+      //serial
                     return SC;
                 case 4:
                     return (divider & 0xFF00) >> 8;
@@ -321,11 +319,11 @@ void c_gb::write_io(uint16_t address, uint8_t data)
                     write_joy(data);
                     break;
                 case 1:
-					//serial
+      //serial
                     SB = data;
                     break;
                 case 2:
-					//serial
+      //serial
                     SC = data;
                     if ((SC & 0x81) == 0x81) {
                         serial_transfer_count = 8;
@@ -362,7 +360,7 @@ void c_gb::write_io(uint16_t address, uint8_t data)
             break;
         case 7:
             if (address == 0xFF70) {
-                if (color) {
+                if (model == GB_MODEL::CGB) {
                     wram_bank = data & 0x7;
                     if (wram_bank == 0) {
                         wram_bank = 1;
@@ -370,7 +368,8 @@ void c_gb::write_io(uint16_t address, uint8_t data)
                 }
             }
             else {
-                //nothing
+                 //nothing
+                int x = 1;
             }
             break;
         default:
@@ -409,11 +408,11 @@ uint8_t c_gb::read_byte(uint16_t address)
                 return read_wram(address);
             }
             else if (address <= 0xFE9F) {
-				//OAM
+      //OAM
                 return 0;
             }
             else if (address <= 0xFEFF) {
-				//unusable
+      //unusable
                 return 0;
             }
             else if (address <= 0xFF7F) {
@@ -433,8 +432,8 @@ uint8_t c_gb::read_byte(uint16_t address)
 
 void c_gb::write_word(uint16_t address, uint16_t data)
 {
-	write_byte(address, data & 0xFF);
-	write_byte(address + 1, data >> 8);
+    write_byte(address, data & 0xFF);
+    write_byte(address + 1, data >> 8);
 }
 
 void c_gb::write_byte(uint16_t address, uint8_t data)
@@ -468,11 +467,11 @@ void c_gb::write_byte(uint16_t address, uint8_t data)
                 write_wram(address, data);
             }
             else if (address <= 0xFE9F) {
-				//OAM
+     //OAM
                 ppu->write_byte(address, data);
             }
             else if (address <= 0xFEFF) {
-				//unusable
+     //unusable
             }
             else if (address <= 0xFF7F) {
                 write_io(address, data);
@@ -484,119 +483,122 @@ void c_gb::write_byte(uint16_t address, uint8_t data)
                 IE = data;
             }
             break;
-        default:
-            break;
+        default: {
+            int x = 1;
+        } break;
     }
 }
 
 void c_gb::clock_timer()
 {
-	//this is clocked @ 4.2MHz.  Should be ok to simply increment by 4
-	//since all CPU cycles are multiples of 4, and side effects of incrementing
-	//timer (register updates an interrupts) are only detectable on cpu cycle
-	//boundaries.
+  //this is clocked @ 4.2MHz.  Should be ok to simply increment by 4
+  //since all CPU cycles are multiples of 4, and side effects of incrementing
+  //timer (register updates an interrupts) are only detectable on cpu cycle
+  //boundaries.
 
-	int TAC_out;
-	int serial_clock;
-	int divisors[] = { 0x200, 0x08, 0x20, 0x80 };
-	divider += 4;
-	TAC_out = divider & divisors[TAC & 0x3];
+    int TAC_out;
+    int serial_clock;
+    int divisors[] = {0x200, 0x08, 0x20, 0x80};
+    divider += 4;
+    TAC_out = divider & divisors[TAC & 0x3];
 
-	//clock serial output @ 8kHz
-	serial_clock = divider & 0x100;
+   //clock serial output @ 8kHz
+    serial_clock = divider & 0x100;
 
-	if (last_serial_clock && (!serial_clock)) {
-		if (serial_transfer_count) {
-			if (--serial_transfer_count == 0) {
-				IF |= 0x8;
-			}
-		}
-	}
-	last_serial_clock = serial_clock;
-	if (TAC_out && (TAC & 0x4)) {
-		TAC_out = 1;
-	}
-	else {
-		TAC_out = 0;
-	}
-	if (last_TAC_out && (!TAC_out)) {
-		if (TIMA == 0xFF) {
-			TIMA = TMA;
-			IF |= 0x4;
-		}
-		else {
-			TIMA = (TIMA + 1) & 0xFF;
-		}
-	}
-	last_TAC_out = TAC_out;
+    if (last_serial_clock && (!serial_clock)) {
+        if (serial_transfer_count) {
+            if (--serial_transfer_count == 0) {
+                IF |= 0x8;
+            }
+        }
+    }
+    last_serial_clock = serial_clock;
+    if (TAC_out && (TAC & 0x4)) {
+        TAC_out = 1;
+    }
+    else {
+        TAC_out = 0;
+    }
+    if (last_TAC_out && (!TAC_out)) {
+        if (TIMA == 0xFF) {
+            TIMA = TMA;
+            IF |= 0x4;
+        }
+        else {
+            TIMA = (TIMA + 1) & 0xFF;
+        }
+    }
+    last_TAC_out = TAC_out;
 }
 
 int c_gb::emulate_frame()
 {
     static int frame_count = 0;
-	apu->clear_buffers();
-	//70224 PPU cycles per scanline
-	//divided by 4 to get CPU clock
-	//for scanline renderer:
-	//456 PPU cycles
-	//114 CPU cycles
-	//154 times
-	//4.2MHz master clock
-	//	divided by 2 to get ppu memory clock = 2.1MHz
-	//	divided by 4 to get cpu clock = 1.05MHz
-	for (int line = 0; line < 154; line++) {
-		//update input on line 144, right before vblank
-		//Wizards & Warriors reads input at line 16 and 144 when
-		//paused.  If input is updated too early, the second read at 144
-		//overwrites the change detected on line 16, and makes it
-		//impossible to resume from pause.
-		if (line == 0x90) {
-			input = next_input;
-			if ((input & 0xFF) != 0xFF) {
-				IF |= 0x10;
-			}
-		}
-		ppu->execute(456);
-	}
+    apu->clear_buffers();
+  //70224 PPU cycles per scanline
+  //divided by 4 to get CPU clock
+  //for scanline renderer:
+  //456 PPU cycles
+  //114 CPU cycles
+  //154 times
+  //4.2MHz master clock
+  //    divided by 2 to get ppu memory clock = 2.1MHz
+  //    divided by 4 to get cpu clock = 1.05MHz
+    for (int line = 0; line < 154; line++) {
+   //update input on line 144, right before vblank
+   //Wizards & Warriors reads input at line 16 and 144 when
+   //paused.  If input is updated too early, the second read at 144
+   //overwrites the change detected on line 16, and makes it
+   //impossible to resume from pause.
+        if (line == 0x90) {
+            input = next_input;
+            if ((input & 0xFF) != 0xFF) {
+                IF |= 0x10;
+            }
+        }
+        ppu->execute(456);
+    }
     if (++frame_count == 60) {
         int x = 1;
     }
-	return 0;
+    return 0;
 }
 
-uint32_t* c_gb::get_fb()
+uint32_t *c_gb::get_fb()
 {
-	return ppu->get_fb();
+    return ppu->get_fb();
 }
 
-void c_gb::set_vblank_irq(int status) {
-	if (status) {
-		IF |= 1;
-	}
-	else {
-		IF &= ~1;
-	}
+void c_gb::set_vblank_irq(int status)
+{
+    if (status) {
+        IF |= 1;
+    }
+    else {
+        IF &= ~1;
+    }
 }
 
-void c_gb::set_stat_irq(int status) {
-	if (status) {
-		IF |= 2;
-	}
-	else {
-		IF &= ~2;
-	}
+void c_gb::set_stat_irq(int status)
+{
+    if (status) {
+        IF |= 2;
+    }
+    else {
+        IF &= ~2;
+    }
 }
 void c_gb::set_input(int input)
 {
-	next_input = input;
+    next_input = input;
 }
 
 void c_gb::enable_mixer()
 {
-	apu->enable_mixer();
+    apu->enable_mixer();
 }
 
 void c_gb::disable_mixer()
 {
-	apu->disable_mixer();
+    apu->disable_mixer();
 }

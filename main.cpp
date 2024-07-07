@@ -62,20 +62,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdPlin
 {
     g_cpu_info = get_cpu_info();
     std::unique_ptr<D3d10App> app = std::make_unique<D3d10App>(hInstance);
-	app->Init((char*)"nemulator.ini", new c_nemulator(), NULL);
+    app->Init((char*)"nemulator.ini", new c_nemulator(), NULL);
     app->SetCaption(app_title);
-	int retval = app->Run();
-	return retval;
+    int retval = app->Run();
+    return retval;
 }
 
 void strip_extension(char *path)
 {
-	char *p = path + strlen(path) - 1;
-	do
-	{
-		*p = 0;
-	} while (*--p != '.');
-	*p = 0;
+    char *p = path + strlen(path) - 1;
+    do
+    {
+        *p = 0;
+    } while (*--p != '.');
+    *p = 0;
 }
 
 //std::string strip_extension(std::string path)

@@ -2,7 +2,7 @@
 
 TexturePanelItem::TexturePanelItem()
 {
-	is_active = 0;
+    is_active = 0;
 }
 
 TexturePanelItem::~TexturePanelItem()
@@ -11,15 +11,15 @@ TexturePanelItem::~TexturePanelItem()
 
 void TexturePanelItem::Activate(bool load)
 {
-	OnActivate(load);
+    OnActivate(load);
 }
 
 void TexturePanelItem::Deactivate()
 {
-	OnDeactivate();
+    OnDeactivate();
 }
 
 void TexturePanelItem::Load()
 {
-	OnLoad();
+    OnLoad();
 }
