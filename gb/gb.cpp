@@ -15,18 +15,18 @@ void strip_extension(char* path);
 
 const std::map<int, c_gb::s_mapper> c_gb::mapper_factory =
 {
-    {0, {[]() { return std::make_unique<c_gbmapper>(); }, 0, 0}},
-    {1, {[]() { return std::make_unique<c_mbc1>(); }, 0, 0}},
-    {2, {[]() { return std::make_unique<c_mbc1>(); }, 1, 0}},
-    {3, {[]() { return std::make_unique<c_mbc1>(); }, 1, 1}},
-    {5, {[]() { return std::make_unique<c_mbc2>(); }, 0, 0}},
-    {6, {[]() { return std::make_unique<c_mbc2>(); }, 0, 1}},
-    {0x19, {[]() { return std::make_unique<c_mbc5>(); }, 0, 0}},
-    {0x1A, {[]() { return std::make_unique<c_mbc5>(); }, 1, 0}},
-    {0x1B, {[]() { return std::make_unique<c_mbc5>(); }, 1, 1}},
-    {0x1C, {[]() { return std::make_unique<c_mbc5>(); }, 0, 0}}, //rumble
-    {0x1D, {[]() { return std::make_unique<c_mbc5>(); }, 1, 0}}, //rumble
-    {0x1E, {[]() { return std::make_unique<c_mbc5>(); }, 1, 1}}, //rumble
+    {0, {[]() { return std::make_unique<c_gbmapper>(); }, 0, 0, 0}},
+    {1, {[]() { return std::make_unique<c_mbc1>(); }, 0, 0, 0}},
+    {2, {[]() { return std::make_unique<c_mbc1>(); }, 1, 0, 0}},
+    {3, {[]() { return std::make_unique<c_mbc1>(); }, 1, 1, 0}},
+    {5, {[]() { return std::make_unique<c_mbc2>(); }, 0, 0, 0}},
+    {6, {[]() { return std::make_unique<c_mbc2>(); }, 0, 1, 0}},
+    {0x19, {[]() { return std::make_unique<c_mbc5>(); }, 0, 0, 0}},
+    {0x1A, {[]() { return std::make_unique<c_mbc5>(); }, 1, 0, 0}},
+    {0x1B, {[]() { return std::make_unique<c_mbc5>(); }, 1, 1, 0}},
+    {0x1C, {[]() { return std::make_unique<c_mbc5>(); }, 0, 0, 1}}, //rumble
+    {0x1D, {[]() { return std::make_unique<c_mbc5>(); }, 1, 0, 1}}, //rumble
+    {0x1E, {[]() { return std::make_unique<c_mbc5>(); }, 1, 1, 1}}, //rumble
 };
 
 
@@ -177,6 +177,10 @@ int c_gb::load()
 		//disable battery save if anything is invalid
 		m->has_battery = 0;
 	}
+
+    if (m->has_rumble) {
+        mapper->rumble = true;
+    }
 	
 	reset();
 	loaded = 1;
