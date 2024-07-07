@@ -58,12 +58,12 @@ uint8_t c_mbc5::read_byte(uint16_t address)
 }
 void c_mbc5::reset()
 {
+    rom_banks = (32 << *(rom + 0x148)) / 16;
     bank = 0;
     bank_fixup = 1;
     ram_enable = 0;
     mode = 0;
     ram_bank = 0;
-    rom_banks = (32 << *(rom + 0x148)) / 16;
     bank_lo = 0;
     bank_hi = 0;
     c_gbmapper::reset();

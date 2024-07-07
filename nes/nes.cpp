@@ -107,16 +107,16 @@ c_nes::c_nes()
     display_info.crop_top = 8;
     display_info.crop_bottom = 8;
 
-	cpuRam = 0;
-	sram = 0;
-	cpu = 0;
-	ppu = 0;
-	mapper = 0;
-	image = 0;
-	joypad = 0;
-	loaded = false;
-	limit_sprites = false;
-	crc32 = 0;
+    cpuRam = 0;
+    sram = 0;
+    cpu = 0;
+    ppu = 0;
+    mapper = 0;
+    image = 0;
+    joypad = 0;
+    loaded = false;
+    limit_sprites = false;
+    crc32 = 0;
     game_genie = std::make_unique<c_game_genie>();
 }
 
@@ -126,251 +126,251 @@ c_nes::~c_nes()
 
 void c_nes::enable_mixer()
 {
-	apu2->enable_mixer();
+    apu2->enable_mixer();
 }
 
 void c_nes::disable_mixer()
 {
-	apu2->disable_mixer();
+    apu2->disable_mixer();
 }
 
 void c_nes::set_sprite_limit(bool limit_sprites)
 {
-	this->limit_sprites = limit_sprites;
-	ppu->limit_sprites = limit_sprites;
+    this->limit_sprites = limit_sprites;
+    ppu->limit_sprites = limit_sprites;
 }
 
 bool c_nes::get_sprite_limit()
 {
-	return ppu->limit_sprites;
+    return ppu->limit_sprites;
 }
 
 unsigned char c_nes::dmc_read(unsigned short address)
 {
-	//cpu->availableCycles -= 12;
-	cpu->execute_apu_dma();
-	return read_byte(address);
+    //cpu->availableCycles -= 12;
+    cpu->execute_apu_dma();
+    return read_byte(address);
 }
 
 unsigned char c_nes::read_byte(unsigned short address)
 {
 #ifdef MEM_VIEWER
-	if (mem_viewer_active)
-	{
-		mem_access_log[address].timestamp = 1000.0;
-		mem_access_log[address].type = 1;
-	}
+    if (mem_viewer_active)
+    {
+        mem_access_log[address].timestamp = 1000.0;
+        mem_access_log[address].type = 1;
+    }
 #endif
-	//unlimited health in holy diver
-	//if (address == 0x0440) {
-	//	return 6;
-	//}
-	//start battletoads on level 2
-	//if (address == 0x8320) {
-	//	return 0x2;
-	//}
-	//journey to silius unlimited energy
+    //unlimited health in holy diver
+    //if (address == 0x0440) {
+    //    return 6;
+    //}
+    //start battletoads on level 2
+    //if (address == 0x8320) {
+    //    return 0x2;
+    //}
+    //journey to silius unlimited energy
  //   if (address == 0x00B0) {
  //       return 0x0F;
  //   }
-	////journey to silius unlimited gun power
+    ////journey to silius unlimited gun power
  //   if (address == 0x00B1) {
  //       return 0x3F;
  //   }
-	switch (address >> 12)
-	{
-	case 0:
-	case 1:
-		return cpuRam[address & 0x7FF];
-		break;
-	case 2:
-	case 3:
-		//if (address <= 0x2007)
-		return ppu->read_byte(address & 0x2007);
-		break;
-	case 4:
-		switch (address)
-		{
-		case 0x4015:
-			return apu2->read_byte(address);
-			break;
-		case 0x4016:
-		case 0x4017:
-			return joypad->read_byte(address);
-			break;
-		default:
-			break;
-		}
-		break;
-	default:
-		unsigned char val = mapper->ReadByte(address);
-		if (game_genie->count > 0) {
-			val = game_genie->filter_read(address, val);
-		}
-		return val;
-		break;
-	}
-	return 0;
+    switch (address >> 12)
+    {
+    case 0:
+    case 1:
+        return cpuRam[address & 0x7FF];
+        break;
+    case 2:
+    case 3:
+        //if (address <= 0x2007)
+        return ppu->read_byte(address & 0x2007);
+        break;
+    case 4:
+        switch (address)
+        {
+        case 0x4015:
+            return apu2->read_byte(address);
+            break;
+        case 0x4016:
+        case 0x4017:
+            return joypad->read_byte(address);
+            break;
+        default:
+            break;
+        }
+        break;
+    default:
+        unsigned char val = mapper->ReadByte(address);
+        if (game_genie->count > 0) {
+            val = game_genie->filter_read(address, val);
+        }
+        return val;
+        break;
+    }
+    return 0;
 }
 
 void c_nes::write_byte(unsigned short address, unsigned char value)
 {
 #ifdef MEM_VIEWER
-	if (mem_viewer_active)
-	{
-		mem_access_log[address].timestamp = 1000.0;
-		mem_access_log[address].type = 0;
-	}
+    if (mem_viewer_active)
+    {
+        mem_access_log[address].timestamp = 1000.0;
+        mem_access_log[address].type = 0;
+    }
 #endif
-	switch (address >> 12)
-	{
-	case 0:
-	case 1:
-		cpuRam[address & 0x7FF] = value;
-		break;
-	case 2:
-	case 3:
-		ppu->write_byte(address & 0x2007, value);
-		mapper->mmc5_ppu_write(address & 0x2007, value);
-		break;
-	case 4:
-		if (address == 0x4014)
-		{
-			cpu->do_sprite_dma(ppu->pSpriteMemory.get(), (value & 0xFF) << 8);
-		}
-		else if (address == 0x4016)
-		{
-			joypad->write_byte(address, value);
-		}
-		else if (address >= 0x4000 && address <= 0x4017)
-		{
-			//apu->WriteByte(address, value);
-			apu2->write_byte(address, value);
-		}
-		else
-			mapper->WriteByte(address, value);
-		break;
-	default:
-		mapper->WriteByte(address, value);
-		break;
-	}
+    switch (address >> 12)
+    {
+    case 0:
+    case 1:
+        cpuRam[address & 0x7FF] = value;
+        break;
+    case 2:
+    case 3:
+        ppu->write_byte(address & 0x2007, value);
+        mapper->mmc5_ppu_write(address & 0x2007, value);
+        break;
+    case 4:
+        if (address == 0x4014)
+        {
+            cpu->do_sprite_dma(ppu->pSpriteMemory.get(), (value & 0xFF) << 8);
+        }
+        else if (address == 0x4016)
+        {
+            joypad->write_byte(address, value);
+        }
+        else if (address >= 0x4000 && address <= 0x4017)
+        {
+            //apu->WriteByte(address, value);
+            apu2->write_byte(address, value);
+        }
+        else
+            mapper->WriteByte(address, value);
+        break;
+    default:
+        mapper->WriteByte(address, value);
+        break;
+    }
 }
 
 int c_nes::LoadImage(char *pathFile)
 {
-	std::ifstream file;
-	int m = -1;
+    std::ifstream file;
+    int m = -1;
 
-	file.open(pathFile, std::ios_base::in | std::ios_base::binary);
-	if (file.fail())
-		return -1;
-	file.seekg(0, std::ios_base::end);
-	file_length = (int)file.tellg();
-	file.seekg(0, std::ios_base::beg);
+    file.open(pathFile, std::ios_base::in | std::ios_base::binary);
+    if (file.fail())
+        return -1;
+    file.seekg(0, std::ios_base::end);
+    file_length = (int)file.tellg();
+    file.seekg(0, std::ios_base::beg);
     image = std::make_unique_for_overwrite<unsigned char[]>(file_length);
-	file.read((char*)image.get(), file_length);
-	file.close();
-	if (file_length < sizeof(iNesHeader)) {
-		return -1;
-	}
-	header = (iNesHeader *)image.get();
+    file.read((char*)image.get(), file_length);
+    file.close();
+    if (file_length < sizeof(iNesHeader)) {
+        return -1;
+    }
+    header = (iNesHeader *)image.get();
 
-	char ines_signature[] = {'N', 'E', 'S', 0x1a};
-	char fds_signature[] = "*NINTENDO-HVC*";
-	char nsf_signature[] = { 'N', 'E', 'S', 'M', 0x1A };
+    char ines_signature[] = {'N', 'E', 'S', 0x1a};
+    char fds_signature[] = "*NINTENDO-HVC*";
+    char nsf_signature[] = { 'N', 'E', 'S', 'M', 0x1A };
 
-	//if (memcmp(header->Signature, signature, 4) != 0)
-	//	return -1;
+    //if (memcmp(header->Signature, signature, 4) != 0)
+    //    return -1;
 
-	if (memcmp(header->Signature, ines_signature, 4) == 0)
-	{
+    if (memcmp(header->Signature, ines_signature, 4) == 0)
+    {
 
-		//if expected file size doesn't match real file size, try to fix chr rom page count
-		//fixes fire emblem
-		int expected_file_size = (header->PrgRomPageCount * 16384) + (header->ChrRomPageCount * 8192) + sizeof(iNesHeader);
-		int actual_chr_size = file_length - (header->PrgRomPageCount * 16384) - sizeof(iNesHeader);
+        //if expected file size doesn't match real file size, try to fix chr rom page count
+        //fixes fire emblem
+        int expected_file_size = (header->PrgRomPageCount * 16384) + (header->ChrRomPageCount * 8192) + sizeof(iNesHeader);
+        int actual_chr_size = file_length - (header->PrgRomPageCount * 16384) - sizeof(iNesHeader);
 
-		if (file_length != expected_file_size && header->ChrRomPageCount != 0)
-		{
-			header->ChrRomPageCount = (actual_chr_size / 8192);
-		}
+        if (file_length != expected_file_size && header->ChrRomPageCount != 0)
+        {
+            header->ChrRomPageCount = (actual_chr_size / 8192);
+        }
 
-		unsigned char *h = (unsigned char*)&header->Rcb2;
+        unsigned char *h = (unsigned char*)&header->Rcb2;
 
-		if (*h & 0x0C)
-			*h = 0;
-		m = (header->Rcb1.mapper_lo) | (header->Rcb2.mapper_hi << 4);
-	}
-	else if (memcmp(image.get() + 1, fds_signature, 14) == 0)
-	{
-		//m = 0x101;
-		m = -1;
-	}
-	else if (memcmp(image.get(), nsf_signature, 5) == 0) {
-		m = 0x102;
-	}
+        if (*h & 0x0C)
+            *h = 0;
+        m = (header->Rcb1.mapper_lo) | (header->Rcb2.mapper_hi << 4);
+    }
+    else if (memcmp(image.get() + 1, fds_signature, 14) == 0)
+    {
+        //m = 0x101;
+        m = -1;
+    }
+    else if (memcmp(image.get(), nsf_signature, 5) == 0) {
+        m = 0x102;
+    }
 
-	if (m != -1 && m != 0x102)
-	{
-		crc32 = get_crc32((unsigned char*)image.get() + sizeof(iNesHeader), file_length - sizeof(iNesHeader));
-	}
-	return m;
+    if (m != -1 && m != 0x102)
+    {
+        crc32 = get_crc32((unsigned char*)image.get() + sizeof(iNesHeader), file_length - sizeof(iNesHeader));
+    }
+    return m;
 }
 
 int c_nes::load()
 {
-	char sram_path_file[MAX_PATH];
-	int submapper = -1;
-	sprintf_s(sram_path_file, "%s\\%s", sram_path, filename);
-	sprintf_s(pathFile, "%s\\%s", path, filename);
+    char sram_path_file[MAX_PATH];
+    int submapper = -1;
+    sprintf_s(sram_path_file, "%s\\%s", sram_path, filename);
+    sprintf_s(pathFile, "%s\\%s", path, filename);
 
-	strip_extension(sram_path_file);
-	sprintf_s(sramFilename, "%s.ram", sram_path_file);
+    strip_extension(sram_path_file);
+    sprintf_s(sramFilename, "%s.ram", sram_path_file);
 
     cpu = std::make_unique<c_cpu>();
     ppu = std::make_unique<c_ppu>();
     joypad = std::make_unique<c_joypad>();
     apu2 = std::make_unique<c_apu2>();
-	
+    
 
-	mapperNumber = LoadImage(pathFile);
+    mapperNumber = LoadImage(pathFile);
 
-	auto cartdb_entry = cartdb.find(crc32);
-	if (cartdb_entry != cartdb.end()) {
-		s_cartdb c = cartdb_entry->second;
-		if (c.mapper != -1) {
-			mapperNumber = c.mapper;
-		}
-		if (c.submapper != -1) {
-			submapper = c.submapper;
-		}
-		if (c.mirroring != -1) {
-			switch (c.mirroring) {
-			case 0:
-			case 1:
-				header->Rcb1.Mirroring = c.mirroring;
-				break;
-			case 4:
-				header->Rcb1.Fourscreen = 1;
-			}
-		}
-	}
+    auto cartdb_entry = cartdb.find(crc32);
+    if (cartdb_entry != cartdb.end()) {
+        s_cartdb c = cartdb_entry->second;
+        if (c.mapper != -1) {
+            mapperNumber = c.mapper;
+        }
+        if (c.submapper != -1) {
+            submapper = c.submapper;
+        }
+        if (c.mirroring != -1) {
+            switch (c.mirroring) {
+            case 0:
+            case 1:
+                header->Rcb1.Mirroring = c.mirroring;
+                break;
+            case 4:
+                header->Rcb1.Fourscreen = 1;
+            }
+        }
+    }
 
-	auto m = mapper_factory.find(mapperNumber);
-	if (m == mapper_factory.end())
-		return 0;
-	mapper = (m->second)();
+    auto m = mapper_factory.find(mapperNumber);
+    if (m == mapper_factory.end())
+        return 0;
+    mapper = (m->second)();
     apu2->set_nes(this);
-	if (submapper != -1) {
-		mapper->set_submapper(submapper);
-	}
+    if (submapper != -1) {
+        mapper->set_submapper(submapper);
+    }
 
-	strcpy_s(mapper->filename, pathFile);
-	strcpy_s(mapper->sramFilename, sramFilename);
-	mapper->crc32 = crc32;
-	mapper->file_length = file_length;
-	reset();
-	return 1;
+    strcpy_s(mapper->filename, pathFile);
+    strcpy_s(mapper->sramFilename, sramFilename);
+    mapper->crc32 = crc32;
+    mapper->file_length = file_length;
+    reset();
+    return 1;
 }
 
 int c_nes::reset()
@@ -378,103 +378,103 @@ int c_nes::reset()
     if (!cpuRam) {
         cpuRam = std::make_unique_for_overwrite<unsigned char[]>(2048);
     }
-	memset(cpuRam.get(), 0xFF, 2048);
+    memset(cpuRam.get(), 0xFF, 2048);
 
-	mapper->CloseSram();
-	cpu->nes = this;
-	apu2->reset();
+    mapper->CloseSram();
+    cpu->nes = this;
+    apu2->reset();
     ppu->cpu = cpu.get();
-	ppu->reset();
-	ppu->mapper = mapper.get();
-	
-	ppu->apu2 = apu2.get();
-	ppu->limit_sprites = limit_sprites;
-	mapper->ppu = ppu.get();
-	mapper->cpu = cpu.get();
-	mapper->apu2 = apu2.get();
-	mapper->nes = this;
-	mapper->header = header;
-	mapper->image = image.get();
-	if (mapper->LoadImage() == -1) {
-		return 1;
-	}
-	mapper->reset();
-	cpu->reset();
-	joypad->reset();
-	loaded = true;
+    ppu->reset();
+    ppu->mapper = mapper.get();
+    
+    ppu->apu2 = apu2.get();
+    ppu->limit_sprites = limit_sprites;
+    mapper->ppu = ppu.get();
+    mapper->cpu = cpu.get();
+    mapper->apu2 = apu2.get();
+    mapper->nes = this;
+    mapper->header = header;
+    mapper->image = image.get();
+    if (mapper->LoadImage() == -1) {
+        return 1;
+    }
+    mapper->reset();
+    cpu->reset();
+    joypad->reset();
+    loaded = true;
 
-	//game_genie->add_code("IPVGZGZE");
-	//game_genie->add_code("LEIIXZ");
+    //game_genie->add_code("IPVGZGZE");
+    //game_genie->add_code("LEIIXZ");
     //game_genie->add_code("GXVAAASA");
-	return 1;
+    return 1;
 }
 
 void c_nes::set_submapper(int submapper)
 {
-	mapper->set_submapper(submapper);
+    mapper->set_submapper(submapper);
 }
 
 int c_nes::get_nwc_time()
 {
-	return mapper->get_nwc_time();
+    return mapper->get_nwc_time();
 }
 
 int c_nes::emulate_frame()
 {
-	if (!loaded)
-		return 1;
-	apu2->clear_buffer();
-	for (int scanline = 0; scanline < 262; scanline++)
-	{
-		if (scanline == 261 || (scanline >= 0 && scanline <= 239)) {
-			ppu->eval_sprites();
-		}
-		//ppu->run_ppu(341);
-		ppu->run_ppu_line();
-	}
-	return 0;
+    if (!loaded)
+        return 1;
+    apu2->clear_buffer();
+    for (int scanline = 0; scanline < 262; scanline++)
+    {
+        if (scanline == 261 || (scanline >= 0 && scanline <= 239)) {
+            ppu->eval_sprites();
+        }
+        //ppu->run_ppu(341);
+        ppu->run_ppu_line();
+    }
+    return 0;
 }
 
 int *c_nes::get_video()
 {
-	return ppu->get_frame_buffer();
+    return ppu->get_frame_buffer();
 }
 
 void c_nes::set_audio_freq(double freq)
 {
-	apu2->set_audio_rate(freq);
+    apu2->set_audio_rate(freq);
 }
 
 int c_nes::get_sound_bufs(const short **buf_l, const short **buf_r)
 {
-	int num_samples = apu2->get_buffer(buf_l);
-	*buf_r = NULL;
-	return num_samples;
+    int num_samples = apu2->get_buffer(buf_l);
+    *buf_r = NULL;
+    return num_samples;
 }
 
 int c_nes::get_mapper_number()
 {
-	return mapperNumber;
+    return mapperNumber;
 }
 
 int c_nes::get_mirroring_mode()
 {
-	if (mapper)
-		return mapper->get_mirroring();
-	else
-		return 0;
+    if (mapper)
+        return mapper->get_mirroring();
+    else
+        return 0;
 }
 
 const char *c_nes::get_mapper_name()
 {
-	if (mapper)
-		return mapper->mapperName;
-	else
-		return "Unknown mapper";
+    if (mapper)
+        return mapper->mapperName;
+    else
+        return "Unknown mapper";
 }
 
 void c_nes::set_input(int input)
 {
-	joypad->joy1 = input & 0xFF;
-	joypad->joy2 = (input >> 8) & 0xFF;
+    joypad->joy1 = input & 0xFF;
+    joypad->joy2 = (input >> 8) & 0xFF;
 }

@@ -52,8 +52,8 @@ class c_vdp
 
     void update_irq();
     static std::atomic<int> pal_built;
-	void generate_palette();
-	static uint32_t pal_sms[256];
-	static uint32_t pal_gg[4096];
+    void generate_palette();
+    static uint32_t pal_sms[256];
+    static uint32_t pal_gg[4096];
 };
 

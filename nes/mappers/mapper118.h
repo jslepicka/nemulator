@@ -2,12 +2,12 @@
 #include "mapper4.h"
 
 class c_mapper118 :
-	public c_mapper4
+    public c_mapper4
 {
 public:
-	c_mapper118();
-	~c_mapper118() {};
-	void WriteByte(unsigned short address, unsigned char value);
+    c_mapper118();
+    ~c_mapper118() {};
+    void WriteByte(unsigned short address, unsigned char value);
 private:
-	void Sync();
+    void Sync();
 };

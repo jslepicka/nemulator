@@ -16,7 +16,7 @@ c_pacman::c_pacman(PACMAN_MODEL model)
     prg_rom = std::make_unique<uint8_t[]>(64 * 1024);
     work_ram = std::make_unique<uint8_t[]>(1 * 1024);
 
-   	z80 = std::make_unique<c_z80>([this](uint16_t address) { return this->read_byte(address); }, //read_byte
+       z80 = std::make_unique<c_z80>([this](uint16_t address) { return this->read_byte(address); }, //read_byte
                     [this](uint16_t address, uint8_t data) { this->write_byte(address, data); }, //write_byte
                     [this](uint8_t port) { return this->read_port(port); }, //read_port
                     [this](uint8_t port, uint8_t data) { this->write_port(port, data); }, //write_port

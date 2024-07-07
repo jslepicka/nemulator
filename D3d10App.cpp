@@ -445,16 +445,16 @@ LRESULT D3d10App::MsgProc(UINT msg, WPARAM wParam, LPARAM lParam)
             return 0;
 
        //case WM_TIMER:
-    //	switch (wParam)
-    //	{
-    //	case 0:
-    //		INPUT input;
-    //		input.type = INPUT_KEYBOARD;
-    //		input.ki.wVk = 0x88; //Unassigned virtual keycode
-    //		input.ki.dwFlags = KEYEVENTF_KEYUP;
-    //		SendInput(1, &input, sizeof(INPUT));
-    //		return 0;
-    //	}
+    //    switch (wParam)
+    //    {
+    //    case 0:
+    //        INPUT input;
+    //        input.type = INPUT_KEYBOARD;
+    //        input.ki.wVk = 0x88; //Unassigned virtual keycode
+    //        input.ki.dwFlags = KEYEVENTF_KEYUP;
+    //        SendInput(1, &input, sizeof(INPUT));
+    //        return 0;
+    //    }
     }
     return DefWindowProc(hWnd, msg, wParam, lParam);
 }
@@ -518,7 +518,7 @@ int D3d10App::InitD3d()
 
     UINT createDeviceFlags = 0;
     //#if defined(DEBUG) || defined(_DEBUG)
-      //	createDeviceFlags |= D3D10_CREATE_DEVICE_DEBUG;
+      //    createDeviceFlags |= D3D10_CREATE_DEVICE_DEBUG;
     //#endif
     hr2 = D3D10CreateDevice(pAdapter, d3dDriverType, 0, createDeviceFlags, D3D10_SDK_VERSION, &d3dDev);
 
