@@ -259,7 +259,7 @@ void c_gbppu::reset()
     memset(bg_fifo, 0, sizeof(bg_fifo));
     memset(obj_fifo, 0, sizeof(obj_fifo));
     memset(oam.get(), 0, sizeof(uint8_t) * 160);
-    memset(cgb_bg_pal, 0, sizeof(cgb_bg_pal));
+    memset(cgb_bg_pal, 0xFF, sizeof(cgb_bg_pal));
 }
 
 void c_gbppu::eval_sprites(int y)
