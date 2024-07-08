@@ -324,6 +324,7 @@
     <ClCompile Include="pacman\pacman_psg.cpp" />
     <ClCompile Include="pacman\pacman_vid.cpp" />
     <ClCompile Include="qam.cpp" />
+    <ClCompile Include="random.cpp" />
     <ClCompile Include="resampler.cpp" />
     <ClCompile Include="sms\psg.cpp" />
     <ClCompile Include="sms\sms.cpp" />
@@ -463,6 +464,7 @@
     <ClInclude Include="pacman\pacman_psg.h" />
     <ClInclude Include="pacman\pacman_vid.h" />
     <ClInclude Include="qam.h" />
+    <ClInclude Include="random.h" />
     <ClInclude Include="resampler.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="sms\crc.h" />

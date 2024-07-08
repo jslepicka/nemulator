@@ -6,7 +6,6 @@
 #include "pacman\pacman.h"
 #include "pacman\mspacman.h"
 #include <string>
-#include <random>
 #include "TexturePanelItem.h"
 #include "d3dx10.h"
 #include <memory>
@@ -70,8 +69,6 @@ private:
     ID3D10Buffer *stretched_vertex_buffer = NULL;
     ID3D10Buffer* default_vertex_buffer = NULL;
     ID3D10Buffer *unloaded_vertex_buffer = NULL;
-
-    std::mt19937 mt;
 
     double width;
     double height;

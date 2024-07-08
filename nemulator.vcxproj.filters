@@ -417,6 +417,9 @@
     <ClCompile Include="pacman\mspacman.cpp">
       <Filter>Source Files\pacman</Filter>
     </ClCompile>
+    <ClCompile Include="random.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="config.h">
@@ -823,6 +826,9 @@
     </ClInclude>
     <ClInclude Include="pacman\mspacman.h">
       <Filter>Header Files\pacman</Filter>
+    </ClInclude>
+    <ClInclude Include="random.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

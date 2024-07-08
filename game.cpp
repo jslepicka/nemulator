@@ -1,6 +1,7 @@
 #include "Game.h"
 #include <crtdbg.h>
 #include <immintrin.h>
+#include "random.h"
 
 extern HANDLE g_start_event;
 
@@ -13,9 +14,8 @@ std::string c_game::get_filename()
     return filename;
 }
 
-c_game::c_game(GAME_TYPE type, std::string path, std::string filename, std::string sram_path) :
-    mt((unsigned int)time(0))
-{
+c_game::c_game(GAME_TYPE type, std::string path, std::string filename, std::string sram_path)
+    {
     limit_sprites = false;
     this->path = path;
     this->filename = filename;
@@ -194,7 +194,7 @@ void c_game::DrawToTexture(ID3D10Texture2D *tex)
             p = (int*)map.pData + y * (map.RowPitch / 4);
             for (int x = 0; x < static_width; ++x)
             {
-                c = mt() & 0xFF;
+                c = get_rand() & 0xFF;
                 *p++ = 0xFF << 24 | c << 16 | c << 8 | c;
             }
         }
