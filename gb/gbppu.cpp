@@ -869,11 +869,11 @@ uint8_t c_gbppu::read_byte(uint16_t address)
             case 0xFF68:
                 return BCPS;
             case 0xFF69:
-                return BCPS;
+                return cgb_bg_pal[BCPS & 0x3F];
             case 0xFF6A:
                 return OBPS;
             case 0xFF6B:
-                return OBPS;
+                return cgb_ob_pal[OBPS & 0x3F];
             case 0xFF6C:
                 return OPRI;
             default:
