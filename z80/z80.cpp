@@ -415,7 +415,7 @@ void c_z80::execute_opcode()
                 case 1:
                     //EX AF, AF'
                     update_f();
-                    swap_register(&AF.word, &AF2.word);
+                    std::swap(AF.word, AF2.word);
                     update_flags();
                     break;
                 case 2:
@@ -816,9 +816,9 @@ void c_z80::execute_opcode()
                         break;
                     case 1:
                         //EXX
-                        swap_register(&BC.word, &BC2.word);
-                        swap_register(&DE.word, &DE2.word);
-                        swap_register(&HL.word, &HL2.word);
+                        std::swap(BC.word, BC2.word);
+                        std::swap(DE.word, DE2.word);
+                        std::swap(HL.word, HL2.word);
                         break;
                     case 2:
                         //JP HL
@@ -1688,13 +1688,6 @@ void c_z80::RST(unsigned char dest)
 {
     push_word(PC);
     PC = dest;
-}
-
-void c_z80::swap_register(unsigned short *first, unsigned short *second)
-{
-    unsigned short temp = *first;
-    *first = *second;
-    *second = temp;
 }
 
 void c_z80::RLC(unsigned char *operand)
