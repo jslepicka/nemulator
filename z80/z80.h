@@ -110,8 +110,6 @@ class c_z80
     void alu(ALU_OP op, unsigned char operand);
     int test_flag(int f);
 
-    void swap_register(unsigned short *first, unsigned short *second);
-
     int IFF1; //user accessible
     //on interrupt, IFF1 is copied to IFF2, then IFF1 is set.
     //after interrupt, IFF2 is copied back to IFF1;
