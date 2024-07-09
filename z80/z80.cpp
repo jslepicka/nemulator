@@ -5,7 +5,8 @@
 #include <sstream>
 #include <iostream>
 #include <Windows.h>
-#include "..\random.h"
+
+import random;
 
 using namespace std;
 
@@ -50,7 +51,7 @@ int c_z80::reset()
     I = 0;
     //Setting R to 0 causes Impossible Mission to use the same map every time
     //R = 0;
-    R = get_rand() & 0xFF;
+    R = random::get_rand() & 0xFF;
 
     r_00[0] = r_dd[0] = r_fd[0] = &BC.byte.hi;
     r_00[1] = r_dd[1] = r_fd[1] = &BC.byte.lo;
