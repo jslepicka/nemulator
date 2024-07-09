@@ -1,7 +1,9 @@
 #include "TexturePanel.h"
 #include "effect.fxo.h"
 #include <string>
-#include "interpolate.h"
+
+import interpolate;
+using namespace interpolate;
 
 extern ID3D10Device *d3dDev;
 extern D3DXMATRIX matrixView;

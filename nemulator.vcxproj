@@ -223,6 +223,7 @@
     <ClCompile Include="gb\gbapu.cpp" />
     <ClCompile Include="gb\mbc2.cpp" />
     <ClCompile Include="gb\mbc5.cpp" />
+    <ClCompile Include="interpolate.ixx" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="audio_info.cpp" />
     <ClCompile Include="bmp_writer.cpp" />
@@ -324,7 +325,7 @@
     <ClCompile Include="pacman\pacman_psg.cpp" />
     <ClCompile Include="pacman\pacman_vid.cpp" />
     <ClCompile Include="qam.cpp" />
-    <ClCompile Include="random.cpp" />
+    <ClCompile Include="random.ixx" />
     <ClCompile Include="resampler.cpp" />
     <ClCompile Include="sms\psg.cpp" />
     <ClCompile Include="sms\sms.cpp" />
@@ -368,7 +369,6 @@
     <ClInclude Include="gb\mbc3.h" />
     <ClInclude Include="gb\mbc5.h" />
     <ClInclude Include="input_handler.h" />
-    <ClInclude Include="interpolate.h" />
     <ClInclude Include="menu.h" />
     <ClInclude Include="meow_fft.h" />
     <ClInclude Include="nemulator.h" />
@@ -464,7 +464,6 @@
     <ClInclude Include="pacman\pacman_psg.h" />
     <ClInclude Include="pacman\pacman_vid.h" />
     <ClInclude Include="qam.h" />
-    <ClInclude Include="random.h" />
     <ClInclude Include="resampler.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="sms\crc.h" />

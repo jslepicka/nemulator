@@ -1,7 +1,8 @@
 #include "Game.h"
 #include <crtdbg.h>
 #include <immintrin.h>
-#include "random.h"
+
+import random;
 
 extern HANDLE g_start_event;
 
@@ -194,7 +195,7 @@ void c_game::DrawToTexture(ID3D10Texture2D *tex)
             p = (int*)map.pData + y * (map.RowPitch / 4);
             for (int x = 0; x < static_width; ++x)
             {
-                c = get_rand() & 0xFF;
+                c = random::get_rand() & 0xFF;
                 *p++ = 0xFF << 24 | c << 16 | c << 8 | c;
             }
         }
