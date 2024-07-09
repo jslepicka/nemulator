@@ -1,11 +1,10 @@
 #include "sms.h"
 #include <fstream>
-#include "..\z80\z80.h"
+//#include "..\z80\z80.h"
 #include "vdp.h"
 #include "psg.h"
 #include <stdio.h>
 #include <Windows.h>
-#include "..\crc32.h"
 #include "crc.h"
 
 #include <crtdbg.h>
@@ -13,6 +12,9 @@
 #define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
 #define new DEBUG_NEW
 #endif
+
+import z80;
+import crc32;
 
 void strip_extension(char *path);
 

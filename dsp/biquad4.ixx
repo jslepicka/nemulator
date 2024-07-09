@@ -22,51 +22,52 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#pragma once
-#include <xmmintrin.h>
+module;
+#include "..\audio_filter.h"
 #include <vector>
-#include "audio_filter.h"
+#include <xmmintrin.h>
 
-class c_biquad4 : public i_audio_filter
+export module dsp:biquad4;
+
+namespace dsp
 {
-public:
-	c_biquad4(std::vector<float> g, std::vector<float> b2, std::vector<float> a2, std::vector<float> a3);
-	~c_biquad4(void) {};
-	float process(float input);
+export class c_biquad4 : public i_audio_filter
+{
+  public:
+    c_biquad4(std::vector<float> g, std::vector<float> b2, std::vector<float> a2, std::vector<float> a3)
+    {
+        d = _mm_setzero_ps();
+        z1 = _mm_setzero_ps();
+        z2 = _mm_setzero_ps();
 
-private:
-	alignas(16) __m128 z1;
-	alignas(16) __m128 z2;
-	alignas(16) __m128 d;
-	alignas(16) __m128 g;
-	alignas(16) __m128 a2;
-	alignas(16) __m128 b2;
-	alignas(16) __m128 a3;
+        this->g = _mm_loadu_ps(&g[0]);
+        this->b2 = _mm_loadu_ps(&b2[0]);
+        this->a2 = _mm_loadu_ps(&a2[0]);
+        this->a3 = _mm_loadu_ps(&a3[0]);
+    }
+    ~c_biquad4(void){};
+    __forceinline float process(float input)
+    {
+        d.m128_f32[0] = input;
+        __m128 post_gain1 = _mm_mul_ps(d, g);
+        __m128 out = _mm_add_ps(post_gain1, z1);
+        __m128 t_z1_1 = _mm_mul_ps(post_gain1, b2);
+        __m128 t_z2 = _mm_mul_ps(out, a3);
+        t_z1_1 = _mm_add_ps(t_z1_1, z2);
+        __m128 t_z1_2 = _mm_mul_ps(out, a2);
+        d = _mm_shuffle_ps(out, out, 0x93);
+        z2 = _mm_sub_ps(post_gain1, t_z2);
+        z1 = _mm_sub_ps(t_z1_1, t_z1_2);
+        return _mm_cvtss_f32(d);
+    }
+
+  private:
+    alignas(16) __m128 z1;
+    alignas(16) __m128 z2;
+    alignas(16) __m128 d;
+    alignas(16) __m128 g;
+    alignas(16) __m128 a2;
+    alignas(16) __m128 b2;
+    alignas(16) __m128 a3;
 };
-
-inline c_biquad4::c_biquad4(std::vector<float> g, std::vector<float> b2, std::vector<float> a2, std::vector<float> a3)
-{
-	d = _mm_setzero_ps();
-	z1 = _mm_setzero_ps();
-	z2 = _mm_setzero_ps();
-
-	this->g = _mm_loadu_ps(&g[0]);
-	this->b2 = _mm_loadu_ps(&b2[0]);
-	this->a2 = _mm_loadu_ps(&a2[0]);
-	this->a3 = _mm_loadu_ps(&a3[0]);
-}
-
-__forceinline float c_biquad4::process(float input)
-{
-	d.m128_f32[0] = input;
-	__m128 post_gain1 = _mm_mul_ps(d, g);
-	__m128 out = _mm_add_ps(post_gain1, z1);
-	__m128 t_z1_1 = _mm_mul_ps(post_gain1, b2);
-	__m128 t_z2 = _mm_mul_ps(out, a3);
-	t_z1_1 = _mm_add_ps(t_z1_1, z2);
-	__m128 t_z1_2 = _mm_mul_ps(out, a2);
-	d = _mm_shuffle_ps(out, out, 0x93);
-	z2 = _mm_sub_ps(post_gain1, t_z2);
-	z1 = _mm_sub_ps(t_z1_1, t_z1_2);
-	return _mm_cvtss_f32(d);
-}
+} //namespace dsp

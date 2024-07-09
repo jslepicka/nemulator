@@ -1,11 +1,16 @@
 #pragma once
 #include <cstdint>
 #include <memory>
-#include "..\resampler.h"
-#include "..\biquad.hpp"
-#include "..\biquad4.hpp"
 
 class c_gb;
+
+namespace dsp
+{
+class c_biquad;
+class c_biquad4;
+class c_resampler;
+} //namespace dsp
+
 class c_gbapu
 {
 public:
@@ -30,12 +35,12 @@ private:
     //c_biquad4* lpf_r;
     //c_biquad* post_filter_r;
 
-    std::unique_ptr<c_resampler> resampler_l;
-    std::unique_ptr<c_resampler> resampler_r;
-    std::unique_ptr<c_biquad4> lpf_l;
-    std::unique_ptr<c_biquad> post_filter_l;
-    std::unique_ptr<c_biquad4> lpf_r;
-    std::unique_ptr<c_biquad> post_filter_r;
+    std::unique_ptr<dsp::c_resampler> resampler_l;
+    std::unique_ptr<dsp::c_resampler> resampler_r;
+    std::unique_ptr<dsp::c_biquad4> lpf_l;
+    std::unique_ptr<dsp::c_biquad> post_filter_l;
+    std::unique_ptr<dsp::c_biquad4> lpf_r;
+    std::unique_ptr<dsp::c_biquad> post_filter_r;
     std::unique_ptr<int32_t[]> sound_buffer;
 
     int mixer_enabled;
