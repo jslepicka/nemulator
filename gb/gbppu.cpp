@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <iostream>
 #include <utility>
+#include <algorithm>
 
 // clang-format off
 const unsigned int c_gbppu::palettes[][4] = {

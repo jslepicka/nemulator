@@ -10,6 +10,8 @@ extern D3DXMATRIX matrixView;
 extern D3DXMATRIX matrixProj;
 extern std::unique_ptr<c_input_handler> g_ih;
 
+import dsp;
+
 c_nsf_stats::c_nsf_stats()
 {
     meow_out = NULL;
@@ -157,13 +159,13 @@ void c_nsf_stats::init(void* params)
     }
 
     //a weighting filter
-    biquad1 = std::make_unique<c_biquad>(1.0f,
+    biquad1 = std::make_unique<dsp::c_biquad>(1.0f,
         std::initializer_list<float>{ 0.197012037038803, 0.394024074077606, 0.197012037038803 },
         std::initializer_list<float>{ 1.0, -0.224558457732201, 0.012606625445187 });
-    biquad2 = std::make_unique<c_biquad>(1.0f,
+    biquad2 = std::make_unique<dsp::c_biquad>(1.0f,
         std::initializer_list<float>{ 1.0, -2.0, 1.0 },
         std::initializer_list<float>{ 1.0, -1.893870472908020, 0.895159780979157 });
-    biquad3 = std::make_unique<c_biquad>(1.0f,
+    biquad3 = std::make_unique<dsp::c_biquad>(1.0f,
         std::initializer_list<float>{ 1.0, -2.0, 1.0 },
         std::initializer_list<float>{ 1.0, -1.994614481925964, 0.994621694087982 });
 

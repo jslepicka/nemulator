@@ -11,6 +11,8 @@
 std::ofstream file;
 #endif
 
+import dsp;
+
 const float c_apu2::NES_AUDIO_RATE = 341.0f / 3.0f * 262.0f * 60.0f/* / 3.0f*/;
 
 std::atomic<int> c_apu2::lookup_tables_built = 0;
@@ -96,7 +98,7 @@ void c_apu2::reset()
     a2 = regexprep(num2str(Hd.sosMatrix(17:20), '%.16ff '), '\s+', ',')
     a3 = regexprep(num2str(Hd.sosMatrix(21:24), '%.16ff '), '\s+', ',')
     */
-    lpf = std::make_unique<c_biquad4>(
+    lpf = std::make_unique<dsp::c_biquad4>(
         std::initializer_list<float>{0.5086284279823303f, 0.3313708603382111f, 0.1059221103787422f, 0.0055782101117074f},
         std::initializer_list<float>{-1.9872593879699707f, -1.9750031232833862f, -1.8231037855148315f, -1.9900115728378296f},
         std::initializer_list<float>{-1.9759204387664795f, -1.9602127075195313f, -1.9470522403717041f, -1.9888486862182617f},
@@ -117,12 +119,12 @@ void c_apu2::reset()
     );*/
 
     //12kHz
-    post_filter = std::make_unique<c_biquad>(
+    post_filter = std::make_unique<dsp::c_biquad>(
         0.4990182518959045f,
         std::initializer_list<float>{1.0000000000000000f, 0.0000000000000000f, -1.0000000000000000f},
         std::initializer_list<float>{1.0000000000000000f, -0.9980365037918091f, 0.0019634978380054f});
 
-    resampler = std::make_unique<c_resampler>(NES_AUDIO_RATE / 48000.0f, lpf.get(), post_filter.get());
+    resampler = std::make_unique<dsp::c_resampler>(NES_AUDIO_RATE / 48000.0f, lpf.get(), post_filter.get());
 }
 
 int c_apu2::get_buffer(const short** buf)

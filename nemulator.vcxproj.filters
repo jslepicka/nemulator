@@ -37,17 +37,17 @@
     <Filter Include="Source Files\gb">
       <UniqueIdentifier>{4afd6606-abc9-437f-bee7-24c26e86b3ac}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\z80">
-      <UniqueIdentifier>{b4da6ca1-02dd-4dfa-92ba-8c08b25c5b5f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\z80">
-      <UniqueIdentifier>{51cfebc0-e3b0-4687-807f-023aedfdaa99}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\pacman">
       <UniqueIdentifier>{98fa7a18-be0f-41be-8e6c-2e4eda6b89ee}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\pacman">
       <UniqueIdentifier>{95faead8-8887-4118-91fe-29a0085d7ad8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\z80">
+      <UniqueIdentifier>{e6e75d8d-f9fd-421c-98f5-1cfdd6d1e552}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\dsp">
+      <UniqueIdentifier>{98e35237-18af-41dd-91f7-24e9505fdfd3}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -324,17 +324,11 @@
     <ClCompile Include="nes\apu2.cpp">
       <Filter>Source Files\nes</Filter>
     </ClCompile>
-    <ClCompile Include="crc32.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="nes\mappers\mapper_mc_acc.cpp">
       <Filter>Source Files\nes\mappers</Filter>
     </ClCompile>
     <ClCompile Include="nes\mappers\mapper64.cpp">
       <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="resampler.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="nes\mappers\vrc7_audio.cpp">
       <Filter>Source Files\nes\mappers</Filter>
@@ -402,9 +396,6 @@
     <ClCompile Include="gb\mbc5.cpp">
       <Filter>Source Files\gb</Filter>
     </ClCompile>
-    <ClCompile Include="z80\z80.cpp">
-      <Filter>Source Files\z80</Filter>
-    </ClCompile>
     <ClCompile Include="pacman\pacman.cpp">
       <Filter>Source Files\pacman</Filter>
     </ClCompile>
@@ -417,8 +408,29 @@
     <ClCompile Include="pacman\mspacman.cpp">
       <Filter>Source Files\pacman</Filter>
     </ClCompile>
-    <ClCompile Include="random.cpp">
+    <ClCompile Include="z80\z80.ixx">
+      <Filter>Source Files\z80</Filter>
+    </ClCompile>
+    <ClCompile Include="dsp\dsp.ixx">
+      <Filter>Source Files\dsp</Filter>
+    </ClCompile>
+    <ClCompile Include="dsp\biquad.ixx">
+      <Filter>Source Files\dsp</Filter>
+    </ClCompile>
+    <ClCompile Include="dsp\biquad4.ixx">
+      <Filter>Source Files\dsp</Filter>
+    </ClCompile>
+    <ClCompile Include="crc32.ixx">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="interpolate.ixx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="random.ixx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="dsp\resampler.ixx">
+      <Filter>Source Files\dsp</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -704,20 +716,11 @@
     <ClInclude Include="nes\apu2.h">
       <Filter>Header Files\nes</Filter>
     </ClInclude>
-    <ClInclude Include="crc32.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="nes\mappers\mapper_mc_acc.h">
       <Filter>Header Files\nes\mappers</Filter>
     </ClInclude>
     <ClInclude Include="nes\mappers\mapper64.h">
       <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="resampler.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="biquad8.hpp">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="nes\mappers\vrc7_audio.h">
       <Filter>Header Files\nes\mappers</Filter>
@@ -740,9 +743,6 @@
     <ClInclude Include="sms\crc.h">
       <Filter>Header Files\sms</Filter>
     </ClInclude>
-    <ClInclude Include="biquad4.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="nes\mappers\mapper189.h">
       <Filter>Header Files\nes\mappers</Filter>
     </ClInclude>
@@ -750,9 +750,6 @@
       <Filter>Header Files\nes\mappers</Filter>
     </ClInclude>
     <ClInclude Include="audio_filter.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="biquad.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="gb\gb.h">
@@ -782,9 +779,6 @@
     <ClInclude Include="gb\mbc2.h">
       <Filter>Header Files\gb</Filter>
     </ClInclude>
-    <ClInclude Include="interpolate.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="nes\mappers\mapper_nsf.h">
       <Filter>Header Files\nes\mappers</Filter>
     </ClInclude>
@@ -812,9 +806,6 @@
     <ClInclude Include="gb\mbc5.h">
       <Filter>Header Files\gb</Filter>
     </ClInclude>
-    <ClInclude Include="z80\z80.h">
-      <Filter>Header Files\z80</Filter>
-    </ClInclude>
     <ClInclude Include="pacman\pacman.h">
       <Filter>Header Files\pacman</Filter>
     </ClInclude>
@@ -826,9 +817,6 @@
     </ClInclude>
     <ClInclude Include="pacman\mspacman.h">
       <Filter>Header Files\pacman</Filter>
-    </ClInclude>
-    <ClInclude Include="random.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -3,12 +3,16 @@
 #include <fstream>
 #include <atomic>
 #include <memory>
-#include "..\resampler.h"
-#include "..\biquad.hpp"
-#include "..\biquad4.hpp"
 
 class c_nes;
 class c_mapper;
+
+namespace dsp
+{
+class c_biquad;
+class c_biquad4;
+class c_resampler;
+} //namespace dsp
 
 class c_apu2
 {
@@ -257,9 +261,9 @@ private:
     //c_resampler* resampler;
     //c_biquad4* lpf;
     //c_biquad* post_filter;
-    std::unique_ptr<c_resampler> resampler;
-    std::unique_ptr<c_biquad4> lpf;
-    std::unique_ptr<c_biquad> post_filter;
+    std::unique_ptr<dsp::c_resampler> resampler;
+    std::unique_ptr<dsp::c_biquad4> lpf;
+    std::unique_ptr<dsp::c_biquad> post_filter;
     std::unique_ptr<int32_t[]> sound_buffer;
     static const int CLOCKS_PER_FRAME_SEQ = 89489;
     int mixer_enabled;
