@@ -221,6 +221,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="crc32.ixx" />
+    <ClCompile Include="dsp\audio_filter.ixx" />
     <ClCompile Include="dsp\biquad.ixx" />
     <ClCompile Include="dsp\biquad4.ixx" />
     <ClCompile Include="dsp\dsp.ixx" />
@@ -348,7 +349,6 @@
     <ClCompile Include="z80\z80.ixx" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="audio_filter.h" />
     <ClInclude Include="audio_info.h" />
     <ClInclude Include="benchmark.h" />
     <ClInclude Include="bmp_writer.h" />
