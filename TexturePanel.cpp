@@ -1,9 +1,10 @@
+import interpolate;
+using namespace interpolate;
+
 #include "TexturePanel.h"
 #include "effect.fxo.h"
 #include <string>
 
-import interpolate;
-using namespace interpolate;
 
 extern ID3D10Device *d3dDev;
 extern D3DXMATRIX matrixView;
@@ -16,7 +17,6 @@ const float TexturePanel::c_item_container::selectDuration = 120.0f;
 const float TexturePanel::zoomDuration = 250.0f;
 const float TexturePanel::borderDuration = 750.0f;
 
-static const float tile_width = 2.7f;
 
 TexturePanel::c_item_container::c_item_container(TexturePanelItem *item)
 {
@@ -73,6 +73,7 @@ TexturePanel::TexturePanel(int rows, int columns)
     selectable = false;
 
     //todo: document where these coords come from
+    //doesn't really matter since they're recalculated before use in nemulator.cpp
     zoomDestX = 16.2f;
     zoomDestY = -7.14f;
     zoomDestZ = -25.0f + 2.414f;
@@ -337,7 +338,7 @@ void TexturePanel::update_menu(double dt)
 
     for (int i = first_item; i < last_item; ++i, ++p) {
         float tile_x = x + scrollOffset + (p / rows) * tile_width;
-        float tile_y = y + (p % rows) * -2.04f;
+        float tile_y = y + (p % rows) * -tile_height;
 
         D3DXVECTOR3 tile_pos = { tile_x, tile_y, 0.0f };
         D3DXVECTOR3 popped_pos = lerp(tile_pos, { zoomDestX, zoomDestY, zoomDestZ }, .3);
