@@ -1,11 +1,11 @@
 module;
-#include "..\audio_filter.h"
 #include <algorithm>
 #include <cmath>
 #include <memory>
 #include <stdlib.h>
 
 export module dsp:resampler;
+import :audio_filter;
 
 namespace dsp
 {

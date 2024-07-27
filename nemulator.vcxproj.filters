@@ -429,6 +429,9 @@
     <ClCompile Include="dsp\resampler.ixx">
       <Filter>Source Files\dsp</Filter>
     </ClCompile>
+    <ClCompile Include="dsp\audio_filter.ixx">
+      <Filter>Source Files\dsp</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="config.h">
@@ -745,9 +748,6 @@
     </ClInclude>
     <ClInclude Include="nes\mappers\mapper13.h">
       <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="audio_filter.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="gb\gb.h">
       <Filter>Header Files\gb</Filter>

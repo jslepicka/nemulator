@@ -1,7 +1,7 @@
 module;
-#include "..\audio_filter.h"
 #include <vector>
 export module dsp:biquad;
+import :audio_filter;
 
 namespace dsp
 {
