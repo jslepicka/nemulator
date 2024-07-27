@@ -405,9 +405,6 @@
     <ClCompile Include="pacman\pacman_psg.cpp">
       <Filter>Source Files\pacman</Filter>
     </ClCompile>
-    <ClCompile Include="pacman\mspacman.cpp">
-      <Filter>Source Files\pacman</Filter>
-    </ClCompile>
     <ClCompile Include="z80\z80.ixx">
       <Filter>Source Files\z80</Filter>
     </ClCompile>
@@ -813,9 +810,6 @@
       <Filter>Header Files\pacman</Filter>
     </ClInclude>
     <ClInclude Include="pacman\pacman_psg.h">
-      <Filter>Header Files\pacman</Filter>
-    </ClInclude>
-    <ClInclude Include="pacman\mspacman.h">
       <Filter>Header Files\pacman</Filter>
     </ClInclude>
   </ItemGroup>
