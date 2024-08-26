@@ -1,8 +1,11 @@
 #include "pacman.h"
 #include "pacman_vid.h"
 #include "pacman_psg.h"
-#include "../crc32.h"
 #include <fstream>
+#include <vector>
+
+import z80;
+import crc32;
 
 c_pacman::c_pacman(PACMAN_MODEL model)
 {

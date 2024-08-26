@@ -2,6 +2,8 @@
 #include <math.h>
 #include <stdio.h>
 
+import dsp;
+
 c_psg::c_psg()
 {
     float db2 = powf(10.0f, -(2.0f / 20.f));
@@ -23,18 +25,18 @@ c_psg::c_psg()
     a2 = regexprep(num2str(Hd.sosMatrix(17:20), '%.16ff '), '\s+', ',')
     a3 = regexprep(num2str(Hd.sosMatrix(21:24), '%.16ff '), '\s+', ',')
     */
-    lpf = std::make_unique<c_biquad4>(
+    lpf = std::make_unique<dsp::c_biquad4>(
         std::initializer_list<float>{ 0.5068508386611939f,0.3307863473892212f,0.1168005615472794f,0.0055816280655563f },
         std::initializer_list<float>{ -1.9496889114379883f,-1.9021773338317871f,-1.3770858049392700f,-1.9604763984680176f },
         std::initializer_list<float>{ -1.9442052841186523f,-1.9171522855758667f,-1.8950747251510620f,-1.9676681756973267f },
         std::initializer_list<float>{ 0.9609073400497437f,0.9271715879440308f,0.8989855647087097f,0.9881398081779480f }
     );
-    post_filter = std::make_unique<c_biquad>(
+    post_filter = std::make_unique<dsp::c_biquad>(
         0.5648277401924133f,
         std::initializer_list<float>{ 1.0000000000000000f,0.0000000000000000f,-1.0000000000000000f },
         std::initializer_list<float>{ 1.0000000000000000f,-0.8659016489982605f,-0.1296554803848267f }
     );
-    resampler = std::make_unique<c_resampler>((float)(((228.0 * 262.0 * 60.0) / 4.0) / 48000.0), lpf.get(), post_filter.get());
+    resampler = std::make_unique<dsp::c_resampler>((float)(((228.0 * 262.0 * 60.0) / 4.0) / 48000.0), lpf.get(), post_filter.get());
     sound_buffer = std::make_unique<int32_t[]>(1024);
 }
 

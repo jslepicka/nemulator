@@ -1,10 +1,11 @@
 #pragma once
 #include "..\console.h"
-#include "..\z80\z80.h"
+//#include "..\z80\z80.h"
 #include <memory>
 
 class c_pacman_vid;
 class c_pacman_psg;
+class c_z80;
 
 enum class PACMAN_MODEL
 {

@@ -1,7 +1,8 @@
 #include "Game.h"
 #include <crtdbg.h>
 #include <immintrin.h>
-#include "random.h"
+
+import random;
 
 extern HANDLE g_start_event;
 
@@ -160,18 +161,22 @@ void c_game::DrawToTexture(ID3D10Texture2D *tex)
     int* p;
     if (console && console->is_loaded())
     {
-        int *fb = console->get_video();
+        int *fb_base = console->get_video();
         int y = 0;
         for (; y < display_info.fb_height; y++) {
+            int *fb = fb_base + (display_info.fb_width * y);
             p = (int*)map.pData + (y) * (map.RowPitch / 4);
             int x = 0;
-            //constexpr int memcpy_block_size = 64;
-            //for (; x < display_info.fb_width / memcpy_block_size; x += memcpy_block_size) {
-            //    memcpy(p, fb, memcpy_block_size * sizeof(int));
-            //    p += memcpy_block_size;
-            //    fb += memcpy_block_size;
-            //}
-            for (; x < display_info.fb_width; x++) {
+            int x_end = display_info.fb_width;
+            if (mask_sides) {
+                for (int m = 0; m < 8; m++) {
+                    *p++ = 0xFF000000;
+                    fb++;
+                }
+                x += 8;
+                x_end -= 8;
+            }
+            for (; x < x_end; x++) {
                 *p++ = *fb++;
             }
             for (; x < tex_width; x++) {
@@ -194,7 +199,7 @@ void c_game::DrawToTexture(ID3D10Texture2D *tex)
             p = (int*)map.pData + y * (map.RowPitch / 4);
             for (int x = 0; x < static_width; ++x)
             {
-                c = get_rand() & 0xFF;
+                c = random::get_rand() & 0xFF;
                 *p++ = 0xFF << 24 | c << 16 | c << 8 | c;
             }
         }
@@ -235,7 +240,7 @@ void c_game::create_vertex_buffer()
             h_adjust = ((4.0 / 3.0) / aspect_ratio * h - h) / 2.0;
         }
     }
-
+    
     double w_start = (display_info.crop_left - w_adjust);
     double w_end = (w - display_info.crop_right + w_adjust);
     double h_start = (display_info.crop_top - h_adjust);

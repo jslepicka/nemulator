@@ -220,15 +220,21 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="crc32.ixx" />
+    <ClCompile Include="dsp\audio_filter.ixx" />
+    <ClCompile Include="dsp\biquad.ixx" />
+    <ClCompile Include="dsp\biquad4.ixx" />
+    <ClCompile Include="dsp\dsp.ixx" />
+    <ClCompile Include="dsp\resampler.ixx" />
     <ClCompile Include="gb\gbapu.cpp" />
     <ClCompile Include="gb\mbc2.cpp" />
     <ClCompile Include="gb\mbc5.cpp" />
+    <ClCompile Include="interpolate.ixx" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="audio_info.cpp" />
     <ClCompile Include="bmp_writer.cpp" />
     <ClCompile Include="config.cpp" />
     <ClCompile Include="console.cpp" />
-    <ClCompile Include="crc32.cpp" />
     <ClCompile Include="D3d10App.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="gb\gb.cpp" />
@@ -319,13 +325,11 @@
     <ClCompile Include="nes\mappers\vrc7_audio.cpp" />
     <ClCompile Include="nes_input_handler.cpp" />
     <ClCompile Include="nsf_stats.cpp" />
-    <ClCompile Include="pacman\mspacman.cpp" />
     <ClCompile Include="pacman\pacman.cpp" />
     <ClCompile Include="pacman\pacman_psg.cpp" />
     <ClCompile Include="pacman\pacman_vid.cpp" />
     <ClCompile Include="qam.cpp" />
-    <ClCompile Include="random.cpp" />
-    <ClCompile Include="resampler.cpp" />
+    <ClCompile Include="random.ixx" />
     <ClCompile Include="sms\psg.cpp" />
     <ClCompile Include="sms\sms.cpp" />
     <ClCompile Include="sms\vdp.cpp" />
@@ -342,20 +346,15 @@
     <ClCompile Include="nes\mapper.cpp" />
     <ClCompile Include="nes\nes.cpp" />
     <ClCompile Include="nes\ppu.cpp" />
-    <ClCompile Include="z80\z80.cpp" />
+    <ClCompile Include="z80\z80.ixx" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="audio_filter.h" />
     <ClInclude Include="audio_info.h" />
     <ClInclude Include="benchmark.h" />
-    <ClInclude Include="biquad.hpp" />
-    <ClInclude Include="biquad4.hpp" />
-    <ClInclude Include="biquad8.hpp" />
     <ClInclude Include="bmp_writer.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="console.h" />
     <ClInclude Include="constants.h" />
-    <ClInclude Include="crc32.h" />
     <ClInclude Include="D3d10App.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="gb\gb.h" />
@@ -368,7 +367,6 @@
     <ClInclude Include="gb\mbc3.h" />
     <ClInclude Include="gb\mbc5.h" />
     <ClInclude Include="input_handler.h" />
-    <ClInclude Include="interpolate.h" />
     <ClInclude Include="menu.h" />
     <ClInclude Include="meow_fft.h" />
     <ClInclude Include="nemulator.h" />
@@ -459,13 +457,10 @@
     <ClInclude Include="nes\ppu.h" />
     <ClInclude Include="nes_input_handler.h" />
     <ClInclude Include="nsf_stats.h" />
-    <ClInclude Include="pacman\mspacman.h" />
     <ClInclude Include="pacman\pacman.h" />
     <ClInclude Include="pacman\pacman_psg.h" />
     <ClInclude Include="pacman\pacman_vid.h" />
     <ClInclude Include="qam.h" />
-    <ClInclude Include="random.h" />
-    <ClInclude Include="resampler.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="sms\crc.h" />
     <ClInclude Include="sms\psg.h" />
@@ -480,7 +475,6 @@
     <ClInclude Include="TexturePanel.h" />
     <ClInclude Include="TexturePanelItem.h" />
     <ClInclude Include="nes\nes.h" />
-    <ClInclude Include="z80\z80.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="effect.fx">

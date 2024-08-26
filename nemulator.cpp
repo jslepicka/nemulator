@@ -3,13 +3,12 @@
 #include "PowrProf.h"
 #include "time.h"
 #include <sstream>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <xmmintrin.h>
 #include "console.h"
 #include <algorithm>
 #include <pmmintrin.h>
 #include "benchmark.h"
+#include <string_view>
 
 extern ID3D10Device *d3dDev;
 extern D3DXMATRIX matrixView;
@@ -206,12 +205,11 @@ void c_nemulator::Init()
 
     fastscroll = false;
     scroll_fade_timer = 0.0;
-    static const float tile_width = 2.7f;
 
     int panel_columns = config->get_int("menu_columns", 8);
     if (panel_columns < 3)
         panel_columns = 3;
-    int panel_rows = (int)((panel_columns-1) * tile_width / ((double)clientWidth/clientHeight) * .82 / 2.04);
+    int panel_rows = (int)((panel_columns-1) * TexturePanel::tile_width / ((double)clientWidth/clientHeight) * .82 / TexturePanel::tile_height); //not sure where .82 comes from...
 
     mainPanel2 = std::make_unique<TexturePanel>(panel_rows, panel_columns);
     mainPanel2->x = 0.0f;
@@ -225,16 +223,21 @@ void c_nemulator::Init()
 
     QueryPerformanceFrequency(&liFreq);
 
+    //center x, y on panel center
+    eye_x = (float)(((panel_columns - 1) * TexturePanel::tile_width) / 2);
+    eye_y = (float)((((panel_rows - 1) * TexturePanel::tile_height) / 2) * -1.2);  //y is offset -20% to shift panel up on display
 
-    eye_x = (float)(((panel_columns - 1) * tile_width) / 2);
-    eye_y = (float)((((panel_rows - 1) * 2.04) / 2) * -1.2);
 
-    fov_h = (float)(2.0 * atan(((double)clientWidth/clientHeight) * tan( (D3DX_PI/4)/2.0) ));
+    //given a vertical field of view of 45 degrees, and clientWidth/clientHeight aspect ratio,
+    //determine the horizontal field of view
+    fov_h = (float)(2.0 * atan(((double)clientWidth/clientHeight) * tan( fovy/2.0) ));
+
+    //using the horizontal field of view, determine how far back to place the camera
     eye_z = -(eye_x/tan(fov_h/2));
 
     mainPanel2->zoomDestX = eye_x;
     mainPanel2->zoomDestY = eye_y;
-    mainPanel2->zoomDestZ = (float)(eye_z + (1.0 / tan( (D3DX_PI/4)/2.0 )));
+    mainPanel2->zoomDestZ = (float)(eye_z + (1.0 / tan( fovy/2.0 )));
     mainPanel2->camera_distance = eye_z;
     auto eye = D3DXVECTOR3(eye_x, eye_y, eye_z);
     auto at = D3DXVECTOR3(eye_x, eye_y, 0.0f);
@@ -358,7 +361,7 @@ void c_nemulator::OnResize()
     LoadFonts();
 
     float aspect = (float)clientWidth/clientHeight;
-    D3DXMatrixPerspectiveFovLH(&matrixProj, .25f*(float)D3DX_PI, aspect, 1.0f, 1000.0f);
+    D3DXMatrixPerspectiveFovLH(&matrixProj, (float)fovy, aspect, 1.0f, 1000.0f);
     texturePanels[selectedPanel]->OnResize();
 }
 
@@ -397,7 +400,6 @@ void c_nemulator::RunGames()
             break;
         case GAME_PACMAN:
         case GAME_MSPACMAB:
-        case GAME_MSPACMAN:
             g->console->set_input(ih->get_pacman_input());
             break;
         default:
@@ -516,11 +518,12 @@ void c_nemulator::handle_button_mask_sides(s_button_handler_params *params)
 {
     c_game* g = (c_game*)texturePanels[selectedPanel]->GetSelected();
     g->mask_sides = !g->mask_sides;
-    if (g->mask_sides)
+    if (g->mask_sides) {
         status->add_message("side mask enabled");
-    else
+    }
+    else {
         status->add_message("side mask disabled");
-
+    }
 }
 
 void c_nemulator::handle_button_sprite_limit(s_button_handler_params *params)
@@ -1341,24 +1344,20 @@ void c_nemulator::LoadGames()
     {
         li.rom_path = config->get_string(li.rom_path_key, li.rom_path_default);
         li.save_path = config->get_string(li.save_path_key, li.rom_path_default);
-        if (!dir_exists(li.save_path))
+        if (!std::filesystem::exists(li.save_path))
             li.save_path = li.rom_path;
 
-        if (strcmp(li.extension.c_str(), "") == 0) {
-            if (dir_exists(li.rom_path)) {
+        if (li.extension == "") {
+            if (std::filesystem::exists(li.rom_path)) {
                 li.file_list.push_back(li.rom_path + ".dir");
             }
         }
         else {
-            _finddata64i32_t fd;
-            intptr_t f;
-            std::string searchPath = li.rom_path + "\\*." + li.extension;
-            if ((f = _findfirst(searchPath.c_str(), &fd)) != -1) {
-                int find_result = 0;
-                while (find_result == 0) {
-                rom_count++;
-                li.file_list.push_back(fd.name);
-                find_result = _findnext(f, &fd);
+            std::error_code ec;
+            for (auto const &dir_entry : std::filesystem::directory_iterator(li.rom_path, ec)) {
+                if (dir_entry.is_regular_file() && dir_entry.path().extension() == "." + li.extension) {
+                    rom_count++;
+                    li.file_list.push_back(dir_entry.path().filename().string());
                 }
             }
         }
@@ -1389,7 +1388,6 @@ void c_nemulator::LoadGames()
                     strcpy(g->title, "Pac-Man");
                     g->set_description(g->title);
                     break;
-                case GAME_MSPACMAN:
                 case GAME_MSPACMAB:
                     strcpy(g->title, "Ms. Pac-Man");
                     g->set_description(g->title);
@@ -1398,14 +1396,6 @@ void c_nemulator::LoadGames()
                     g->set_description(fn);
                     break;
             }
-
-            //std::string s = "\"" + fn + "\".";
-            //bool mask_sides = config->get_bool(s + "mask_sides", global_mask_sides);
-            //bool limit_sprites = config->get_bool(s + "limit_sprites", global_limit_sprites);
-            //int submapper = config->get_int(s + "mapper_variant", 0);
-            //g->submapper = submapper;
-            //g->mask_sides = mask_sides;
-            //g->limit_sprites = limit_sprites;
             gameList.push_back(g);
         }
     }
@@ -1425,12 +1415,3 @@ void c_nemulator::LoadGames()
     loaded = 1;
 }
 
-int c_nemulator::dir_exists(const std::string &path)
-{
-    std::string p = path;
-    p.erase(p.find_last_not_of('\\') + 1);
-    struct stat s;
-    if (0 == stat(p.c_str(), &s))
-        return 1;
-    return 0;
-}

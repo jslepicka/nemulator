@@ -25,6 +25,8 @@
 #include "bmp_writer.h"
 #include "qam.h"
 #include "nsf_stats.h"
+#include <numbers>
+#include <filesystem>
 
 class c_nemulator :
     public c_task
@@ -174,8 +176,6 @@ private:
     c_audio_info *audio_info;
     c_qam *qam;
 
-    int dir_exists(const std::string &path);
-
     struct s_game_thread
     {
         HANDLE thread_handle;
@@ -215,4 +215,6 @@ private:
     const double SPLASH_TIMER_TOTAL_DURATION = 1000.0;
     const double SPLASH_TIMER_FADE_DURATION = 500.0;
     unsigned int benchmark_frame_count = 0;
+
+    static constexpr double fovy = std::numbers::pi / 4.0;
 };

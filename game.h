@@ -4,7 +4,6 @@
 #include "sms\sms.h"
 #include "gb\gb.h"
 #include "pacman\pacman.h"
-#include "pacman\mspacman.h"
 #include <string>
 #include "TexturePanelItem.h"
 #include "d3dx10.h"
@@ -18,7 +17,6 @@ enum GAME_TYPE
     GAME_GB,
     GAME_GBC,
     GAME_PACMAN,
-    GAME_MSPACMAN,
     GAME_MSPACMAB, //ms pac man pre-decrypted roms
     GAME_NONE
 };
@@ -53,7 +51,8 @@ public:
         D3DXVECTOR3 pos;
         D3DXVECTOR2 tex;
     };
-private:
+
+  private:
     void OnActivate(bool load);
     void OnDeactivate();
     void OnLoad();
@@ -77,6 +76,5 @@ private:
     static const int tex_height = 512;
     static const int static_width = 256;
     static const int static_height = 256;
-
     c_console::display_info_t display_info;
 };

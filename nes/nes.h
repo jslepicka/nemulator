@@ -4,10 +4,7 @@
 #include <map>
 #include <vector>
 #include <functional>
-#include "..\resampler.h"
 #include "..\console.h"
-#include "..\biquad4.hpp"
-#include "..\biquad.hpp"
 #include "game_genie.h"
 #include <memory>
 
