@@ -51,6 +51,9 @@ public:
     static const int STATE_ZOOMING = 3;
     static const int STATE_ZOOMED = 4;
     static const int STATE_SUSPENDED = 5;
+    static constexpr float tile_spacing = .02;
+    static constexpr float tile_height = (1.0) * 2.0 + (tile_spacing * 2.0);
+    static constexpr float tile_width = (4.0 / 3.0) * 2.0 + (tile_spacing * 2.0);
     int state;
     bool dim;
     bool selectable;

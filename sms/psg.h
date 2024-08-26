@@ -1,8 +1,12 @@
 #pragma once
 #include <memory>
-#include "..\resampler.h"
-#include "..\biquad4.hpp"
-#include "..\biquad.hpp"
+
+namespace dsp
+{
+class c_biquad;
+class c_biquad4;
+class c_resampler;
+} //namespace dsp
 
 class c_psg
 {
@@ -42,9 +46,9 @@ private:
         TYPE_TONE = 0,
         TYPE_VOLUME = 0x10
     };
-    std::unique_ptr<c_biquad4> lpf;
-    std::unique_ptr<c_biquad> post_filter;
+    std::unique_ptr<dsp::c_biquad4> lpf;
+    std::unique_ptr<dsp::c_biquad> post_filter;
     std::unique_ptr<int32_t[]> sound_buffer;
-    std::unique_ptr<c_resampler> resampler;
+    std::unique_ptr<dsp::c_resampler> resampler;
 };
 

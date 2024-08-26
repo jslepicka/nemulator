@@ -5,10 +5,11 @@
 #include "joypad.h"
 #include "mappers\mappers.h"
 #include "ines.h"
-#include "..\crc32.h"
 #include "cartdb.h"
 
 #include <fstream>
+
+import crc32;
 
 extern int mem_viewer_active;
 

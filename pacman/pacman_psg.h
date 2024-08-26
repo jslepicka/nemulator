@@ -1,8 +1,12 @@
 #pragma once
 #include <cstdint>
-#include "..\resampler.h"
-#include "..\biquad4.hpp"
-#include "..\biquad.hpp"
+
+namespace dsp
+{
+class c_biquad;
+class c_biquad4;
+class c_resampler;
+} //namespace dsp
 
 class c_pacman_psg
 {
@@ -25,9 +29,9 @@ class c_pacman_psg
     uint8_t sound_ram[32];
     uint32_t accumulator[3];
 
-    c_resampler *resampler;
-    c_biquad4 *lpf;
-    c_biquad *post_filter;
+    dsp::c_resampler *resampler;
+    dsp::c_biquad4 *lpf;
+    dsp::c_biquad *post_filter;
     int32_t *sound_buffer;
     int muted;
     int mixer_enabled;
