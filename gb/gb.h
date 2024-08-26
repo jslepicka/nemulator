@@ -86,19 +86,24 @@ class c_gb : public c_console
     int wram_bank;
     char title[17] = {0};
 
-    struct s_mapper
+    enum PAK_FEATURES
+    {
+        NONE    = 1 << 0,
+        RAM     = 1 << 1,
+        BATTERY = 1 << 2,
+        RUMBLE  = 1 << 3
+    };
+    struct s_pak
     {
         std::function<std::unique_ptr<c_gbmapper>()> mapper;
-        int has_ram;
-        int has_battery;
-        int has_rumble;
+        int features;
     };
 
     int load_sram();
     int save_sram();
 
-    const static std::map<int, s_mapper> mapper_factory;
-    s_mapper *m;
+    const static std::map<int, s_pak> pak_factory;
+    s_pak *pak;
     int loaded;
     char sramPath[MAX_PATH];
 

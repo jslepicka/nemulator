@@ -13,20 +13,22 @@
 
 void strip_extension(char *path);
 
-const std::map<int, c_gb::s_mapper> c_gb::mapper_factory = {
-    {0, {[]() { return std::make_unique<c_gbmapper>(); }, 0, 0, 0}},
-    {1, {[]() { return std::make_unique<c_mbc1>(); }, 0, 0, 0}},
-    {2, {[]() { return std::make_unique<c_mbc1>(); }, 1, 0, 0}},
-    {3, {[]() { return std::make_unique<c_mbc1>(); }, 1, 1, 0}},
-    {5, {[]() { return std::make_unique<c_mbc2>(); }, 0, 0, 0}},
-    {6, {[]() { return std::make_unique<c_mbc2>(); }, 0, 1, 0}},
-    {0x19, {[]() { return std::make_unique<c_mbc5>(); }, 0, 0, 0}},
-    {0x1A, {[]() { return std::make_unique<c_mbc5>(); }, 1, 0, 0}},
-    {0x1B, {[]() { return std::make_unique<c_mbc5>(); }, 1, 1, 0}},
-    {0x1C, {[]() { return std::make_unique<c_mbc5>(); }, 0, 0, 1}}, //rumble
-    {0x1D, {[]() { return std::make_unique<c_mbc5>(); }, 1, 0, 1}}, //rumble
-    {0x1E, {[]() { return std::make_unique<c_mbc5>(); }, 1, 1, 1}}, //rumble
+// clang-format off
+const std::map<int, c_gb::s_pak> c_gb::pak_factory = {
+    {0,    {[]() { return std::make_unique<c_gbmapper>(); }, PAK_FEATURES::NONE}},
+    {1,    {[]() { return std::make_unique<c_mbc1>(); },     PAK_FEATURES::NONE}},
+    {2,    {[]() { return std::make_unique<c_mbc1>(); },     PAK_FEATURES::RAM}},
+    {3,    {[]() { return std::make_unique<c_mbc1>(); },     PAK_FEATURES::RAM | PAK_FEATURES::BATTERY}},
+    {5,    {[]() { return std::make_unique<c_mbc2>(); },     PAK_FEATURES::NONE}},
+    {6,    {[]() { return std::make_unique<c_mbc2>(); },     PAK_FEATURES::BATTERY}},
+    {0x19, {[]() { return std::make_unique<c_mbc5>(); },     PAK_FEATURES::NONE}},
+    {0x1A, {[]() { return std::make_unique<c_mbc5>(); },     PAK_FEATURES::RAM}},
+    {0x1B, {[]() { return std::make_unique<c_mbc5>(); },     PAK_FEATURES::RAM | PAK_FEATURES::BATTERY}},
+    {0x1C, {[]() { return std::make_unique<c_mbc5>(); },     PAK_FEATURES::RUMBLE}},
+    {0x1D, {[]() { return std::make_unique<c_mbc5>(); },     PAK_FEATURES::RAM | PAK_FEATURES::RUMBLE}},
+    {0x1E, {[]() { return std::make_unique<c_mbc5>(); },     PAK_FEATURES::RAM | PAK_FEATURES::BATTERY | PAK_FEATURES::RUMBLE}},
 };
+// clang-format on
 
 c_gb::c_gb(GB_MODEL model)
 {
@@ -49,17 +51,13 @@ c_gb::c_gb(GB_MODEL model)
 
 c_gb::~c_gb()
 {
-    if (loaded && m->has_battery) {
+    if (loaded && pak->features & PAK_FEATURES::BATTERY) {
         save_sram();
     }
 }
 
 int c_gb::reset()
 {
-  //if (m->has_battery)
-  //{
-  //    save_sram();
-  //}
     cpu->reset(0x100);
     mapper->reset();
     ppu->reset();
@@ -147,20 +145,20 @@ int c_gb::load()
   //printf("cart_type: %d\n", cart_type);
   //printf("rom_size: %d\n", 32768 << rom_size);
   //printf("ram_size: %d\n", ram_size);
-    auto i = mapper_factory.find(cart_type);
-    if (i == mapper_factory.end()) {
+    auto i = pak_factory.find(cart_type);
+    if (i == pak_factory.end()) {
         return false;
     }
-    m = (s_mapper *)&(i->second);
-    mapper = m->mapper();
+    pak = (s_pak *)&(i->second);
+    mapper = pak->mapper();
 
     mapper->rom = rom.get();
 
-    if (m->has_ram && header_ram_size && header_ram_size < 6) {
+    if (pak->features & PAK_FEATURES::RAM && header_ram_size && header_ram_size < 6) {
         const int size[] = {0, 2 * 1024, 8 * 1024, 32 * 1024, 128 * 1024, 64 * 1024};
         ram_size = size[header_ram_size];
         mapper->config_ram(ram_size);
-        if (m->has_battery) {
+        if (pak->features & PAK_FEATURES::BATTERY) {
             load_sram();
         }
     }
@@ -173,10 +171,16 @@ int c_gb::load()
     }
     else {
    //disable battery save if anything is invalid
-        m->has_battery = 0;
+        pak->features &= ~PAK_FEATURES::BATTERY;
     }
+    enum test
+    {
+        a = 0,
+        b = 1,
+        c = 2,
+    };
 
-    if (m->has_rumble) {
+    if (pak->features & PAK_FEATURES::RUMBLE) {
         mapper->rumble = true;
     }
 
