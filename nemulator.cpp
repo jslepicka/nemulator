@@ -399,6 +399,8 @@ void c_nemulator::RunGames()
             g->console->set_input(ih->get_gb_input());
             break;
         case GAME_PACMAN:
+        case GAME_MSPACMAN:
+        case GAME_MSPACMNF:
         case GAME_MSPACMAB:
             g->console->set_input(ih->get_pacman_input());
             break;
@@ -1334,6 +1336,8 @@ void c_nemulator::LoadGames()
         { GAME_GBC, "gbc", "gbc.rom_path", "gbc.save_path", "c:\\roms\\gbc" },
         { GAME_NES, "nsf", "nsf.rom_path", "nsf.save_path", "c:\\roms\\nsf" }, 
         { GAME_PACMAN, "", "pacman.rom_path", "", "c:\\roms\\arcade\\pacman" },
+        { GAME_MSPACMAN, "", "mspacman.rom_path", "", "c:\\roms\\arcade\\mspacman"},
+        { GAME_MSPACMNF, "", "mspacmnf.rom_path", "", "c:\\roms\\arcade\\mspacmnf"},
         { GAME_MSPACMAB, "", "mspacmab.rom_path", "", "c:\\roms\\arcade\\mspacmab" }
     };
 
@@ -1388,8 +1392,16 @@ void c_nemulator::LoadGames()
                     strcpy(g->title, "Pac-Man");
                     g->set_description(g->title);
                     break;
-                case GAME_MSPACMAB:
+                case GAME_MSPACMAN:
                     strcpy(g->title, "Ms. Pac-Man");
+                    g->set_description(g->title);
+                    break;
+                case GAME_MSPACMNF:
+                    strcpy(g->title, "Ms. Pac-Man (Fast)");
+                    g->set_description(g->title);
+                    break;
+                case GAME_MSPACMAB:
+                    strcpy(g->title, "Ms. Pac-Man (Bootleg)");
                     g->set_description(g->title);
                     break;
                 default:
