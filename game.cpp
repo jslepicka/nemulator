@@ -95,6 +95,12 @@ void c_game::OnActivate(bool load)
             case GAME_PACMAN:
                 console = new c_pacman();
                 break;
+            case GAME_MSPACMAN:
+                console = new c_pacman(PACMAN_MODEL::MSPACMAN);
+                break;
+            case GAME_MSPACMNF:
+                console = new c_pacman(PACMAN_MODEL::MSPACMNF);
+                break;
             case GAME_MSPACMAB:
                 console = new c_pacman(PACMAN_MODEL::MSPACMAB);
                 break;

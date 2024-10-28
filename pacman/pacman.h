@@ -2,6 +2,14 @@
 #include "..\console.h"
 //#include "..\z80\z80.h"
 #include <memory>
+#include <array>
+
+#define BIT(x, n) (((x) >> (n)) & 1)
+#define BITSWAP16(val, B15, B14, B13, B12, B11, B10, B9, B8, B7, B6, B5, B4, B3, B2, B1, B0)                           \
+    ((BIT(val, B15) << 15) | (BIT(val, B14) << 14) | (BIT(val, B13) << 13) | (BIT(val, B12) << 12) |                   \
+     (BIT(val, B11) << 11) | (BIT(val, B10) << 10) | (BIT(val, B9) << 9) | (BIT(val, B8) << 8) | (BIT(val, B7) << 7) | \
+     (BIT(val, B6) << 6) | (BIT(val, B5) << 5) | (BIT(val, B4) << 4) | (BIT(val, B3) << 3) | (BIT(val, B2) << 2) |     \
+     (BIT(val, B1) << 1) | (BIT(val, B0) << 0))
 
 class c_pacman_vid;
 class c_pacman_psg;
@@ -10,6 +18,8 @@ class c_z80;
 enum class PACMAN_MODEL
 {
     PACMAN,
+    MSPACMAN,
+    MSPACMNF,
     MSPACMAB
 };
 
@@ -38,11 +48,15 @@ class c_pacman : public c_console
     virtual void write_byte(uint16_t address, uint8_t data);
     uint8_t read_port(uint8_t port);
     void write_port(uint8_t port, uint8_t data);
-
+    int decrypt_mspacman();
+    void decrypt_rom(int src, int dst, int len, std::array<uint8_t, 16> addr_bits);
+    uint16_t bitswap(uint16_t in, std::array<uint8_t, 16>);
+    void check_mspacman_trap(uint16_t address);
     std::unique_ptr<c_z80> z80;
     std::unique_ptr<c_pacman_vid> pacman_vid;
     std::unique_ptr<c_pacman_psg> pacman_psg;
     std::unique_ptr<uint8_t[]> prg_rom;
+    std::unique_ptr<uint8_t[]> decrypted_rom; //for ms. pacman
     std::unique_ptr<uint8_t[]> work_ram;
 
     int nmi;
@@ -59,4 +73,7 @@ class c_pacman : public c_console
 
     PACMAN_MODEL model;
     int prg_mask;
+
+    int use_decrypted;
+    int is_mspacman;
 };
