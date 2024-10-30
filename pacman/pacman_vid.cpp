@@ -35,6 +35,8 @@ void c_pacman_vid::reset()
     line = 248;
     vid_address = 0;
     state = 0;
+    memset(sprite_locs.get(), 0, sizeof(uint8_t) * 16);
+    memset(sprite_ram.get(), 0, sizeof(uint8_t) * 16);
 }
 
 uint8_t c_pacman_vid::read_byte(uint16_t address)
