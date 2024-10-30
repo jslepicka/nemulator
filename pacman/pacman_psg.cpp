@@ -1,5 +1,6 @@
 #include "pacman_psg.h"
 #include <cstring>
+#include <array>
 
 import dsp;
 

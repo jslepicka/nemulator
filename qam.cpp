@@ -180,6 +180,7 @@ void c_qam::draw()
 
     //char *c = "0ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     char j[2];
+
     j[1] = 0;
 
     for (int i = 0; i < 27; i++)

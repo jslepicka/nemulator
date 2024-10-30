@@ -32,7 +32,9 @@ export class c_resampler
         this->post_filter = post_filter;
     }
 
-    virtual ~c_resampler() {}
+    virtual ~c_resampler()
+    {
+    }
     void set_m(float m)
     {
         this->m = m;
@@ -57,8 +59,8 @@ export class c_resampler
             float y0 = filtered_buf[filtered_buf_index + 2];
             float ym1 = filtered_buf[filtered_buf_index + 3];
 
-                  //4-point, 3rd-order B-spline (x-form)
-             //see deip.pdf
+            //4-point, 3rd-order B-spline (x-form)
+            //see deip.pdf
             float ym1py1 = ym1 + y1;
             float c0 = 1.0f / 6.0f * ym1py1 + 2.0f / 3.0f * y0;
             float c1 = 1.0f / 2.0f * (y1 - ym1);

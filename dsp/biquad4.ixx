@@ -23,7 +23,8 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 module;
-#include <vector>
+#include <array>
+#include <span>
 #include <xmmintrin.h>
 
 export module dsp:biquad4;
@@ -34,7 +35,7 @@ namespace dsp
 export class c_biquad4 : public i_audio_filter
 {
   public:
-    c_biquad4(std::vector<float> g, std::vector<float> b2, std::vector<float> a2, std::vector<float> a3)
+    c_biquad4(const std::array<float, 4> &g, const std::array<float, 4> &b2, const std::array<float, 4> &a2, const std::array<float, 4> &a3)
     {
         d = _mm_setzero_ps();
         z1 = _mm_setzero_ps();

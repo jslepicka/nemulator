@@ -432,6 +432,9 @@
     <ClCompile Include="dsp\audio_filter.ixx">
       <Filter>Source Files\dsp</Filter>
     </ClCompile>
+    <ClCompile Include="pacman\mspacman.cpp">
+      <Filter>Source Files\pacman</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="config.h">
@@ -810,6 +813,9 @@
       <Filter>Header Files\pacman</Filter>
     </ClInclude>
     <ClInclude Include="pacman\pacman_psg.h">
+      <Filter>Header Files\pacman</Filter>
+    </ClInclude>
+    <ClInclude Include="pacman\mspacman.h">
       <Filter>Header Files\pacman</Filter>
     </ClInclude>
   </ItemGroup>

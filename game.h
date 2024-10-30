@@ -4,6 +4,7 @@
 #include "sms\sms.h"
 #include "gb\gb.h"
 #include "pacman\pacman.h"
+#include "pacman\mspacman.h"
 #include <string>
 #include "TexturePanelItem.h"
 #include "d3dx10.h"

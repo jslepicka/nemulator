@@ -209,6 +209,7 @@
       <ControlFlowGuard>
       </ControlFlowGuard>
       <DisableSpecificWarnings>4334</DisableSpecificWarnings>
+      <CallingConvention>Cdecl</CallingConvention>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -325,6 +326,7 @@
     <ClCompile Include="nes\mappers\vrc7_audio.cpp" />
     <ClCompile Include="nes_input_handler.cpp" />
     <ClCompile Include="nsf_stats.cpp" />
+    <ClCompile Include="pacman\mspacman.cpp" />
     <ClCompile Include="pacman\pacman.cpp" />
     <ClCompile Include="pacman\pacman_psg.cpp" />
     <ClCompile Include="pacman\pacman_vid.cpp" />
@@ -457,6 +459,7 @@
     <ClInclude Include="nes\ppu.h" />
     <ClInclude Include="nes_input_handler.h" />
     <ClInclude Include="nsf_stats.h" />
+    <ClInclude Include="pacman\mspacman.h" />
     <ClInclude Include="pacman\pacman.h" />
     <ClInclude Include="pacman\pacman_psg.h" />
     <ClInclude Include="pacman\pacman_vid.h" />
