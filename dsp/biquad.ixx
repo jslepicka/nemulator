@@ -1,5 +1,5 @@
 module;
-#include <vector>
+#include <array>
 export module dsp:biquad;
 import :audio_filter;
 
@@ -8,7 +8,7 @@ namespace dsp
 export class c_biquad : public i_audio_filter
 {
   public:
-    c_biquad(float g, std::vector<float> b, std::vector<float> a)
+    c_biquad(float g, const std::array<float, 3> &b, const std::array<float, 3> &a)
     {
         this->g = g;
         this->b = b;
@@ -26,8 +26,8 @@ export class c_biquad : public i_audio_filter
 
   private:
     float g;
-    std::vector<float> b;
-    std::vector<float> a;
-    std::vector<float> z{0.0f, 0.0f};
+    std::array<float, 3> b;
+    std::array<float, 3> a;
+    std::array<float, 2> z{0.0f, 0.0f};
 };
 } //namespace dsp

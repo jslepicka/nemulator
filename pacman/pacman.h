@@ -3,6 +3,7 @@
 //#include "..\z80\z80.h"
 #include <memory>
 #include <array>
+#include <vector>
 
 #define BIT(x, n) (((x) >> (n)) & 1)
 #define BITSWAP16(val, B15, B14, B13, B12, B11, B10, B9, B8, B7, B6, B5, B4, B3, B2, B1, B0)                           \
@@ -43,20 +44,31 @@ class c_pacman : public c_console
     void disable_mixer();
 
   protected:
-
+    struct s_roms
+    {
+        std::string filename;
+        uint32_t crc32;
+        uint32_t length;
+        uint32_t offset;
+        uint8_t *loc;
+    };
     virtual uint8_t read_byte(uint16_t address);
     virtual void write_byte(uint16_t address, uint8_t data);
     uint8_t read_port(uint8_t port);
+
     void write_port(uint8_t port, uint8_t data);
-    int decrypt_mspacman();
-    void decrypt_rom(int src, int dst, int len, std::array<uint8_t, 16> addr_bits);
-    uint16_t bitswap(uint16_t in, std::array<uint8_t, 16>);
-    void check_mspacman_trap(uint16_t address);
+    //void decrypt_mspacman();
+    //void decrypt_rom(int src, int dst, int len, std::array<uint8_t, 16> addr_bits);
+    //uint16_t bitswap(uint16_t in, std::array<uint8_t, 16>);
+    //void check_mspacman_trap(uint16_t address);
+    int load_romset(std::vector<s_roms> &romset);
+
+
     std::unique_ptr<c_z80> z80;
     std::unique_ptr<c_pacman_vid> pacman_vid;
     std::unique_ptr<c_pacman_psg> pacman_psg;
     std::unique_ptr<uint8_t[]> prg_rom;
-    std::unique_ptr<uint8_t[]> decrypted_rom; //for ms. pacman
+    std::unique_ptr<uint8_t[]> prg_rom_overlay; //for ms. pacman
     std::unique_ptr<uint8_t[]> work_ram;
 
     int nmi;
@@ -74,6 +86,5 @@ class c_pacman : public c_console
     PACMAN_MODEL model;
     int prg_mask;
 
-    int use_decrypted;
-    int is_mspacman;
+
 };
