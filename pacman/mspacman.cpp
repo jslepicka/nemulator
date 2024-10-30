@@ -11,37 +11,39 @@ c_mspacman::c_mspacman(PACMAN_MODEL model) :
 
 int c_mspacman::load()
 {
+    // clang-format off
     std::vector<s_roms> mspacman_roms = {
-        {"pacman.6e", 0xc1e6ab10, 4096, 0, prg_rom.get()},
+        {"pacman.6e", 0xc1e6ab10, 4096,      0, prg_rom.get()},
         {"pacman.6f", 0x1a6fb2d4, 4096, 0x1000, prg_rom.get()},
         {"pacman.6h", 0xbcdd1beb, 4096, 0x2000, prg_rom.get()},
         {"pacman.6j", 0x817d94e3, 4096, 0x3000, prg_rom.get()},
-        {"u5", 0xf45fbbcd, 2048, 0x8000, prg_rom.get()},
-        {"u6", 0xa90e7000, 4096, 0x9000, prg_rom.get()},
-        {"u7", 0xc82cd714, 4096, 0xb000, prg_rom.get()},
-        {"5e", 0x5c281d01, 4096, 0, pacman_vid->tile_rom.get()},
-        {"5f", 0x615af909, 4096, 0, pacman_vid->sprite_rom.get()},
-        {"82s123.7f", 0x2fc650bd, 32, 0, pacman_vid->color_rom.get()},
-        {"82s126.4a", 0x3eb3a8e4, 256, 0, pacman_vid->pal_rom.get()},
-        {"82s126.1m", 0xa9cc86bf, 256, 0, pacman_psg->sound_rom},
-        {"82s126.3m", 0x77245b66, 256, 0x100, pacman_psg->sound_rom},
+        {       "u5", 0xf45fbbcd, 2048, 0x8000, prg_rom.get()},
+        {       "u6", 0xa90e7000, 4096, 0x9000, prg_rom.get()},
+        {       "u7", 0xc82cd714, 4096, 0xb000, prg_rom.get()},
+        {       "5e", 0x5c281d01, 4096,      0, pacman_vid->tile_rom.get()},
+        {       "5f", 0x615af909, 4096,      0, pacman_vid->sprite_rom.get()},
+        {"82s123.7f", 0x2fc650bd,   32,      0, pacman_vid->color_rom.get()},
+        {"82s126.4a", 0x3eb3a8e4,  256,      0, pacman_vid->pal_rom.get()},
+        {"82s126.1m", 0xa9cc86bf,  256,      0, pacman_psg->sound_rom},
+        {"82s126.3m", 0x77245b66,  256,  0x100, pacman_psg->sound_rom},
     };
 
     std::vector<s_roms> mspacmnf_roms = {
-        {"pacman.6e", 0xc1e6ab10, 4096, 0, prg_rom.get()},
+        { "pacman.6e", 0xc1e6ab10, 4096,      0, prg_rom.get()},
         {"pacfast.6f", 0x720dc3ee, 4096, 0x1000, prg_rom.get()},
-        {"pacman.6h", 0xbcdd1beb, 4096, 0x2000, prg_rom.get()},
-        {"pacman.6j", 0x817d94e3, 4096, 0x3000, prg_rom.get()},
-        {"u5", 0xf45fbbcd, 2048, 0x8000, prg_rom.get()},
-        {"u6", 0xa90e7000, 4096, 0x9000, prg_rom.get()},
-        {"u7", 0xc82cd714, 4096, 0xb000, prg_rom.get()},
-        {"5e", 0x5c281d01, 4096, 0, pacman_vid->tile_rom.get()},
-        {"5f", 0x615af909, 4096, 0, pacman_vid->sprite_rom.get()},
-        {"82s123.7f", 0x2fc650bd, 32, 0, pacman_vid->color_rom.get()},
-        {"82s126.4a", 0x3eb3a8e4, 256, 0, pacman_vid->pal_rom.get()},
-        {"82s126.1m", 0xa9cc86bf, 256, 0, pacman_psg->sound_rom},
-        {"82s126.3m", 0x77245b66, 256, 0x100, pacman_psg->sound_rom},
+        { "pacman.6h", 0xbcdd1beb, 4096, 0x2000, prg_rom.get()},
+        { "pacman.6j", 0x817d94e3, 4096, 0x3000, prg_rom.get()},
+        {        "u5", 0xf45fbbcd, 2048, 0x8000, prg_rom.get()},
+        {        "u6", 0xa90e7000, 4096, 0x9000, prg_rom.get()},
+        {        "u7", 0xc82cd714, 4096, 0xb000, prg_rom.get()},
+        {        "5e", 0x5c281d01, 4096,      0, pacman_vid->tile_rom.get()},
+        {        "5f", 0x615af909, 4096,      0, pacman_vid->sprite_rom.get()},
+        { "82s123.7f", 0x2fc650bd,   32,      0, pacman_vid->color_rom.get()},
+        { "82s126.4a", 0x3eb3a8e4,  256,      0, pacman_vid->pal_rom.get()},
+        { "82s126.1m", 0xa9cc86bf,  256,      0, pacman_psg->sound_rom},
+        { "82s126.3m", 0x77245b66,  256,  0x100, pacman_psg->sound_rom},
     };
+    // clang-format on
 
     std::vector<s_roms> romset;
 
@@ -86,33 +88,33 @@ void c_mspacman::decrypt_rom(int src, int dst, int len, std::array<uint8_t, 16> 
 
 void c_mspacman::decrypt_mspacman()
 {
-     //copy pacman 6e, 6f, and 6h into decrypted rom
+    //copy pacman 6e, 6f, and 6h into decrypted rom
     memcpy(prg_rom_overlay.get(), prg_rom.get(), 0x3000);
 
-          //copy portion of 6f into decrypted rom
+    //copy portion of 6f into decrypted rom
     memcpy(prg_rom_overlay.get() + 0x9800, prg_rom.get() + 0x1800, 0x800);
 
-      //mirror 6h and 6j into high rom
+    //mirror 6h and 6j into high rom
     memcpy(prg_rom_overlay.get() + 0xA000, prg_rom.get() + 0x2000, 0x1000);
     memcpy(prg_rom_overlay.get() + 0xB000, prg_rom.get() + 0x3000, 0x1000);
 
-      //decrypt source roms
+    //decrypt source roms
 
     std::array<uint8_t, 16> addr_bits = {15, 14, 13, 12, 11, 3, 7, 9, 10, 8, 6, 5, 4, 2, 1, 0};
 
-      //u7
+    //u7
     decrypt_rom(0xB000, 0x3000, 0x1000, addr_bits);
 
-      //u5
+    //u5
     decrypt_rom(0x8000, 0x8000, 0x800, {15, 14, 13, 12, 11, 8, 7, 5, 9, 10, 6, 3, 4, 2, 1, 0});
 
-      //u6
+    //u6
     decrypt_rom(0x9800, 0x8800, 0x800, addr_bits);
 
-      //u6
+    //u6
     decrypt_rom(0x9000, 0x9000, 0x800, addr_bits);
 
-      //copy patches
+    //copy patches
     struct s_patch
     {
         uint16_t src;
