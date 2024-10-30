@@ -1317,6 +1317,7 @@ DWORD WINAPI c_nemulator::load_thread(LPVOID param)
 
 void c_nemulator::LoadGames()
 {
+    std::string arcade_path = config->get_string("arcade.rom_path", "c:\\roms\\arcade");
     struct s_loadinfo
     {
         GAME_TYPE type;
@@ -1335,10 +1336,10 @@ void c_nemulator::LoadGames()
         { GAME_GB,   "gb",  "gb.rom_path",  "gb.save_path",  "c:\\roms\\gb" },
         { GAME_GBC, "gbc", "gbc.rom_path", "gbc.save_path", "c:\\roms\\gbc" },
         { GAME_NES, "nsf", "nsf.rom_path", "nsf.save_path", "c:\\roms\\nsf" }, 
-        { GAME_PACMAN, "", "pacman.rom_path", "", "c:\\roms\\arcade\\pacman" },
-        { GAME_MSPACMAN, "", "mspacman.rom_path", "", "c:\\roms\\arcade\\mspacman"},
-        { GAME_MSPACMNF, "", "mspacmnf.rom_path", "", "c:\\roms\\arcade\\mspacmnf"},
-        { GAME_MSPACMAB, "", "mspacmab.rom_path", "", "c:\\roms\\arcade\\mspacmab" }
+        { GAME_PACMAN, "", "pacman.rom_path", "", arcade_path + "\\pacman" },
+        { GAME_MSPACMAN, "", "mspacman.rom_path", "", arcade_path + "\\mspacman"},
+        { GAME_MSPACMNF, "", "mspacmnf.rom_path", "", arcade_path + "\\mspacmnf"},
+        { GAME_MSPACMAB, "", "mspacmab.rom_path", "", arcade_path + "\\mspacmab" }
     };
 
     bool global_mask_sides = config->get_bool("mask_sides", false);
