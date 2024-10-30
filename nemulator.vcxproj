@@ -551,12 +551,10 @@
     <ResourceCompile Include="nemulator.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\..\Users\james\Desktop\nes.png" />
-    <Image Include="..\..\Users\james\Desktop\nes_ELf_icon.ico" />
-    <Image Include="icon1.ico" />
+    <None Include=".clang-format" />
   </ItemGroup>
   <ItemGroup>
-    <None Include=".clang-format" />
+    <Image Include="nes_ELf_icon.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
