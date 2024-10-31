@@ -11,9 +11,9 @@ nemulator is a multi-system emulator for Windows
 - Pac-Man / Ms. Pac-Man (Arcade)
 
 ## Notes
-- Default ROM locations are c:\roms\\(nes|sms|gg|gb|gbc|arcade\\romset)
-    - Support pacman rom sets are pacman, mspacman, mspacmab, and mspacmnf
 - See configuration options in nemulator.ini
+- Default ROM locations are c:\roms\\(nes|sms|gg|gb|gbc|arcade\\romset)
+    - Supported pacman rom sets are pacman, mspacman, mspacmab, and mspacmnf
 - Default keyboard assignments:
     - Up/Down/Left/Right - arrow keys
     - A button - X
