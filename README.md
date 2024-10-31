@@ -1,7 +1,7 @@
 # nemulator
 nemulator is a multi-system emulator for Windows
 
-![](nemulator.png)
+![](demo.gif)
 
 ## Supported Systems
 - Nintendo NES
