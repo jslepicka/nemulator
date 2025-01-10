@@ -2,7 +2,9 @@
 #include "nes.h"
 #include <atomic>
 #include <memory>
-
+#include <immintrin.h>
+#include <bitset>
+#include <array>
 #define NES_PPU_USE_SIMD
 
 class c_ppu
@@ -14,19 +16,19 @@ public:
     void write_byte(int address, unsigned char value);
     void reset();
     int get_sprite_size();
-    int eval_sprites();
+    void eval_sprites();
     void run_ppu_line();
-    int *get_frame_buffer() { return frame_buffer.get(); }
+    int *get_frame_buffer() { return (int*)frame_buffer; }
+    bool get_sprite_limit() { return limit_sprites; }
+    void set_sprite_limit(bool limit) { limit_sprites = limit; }
 
     c_mapper *mapper;
     c_cpu *cpu;
     c_apu *apu;
     c_apu2 *apu2;
 
-    //unsigned char* pSpriteMemory;
-    std::unique_ptr<unsigned char[]> pSpriteMemory;
+    uint8_t *get_sprite_memory();
     int drawingBg;
-    bool limit_sprites;
 
 private:
     void inc_horizontal_address();
@@ -36,13 +38,20 @@ private:
     void build_lookup_tables();
     uint64_t interleave_bits_64(unsigned char odd, unsigned char even);
     bool drawing_enabled();
-    void output_pixel();
-    void output_blank_pixel();
+    int output_pixel_no_sprites();
+    int output_pixel();
+    int output_blank_pixel();
+    struct s_bg_out
+    {
+        uint8_t bg_index;
+        uint32_t pixel;
+    };
+    s_bg_out get_bg();
     void begin_vblank();
     void end_vblank();
 
     void fetch();
-    void do_cycle_events();
+    int do_cycle_events();
 
     int vram_update_delay;
     //ppu updates apparently happen on ppu cycle following completion of a cpu write
@@ -53,7 +62,6 @@ private:
     static uint64_t morton_odd_64[];
     static uint64_t morton_even_64[];
     static const int screen_offset = 2;
-    int* p_frame;
     unsigned int current_cycle;
     int current_scanline;
     int sprites_visible;
@@ -61,11 +69,13 @@ private:
     int spriteMemAddress;
     static std::atomic<int> lookup_tables_built;
     int fetch_state;
+    int on_screen;
     unsigned char readValue;
     bool hi;
     bool nmi_pending;
     int vramAddress, vramAddressLatch, fineX;
     int addressIncrement;
+    
     unsigned char* control1, * control2, * status;
     int update_rendering;
     int next_rendering;
@@ -77,11 +87,11 @@ private:
     int sprite0_index;
     int end_cycle;
     int rendering;
-    int on_screen;
+    
     int tile;
     int pattern_address;
     int attribute_address;
-    int attribute_shift;
+    
     #ifdef NES_PPU_USE_SIMD
     uint64_t pattern1;
     uint64_t pattern2;
@@ -91,17 +101,17 @@ private:
     #endif
     uint64_t attribute;
     int executed_cycles;
-    uint32_t pixel_pipeline;
     int palette_mask; //for monochrome display
     int vid_out;
     int reload_v;
-
+    int attribute_shift;
     enum FETCH_STATE {
         FETCH_BG = 0 << 3,
         FETCH_SPRITE = 1 << 3,
         FETCH_NT = 2 << 3,
         FETCH_IDLE = 3 << 3
     };
+    bool limit_sprites;
     struct
     {
         unsigned char nameTable : 2;
@@ -129,14 +139,23 @@ private:
         bool hitFlag : 1;
         bool vBlank : 1;
     } ppuStatus;
+    struct s_sprite_data
+    {
+        uint8_t y;
+        uint8_t tile;
+        uint8_t attribute;
+        uint8_t x;
+    };
 
+    alignas(64) static uint32_t pal[512];
 
+    int (c_ppu::*p_output_pixel)();
+    std::bitset<256> sprite_here;
 
-    static uint32_t pal[512];
-    std::unique_ptr<unsigned char[]> image_palette;
-    std::unique_ptr<unsigned char[]> sprite_buffer;
-    std::unique_ptr<unsigned char[]> sprite_memory;
-    std::unique_ptr<unsigned char[]> sprite_index_buffer;
-    std::unique_ptr<int[]> frame_buffer;
-    std::unique_ptr<unsigned char[]> index_buffer;
+    alignas(64) s_sprite_data sprite_buffer[64];
+    alignas(64) uint8_t sprite_memory[256];
+    alignas(64) uint8_t sprite_index_buffer[512];
+    alignas(64) uint8_t index_buffer[272];
+    uint8_t image_palette[32];
+    alignas(64) uint32_t frame_buffer[256 * 240];
 };

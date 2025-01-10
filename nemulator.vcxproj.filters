@@ -833,13 +833,7 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\..\Users\james\Desktop\nes.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="icon1.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="..\..\Users\james\Desktop\nes_ELf_icon.ico">
+    <Image Include="nes_ELf_icon.ico">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

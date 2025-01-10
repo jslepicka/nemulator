@@ -138,12 +138,12 @@ void c_nes::disable_mixer()
 void c_nes::set_sprite_limit(bool limit_sprites)
 {
     this->limit_sprites = limit_sprites;
-    ppu->limit_sprites = limit_sprites;
+    ppu->set_sprite_limit(limit_sprites);
 }
 
 bool c_nes::get_sprite_limit()
 {
-    return ppu->limit_sprites;
+    return ppu->get_sprite_limit();
 }
 
 unsigned char c_nes::dmc_read(unsigned short address)
@@ -237,7 +237,7 @@ void c_nes::write_byte(unsigned short address, unsigned char value)
     case 4:
         if (address == 0x4014)
         {
-            cpu->do_sprite_dma(ppu->pSpriteMemory.get(), (value & 0xFF) << 8);
+            cpu->do_sprite_dma(ppu->get_sprite_memory(), (value & 0xFF) << 8);
         }
         else if (address == 0x4016)
         {
@@ -389,7 +389,7 @@ int c_nes::reset()
     ppu->mapper = mapper.get();
     
     ppu->apu2 = apu2.get();
-    ppu->limit_sprites = limit_sprites;
+    ppu->set_sprite_limit(limit_sprites);
     mapper->ppu = ppu.get();
     mapper->cpu = cpu.get();
     mapper->apu2 = apu2.get();

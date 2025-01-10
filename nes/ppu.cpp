@@ -5,6 +5,7 @@
 #include "apu2.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
+#undef min
 #include <algorithm>
 #include <immintrin.h>
 
@@ -16,23 +17,19 @@ std::atomic<int> c_ppu::lookup_tables_built = 0;
 
 uint64_t c_ppu::morton_odd_64[256];
 uint64_t c_ppu::morton_even_64[256];
-uint32_t c_ppu::pal[512];
+alignas(64) uint32_t c_ppu::pal[512];
 
 c_ppu::c_ppu()
 {
-    pSpriteMemory = 0;
+    //pSpriteMemory = 0;
     mapper = 0;
     build_lookup_tables();
     limit_sprites = false; //don't change this on reset
+}
 
-    image_palette = std::make_unique_for_overwrite<unsigned char[]>(32);
-    pSpriteMemory = std::make_unique_for_overwrite<unsigned char[]>(256);
-    sprite_buffer = std::make_unique_for_overwrite<unsigned char[]>(256);
-    sprite_memory = std::make_unique_for_overwrite<unsigned char[]>(256);
-    sprite_index_buffer = std::make_unique_for_overwrite<unsigned char[]>(512);
-    index_buffer = std::make_unique_for_overwrite<unsigned char[]>(272);
-    frame_buffer = std::make_unique_for_overwrite<int[]>(256 * 256);
-    p_frame = frame_buffer.get();
+uint8_t *c_ppu::get_sprite_memory()
+{
+    return sprite_memory;
 }
 
 void c_ppu::generate_palette()
@@ -124,12 +121,6 @@ void c_ppu::build_lookup_tables()
     int expected = 0;
     if (lookup_tables_built.compare_exchange_strong(expected, 1))
     {
-        //for (int i = 0; i < 0x400; ++i)
-        //{
-        //    attr_shift_table[i] = ((i >> 4) & 0x04) | (i & 0x02);
-        //    attr_loc[i] = ((i >> 4) & 0x38) | ((i >> 2) & 0x07);
-        //}
-
         for (int i = 0; i < 256; i++)
         {
             __int64 result_64 = 0;
@@ -150,8 +141,6 @@ void c_ppu::build_lookup_tables()
 
 c_ppu::~c_ppu()
 {
-    //if (pSpriteMemory)
-    //    delete[] pSpriteMemory;
 }
 
 INLINE uint64_t c_ppu::interleave_bits_64(unsigned char odd, unsigned char even)
@@ -209,7 +198,7 @@ unsigned char c_ppu::read_byte(int address)
         if (rendering)
         {
             if (current_cycle == 0 || current_cycle >= 320) {
-                return_value = sprite_buffer[0];
+                return_value = sprite_buffer[0].y;
             }
             else if (current_cycle >= 1 || current_cycle <= 64)
                 return_value = 0xFF;
@@ -218,10 +207,10 @@ unsigned char c_ppu::read_byte(int address)
             else if (current_cycle >= 257 || current_cycle <= 320)
                 return_value = 0xFF;
             else
-                return_value = sprite_buffer[0];
+                return_value = sprite_buffer[0].y;
         }
         else
-            return_value = pSpriteMemory[spriteMemAddress & 0xFF];
+            return_value = sprite_memory[spriteMemAddress & 0xFF];
         break;
     }
     case 0x2007:    //PPU Memory Data
@@ -321,7 +310,7 @@ void c_ppu::write_byte(int address, unsigned char value)
     }
     case 0x2004:    //Sprite Memory Data
     {
-        *(pSpriteMemory.get() + spriteMemAddress) = value;
+        *(sprite_memory + spriteMemAddress) = value;
         spriteMemAddress++;
         spriteMemAddress &= 0xFF;
         break;
@@ -425,8 +414,8 @@ void c_ppu::reset()
     control2 = (unsigned char*)&ppuControl2;
     status = (unsigned char*)&ppuStatus;
 
-    memset(pSpriteMemory.get(), 0, 256);
-    memset(frame_buffer.get(), 0, 256 * 256 * sizeof(int));
+    memset(sprite_memory, 0, 256);
+    memset(frame_buffer, 0, sizeof(frame_buffer));
 
     readValue = 0;
     *control1 = 0;
@@ -440,9 +429,9 @@ void c_ppu::reset()
     executed_cycles = 3;
     pattern_address = attribute_address = 0;
 
-    memset(index_buffer.get(), 0xFF, sizeof(index_buffer));
-    memset(image_palette.get(), 0x3F, 32);
-    memset(sprite_buffer.get(), 0, sizeof(sprite_buffer));
+    memset(index_buffer, 0xFF, sizeof(index_buffer));
+    memset(image_palette, 0x3F, 32);
+    memset(sprite_buffer, 0, sizeof(sprite_buffer));
 
     sprites_visible = 0;
     fetch_state = FETCH_IDLE;
@@ -452,63 +441,68 @@ void c_ppu::reset()
     update_rendering = 0;
     next_rendering = 0;
 
-    pixel_pipeline = 0;
     reload_v = 0;
     vid_out = 0;
 }
 
-INLINE void c_ppu::output_pixel()
+INLINE c_ppu::s_bg_out c_ppu::get_bg()
 {
-    int pixel = 0;
-    int bg_index = 0;
+    s_bg_out ret = {0, 0};
 
-    if (ppuControl2.backgroundSwitch && ((current_cycle >= 8 + screen_offset) || ppuControl2.backgroundClipping))
-    {
-        bg_index = index_buffer[current_cycle - screen_offset + fineX];
+    if (ppuControl2.backgroundSwitch && ((current_cycle >= 8 + screen_offset) || ppuControl2.backgroundClipping)) {
+        ret.bg_index = index_buffer[current_cycle - screen_offset + fineX];
     }
 
-    if (bg_index & 0x03)
-    {
-        pixel = image_palette[bg_index];
+    if (ret.bg_index & 0x03) {
+        ret.pixel = image_palette[ret.bg_index];
     }
-    else
-    {
-        pixel = image_palette[0];
+    else {
+        ret.pixel = image_palette[0];
     }
+    return ret;
+}
 
-    if (sprite_count && ppuControl2.spritesVisible && ((current_cycle >= 8 + screen_offset) || ppuControl2.spriteClipping)) [[unlikely]]
-    {
-        int max_sprites = limit_sprites ? 8 : 64;
-        for (int i = 0; i < sprite_count && i < max_sprites; i++)
-        {
-            int sprite_x = sprite_buffer[(i * 4) + 3];
+INLINE int c_ppu::output_pixel_no_sprites()
+{
+    return get_bg().pixel;
+}
 
-            if ((unsigned int)(current_cycle - screen_offset - sprite_x) < 8)
-            {
-                int priority = sprite_buffer[(i * 4) + 2] & 0x20;
-                int sprite_color = sprite_index_buffer[i * 8 + (current_cycle - screen_offset - sprite_x)];
-                if (sprite_color & 0x03)
-                {
-                    if (i == sprite0_index &&
-                        ppuControl2.backgroundSwitch &&
-                        (bg_index & 0x03) != 0 &&
-                        current_cycle < 255 + screen_offset) [[unlikely]] {
-                            ppuStatus.hitFlag = true;
-                            hit = 1;
-                    }
+INLINE int c_ppu::output_pixel()
+{
+    s_bg_out bg_out = get_bg();
+    int pixel = bg_out.pixel;
+    if (sprite_count) {
+        if (sprite_here[current_cycle - screen_offset]) {
+            if (ppuControl2.spritesVisible && ((current_cycle >= 8 + screen_offset) || ppuControl2.spriteClipping)) [[unlikely]] {
+                int max_sprites = limit_sprites ? 8 : 64;
+                int num_sprites = std::min(sprite_count, max_sprites);
+                for (int i = 0; i < num_sprites; i++) {
+                    s_sprite_data sprite_data = sprite_buffer[i];
 
-                        if (!(priority && (bg_index & 0x03))) {
-                            pixel = image_palette[16 + sprite_color];
+                    if ((unsigned int)(current_cycle - screen_offset - sprite_data.x) < 8) {
+                        int priority = sprite_data.attribute & 0x20;
+                        int sprite_color = sprite_index_buffer[i * 8 + (current_cycle - screen_offset - sprite_data.x)];
+                        if (sprite_color & 0x03) {
+                            if (i == sprite0_index && ppuControl2.backgroundSwitch && (bg_out.bg_index & 0x03) != 0 &&
+                                current_cycle < 255 + screen_offset) [[unlikely]] {
+                                ppuStatus.hitFlag = true;
+                                hit = 1;
+                            }
+
+                            if (!(priority && (bg_out.bg_index & 0x03))) {
+                                pixel = image_palette[16 + sprite_color];
+                            }
+                            break;
                         }
-                    break;
+                    }
                 }
             }
         }
     }
-    pixel_pipeline |= (pixel << 16);
+    return pixel;
 }
 
-INLINE void c_ppu::output_blank_pixel()
+INLINE int c_ppu::output_blank_pixel()
 {
     int pixel = 0;
     if ((vramAddress & 0x3F00) == 0x3F00)
@@ -519,7 +513,7 @@ INLINE void c_ppu::output_blank_pixel()
     {
         pixel = image_palette[0];
     }
-    pixel_pipeline |= (pixel << 16);
+    return pixel;
 }
 
 void c_ppu::begin_vblank()
@@ -544,15 +538,11 @@ void c_ppu::end_vblank()
     cpu->clear_nmi();
 }
 
-void c_ppu::do_cycle_events()
+int c_ppu::do_cycle_events()
 {
     switch (current_cycle) {
     case 1:
-        if (current_scanline == 0) [[unlikely]] {
-            p_frame = frame_buffer.get();
-            hit = 0;
-        }
-        else if (current_scanline == 240) [[unlikely]] {
+        if (current_scanline == 240) [[unlikely]] {
             rendering = 0;
         }
         else if (current_scanline == 241) [[unlikely]] {
@@ -609,9 +599,12 @@ void c_ppu::do_cycle_events()
     case 337:
         fetch_state = FETCH_NT;
         break;
+    case 340:
+        return 1;
     default:
         break;
     }
+    return 0;
 }
 
 INLINE void c_ppu::fetch()
@@ -636,16 +629,21 @@ INLINE void c_ppu::fetch()
     case (2 | FETCH_BG): //AT byte 1
         break;
     case (3 | FETCH_BG): //AT byte 2
-        attribute_address = 0x23C0 |
-            (vramAddress & 0xC00) |
-            (((vramAddress >> 4) & 0x38) | ((vramAddress >> 2) & 0x07));
+        #ifdef false
+        //benchmarks show pext to be slower.  ???
+        attribute_address =
+            0x23C0 | (vramAddress & 0xC00) | _pext_u32(vramAddress, 0b0011'1001'1100);
+        #else
+        attribute_address =
+            0x23C0 | (vramAddress & 0xC00) | ((vramAddress >> 4) & 0x38) | ((vramAddress >> 2) & 0x07);
+        #endif
 
+        attribute_shift = ((vramAddress >> 4) & 0x04) | (vramAddress & 0x02);
         #ifdef NES_PPU_USE_SIMD
         //load attribute and store 8 copies of it over 128-bit int
         //only 64-bits are ultimately used
         __m128i t = _mm_set1_epi8(mapper->ppu_read(attribute_address));
-        
-        attribute_shift = ((vramAddress >> 4) & 0x04) | (vramAddress & 0x02);        
+
         //shift all 16 attributes by attribute_shift
         t = _mm_srli_epi64(t, attribute_shift);
         //mask all 16 attributes with 0x3
@@ -656,8 +654,6 @@ INLINE void c_ppu::fetch()
         attribute = _mm_cvtsi128_si64(t);
         #else
         attribute = mapper->ppu_read(attribute_address);
-        //attribute_shift = attr_shift_table[vramAddress & 0x3FF];
-        attribute_shift = ((vramAddress >> 4) & 0x04) | (vramAddress & 0x02);
         attribute >>= attribute_shift;
         attribute &= 0x03;
         attribute *= 0x0404040404040404ULL;
@@ -690,6 +686,7 @@ INLINE void c_ppu::fetch()
 
             if (l >= 336)
                 l -= 336;
+
             uint64_t* ib64 = (uint64_t*)&index_buffer[l];
             uint64_t c = 0;
             
@@ -728,7 +725,7 @@ INLINE void c_ppu::fetch()
         drawingBg = false;
         if (ppuControl1.spriteSize)
         {
-            int sprite_tile = sprite_buffer[(((current_cycle - 261) / 8) * 4) + 1];
+            int sprite_tile = sprite_buffer[(current_cycle - 261) / 8].tile;
             mapper->ppu_read((sprite_tile & 0x1) * 0x1000);
         }
         else
@@ -742,7 +739,7 @@ INLINE void c_ppu::fetch()
         drawingBg = false;
         if (ppuControl1.spriteSize)
         {
-            int sprite_tile = sprite_buffer[(((current_cycle - 261) / 8) * 4) + 1];
+            int sprite_tile = sprite_buffer[(current_cycle - 261) / 8 + 1].tile;
             mapper->ppu_read((sprite_tile & 0x1) * 0x1000);
         }
         else
@@ -777,19 +774,20 @@ INLINE void c_ppu::fetch()
 
 void c_ppu::run_ppu_line()
 {
-    //current_cycle = 0;
     int pixel_count = 0;
-    int done = 0;
+    int last_cycle = 0;
     vid_out = 0;
     reload_v = 0;
-
-
+    int zero_cycle = current_cycle == 0;
+    uint32_t pixel_pipeline = 0;
+    int *const p_frame = (int *const)&frame_buffer[256 * current_scanline];
+    int x = 0;
     while (true)
     {
         cpu->add_cycle();
-        if (current_cycle != 0) [[likely]] {
+        if (!zero_cycle) [[likely]] {
             //handle events that happen on specific cycles
-            do_cycle_events();
+            last_cycle = do_cycle_events();
 
             if (rendering) [[likely]] {
                 if (reload_v) [[unlikely]] {
@@ -798,33 +796,22 @@ void c_ppu::run_ppu_line()
                 fetch();
                 if (on_screen) [[likely]]
                 {
-                    output_pixel();
+                    int pixel = (this->*p_output_pixel)();
+                    pixel_pipeline |= (pixel << 16);
                 }
             }
             else if (on_screen) //if on screen and rendering disabled
             {
-                output_blank_pixel();
+                int pixel = output_blank_pixel();
+                pixel_pipeline |= (pixel << 16);
             }
-
-            if (current_cycle == 340) [[unlikely]]
-            {
-                if (current_scanline == 261) [[unlikely]]
-                {
-                    current_scanline = 0;
-                    warmed_up = 1;
-                    current_cycle = (rendering && odd_frame) ? 1 : 0;
-                    odd_frame ^= 1;
-                }
-                else {
-                    current_cycle = 0;
-                    current_scanline++;
-                }
-                done = 1;
-            }
-        };
+        }
+        zero_cycle = 0;
 
         if (vid_out) [[likely]] {
-            *p_frame++ = pal[(pixel_pipeline & palette_mask) | intensity];
+            int pal_index = (pixel_pipeline & palette_mask) | intensity;
+            int pixel = pal[pal_index];
+            p_frame[x++] = pixel;
         }
         pixel_pipeline >>= 8;
         //Battletoads will enable rendering at cycle 255 and break sprite 0 hit (because vertical update happens on cycle 256 and misaligns the background).
@@ -867,7 +854,18 @@ void c_ppu::run_ppu_line()
             apu2->clock_once();
             executed_cycles = 3;
         };
-        if (done) {
+        if (last_cycle) {
+            if (current_scanline == 261) [[unlikely]]
+            {
+                current_scanline = 0;
+                warmed_up = 1;
+                current_cycle = (rendering && odd_frame) ? 1 : 0;
+                odd_frame ^= 1;
+            }
+            else {
+                current_cycle = 0;
+                current_scanline++;
+            }
             return;
         }
         current_cycle++;
@@ -887,38 +885,39 @@ int c_ppu::get_sprite_size()
     return (int)ppuControl1.spriteSize;
 }
 
-int c_ppu::eval_sprites()
+void c_ppu::eval_sprites()
 {
     if (!rendering)
-        return -1;
+        return;
+    sprite_here.reset();
     drawingBg = false;
     mapper->in_sprite_eval = 1;
     int max_sprites = limit_sprites ? 8 : 64;
     int sprite0_x = -1;
     sprite0_index = -1;
     sprite_count = 0;
-    memset(sprite_buffer.get(), 0xFF, sizeof(sprite_buffer));
+    memset(sprite_buffer, 0xFF, sizeof(sprite_buffer));
     int sprite_line = current_scanline;
     for (int i = 0; i < 64/* && sprite_count < max_sprites*/; i++)
     {
         int sprite_offset = i * 4;
-        int y = *(pSpriteMemory.get() + sprite_offset) + 1;
+        s_sprite_data sprite_data = *(s_sprite_data*)(sprite_memory + sprite_offset);
+
+        int y = sprite_data.y + 1;
+       
         int sprite_height = 8 << (int)ppuControl1.spriteSize;
         if (((sprite_line) >= y) && ((sprite_line) < (y + sprite_height)))
         {
             if (i == 0)
             {
-                sprite0_x = *(pSpriteMemory.get() + sprite_offset + 3);
                 sprite0_index = sprite_count;
             }
-            memcpy(&sprite_buffer[sprite_count * 4], pSpriteMemory.get() + sprite_offset, 4);
+            //memcpy(&sprite_buffer[sprite_count * 4], sprite_memory + sprite_offset, 4);
+            sprite_buffer[sprite_count] = sprite_data;
 
-
-            int sprite_tile = *(pSpriteMemory.get() + sprite_offset + 1);
             int sprite_y = (sprite_line)-y;
-            int sprite_attribute = *(pSpriteMemory.get() + sprite_offset + 2);
 
-            if (sprite_attribute & 0x80)
+            if (sprite_data.attribute & 0x80)
             {
                 sprite_y = (sprite_height - 1) - sprite_y;
             }
@@ -927,41 +926,64 @@ int c_ppu::eval_sprites()
 
             if (sprite_height == 16)
             {
-                sprite_address = ((sprite_tile & 0xFE) * 16) + (sprite_y & 0x07) + ((sprite_tile & 0x01) * 0x1000);
+                sprite_address = ((sprite_data.tile & 0xFE) * 16) + (sprite_y & 0x07) + ((sprite_data.tile & 0x01) * 0x1000);
                 if (sprite_y > 7) sprite_address += 16;
             }
             else
-                sprite_address = (sprite_tile * 16) + (sprite_y & 0x07) + (ppuControl1.spritePatternTableAddress * 0x1000);
+                sprite_address = (sprite_data.tile * 16) + (sprite_y & 0x07) + (ppuControl1.spritePatternTableAddress * 0x1000);
 
-            int attr = ((sprite_attribute & 0x03) << 2) * 0x01010101;
-            int* p1 = (int*)morton_odd_64 + (uint64_t)mapper->ppu_read(sprite_address) * 2;
-            int* p2 = (int*)morton_even_64 + (uint64_t)mapper->ppu_read(sprite_address + 8) * 2;
+            #ifdef NES_PPU_USE_SIMD
+            uint64_t attr = (((uint64_t)sprite_data.attribute & 0x03) << 2) * 0x0101010101010101;
+            uint64_t p1 = _pdep_u64(mapper->ppu_read(sprite_address),
+                                      0b00000001'00000001'00000001'00000001'00000001'00000001'00000001'00000001);
+            uint64_t p2 = _pdep_u64(mapper->ppu_read(sprite_address + 8),
+                                      0b00000010'00000010'00000010'00000010'00000010'00000010'00000010'00000010);
+            uint64_t c = p1 | p2 | attr;
+            if (!(sprite_data.attribute & 0x40)) {
+                c = _byteswap_uint64(c);
+            }
+            *(uint64_t *)&sprite_index_buffer[sprite_count * 8] = c;
+            #else
+            int attr = ((sprite_data.attribute & 0x03) << 2) * 0x01010101;
+            int *p1 = (int *)morton_odd_64 + (uint64_t)mapper->ppu_read(sprite_address) * 2;
+            int *p2 = (int *)morton_even_64 + (uint64_t)mapper->ppu_read(sprite_address + 8) * 2;
+            int p[2] = {*p1++ | *p2++ | attr, *p1 | *p2 | attr};
 
-            int p[2] = { *p1++ | *p2++ | attr, *p1 | *p2 | attr };
-
-            if (sprite_attribute & 0x40)
-            {
-                unsigned char* sb = &sprite_index_buffer[sprite_count * 8];
-                unsigned char* pc = (unsigned char*)p + 7;
+            if (sprite_data.attribute & 0x40) {
+                unsigned char *sb = &sprite_index_buffer[sprite_count * 8];
+                unsigned char *pc = (unsigned char *)p + 7;
                 for (int j = 0; j < 8; j++)
                     *sb++ = *pc--;
             }
-            else
-            {
-                int* sb = (int*)&sprite_index_buffer[sprite_count * 8];
+            else {
+                int *sb = (int *)&sprite_index_buffer[sprite_count * 8];
                 for (int j = 0; j < 2; j++)
                     *sb++ = p[j];
             }
+            #endif
 
             sprite_count++;
             if (sprite_count == 9)
                 ppuStatus.spriteCount = true;
         }
     }
+    for (int i = 0; i < sprite_count; i++) {
+        //int xx = sprite_buffer[i * 4 + 3];
+        int xx = sprite_buffer[i].x;
+        for (int x = 0; x < 8; x++) {
+            int loc = xx + x;
+            sprite_here.set(loc & 0xFF);
+        }
+    }
     mapper->in_sprite_eval = 0;
     if (current_scanline == 261)
         sprite_count = 0;
-    return sprite0_x;
+    if (sprite_count) {
+        p_output_pixel = &c_ppu::output_pixel;
+    }
+    else {
+        p_output_pixel = &c_ppu::output_pixel_no_sprites;
+    }
 }
 
 void c_ppu::update_vram_address()
