@@ -311,7 +311,7 @@ unsigned char c_mapper5::ppu_read(unsigned short address)
     //this needs to be changed (to 42) once sprite evaluation is done properly.
     int tt = (htile + 2) % 34;
 
-    if ((address & 0x23FF) >= 0x23C0 && exram_mode == 1 && ppu->drawingBg)
+    if ((address & 0x23FF) >= 0x23C0 && exram_mode == 1 && ppu->drawing_bg)
     {
         int attr = (exram[last_tile] >> 6) & 0x03;
         attr |= attr << 2;
@@ -393,7 +393,7 @@ unsigned char c_mapper5::ReadChrRom(unsigned short address)
 
     if (ppu->get_sprite_size())
     {
-        if (ppu->drawingBg)
+        if (ppu->drawing_bg)
         {
             if (exram_mode == 1)
             {
@@ -411,7 +411,7 @@ unsigned char c_mapper5::ReadChrRom(unsigned short address)
     }
     else
     {
-        if (ppu->drawingBg)
+        if (ppu->drawing_bg)
         {
             if (exram_mode == 1)
             {

@@ -67,7 +67,7 @@ protected:
     void set_mirroring(int mode);
     int mirroring_mode;
 
-    unsigned char vram[4096];
+    alignas(64) unsigned char vram[4096];
     unsigned char *name_table[8];
 
     std::unique_ptr<unsigned char[]> sram;

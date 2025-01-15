@@ -5,7 +5,10 @@
 #include <immintrin.h>
 #include <bitset>
 #include <array>
-#define NES_PPU_USE_SIMD
+
+#define NES_PPU_USE_SSE2
+#define NES_PPU_USE_BMI2
+#define NES_PPU_USE_AVX2
 
 class c_ppu
 {
@@ -21,14 +24,13 @@ public:
     int *get_frame_buffer() { return (int*)frame_buffer; }
     bool get_sprite_limit() { return limit_sprites; }
     void set_sprite_limit(bool limit) { limit_sprites = limit; }
+    uint8_t *get_sprite_memory();
 
     c_mapper *mapper;
     c_cpu *cpu;
     c_apu *apu;
     c_apu2 *apu2;
-
-    uint8_t *get_sprite_memory();
-    int drawingBg;
+    int drawing_bg;
 
 private:
     void inc_horizontal_address();
@@ -64,19 +66,19 @@ private:
     static const int screen_offset = 2;
     unsigned int current_cycle;
     int current_scanline;
-    int sprites_visible;
     int warmed_up;
-    int spriteMemAddress;
+    int sprite_mem_address;
     static std::atomic<int> lookup_tables_built;
     int fetch_state;
     int on_screen;
-    unsigned char readValue;
+    unsigned char read_value;
     bool hi;
     bool nmi_pending;
-    int vramAddress, vramAddressLatch, fineX;
-    int addressIncrement;
+    int vram_address;
+    int vram_address_latch;
+    int fine_x;
+    int address_increment;
     
-    unsigned char* control1, * control2, * status;
     int update_rendering;
     int next_rendering;
     int hit;
@@ -85,20 +87,14 @@ private:
     int intensity;
     int sprite_count;
     int sprite0_index;
-    int end_cycle;
     int rendering;
     
     int tile;
     int pattern_address;
     int attribute_address;
     
-    #ifdef NES_PPU_USE_SIMD
     uint64_t pattern1;
     uint64_t pattern2;
-    #else
-    uint32_t pattern1;
-    uint32_t pattern2;
-    #endif
     uint64_t attribute;
     int executed_cycles;
     int palette_mask; //for monochrome display
@@ -112,33 +108,48 @@ private:
         FETCH_IDLE = 3 << 3
     };
     bool limit_sprites;
-    struct
-    {
-        unsigned char nameTable : 2;
-        bool verticalWrite : 1;
-        bool spritePatternTableAddress : 1;
-        bool screenPatternTableAddress : 1;
-        bool spriteSize : 1;
-        bool hitSwitch : 1;
-        bool vBlankNmi : 1;
-    } ppuControl1;
-    struct
-    {
-        unsigned char unknown : 1;
-        bool backgroundClipping : 1;
-        bool spriteClipping : 1;
-        bool backgroundSwitch : 1;
-        bool spritesVisible : 1;
-        unsigned char unknown2 : 3;
-    } ppuControl2;
-    struct
-    {
-        unsigned char unknown : 4;
-        bool vramWrite : 1;
-        bool spriteCount : 1;
-        bool hitFlag : 1;
-        bool vBlank : 1;
-    } ppuStatus;
+    union {
+        struct
+        {
+            unsigned char nt_base : 2;
+            bool address_increment : 1;
+            bool sprite_pt_address : 1;
+            bool bg_pt_address : 1;
+            bool sprite_size : 1;
+            bool master_slave_select : 1;
+            bool nmi_enable : 1;
+        };
+        unsigned char value;
+    } PPUCTRL;
+    union {
+        struct
+        {
+            unsigned char greyscale : 1;
+            bool left_bg_enable : 1;
+            bool left_sprite_enable : 1;
+            bool enable_bg : 1;
+            bool enable_sprites : 1;
+            bool red_emphasis : 1;
+            bool green_emphasis : 1;
+            bool blue_emphasis : 1;
+        };
+        struct
+        {
+            unsigned char : 5;
+            unsigned char emphasis : 3;
+        };
+        unsigned char value;
+    } PPUMASK;
+    union {
+        struct
+        {
+            unsigned char : 5;
+            bool sprite_overflow : 1;
+            bool sprite0_hit : 1;
+            bool in_vblank : 1;
+        };
+        unsigned char value;
+    } PPUSTATUS;
     struct s_sprite_data
     {
         uint8_t y;

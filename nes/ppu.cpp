@@ -147,6 +147,7 @@ INLINE uint64_t c_ppu::interleave_bits_64(unsigned char odd, unsigned char even)
 {
     return morton_odd_64[odd] | morton_even_64[even];
 }
+
 unsigned char c_ppu::read_byte(int address)
 {
     unsigned char return_value = 0;
@@ -154,18 +155,18 @@ unsigned char c_ppu::read_byte(int address)
     {
     case 0x2000:    //PPU Control Register 1
     {
-        return_value = *control1;
+        return_value = PPUCTRL.value;
         break;
     }
     case 0x2001:    //PPU Control Register 2
     {
-        return_value = *control2;
+        return_value = PPUMASK.value;
         break;
     }
     case 0x2002:    //PPU Status Register
     {
         hi = false;
-        unsigned char temp = *status;
+        unsigned char temp = PPUSTATUS.value;
         if (current_scanline == 241) {
             switch (current_cycle) {
             case 1:
@@ -182,8 +183,8 @@ unsigned char c_ppu::read_byte(int address)
                 break;
             }
         }
-        ppuStatus.vBlank = false;
-        return_value = (unsigned char)((temp & 0xE0) | (vramAddressLatch & 0x1F));
+        PPUSTATUS.in_vblank = false;
+        return_value = (unsigned char)((temp & 0xE0) | (vram_address_latch & 0x1F));
 
         break;
     }
@@ -210,18 +211,18 @@ unsigned char c_ppu::read_byte(int address)
                 return_value = sprite_buffer[0].y;
         }
         else
-            return_value = sprite_memory[spriteMemAddress & 0xFF];
+            return_value = sprite_memory[sprite_mem_address & 0xFF];
         break;
     }
     case 0x2007:    //PPU Memory Data
     {
-        unsigned char temp = readValue;
+        unsigned char temp = read_value;
         if (!rendering)
-            readValue = mapper->ppu_read(vramAddress);
+            read_value = mapper->ppu_read(vram_address);
 
         //palette reads are returned immediately
-        if ((vramAddress & 0x3FFF) >= 0x3F00)
-            temp = image_palette[vramAddress & 0x1F];
+        if ((vram_address & 0x3FFF) >= 0x3F00)
+            temp = image_palette[vram_address & 0x1F];
 
 
         update_vram_address();
@@ -237,10 +238,10 @@ unsigned char c_ppu::read_byte(int address)
 
 void c_ppu::inc_horizontal_address()
 {
-    if ((vramAddress & 0x1F) == 0x1F)
-        vramAddress ^= 0x41F;
+    if ((vram_address & 0x1F) == 0x1F)
+        vram_address ^= 0x41F;
     else
-        vramAddress++;
+        vram_address++;
 }
 
 void c_ppu::write_byte(int address, unsigned char value)
@@ -251,30 +252,29 @@ void c_ppu::write_byte(int address, unsigned char value)
     {
         //if nmi enabled is false and incoming value enables it
         //AND if currently in NMI, then execute_nmi
-        if (!(*control1 & 0x80) && (value & 0x80) && ppuStatus.vBlank)
+        if (!(PPUCTRL.nmi_enable) && (value & 0x80) && PPUSTATUS.in_vblank)
             cpu->execute_nmi();
-        if (current_scanline == 261 && (*control1 & 0x80) && current_cycle < 4) {
+        if (current_scanline == 261 && (PPUCTRL.nmi_enable) && current_cycle < 4) {
             cpu->clear_nmi();
         }
 
-        *control1 = value;
-        if (ppuControl1.verticalWrite)
+        PPUCTRL.value = value;
+        if (PPUCTRL.address_increment)
         {
-            addressIncrement = 32;
+            address_increment = 32;
         }
         else
         {
-            addressIncrement = 1;
+            address_increment = 1;
         }
-        vramAddressLatch &= 0x73FF;
-        vramAddressLatch |= ((value & 3) << 10);
+        vram_address_latch &= 0x73FF;
+        vram_address_latch |= ((value & 3) << 10);
         break;
     }
     case 0x2001:    //PPU Control Register 2
     {
-        *control2 = value;
-        sprites_visible = ppuControl2.spritesVisible;
-        if ((value & 0x18) && (current_scanline < 240 || current_scanline == 261)) {
+        PPUMASK.value = value;
+        if ((PPUMASK.enable_bg || PPUMASK.enable_sprites) && (current_scanline < 240 || current_scanline == 261)) {
             next_rendering = 1;
             //Battletoads debugging
             //char x[256];
@@ -288,46 +288,40 @@ void c_ppu::write_byte(int address, unsigned char value)
             update_rendering = 1;
         }
 
-        if (value & 0x01)
-        {
-            palette_mask = 0x30;
-        }
-        else
-            palette_mask = 0xFF;
-        intensity = (value & 0xE0) << 1;
+        palette_mask = PPUMASK.greyscale ? 0x30 : 0xFF;
+        intensity = PPUMASK.emphasis << 6;
         break;
     }
     case 0x2002:    //PPU Status Register
     {
-        //*status = value;
         int x = 1;
         break;
     }
     case 0x2003:    //Sprite Memory Address
     {
-        spriteMemAddress = value;
+        sprite_mem_address = value;
         break;
     }
     case 0x2004:    //Sprite Memory Data
     {
-        *(sprite_memory + spriteMemAddress) = value;
-        spriteMemAddress++;
-        spriteMemAddress &= 0xFF;
+        *(sprite_memory + sprite_mem_address) = value;
+        sprite_mem_address++;
+        sprite_mem_address &= 0xFF;
         break;
     }
     case 0x2005:    //Background Scroll
     {
         if (!hi)
         {
-            vramAddressLatch &= 0x7FE0;
-            vramAddressLatch |= ((value & 0xF8) >> 3);
-            fineX = (value & 0x07);
+            vram_address_latch &= 0x7FE0;
+            vram_address_latch |= ((value & 0xF8) >> 3);
+            fine_x = (value & 0x07);
         }
         else
         {
-            vramAddressLatch &= 0x0C1F;
-            vramAddressLatch |= ((value & 0xF8) << 2);
-            vramAddressLatch |= ((value & 0x07) << 12);
+            vram_address_latch &= 0x0C1F;
+            vram_address_latch |= ((value & 0xF8) << 2);
+            vram_address_latch |= ((value & 0x07) << 12);
         }
         hi = !hi;
         break;
@@ -336,13 +330,13 @@ void c_ppu::write_byte(int address, unsigned char value)
     {
         if (!hi)
         {
-            vramAddressLatch &= 0x00FF;
-            vramAddressLatch |= ((value & 0x3F) << 8);
+            vram_address_latch &= 0x00FF;
+            vram_address_latch |= ((value & 0x3F) << 8);
         }
         else
         {
-            vramAddressLatch &= 0x7F00;
-            vramAddressLatch |= value;
+            vram_address_latch &= 0x7F00;
+            vram_address_latch |= value;
             vram_update_delay = VRAM_UPDATE_DELAY;
         }
         hi = !hi;
@@ -350,23 +344,23 @@ void c_ppu::write_byte(int address, unsigned char value)
     }
     case 0x2007:    //PPU Memory Data
     {
-        if ((vramAddress & 0x3F00) == 0x3F00)
+        if ((vram_address & 0x3F00) == 0x3F00)
         {
             if (!rendering) {
-                int pal_address = vramAddress & 0x1F;
+                int pal_address = vram_address & 0x1F;
                 value &= 0x3F;
                 image_palette[pal_address] = value;
                 if (!(pal_address & 0x03))
                 {
                     image_palette[pal_address ^ 0x10] = value;
                 }
-                mapper->ppu_read(vramAddress);
+                mapper->ppu_read(vram_address);
             }
         }
         else
         {
             if (!rendering) {
-                mapper->ppu_write(vramAddress, value);
+                mapper->ppu_write(vram_address, value);
             }
         }
         update_vram_address();
@@ -377,25 +371,24 @@ void c_ppu::write_byte(int address, unsigned char value)
 
 void c_ppu::inc_vertical_address()
 {
-
-    if ((vramAddress & 0x7000) == 0x7000)
+    if ((vram_address & 0x7000) == 0x7000)
     {
-        int t = vramAddress & 0x3E0;
-        vramAddress &= 0xFFF;
+        int t = vram_address & 0x3E0;
+        vram_address &= 0xFFF;
         switch (t)
         {
         case 0x3A0:
-            vramAddress ^= 0xBA0;
+            vram_address ^= 0xBA0;
             break;
         case 0x3E0:
-            vramAddress ^= 0x3E0;
+            vram_address ^= 0x3E0;
             break;
         default:
-            vramAddress += 0x20;
+            vram_address += 0x20;
         }
     }
     else
-        vramAddress += 0x1000;
+        vram_address += 0x1000;
 }
 
 void c_ppu::reset()
@@ -410,30 +403,26 @@ void c_ppu::reset()
     rendering = 0;
     pattern_address = attribute_address = 0;
     on_screen = 0;
-    control1 = (unsigned char*)&ppuControl1;
-    control2 = (unsigned char*)&ppuControl2;
-    status = (unsigned char*)&ppuStatus;
 
-    memset(sprite_memory, 0, 256);
+    memset(sprite_memory, 0, sizeof(sprite_memory));
     memset(frame_buffer, 0, sizeof(frame_buffer));
 
-    readValue = 0;
-    *control1 = 0;
-    *control2 = 0;
-    *status = 0;
+    read_value = 0;
+    PPUCTRL.value = 0;
+    PPUMASK.value = 0;
+    PPUSTATUS.value = 0;
     hi = false;
-    spriteMemAddress = 0;
-    addressIncrement = 1;
-    vramAddress = vramAddressLatch = fineX = 0;
-    drawingBg = 0;
+    sprite_mem_address = 0;
+    address_increment = 1;
+    vram_address = vram_address_latch = fine_x = 0;
+    drawing_bg = 0;
     executed_cycles = 3;
     pattern_address = attribute_address = 0;
 
     memset(index_buffer, 0xFF, sizeof(index_buffer));
-    memset(image_palette, 0x3F, 32);
+    memset(image_palette, 0x3F, sizeof(image_palette));
     memset(sprite_buffer, 0, sizeof(sprite_buffer));
 
-    sprites_visible = 0;
     fetch_state = FETCH_IDLE;
     vram_update_delay = 0;
     suppress_nmi = 0;
@@ -449,8 +438,8 @@ INLINE c_ppu::s_bg_out c_ppu::get_bg()
 {
     s_bg_out ret = {0, 0};
 
-    if (ppuControl2.backgroundSwitch && ((current_cycle >= 8 + screen_offset) || ppuControl2.backgroundClipping)) {
-        ret.bg_index = index_buffer[current_cycle - screen_offset + fineX];
+    if (PPUMASK.enable_bg && ((current_cycle >= 8 + screen_offset) || PPUMASK.left_bg_enable)) {
+        ret.bg_index = index_buffer[current_cycle - screen_offset + fine_x];
     }
 
     if (ret.bg_index & 0x03) {
@@ -473,7 +462,7 @@ INLINE int c_ppu::output_pixel()
     int pixel = bg_out.pixel;
     if (sprite_count) {
         if (sprite_here[current_cycle - screen_offset]) {
-            if (ppuControl2.spritesVisible && ((current_cycle >= 8 + screen_offset) || ppuControl2.spriteClipping)) [[unlikely]] {
+            if (PPUMASK.enable_sprites && ((current_cycle >= 8 + screen_offset) || PPUMASK.left_sprite_enable)) [[unlikely]] {
                 int max_sprites = limit_sprites ? 8 : 64;
                 int num_sprites = std::min(sprite_count, max_sprites);
                 for (int i = 0; i < num_sprites; i++) {
@@ -483,9 +472,9 @@ INLINE int c_ppu::output_pixel()
                         int priority = sprite_data.attribute & 0x20;
                         int sprite_color = sprite_index_buffer[i * 8 + (current_cycle - screen_offset - sprite_data.x)];
                         if (sprite_color & 0x03) {
-                            if (i == sprite0_index && ppuControl2.backgroundSwitch && (bg_out.bg_index & 0x03) != 0 &&
+                            if (i == sprite0_index && PPUMASK.enable_bg && (bg_out.bg_index & 0x03) != 0 &&
                                 current_cycle < 255 + screen_offset) [[unlikely]] {
-                                ppuStatus.hitFlag = true;
+                                PPUSTATUS.sprite0_hit = true;
                                 hit = 1;
                             }
 
@@ -505,9 +494,9 @@ INLINE int c_ppu::output_pixel()
 INLINE int c_ppu::output_blank_pixel()
 {
     int pixel = 0;
-    if ((vramAddress & 0x3F00) == 0x3F00)
+    if ((vram_address & 0x3F00) == 0x3F00)
     {
-        pixel = image_palette[vramAddress & 0x1F];
+        pixel = image_palette[vram_address & 0x1F];
     }
     else
     {
@@ -520,13 +509,13 @@ void c_ppu::begin_vblank()
 {
     if (warmed_up) {
         if (!suppress_nmi) {
-            ppuStatus.vBlank = true;
-            if (ppuControl1.vBlankNmi) {
+            PPUSTATUS.in_vblank = true;
+            if (PPUCTRL.nmi_enable) {
                 cpu->execute_nmi();
             }
         }
         else {
-            ppuStatus.vBlank = false;
+            PPUSTATUS.in_vblank = false;
         }
     }
     suppress_nmi = 0;
@@ -534,7 +523,7 @@ void c_ppu::begin_vblank()
 
 void c_ppu::end_vblank()
 {
-    ppuStatus.vBlank = false;
+    PPUSTATUS.in_vblank = false;
     cpu->clear_nmi();
 }
 
@@ -550,9 +539,8 @@ int c_ppu::do_cycle_events()
         }
         else if (current_scanline == 261) [[unlikely]] {
             rendering = drawing_enabled();
-            ppuStatus.spriteCount = false;
-            //ppuStatus.vBlank = false;
-            ppuStatus.hitFlag = false;
+            PPUSTATUS.sprite_overflow = false;
+            PPUSTATUS.sprite0_hit = false;
         }
         fetch_state = FETCH_BG;
         break;
@@ -615,14 +603,14 @@ INLINE void c_ppu::fetch()
     case (0 | FETCH_BG): //NT byte 1
         break;
     case (1 | FETCH_BG): //NT byte 2
-        drawingBg = true;
-        tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
-        #ifdef NES_PPU_USE_SIMD
+        drawing_bg = true;
+        tile = mapper->ppu_read(0x2000 | (vram_address & 0xFFF));
+        #ifdef NES_PPU_USE_AVX2
         pattern_address =
-            (tile << 4) + _bextr_u32(vramAddress, 12, 3) + (ppuControl1.screenPatternTableAddress * 0x1000);
+            (tile << 4) + _bextr_u32(vram_address, 12, 3) + (PPUCTRL.bg_pt_address * 0x1000);
         #else
         pattern_address =
-            (tile << 4) + ((vramAddress & 0x7000) >> 12) + (ppuControl1.screenPatternTableAddress * 0x1000);
+            (tile << 4) + ((vram_address & 0x7000) >> 12) + (PPUCTRL.bg_pt_address * 0x1000);
         #endif
         break;
 
@@ -632,14 +620,14 @@ INLINE void c_ppu::fetch()
         #ifdef false
         //benchmarks show pext to be slower.  ???
         attribute_address =
-            0x23C0 | (vramAddress & 0xC00) | _pext_u32(vramAddress, 0b0011'1001'1100);
+            0x23C0 | (vram_address & 0xC00) | _pext_u32(vram_address, 0b0011'1001'1100);
         #else
         attribute_address =
-            0x23C0 | (vramAddress & 0xC00) | ((vramAddress >> 4) & 0x38) | ((vramAddress >> 2) & 0x07);
+            0x23C0 | (vram_address & 0xC00) | ((vram_address >> 4) & 0x38) | ((vram_address >> 2) & 0x07);
         #endif
 
-        attribute_shift = ((vramAddress >> 4) & 0x04) | (vramAddress & 0x02);
-        #ifdef NES_PPU_USE_SIMD
+        attribute_shift = ((vram_address >> 4) & 0x04) | (vram_address & 0x02);
+        #ifdef NES_PPU_USE_SSE2
         //load attribute and store 8 copies of it over 128-bit int
         //only 64-bits are ultimately used
         __m128i t = _mm_set1_epi8(mapper->ppu_read(attribute_address));
@@ -662,8 +650,8 @@ INLINE void c_ppu::fetch()
     case (4 | FETCH_BG): //Low BG byte 1
         break;
     case (5 | FETCH_BG): //Low BG byte 2
-        drawingBg = true;
-        #ifdef NES_PPU_USE_SIMD
+        drawing_bg = true;
+        #ifdef NES_PPU_USE_BMI2
         pattern1 = _pdep_u64(mapper->ppu_read(pattern_address),
                              0b00000001'00000001'00000001'00000001'00000001'00000001'00000001'00000001);
         #else
@@ -673,8 +661,8 @@ INLINE void c_ppu::fetch()
     case (6 | FETCH_BG): //High BG byte 1
         break;
     case (7 | FETCH_BG): //High BG byte 2
-        drawingBg = true;
-        #ifdef NES_PPU_USE_SIMD
+        drawing_bg = true;
+        #ifdef NES_PPU_USE_BMI2
         pattern2 = _pdep_u64(mapper->ppu_read(pattern_address + 8),
                              0b00000010'00000010'00000010'00000010'00000010'00000010'00000010'00000010);
         #else
@@ -691,7 +679,7 @@ INLINE void c_ppu::fetch()
             uint64_t c = 0;
             
             //pdep is slow on amd platforms < zen 3.  The lookup table approach should probably be default.
-            #ifdef NES_PPU_USE_SIMD
+            #ifdef NES_PPU_USE_BMI2
             c = pattern1 | pattern2 | attribute;
             c = _byteswap_uint64(c);
             #else
@@ -708,43 +696,43 @@ INLINE void c_ppu::fetch()
         //Sprite fetch phase cycles 257-320
     case (0 | FETCH_SPRITE):
         if (current_cycle == 257) { //reload h
-            vramAddress = (vramAddress & ~0x41F) | (vramAddressLatch & 0x41F);
+            vram_address = (vram_address & ~0x41F) | (vram_address_latch & 0x41F);
         }
         break;
     case (1 | FETCH_SPRITE):
-        //tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
+        //tile = mapper->ppu_read(0x2000 | (vram_address & 0xFFF));
         break;
     case (2 | FETCH_SPRITE):
         break;
     case (3 | FETCH_SPRITE):
-        //tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
+        //tile = mapper->ppu_read(0x2000 | (vram_address & 0xFFF));
         break;
     case (4 | FETCH_SPRITE):
         break;
     case (5 | FETCH_SPRITE):
-        drawingBg = false;
-        if (ppuControl1.spriteSize)
+        drawing_bg = false;
+        if (PPUCTRL.sprite_size)
         {
             int sprite_tile = sprite_buffer[(current_cycle - 261) / 8].tile;
             mapper->ppu_read((sprite_tile & 0x1) * 0x1000);
         }
         else
         {
-            mapper->ppu_read(ppuControl1.spritePatternTableAddress * 0x1000);
+            mapper->ppu_read(PPUCTRL.sprite_pt_address * 0x1000);
         }
         break;
     case (6 | FETCH_SPRITE):
         break;
     case (7 | FETCH_SPRITE):
-        drawingBg = false;
-        if (ppuControl1.spriteSize)
+        drawing_bg = false;
+        if (PPUCTRL.sprite_size)
         {
             int sprite_tile = sprite_buffer[(current_cycle - 261) / 8 + 1].tile;
             mapper->ppu_read((sprite_tile & 0x1) * 0x1000);
         }
         else
         {
-            mapper->ppu_read(ppuControl1.spritePatternTableAddress * 0x1000);
+            mapper->ppu_read(PPUCTRL.sprite_pt_address * 0x1000);
         }
         break;
 
@@ -752,12 +740,12 @@ INLINE void c_ppu::fetch()
     case (0 | FETCH_NT):
         break;
     case (1 | FETCH_NT):
-        tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
+        tile = mapper->ppu_read(0x2000 | (vram_address & 0xFFF));
         break;
     case (2 | FETCH_NT):
         break;
     case (3 | FETCH_NT):
-        tile = mapper->ppu_read(0x2000 | (vramAddress & 0xFFF));
+        tile = mapper->ppu_read(0x2000 | (vram_address & 0xFFF));
         break;
     case (4 | FETCH_NT):
         break;
@@ -791,7 +779,7 @@ void c_ppu::run_ppu_line()
 
             if (rendering) [[likely]] {
                 if (reload_v) [[unlikely]] {
-                    vramAddress = (vramAddress & ~0x7BE0) | (vramAddressLatch & 0x7BE0);
+                    vram_address = (vram_address & ~0x7BE0) | (vram_address_latch & 0x7BE0);
                 }
                 fetch();
                 if (on_screen) [[likely]]
@@ -838,10 +826,10 @@ void c_ppu::run_ppu_line()
         if (vram_update_delay > 0) [[unlikely]] {
             vram_update_delay--;
             if (vram_update_delay == 0) {
-                vramAddress = vramAddressLatch;
+                vram_address = vram_address_latch;
                 if (!rendering)
                 {
-                    mapper->ppu_read(vramAddress);
+                    mapper->ppu_read(vram_address);
                 }
             }
         }
@@ -874,7 +862,7 @@ void c_ppu::run_ppu_line()
 
 bool c_ppu::drawing_enabled()
 {
-    if (ppuControl2.backgroundSwitch || ppuControl2.spritesVisible)
+    if (PPUMASK.enable_bg || PPUMASK.enable_sprites)
         return true;
     else
         return false;
@@ -882,7 +870,7 @@ bool c_ppu::drawing_enabled()
 
 int c_ppu::get_sprite_size()
 {
-    return (int)ppuControl1.spriteSize;
+    return (int)PPUCTRL.sprite_size;
 }
 
 void c_ppu::eval_sprites()
@@ -890,7 +878,7 @@ void c_ppu::eval_sprites()
     if (!rendering)
         return;
     sprite_here.reset();
-    drawingBg = false;
+    drawing_bg = false;
     mapper->in_sprite_eval = 1;
     int max_sprites = limit_sprites ? 8 : 64;
     int sprite0_x = -1;
@@ -905,7 +893,7 @@ void c_ppu::eval_sprites()
 
         int y = sprite_data.y + 1;
        
-        int sprite_height = 8 << (int)ppuControl1.spriteSize;
+        int sprite_height = 8 << (int)PPUCTRL.sprite_size;
         if (((sprite_line) >= y) && ((sprite_line) < (y + sprite_height)))
         {
             if (i == 0)
@@ -930,9 +918,9 @@ void c_ppu::eval_sprites()
                 if (sprite_y > 7) sprite_address += 16;
             }
             else
-                sprite_address = (sprite_data.tile * 16) + (sprite_y & 0x07) + (ppuControl1.spritePatternTableAddress * 0x1000);
+                sprite_address = (sprite_data.tile * 16) + (sprite_y & 0x07) + (PPUCTRL.sprite_pt_address * 0x1000);
 
-            #ifdef NES_PPU_USE_SIMD
+            #ifdef NES_PPU_USE_BMI2
             uint64_t attr = (((uint64_t)sprite_data.attribute & 0x03) << 2) * 0x0101010101010101;
             uint64_t p1 = _pdep_u64(mapper->ppu_read(sprite_address),
                                       0b00000001'00000001'00000001'00000001'00000001'00000001'00000001'00000001);
@@ -964,7 +952,7 @@ void c_ppu::eval_sprites()
 
             sprite_count++;
             if (sprite_count == 9)
-                ppuStatus.spriteCount = true;
+                PPUSTATUS.sprite_overflow = true;
         }
     }
     for (int i = 0; i < sprite_count; i++) {
@@ -996,7 +984,7 @@ void c_ppu::update_vram_address()
     else
     {
         //update bus when not rendering
-        vramAddress = (vramAddress + addressIncrement) & 0x7FFF;
-        mapper->ppu_read(vramAddress);
+        vram_address = (vram_address + address_increment) & 0x7FFF;
+        mapper->ppu_read(vram_address);
     }
 }
