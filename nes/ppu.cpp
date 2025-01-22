@@ -25,6 +25,7 @@ c_ppu::c_ppu()
     mapper = 0;
     build_lookup_tables();
     limit_sprites = false; //don't change this on reset
+    p_output_pixel = &c_ppu::output_pixel;
 }
 
 uint8_t *c_ppu::get_sprite_memory()
