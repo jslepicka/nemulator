@@ -1169,8 +1169,8 @@ void c_nemulator::UpdateScene(double dt)
         }
         if (nsf_stats) { //NSF
             c_game* game = (c_game*)texturePanels[selectedPanel]->GetSelected();
-            c_nes &n = (c_nes&)game->console;
-            nsf_stats->report_stat("Song #", n.read_byte(0x54F7) + 1);
+            c_nes* n = (c_nes*)game->console;
+            nsf_stats->report_stat("Song #", n->read_byte(0x54F7) + 1);
         }
         framesDrawn = 0;
         elapsed = 0.0;
