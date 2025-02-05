@@ -404,6 +404,9 @@ void c_nemulator::RunGames()
         case GAME_MSPACMAB:
             g->console->set_input(ih->get_pacman_input());
             break;
+        case GAME_INVADERS:
+            g->console->set_input(ih->get_invaders_input());
+            break;
         default:
             break;
         }
@@ -1339,7 +1342,8 @@ void c_nemulator::LoadGames()
         { GAME_PACMAN, "", "pacman.rom_path", "", arcade_path + "\\pacman" },
         { GAME_MSPACMAN, "", "mspacman.rom_path", "", arcade_path + "\\mspacman"},
         { GAME_MSPACMNF, "", "mspacmnf.rom_path", "", arcade_path + "\\mspacmnf"},
-        { GAME_MSPACMAB, "", "mspacmab.rom_path", "", arcade_path + "\\mspacmab" }
+        { GAME_MSPACMAB, "", "mspacmab.rom_path", "", arcade_path + "\\mspacmab" },
+        { GAME_INVADERS, "", "invaders.rom_path", "", arcade_path + "\\invaders" }
     };
 
     bool global_mask_sides = config->get_bool("mask_sides", false);
@@ -1403,6 +1407,10 @@ void c_nemulator::LoadGames()
                     break;
                 case GAME_MSPACMAB:
                     strcpy(g->title, "Ms. Pac-Man (Bootleg)");
+                    g->set_description(g->title);
+                    break;
+                case GAME_INVADERS:
+                    strcpy(g->title, "Space Invaders");
                     g->set_description(g->title);
                     break;
                 default:

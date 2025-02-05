@@ -15,7 +15,7 @@ c_pacman::c_pacman(PACMAN_MODEL model)
     display_info.fb_width = 288;
     display_info.fb_height = 224;
     display_info.aspect_ratio = 3.0 / 4.0;
-    display_info.rotated = true;
+    display_info.rotation = 90;
 
     prg_rom = std::make_unique<uint8_t[]>(64 * 1024);
     work_ram = std::make_unique<uint8_t[]>(1 * 1024);

@@ -236,6 +236,7 @@
     <ClCompile Include="gb\mbc2.cpp" />
     <ClCompile Include="gb\mbc5.cpp" />
     <ClCompile Include="interpolate.ixx" />
+    <ClCompile Include="invaders\invaders.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="audio_info.cpp" />
     <ClCompile Include="bmp_writer.cpp" />
@@ -374,6 +375,7 @@
     <ClInclude Include="gb\mbc3.h" />
     <ClInclude Include="gb\mbc5.h" />
     <ClInclude Include="input_handler.h" />
+    <ClInclude Include="invaders\invaders.h" />
     <ClInclude Include="menu.h" />
     <ClInclude Include="meow_fft.h" />
     <ClInclude Include="nemulator.h" />

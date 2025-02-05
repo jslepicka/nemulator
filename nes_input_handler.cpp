@@ -103,6 +103,33 @@ int c_nes_input_handler::get_pacman_input()
     return ret;
 }
 
+int c_nes_input_handler::get_invaders_input()
+{
+    uint32_t ret = 0;
+    struct s_keymap
+    {
+        int button;
+        int mask;
+    };
+
+    s_keymap keymap[] =
+    {
+        { BUTTON_1SELECT,   0x01},
+        { BUTTON_1START,    0x04},
+        { BUTTON_1A,        0x10},
+        { BUTTON_1LEFT,     0x20},
+        { BUTTON_1RIGHT,    0x40}
+    };
+
+    for (auto &k : keymap) {
+        if (!state[k.button].ack && state[k.button].state_cur) {
+            ret |= k.mask;
+        }
+    }
+    ret |= 0x8;
+    return ret;
+}
+
 int c_nes_input_handler::get_gb_input()
 {
     uint32_t ret = -1;

@@ -5,6 +5,7 @@
 #include "gb\gb.h"
 #include "pacman\pacman.h"
 #include "pacman\mspacman.h"
+#include "invaders\invaders.h"
 #include <string>
 #include "TexturePanelItem.h"
 #include "d3dx10.h"
@@ -21,6 +22,7 @@ enum GAME_TYPE
     GAME_MSPACMAN,
     GAME_MSPACMNF, //ms pac man fast
     GAME_MSPACMAB, //ms pac man pre-decrypted roms
+    GAME_INVADERS,
     GAME_NONE
 };
 

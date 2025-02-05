@@ -1259,10 +1259,17 @@ export class c_z80
                         PC = 0x66;
                         break;
                     case 5: //IM 0
-                        //push_word(PC);
-                        opcode = 0xFF;
+                        if (data_bus == NULL) {
+                            //SMS games that use IM0 (Alien 3, Bubble Bobble) expect
+                            //0xFF on data bus.  Should this be a null check here or
+                            //should SMS default to 0xFF on data bus?
+                            opcode = 0xFF;
+                        }
+                        else {
+                            opcode = *data_bus;
+                        }
                         prefix = 0;
-                        required_cycles += cycle_table[0xFF];
+                        required_cycles += cycle_table[opcode];
                         fetch_opcode = 0;
                         break;
                     default:

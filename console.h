@@ -37,7 +37,8 @@ public:
         int crop_right = 0;
         int crop_top = 0;
         int crop_bottom = 0;
-        bool rotated = false;
+        //bool rotated = false;
+        int rotation = 0;
         double aspect_ratio = 4.0 / 3.0;
 
     } display_info;
