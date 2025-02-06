@@ -20,6 +20,7 @@ c_invaders::c_invaders()
                 [this](uint16_t address, uint8_t data) { this->write_byte(address, data); }, //write_byte
                 [this](uint8_t port) { return this->read_port(port); }, //read_port
                 [this](uint8_t port, uint8_t data) { this->write_port(port, data); }, //write_port
+                [this]() { this->int_ack(); }, //int_ack callback
                 &nmi, &irq, &data_bus);
     loaded = 0;
     reset();
@@ -75,27 +76,30 @@ int c_invaders::is_loaded()
     return loaded;
 }
 
+void c_invaders::int_ack()
+{
+    //Interrupt flip-flop is cleared when SYNC and D0 of status word are high during
+    //i8080 interrupt acknowledge cycle.
+    //
+    //On Z80, the equivalent is when M1 and IORQ go low during interrupt acknowledge
+    //cycle.
+    irq = 0;
+}
+
 int c_invaders::emulate_frame()
 {
-    //Not sure how this works.  Looking at schematic, when SYNC goes high
-    //AND (address bus & 0x2000), I think the RST opcode is put on the data bus.
-    //When D0 is 1, that should clear the irq latch.  That would mean that irq gets
-    //cleared immediately (following instruction?) after INT goes high?
-    //Clearing it on the next line works ok here because the Space Invaders
-    //interrupt routine takes longer than 1 scanline.  Interrupts aren't enabled
-    //by EI on the same scanline, which would cause multiple interrupt handlers to
-    //run.  Need to do more research to determine exact behavior.
     for (int line = 0; line < 262; line++) {
-        if (line == 96) {
-            data_bus = 0xCF; //RST 8
-            irq = 1;
-        }
-        else if (line == 224) {
-            data_bus = 0xD7; //RST 10
-            irq = 1;
-        }
-        else {
-            irq = 0;
+        switch (line) {
+            case 96:
+                data_bus = 0xCF; //RST 8
+                irq = 1;
+                break;
+            case 224:
+                data_bus = 0xD7; //RST 10
+                irq = 1;
+                break;
+            default:
+                break;
         }
         //19.968MHz clock divided by 10 / 262 / 59.541985Hz refresh
         z80->execute(128);

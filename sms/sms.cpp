@@ -44,6 +44,7 @@ c_sms::c_sms(SMS_MODEL model)
         [this](uint16_t address, uint8_t data) { this->write_byte(address, data); }, //write_byte
         [this](uint8_t port) { return this->read_port(port); }, //read_port
         [this](uint8_t port, uint8_t data) { this->write_port(port, data); }, //write_port
+        nullptr, //int_ack callback
         &nmi,
         &irq
     );

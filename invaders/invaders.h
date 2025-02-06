@@ -24,7 +24,7 @@ class c_invaders : public c_console
     void enable_mixer();
     void disable_mixer();
 
-  protected:
+  private:
     struct s_roms
     {
         std::string filename;
@@ -39,6 +39,8 @@ class c_invaders : public c_console
 
     void write_port(uint8_t port, uint8_t data);
     int load_romset(std::vector<s_roms> &romset);
+
+    void int_ack();
 
     std::unique_ptr<c_z80> z80;
 

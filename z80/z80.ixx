@@ -10,10 +10,11 @@ export class c_z80
     typedef std::function<void(uint16_t, uint8_t)> write_byte_t;
     typedef std::function<uint8_t(uint8_t)> read_port_t;
     typedef std::function<void(uint8_t, uint8_t)> write_port_t;
+    typedef std::function<void()> int_ack_t; //interrupt acknowledge callback
 
 
   public:
-    c_z80(read_byte_t read_byte, write_byte_t write_byte, read_port_t read_port, write_port_t write_port, int *nmi,
+    c_z80(read_byte_t read_byte, write_byte_t write_byte, read_port_t read_port, write_port_t write_port, int_ack_t int_ack, int *nmi,
           int *irq, uint8_t *data_bus = 0)
     {
         int count = 0;
@@ -24,6 +25,7 @@ export class c_z80
         this->nmi = nmi;
         this->irq = irq;
         this->data_bus = data_bus;
+        this->int_ack_callback = int_ack;
     }
     ~c_z80()
     {
@@ -56,8 +58,8 @@ export class c_z80
         IY.word = 0x0000;
         SP = 0xDFF0;
         I = 0;
-             //Setting R to 0 causes Impossible Mission to use the same map every time
-             //R = 0;
+        //Setting R to 0 causes Impossible Mission to use the same map every time
+        //R = 0;
         R = random::get_rand() & 0xFF;
 
         r_00[0] = r_dd[0] = r_fd[0] = &BC.byte.hi;
@@ -102,8 +104,8 @@ export class c_z80
             if (fetch_opcode) {
                 inc_r();
                 ddfd_ptr = 0;
-                    //dd = 0;
-                    //fd = 0;
+                //dd = 0;
+                //fd = 0;
                 r = r_00;
                 rp = rp_00;
                 rp2 = rp2_00;
@@ -285,8 +287,8 @@ export class c_z80
     };
 
     int IFF1; //user accessible
-            //on interrupt, IFF1 is copied to IFF2, then IFF1 is set.
-            //after interrupt, IFF2 is copied back to IFF1;
+    //on interrupt, IFF1 is copied to IFF2, then IFF1 is set.
+    //after interrupt, IFF2 is copied back to IFF1;
     int IFF2;
 
     int IM; //interrupt mode
@@ -317,6 +319,14 @@ export class c_z80
     write_byte_t write_byte;
     read_port_t read_port;
     write_port_t write_port;
+    int_ack_t int_ack_callback;
+
+    void int_ack()
+    {
+        if (int_ack_callback != nullptr) {
+            int_ack_callback();
+        }
+    }
 
     void alu(ALU_OP op, unsigned char operand)
     {
@@ -1240,8 +1250,10 @@ export class c_z80
             case 0x01:
                 switch (z) {
                     case 1:
+                        //IM1
                         push_word(PC);
                         PC = 0x38;
+                        int_ack();
                         break;
                     case 2: {
                         //IM2
@@ -1249,6 +1261,7 @@ export class c_z80
                         push_word(PC);
                         v = *data_bus | (I << 8);
                         PC = read_word(v & 0xFFFE); //is this mask correct?
+                        int_ack();
                     } break;
                     case 3: //halt
                     {
@@ -1258,7 +1271,7 @@ export class c_z80
                         push_word(PC);
                         PC = 0x66;
                         break;
-                    case 5: //IM 0
+                    case 5: //IM0
                         if (data_bus == NULL) {
                             //SMS games that use IM0 (Alien 3, Bubble Bobble) expect
                             //0xFF on data bus.  Should this be a null check here or
@@ -1271,6 +1284,7 @@ export class c_z80
                         prefix = 0;
                         required_cycles += cycle_table[opcode];
                         fetch_opcode = 0;
+                        int_ack();
                         break;
                     default:
                         break;
