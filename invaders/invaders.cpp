@@ -10,15 +10,12 @@ c_invaders::c_invaders()
 {
     system_name = "Arcade";
 
-    display_info.fb_width = 256;
-    display_info.fb_height = 224;
+    display_info.fb_width = FB_WIDTH;
+    display_info.fb_height = FB_HEIGHT;
     display_info.aspect_ratio = 3.0 / 4.0;
     display_info.rotation = 270;
 
-    rom = std::make_unique<uint8_t[]>(8 * 1024);
-    ram = std::make_unique<uint8_t[]>(1 * 1024);
-    vram = std::make_unique<uint8_t[]>(7 * 1024);
-
+    //real hardware uses an i8080, but z80, being (mostly) compatible, seems to work just fine
     z80 = std::make_unique<c_z80>([this](uint16_t address) { return this->read_byte(address); }, //read_byte
                 [this](uint16_t address, uint8_t data) { this->write_byte(address, data); }, //write_byte
                 [this](uint8_t port) { return this->read_port(port); }, //read_port
@@ -58,17 +55,15 @@ int c_invaders::load()
 {
     // clang-format off
     std::vector<s_roms> invaders_roms = {
-        {"invaders.e", 0x14e538b0, 2048, 0x1800, rom.get()},
-        {"invaders.f", 0x0ccead96, 2048, 0x1000, rom.get()},
-        {"invaders.g", 0x6bfaca4a, 2048, 0x0800, rom.get()},
-        {"invaders.h", 0x734f5ad8, 2048, 0x0000, rom.get()},
+        {"invaders.e", 0x14e538b0, 2048, 0x1800, rom},
+        {"invaders.f", 0x0ccead96, 2048, 0x1000, rom},
+        {"invaders.g", 0x6bfaca4a, 2048, 0x0800, rom},
+        {"invaders.h", 0x734f5ad8, 2048, 0x0000, rom},
     };
 
     // clang-format on
 
-    std::vector<s_roms> romset = invaders_roms;
-
-    if (!load_romset(romset))
+    if (!load_romset(invaders_roms))
         return 0;
 
     loaded = 1;
@@ -82,36 +77,55 @@ int c_invaders::is_loaded()
 
 int c_invaders::emulate_frame()
 {
-    for (int line = 0; line < 224; line++) {
-        if (line == 95) {
+    //Not sure how this works.  Looking at schematic, when SYNC goes high
+    //AND (address bus & 0x2000), I think the RST opcode is put on the data bus.
+    //When D0 is 1, that should clear the irq latch.  That would mean that irq gets
+    //cleared immediately (following instruction?) after INT goes high?
+    //Clearing it on the next line works ok here because the Space Invaders
+    //interrupt routine takes longer than 1 scanline.  Interrupts aren't enabled
+    //by EI on the same scanline, which would cause multiple interrupt handlers to
+    //run.  Need to do more research to determine exact behavior.
+    for (int line = 0; line < 262; line++) {
+        if (line == 96) {
             data_bus = 0xCF; //RST 8
             irq = 1;
         }
-        else if (line == 223) {
+        else if (line == 224) {
             data_bus = 0xD7; //RST 10
             irq = 1;
         }
         else {
             irq = 0;
         }
-        //this probably isn't accurate -- need to determine exact timing
-        z80->execute(149);
+        //19.968MHz clock divided by 10 / 262 / 59.541985Hz refresh
+        z80->execute(128);
     }
-    frame_counter++;
     return 0;
 }
 
 int c_invaders::reset()
 {
     memset(fb, 0, sizeof(fb));
+    memset(ram, 0, sizeof(ram));
+    memset(vram, 0, sizeof(vram));
     shift_register = 0;
     shift_amount = 0;
-    INP1 = 0x8;
+    INP1.value = 0x8;
     irq = 0;
     nmi = 0;
     data_bus = 0;
     z80->reset();
-    frame_counter = 0;
+
+    // clang-format off
+    INP2 = {
+        {
+        .ships0 = 1,
+        .ships1 = 1,
+        .extra_ship = 1,
+        }
+    };
+    // clang-format on
+
     return 0;
 }
 
@@ -122,7 +136,7 @@ int c_invaders::get_crc()
 
 void c_invaders::set_input(int input)
 {
-    INP1 = input;
+    INP1.value = input;
 }
 
 int *c_invaders::get_video()
@@ -144,6 +158,9 @@ uint8_t c_invaders::read_byte(uint16_t address)
     else if (address < 0x4000) {
         return vram[address - 0x2400];
     }
+    else {
+        int x = 1;
+    }
     return 0;
 }
 
@@ -156,11 +173,39 @@ void c_invaders::write_byte(uint16_t address, uint8_t data)
         ram[address - 0x2000] = data;
     }
     else if (address < 0x4000) {
+
+        enum screen_loc
+        {
+            status_line_y = 16,  //line separating playfield from ships/credits info
+            base_top_y = 71,     //the top line of the base section
+            ufo_bottom_y = 192,  //bottom line of ufo section, just above aliens
+            ufo_top_y = 223,     //top line of ufo section, just below scores
+            ships_left_x = 25,   //left edge of remaining ships icons
+            credits_left_x = 136 //left edge of credits
+        };
         int loc = address - 0x2400;
         vram[loc] = data;
         uint32_t *f = &fb[loc * 8];
+        int x = loc >> 5; //divide by 32 (256 width / 8 bits/byte)
+        int y_base = (loc & 0x1F) * 8;
+        const int white = 0xFFFFF0F0;
+        const int green = 0xFFB9E000;
+        const int orange = 0xFF5A97F1;
         for (int i = 0; i < 8; i++) {
-            *f++ = (data & 0x1) * 0xffffffff;
+            int color = white;
+            int y = y_base + i;
+            if (y < screen_loc::status_line_y) {
+                if (x >= screen_loc::ships_left_x && x <= screen_loc::credits_left_x) {
+                    color = green;
+                }
+            }
+            else if (y > screen_loc::status_line_y && y <= screen_loc::base_top_y) {
+                color = green;
+            }
+            else if (y >= screen_loc::ufo_bottom_y && y <= screen_loc::ufo_top_y) {
+                color = orange;
+            }
+            *f++ = (data & 0x1) * color;
             data >>= 1;
         }
     }
@@ -171,16 +216,14 @@ void c_invaders::write_byte(uint16_t address, uint8_t data)
 
 uint8_t c_invaders::read_port(uint8_t port)
 {
-    int x;
     switch (port) {
         case 0: //INP0
             break;
         case 1: //INP1
-            return INP1;
+            return INP1.value;
         case 2: //INP2
-            break;
+            return INP2.value;
         case 3: //SHFT_IN
-            x = 1;
             return ((shift_register << shift_amount) & 0xFF00) >> 8;
         default:
             break;
@@ -190,7 +233,6 @@ uint8_t c_invaders::read_port(uint8_t port)
 
 void c_invaders::write_port(uint8_t port, uint8_t data)
 {
-    int x;
     switch (port) {
         case 2: //SHFTAMNT
             shift_amount = data & 0x7;
@@ -211,7 +253,6 @@ void c_invaders::write_port(uint8_t port, uint8_t data)
 
 int c_invaders::get_sound_bufs(const short **buf_l, const short **buf_r)
 {
-    //int num_samples = pacman_psg->get_buffer(buf_l);
     *buf_r = NULL;
     return 0;
 }
