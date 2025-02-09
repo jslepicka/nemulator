@@ -871,9 +871,13 @@ void c_nemulator::start_game()
                 add_task(nsf_stats, g->console);
             }
         }
+        
+        std::string title = g->title;
+        std::string system = n->get_system_name();
+
         SetWindowText(
             hWnd,
-            (std::string(app_title) + " - " + texturePanels[selectedPanel]->GetSelected()->get_description()).c_str());
+            (std::string(app_title) + " - " + title + " (" + system + ")").c_str());
     }
 }
 

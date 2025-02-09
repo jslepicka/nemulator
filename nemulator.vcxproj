@@ -231,6 +231,7 @@
     <ClCompile Include="dsp\biquad.ixx" />
     <ClCompile Include="dsp\biquad4.ixx" />
     <ClCompile Include="dsp\dsp.ixx" />
+    <ClCompile Include="dsp\null_filter.ixx" />
     <ClCompile Include="dsp\resampler.ixx" />
     <ClCompile Include="gb\gbapu.cpp" />
     <ClCompile Include="gb\mbc2.cpp" />

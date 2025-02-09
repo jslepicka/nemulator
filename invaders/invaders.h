@@ -6,6 +6,13 @@
 
 class c_z80;
 
+namespace dsp
+{
+class c_resampler;
+class c_biquad;
+class c_biquad4;
+}
+
 class c_invaders : public c_console
 {
   public:
@@ -25,6 +32,10 @@ class c_invaders : public c_console
     void disable_mixer();
 
   private:
+    dsp::c_resampler *resampler;
+    dsp::c_biquad *post_filter;
+    dsp::c_biquad4 *lpf;
+    int mixer_enabled;
     struct s_roms
     {
         std::string filename;
@@ -33,12 +44,38 @@ class c_invaders : public c_console
         uint32_t offset;
         uint8_t *loc;
     };
+    class c_sample_channel
+    {
+      public:
+        int len = 0; // data length
+        int freq = 0; //playback frequency
+        int active = 0;
+        int loop = 0;
+        double divisor = 0.0;
+        uint64_t clock = 0;
+        std::unique_ptr<int16_t[]> data;
+        void trigger();
+        void load_wav(char *buf);
+
+    } sample_channel[10];
+    struct s_sample_load_info
+    {
+        std::string filename;
+        uint32_t crc32;
+        c_sample_channel *channel;
+    };
+    uint8_t prev_sound1;
+    uint8_t prev_sound2;
+    static const int audio_divider = 4;
+    static const int audio_freq = 1996800 / audio_divider;
+    void clock_sound(int cycles);
     virtual uint8_t read_byte(uint16_t address);
     virtual void write_byte(uint16_t address, uint8_t data);
     uint8_t read_port(uint8_t port);
 
     void write_port(uint8_t port, uint8_t data);
     int load_romset(std::vector<s_roms> &romset);
+    int load_samples(std::vector<s_sample_load_info> &samples);
 
     void int_ack();
 
@@ -82,6 +119,7 @@ class c_invaders : public c_console
     } INP2;
     static const int FB_WIDTH = 256;
     static const int FB_HEIGHT = 224;
+    
     uint8_t rom[8 * 1024];
     uint8_t ram[1 * 1024];
     uint8_t vram[7 * 1024];

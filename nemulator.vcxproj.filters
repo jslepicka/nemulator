@@ -444,6 +444,9 @@
     <ClCompile Include="invaders\invaders.cpp">
       <Filter>Source Files\invaders</Filter>
     </ClCompile>
+    <ClCompile Include="dsp\null_filter.ixx">
+      <Filter>Source Files\dsp</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="config.h">
