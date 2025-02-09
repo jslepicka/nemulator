@@ -49,6 +49,12 @@
     <Filter Include="Source Files\dsp">
       <UniqueIdentifier>{98e35237-18af-41dd-91f7-24e9505fdfd3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\invaders">
+      <UniqueIdentifier>{4c6d8717-e07f-4fed-be1b-23efe1ce9dac}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\invaders">
+      <UniqueIdentifier>{4d6c22f2-cbda-4512-850f-58d66e0c62ab}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="config.cpp">
@@ -435,6 +441,12 @@
     <ClCompile Include="pacman\mspacman.cpp">
       <Filter>Source Files\pacman</Filter>
     </ClCompile>
+    <ClCompile Include="invaders\invaders.cpp">
+      <Filter>Source Files\invaders</Filter>
+    </ClCompile>
+    <ClCompile Include="dsp\null_filter.ixx">
+      <Filter>Source Files\dsp</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="config.h">
@@ -817,6 +829,9 @@
     </ClInclude>
     <ClInclude Include="pacman\mspacman.h">
       <Filter>Header Files\pacman</Filter>
+    </ClInclude>
+    <ClInclude Include="invaders\invaders.h">
+      <Filter>Header Files\invaders</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

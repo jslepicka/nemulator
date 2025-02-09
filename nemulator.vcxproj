@@ -231,11 +231,13 @@
     <ClCompile Include="dsp\biquad.ixx" />
     <ClCompile Include="dsp\biquad4.ixx" />
     <ClCompile Include="dsp\dsp.ixx" />
+    <ClCompile Include="dsp\null_filter.ixx" />
     <ClCompile Include="dsp\resampler.ixx" />
     <ClCompile Include="gb\gbapu.cpp" />
     <ClCompile Include="gb\mbc2.cpp" />
     <ClCompile Include="gb\mbc5.cpp" />
     <ClCompile Include="interpolate.ixx" />
+    <ClCompile Include="invaders\invaders.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="audio_info.cpp" />
     <ClCompile Include="bmp_writer.cpp" />
@@ -374,6 +376,7 @@
     <ClInclude Include="gb\mbc3.h" />
     <ClInclude Include="gb\mbc5.h" />
     <ClInclude Include="input_handler.h" />
+    <ClInclude Include="invaders\invaders.h" />
     <ClInclude Include="menu.h" />
     <ClInclude Include="meow_fft.h" />
     <ClInclude Include="nemulator.h" />

@@ -3,7 +3,7 @@
 #include "benchmark.h"
 #include <memory>
 
-const char *app_title = "nemulator 4.5";
+const char *app_title = "nemulator 4.6";
 
 struct s_cpu_info
 {

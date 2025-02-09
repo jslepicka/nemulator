@@ -59,6 +59,7 @@ public:
     int get_sms_input();
     int get_gb_input();
     int get_pacman_input();
+    int get_invaders_input();
     void set_turbo_state(int button, int turbo_enabled);
     int get_turbo_state(int button);
     void set_turbo_rate(int button, int rate);

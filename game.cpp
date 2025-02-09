@@ -104,6 +104,9 @@ void c_game::OnActivate(bool load)
             case GAME_MSPACMAB:
                 console = new c_pacman(PACMAN_MODEL::MSPACMAB);
                 break;
+            case GAME_INVADERS:
+                console = new c_invaders();
+                break;
             default:
                 break;
             }
@@ -266,11 +269,17 @@ void c_game::create_vertex_buffer()
         {D3DXVECTOR3(4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2((FLOAT)w_end, (FLOAT)h_start)},
     };
 
-    if (display_info.rotated) {
+    if (display_info.rotation == 90) {
         vertices[0].tex.x = vertices[2].tex.x = (FLOAT)w_end;
         vertices[1].tex.x = vertices[3].tex.x = (FLOAT)w_start;
         vertices[0].tex.y = vertices[1].tex.y = (FLOAT)h_end;
         vertices[2].tex.y = vertices[3].tex.y = (FLOAT)h_start;
+    }
+    else if (display_info.rotation == 270) {
+        vertices[0].tex.x = vertices[2].tex.x = (FLOAT)w_start;
+        vertices[1].tex.x = vertices[3].tex.x = (FLOAT)w_end;
+        vertices[0].tex.y = vertices[1].tex.y = (FLOAT)h_start;
+        vertices[2].tex.y = vertices[3].tex.y = (FLOAT)h_end;
     }
 
     D3D10_SUBRESOURCE_DATA initData;

@@ -15,7 +15,7 @@ c_pacman::c_pacman(PACMAN_MODEL model)
     display_info.fb_width = 288;
     display_info.fb_height = 224;
     display_info.aspect_ratio = 3.0 / 4.0;
-    display_info.rotated = true;
+    display_info.rotation = 90;
 
     prg_rom = std::make_unique<uint8_t[]>(64 * 1024);
     work_ram = std::make_unique<uint8_t[]>(1 * 1024);
@@ -24,6 +24,7 @@ c_pacman::c_pacman(PACMAN_MODEL model)
                 [this](uint16_t address, uint8_t data) { this->write_byte(address, data); }, //write_byte
                 [this](uint8_t port) { return this->read_port(port); }, //read_port
                 [this](uint8_t port, uint8_t data) { this->write_port(port, data); }, //write_port
+                nullptr, //int_ack callback
                 &nmi, &irq, &data_bus);
     pacman_vid = std::make_unique<c_pacman_vid>(this, &irq);
     pacman_psg = std::make_unique<c_pacman_psg>();
