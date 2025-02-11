@@ -115,11 +115,11 @@ int c_sms::load()
     rom = std::make_unique_for_overwrite<unsigned char[]>(alloc_size);
     file.read((char *)rom.get(), file_length);
     file.close();
-    crc = get_crc32(rom.get(), file_length);
+    crc32 = get_crc32(rom.get(), file_length);
 
     for (auto &c : crc_table)
     {
-        if (c.crc == crc && c.has_sram)
+        if (c.crc == crc32 && c.has_sram)
         {
             has_sram = 1;
             load_sram();

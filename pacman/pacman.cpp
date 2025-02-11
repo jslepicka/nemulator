@@ -174,11 +174,6 @@ int c_pacman::reset()
     return 0;
 }
 
-int c_pacman::get_crc()
-{
-    return 0;
-}
-
 void c_pacman::set_input(int input)
 {
     IN0 = (~input) & 0x2F |

@@ -28,7 +28,6 @@ public:
     bool Selectable();
     bool mask_sides;
     bool limit_sprites;
-    int emulation_mode;
     std::string get_filename();
     bool favorite;
     int submapper;

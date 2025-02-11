@@ -39,7 +39,6 @@ public:
     void set_sprite_limit(bool limit_sprites);
     bool get_sprite_limit();
     void set_submapper(int submapper);
-    int get_crc() {return crc32;};
     std::unique_ptr<c_cpu> cpu;
     std::unique_ptr<c_ppu> ppu;
     std::unique_ptr<c_mapper> mapper;
@@ -59,7 +58,6 @@ private:
     std::unique_ptr<unsigned char[]> cpuRam;
     std::unique_ptr<unsigned char[]> sram;
     const static std::map<int, std::function<std::unique_ptr<c_mapper>()>> mapper_factory;
-    int crc32;
     int mapperNumber;
     int num_apu_samples;
     int file_length;

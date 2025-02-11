@@ -81,7 +81,6 @@ void c_game::OnActivate(bool load)
             if (console)
             {
                 console->get_display_info(&display_info);
-                console->set_emulation_mode(emulation_mode);
                 strcpy_s(console->filename, MAX_PATH, filename.c_str());
                 strcpy_s(console->path, MAX_PATH, path.c_str());
                 strcpy_s(console->sram_path, MAX_PATH, sram_path.c_str());

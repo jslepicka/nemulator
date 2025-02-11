@@ -44,10 +44,7 @@ class c_gb : public c_console
     {
         return loaded;
     }
-    int get_crc()
-    {
-        return 0;
-    }
+
     int *get_video();
 
     int get_sound_bufs(const short **buf_l, const short **buf_r);

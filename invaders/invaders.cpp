@@ -282,11 +282,6 @@ int c_invaders::reset()
     return 0;
 }
 
-int c_invaders::get_crc()
-{
-    return 0;
-}
-
 void c_invaders::set_input(int input)
 {
     INP1.value = input | 0x8;

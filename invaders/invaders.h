@@ -24,7 +24,6 @@ class c_invaders : public c_console
     int is_loaded();
     int emulate_frame();
     virtual int reset();
-    int get_crc();
     int get_sound_bufs(const short **buf_l, const short **buf_r);
     void set_audio_freq(double freq);
     void set_input(int input);

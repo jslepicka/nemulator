@@ -32,7 +32,6 @@ public:
     void set_audio_freq(double freq);
     int load();
     int is_loaded() { return loaded; }
-    int get_crc() { return crc; }
     void enable_mixer();
     void disable_mixer();
     void set_input(int input);
@@ -42,7 +41,6 @@ public:
     SMS_MODEL model;
     int psg_cycles;
     int has_sram = 0;
-    unsigned int crc = 0;
     int joy = 0xFF;
     int loaded = 0;
     int ram_select;
