@@ -1,5 +1,6 @@
 #pragma once
 #include "..\console.h"
+#include "sample_channel.h"
 #include <memory>
 #include <array>
 #include <vector>
@@ -13,6 +14,8 @@ class c_biquad;
 class c_biquad4;
 }
 
+namespace invaders
+{
 class c_invaders : public c_console
 {
   public:
@@ -27,7 +30,7 @@ class c_invaders : public c_console
     void set_input(int input);
     int *get_video();
     virtual ~c_invaders();
-    
+
     void enable_mixer();
     void disable_mixer();
 
@@ -44,20 +47,7 @@ class c_invaders : public c_console
         uint32_t offset;
         uint8_t *loc;
     };
-    class c_sample_channel
-    {
-      public:
-        int len = 0; // data length
-        int freq = 0; //playback frequency
-        int active = 0;
-        int loop = 0;
-        double divisor = 0.0;
-        uint64_t clock = 0;
-        std::unique_ptr<int16_t[]> data;
-        void trigger();
-        void load_wav(char *buf);
-
-    } sample_channel[10];
+    c_sample_channel sample_channels[10];
     struct s_sample_load_info
     {
         std::string filename;
@@ -119,9 +109,10 @@ class c_invaders : public c_console
     } INP2;
     static const int FB_WIDTH = 256;
     static const int FB_HEIGHT = 224;
-    
+
     uint8_t rom[8 * 1024];
     uint8_t ram[1 * 1024];
     uint8_t vram[7 * 1024];
     uint32_t fb[FB_WIDTH * FB_HEIGHT];
 };
+} //namespace invaders

@@ -105,7 +105,7 @@ void c_game::OnActivate(bool load)
                 console = new c_pacman(PACMAN_MODEL::MSPACMAB);
                 break;
             case GAME_INVADERS:
-                console = new c_invaders();
+                console = new invaders::c_invaders();
                 break;
             default:
                 break;

@@ -2,11 +2,14 @@
 #include <fstream>
 #include <vector>
 #include <string.h>
+#include <cassert>
 
 import z80;
 import crc32;
 import dsp;
 import interpolate;
+
+using namespace invaders;
 
 c_invaders::c_invaders()
 {
@@ -25,7 +28,7 @@ c_invaders::c_invaders()
                 [this]() { this->int_ack(); }, //int_ack callback
                 &nmi, &irq, &data_bus);
     loaded = 0;
-    sample_channel[0].loop = 1;
+    sample_channels[0].loop = 1;
     /*
     lowpass elliptical, 20kHz
     d = fdesign.lowpass('N,Fp,Ap,Ast', 8, 20000, .1, 80, 1996800/2);
@@ -133,59 +136,11 @@ int c_invaders::load_samples(std::vector<s_sample_load_info> &sample_load_info)
                 continue;
             }
             li.channel->load_wav(file_buf);
+            li.channel->set_playback_rate(audio_freq);
             delete[] file_buf;
         }
     }
     return 1;
-}
-
-void c_invaders::c_sample_channel::trigger()
-{
-    if (len) {
-        clock = 0;
-        active = 1;
-    }
-}
-
-void c_invaders::c_sample_channel::load_wav(char *buf)
-{
-    struct s_fmt
-    {
-        uint32_t block_id;
-        uint32_t block_size;
-        uint16_t audio_format;
-        uint16_t num_channels;
-        uint32_t freq;
-        uint32_t bytes_per_second;
-        uint16_t bytes_per_block;
-        uint16_t bits_per_sample;
-    } *fmt;
-    int p = 0;
-
-    //skip over RIFF chunk
-    p += 12;
-
-    //read in fmt chunk
-    fmt = (s_fmt *)&buf[12];
-    p += 8 + fmt->block_size;
-
-    //skip over fact chunk if it exists
-    char fact[4] = {'f', 'a', 'c', 't'};
-    if (memcmp(&buf[p], fact, 4) == 0) {
-        int chunk_size = *(int *)&buf[p + 4];
-        p += 8 + chunk_size;
-    }
-
-    char data_id[4] = {'d', 'a', 't', 'a'};
-    if (memcmp(&buf[p], data_id, 4) == 0) {
-        int chunk_size = *(int *)&buf[p + 4];
-        int num_samples = chunk_size / 2;
-        data = std::make_unique<int16_t[]>(num_samples);
-        memcpy(data.get(), &buf[p + 8], chunk_size);
-        len = num_samples;
-        freq = fmt->freq;
-        divisor = audio_freq / fmt->freq;
-    }
 }
 
 int c_invaders::load()
@@ -199,16 +154,16 @@ int c_invaders::load()
     };
 
     std::vector<s_sample_load_info> invaders_sample_load_info = {
-        {"0.wav", 0x429b7860, &sample_channel[0]},
-        {"1.wav", 0x442d7ae7, &sample_channel[1]},
-        {"2.wav", 0xd4d796f5, &sample_channel[2]},
-        {"3.wav", 0xae5c3f0d, &sample_channel[3]},
-        {"4.wav", 0x9df13868, &sample_channel[4]},
-        {"5.wav", 0x9d68ed05, &sample_channel[5]},
-        {"6.wav", 0x190b84dd, &sample_channel[6]},
-        {"7.wav", 0x2c2e8e44, &sample_channel[7]},
-        {"8.wav", 0x4fc91e86, &sample_channel[8]},
-        {"9.wav", 0x9e14d606, &sample_channel[9]},
+        {"0.wav", 0x429b7860, &sample_channels[0]},
+        {"1.wav", 0x442d7ae7, &sample_channels[1]},
+        {"2.wav", 0xd4d796f5, &sample_channels[2]},
+        {"3.wav", 0xae5c3f0d, &sample_channels[3]},
+        {"4.wav", 0x9df13868, &sample_channels[4]},
+        {"5.wav", 0x9d68ed05, &sample_channels[5]},
+        {"6.wav", 0x190b84dd, &sample_channels[6]},
+        {"7.wav", 0x2c2e8e44, &sample_channels[7]},
+        {"8.wav", 0x4fc91e86, &sample_channels[8]},
+        {"9.wav", 0x9e14d606, &sample_channels[9]},
     };
 
     // clang-format on
@@ -262,41 +217,13 @@ int c_invaders::emulate_frame()
 
 void c_invaders::clock_sound(int cycles)
 {
+    static const float vol = .5f;
     //generating sound at 1996800 / audio_divisor Hz
     for (int i = 0; i < cycles; i++) {
         float sample = 0.0f;
-        for (auto &channel : sample_channel) {
-            if (channel.active) {
-                double f_pos = (double)channel.clock / channel.divisor;
-                int pos = (int)f_pos;
-                if (channel.loop) {
-                    pos %= channel.len;
-                }
-                if (pos > channel.len - 1) {
-                    channel.active = 0;
-                }
-                else {
-                    static const float vol = .5f;
-
-                    if (false) {
-                        //zero-order hold
-                        float zero_order_sample = (float)channel.data[pos] / 32768.0f;
-                        sample += zero_order_sample * vol;
-                    }
-                    else {
-                        //linear interpolation
-                        double frac = f_pos - pos;
-                        float left_sample = (float)channel.data[pos] / 32768.0f;
-                        if (frac == 0.0) {
-                            sample += left_sample * vol;
-                        }
-                        else {
-                            float right_sample = (float)channel.data[pos + 1] / 32768.0f;
-                            sample += interpolate::lerp(left_sample, right_sample, frac) * vol;
-                        }
-                    }
-                    channel.clock += 1;
-                }
+        for (auto &channel : sample_channels) {
+            if (channel.is_active()) {
+                sample += channel.get_sample() * vol;
             }
         }
         if (mixer_enabled) {
@@ -329,6 +256,10 @@ int c_invaders::reset()
         }
     };
     // clang-format on
+
+    for (auto &c : sample_channels) {
+        c.reset();
+    }
     return 0;
 }
 
@@ -349,9 +280,7 @@ int *c_invaders::get_video()
 
 uint8_t c_invaders::read_byte(uint16_t address)
 {
-    if (address > 0x4000) {
-        int check_mirroring = 1;
-    }
+    address &= 0x3FFF;
     if (address < 0x2000) {
         return rom[address];
     }
@@ -361,14 +290,12 @@ uint8_t c_invaders::read_byte(uint16_t address)
     else if (address < 0x4000) {
         return vram[address - 0x2400];
     }
-    else {
-        int x = 1;
-    }
     return 0;
 }
 
 void c_invaders::write_byte(uint16_t address, uint8_t data)
 {
+    address &= 0x3FFF;
     if (address < 0x2000) {
         int rom = 1;
     }
@@ -462,16 +389,16 @@ void c_invaders::write_port(uint8_t port, uint8_t data)
         case 3: //SOUND1
             //ufo sound
             if (data & 1 && !(prev_sound1 & 1)) {
-                sample_channel[0].trigger();
+                sample_channels[0].trigger();
             }
             else if (!(data & 1)) {
-                sample_channel[0].active = 0;
+                sample_channels[0].stop();
             }
 
             for (int i = 1; i < 5; i++) {
                 int mask = 1 << i;
                 if (data & mask && !(prev_sound1 & mask)) {
-                    sample_channel[sounds1[i]].trigger();
+                    sample_channels[sounds1[i]].trigger();
                 }
             }
             prev_sound1 = data;
@@ -483,7 +410,7 @@ void c_invaders::write_port(uint8_t port, uint8_t data)
             for (int i = 0; i < 5; i++) {
                 int mask = 1 << i;
                 if (data & mask && !(prev_sound2 & mask)) {
-                    sample_channel[sounds2[i]].trigger();
+                    sample_channels[sounds2[i]].trigger();
                 }
             }
             prev_sound2 = data;
