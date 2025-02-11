@@ -2,6 +2,26 @@
 #include "pacman_vid.h"
 #include "pacman_psg.h"
 
+// clang-format off
+const std::vector<c_console::load_info_t> c_mspacman::load_info = {
+    {
+        .game_type = GAME_MSPACMAN,
+        .is_arcade = 1,
+        .extension = "mspacman",
+        .title = "Ms. Pac-Man",
+        .constructor = []() { return new c_mspacman(PACMAN_MODEL::MSPACMAN); },
+    },
+    {
+        .game_type = GAME_MSPACMNF,
+        .is_arcade = 1,
+        .extension = "mspacmnf",
+        .title = "Ms. Pac-Man (Fast)",
+        .constructor = []() { return new c_mspacman(PACMAN_MODEL::MSPACMNF); },
+    },
+};
+// clang-format on
+
+
 c_mspacman::c_mspacman(PACMAN_MODEL model) :
     c_pacman(model)
 {

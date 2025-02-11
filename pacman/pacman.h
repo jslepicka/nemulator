@@ -42,6 +42,7 @@ class c_pacman : public c_console
     void set_irq(int irq);
     void enable_mixer();
     void disable_mixer();
+    static const std::vector<load_info_t> load_info;
 
   protected:
     struct s_roms

@@ -7,7 +7,7 @@ class c_mspacman : public c_pacman
     c_mspacman(PACMAN_MODEL model);
     ~c_mspacman(){};
     int load();
-
+    static const std::vector<load_info_t> load_info;
   private:
     void decrypt_mspacman();
     void decrypt_rom(int src, int dst, int len, std::array<uint8_t, 16> addr_bits);

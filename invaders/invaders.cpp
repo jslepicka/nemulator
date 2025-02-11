@@ -1,8 +1,6 @@
 #include "invaders.h"
 #include <fstream>
-#include <vector>
 #include <string.h>
-#include <cassert>
 
 import z80;
 import crc32;
@@ -10,6 +8,18 @@ import dsp;
 import interpolate;
 
 using namespace invaders;
+
+// clang-format off
+const std::vector<c_console::load_info_t> c_invaders::load_info = {
+    {
+        .game_type = GAME_INVADERS,
+        .is_arcade = 1,
+        .extension = "invaders",
+        .title = "Space Invaders",
+        .constructor = []() { return new c_invaders(); },
+    },
+};
+// clang-format on
 
 c_invaders::c_invaders()
 {
@@ -83,6 +93,15 @@ c_invaders::c_invaders()
                           {1.0000000000000000f, -0.9980365037918091f, 0.0019634978380054f});
     resampler = new dsp::c_resampler((double)audio_freq / 48000.0, lpf, post_filter);
     mixer_enabled = 0;
+
+    button_map = {
+        {BUTTON_1SELECT,    0x01},
+        {BUTTON_1START,     0x04},
+        {BUTTON_1A,         0x10},
+        {BUTTON_1LEFT,      0x20},
+        {BUTTON_1RIGHT,     0x40},
+    };
+
     reset();
 }
 
@@ -270,7 +289,7 @@ int c_invaders::get_crc()
 
 void c_invaders::set_input(int input)
 {
-    INP1.value = input;
+    INP1.value = input | 0x8;
 }
 
 int *c_invaders::get_video()

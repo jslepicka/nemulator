@@ -8,6 +8,25 @@
 import z80;
 import crc32;
 
+// clang-format off
+const std::vector<c_console::load_info_t> c_pacman::load_info = {
+    {
+        .game_type = GAME_PACMAN,
+        .is_arcade = 1,
+        .extension = "pacman",
+        .title = "Pac-Man",
+        .constructor = []() { return new c_pacman(); },
+    },
+    {
+        .game_type = GAME_MSPACMAB,
+        .is_arcade = 1,
+        .extension = "mspacmab",
+        .title = "Ms. Pac-Man (Bootleg)",
+        .constructor = []() { return new c_pacman(PACMAN_MODEL::MSPACMAB); },
+    },
+};
+// clang-format on
+
 c_pacman::c_pacman(PACMAN_MODEL model)
 {
     system_name = "Arcade";
@@ -30,6 +49,15 @@ c_pacman::c_pacman(PACMAN_MODEL model)
     pacman_psg = std::make_unique<c_pacman_psg>();
     loaded = 0;
     this->model = model;
+
+    button_map = {
+        {BUTTON_1UP,        0x01},
+        {BUTTON_1LEFT,      0x02},
+        {BUTTON_1RIGHT,     0x04},
+        {BUTTON_1DOWN,      0x08},
+        {BUTTON_1SELECT,    0x20},
+        {BUTTON_1START,     0x80},
+    };
     reset();
 }
 

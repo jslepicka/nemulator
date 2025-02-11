@@ -15,6 +15,21 @@ extern int mem_viewer_active;
 
 void strip_extension(char *path);
 
+// clang-format off
+const std::vector<c_console::load_info_t> c_nes::load_info = {
+    {
+        .game_type = GAME_NES,
+        .extension = "nes",
+        .constructor = []() { return new c_nes(); },
+    },
+    {
+        .game_type = GAME_NES,
+        .extension = "nsf",
+        .constructor = []() { return new c_nes(); },
+    },
+};
+// clang-format on
+
 const std::map<int, std::function<std::unique_ptr<c_mapper>()> > c_nes::mapper_factory = 
 {
     {0, []() { return std::make_unique<c_mapper>(); }},

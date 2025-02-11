@@ -9,6 +9,7 @@
 #include <pmmintrin.h>
 #include "benchmark.h"
 #include <string_view>
+#include <ranges>
 
 extern ID3D10Device *d3dDev;
 extern D3DXMATRIX matrixView;
@@ -382,6 +383,7 @@ void c_nemulator::RunGames()
     else
     {
         c_game *g = (c_game*)texturePanels[selectedPanel]->GetSelected();
+        std::vector<s_button_map> *button_map;
         auto ih = (c_nes_input_handler *)g_ih.get();
         switch (g->type)
         {
@@ -390,24 +392,11 @@ void c_nemulator::RunGames()
                 ih->get_nes_byte(0) |
                 (ih->get_nes_byte(1) << 8));
             break;
-        case GAME_SMS:
-        case GAME_GG:
-            g->console->set_input(ih->get_sms_input());
-            break;
-        case GAME_GB:
-        case GAME_GBC:
-            g->console->set_input(ih->get_gb_input());
-            break;
-        case GAME_PACMAN:
-        case GAME_MSPACMAN:
-        case GAME_MSPACMNF:
-        case GAME_MSPACMAB:
-            g->console->set_input(ih->get_pacman_input());
-            break;
-        case GAME_INVADERS:
-            g->console->set_input(ih->get_invaders_input());
-            break;
         default:
+            button_map = g->console->get_button_map();
+            if (button_map->size() != 0) {
+                g->console->set_input(ih->get_console_input(*button_map));
+            }
             break;
         }
 
@@ -1325,30 +1314,45 @@ DWORD WINAPI c_nemulator::load_thread(LPVOID param)
 void c_nemulator::LoadGames()
 {
     std::string arcade_path = config->get_string("arcade.rom_path", "c:\\roms\\arcade");
+    // clang-format off
     struct s_loadinfo
     {
         GAME_TYPE type;
+        int is_arcade;
         std::string extension;
+        std::function<c_console*()> constructor;
         std::string rom_path_key;
         std::string save_path_key;
         std::string rom_path_default;
+        std::string title;
         std::string rom_path;
         std::string save_path;
         std::vector<std::string> file_list;
-    } loadinfo[] = 
-    {
-        { GAME_NES, "nes", "nes.rom_path", "nes.save_path", "c:\\roms\\nes" },
-        { GAME_SMS, "sms", "sms.rom_path", "sms.save_path", "c:\\roms\\sms" },
-        { GAME_GG,   "gg",  "gg.rom_path",  "gg.save_path",  "c:\\roms\\gg" },
-        { GAME_GB,   "gb",  "gb.rom_path",  "gb.save_path",  "c:\\roms\\gb" },
-        { GAME_GBC, "gbc", "gbc.rom_path", "gbc.save_path", "c:\\roms\\gbc" },
-        { GAME_NES, "nsf", "nsf.rom_path", "nsf.save_path", "c:\\roms\\nsf" }, 
-        { GAME_PACMAN, "", "pacman.rom_path", "", arcade_path + "\\pacman" },
-        { GAME_MSPACMAN, "", "mspacman.rom_path", "", arcade_path + "\\mspacman"},
-        { GAME_MSPACMNF, "", "mspacmnf.rom_path", "", arcade_path + "\\mspacmnf"},
-        { GAME_MSPACMAB, "", "mspacmab.rom_path", "", arcade_path + "\\mspacmab" },
-        { GAME_INVADERS, "", "invaders.rom_path", "", arcade_path + "\\invaders" }
     };
+    std::vector<s_loadinfo> loadinfo;
+    std::vector<c_console::load_info_t> cli;
+
+    #define REGISTER(x) std::ranges::copy(x::load_info, std::back_inserter(cli));
+    REGISTER(c_nes);
+    REGISTER(c_sms);
+    REGISTER(c_gb);
+    REGISTER(c_pacman);
+    REGISTER(c_mspacman);
+    REGISTER(invaders::c_invaders);
+
+    for (auto &l : cli) {
+       s_loadinfo i = {
+           .type = (GAME_TYPE)l.game_type,
+           .is_arcade = l.is_arcade,
+           .extension = l.extension,
+           .constructor = l.constructor,
+           .rom_path_key = l.extension + ".rom_path",
+           .save_path_key = l.extension + ".save_path",
+           .rom_path_default = l.is_arcade ? arcade_path + "\\" + l.extension : "c:\\roms\\" + l.extension,
+           .title = l.title,
+       };
+       loadinfo.push_back(i);
+    }
 
     bool global_mask_sides = config->get_bool("mask_sides", false);
     bool global_limit_sprites = config->get_bool("limit_sprites", false);
@@ -1360,7 +1364,7 @@ void c_nemulator::LoadGames()
         if (!std::filesystem::exists(li.save_path))
             li.save_path = li.rom_path;
 
-        if (li.extension == "") {
+        if (li.is_arcade) {
             if (std::filesystem::exists(li.rom_path)) {
                 li.file_list.push_back(li.rom_path + ".dir");
             }
@@ -1395,31 +1399,13 @@ void c_nemulator::LoadGames()
                 }
             }
 
-            c_game *g = new c_game(li.type, li.rom_path, fn, li.save_path);
-            switch (li.type) {
-                case GAME_PACMAN:
-                    strcpy(g->title, "Pac-Man");
-                    g->set_description(g->title);
-                    break;
-                case GAME_MSPACMAN:
-                    strcpy(g->title, "Ms. Pac-Man");
-                    g->set_description(g->title);
-                    break;
-                case GAME_MSPACMNF:
-                    strcpy(g->title, "Ms. Pac-Man (Fast)");
-                    g->set_description(g->title);
-                    break;
-                case GAME_MSPACMAB:
-                    strcpy(g->title, "Ms. Pac-Man (Bootleg)");
-                    g->set_description(g->title);
-                    break;
-                case GAME_INVADERS:
-                    strcpy(g->title, "Space Invaders");
-                    g->set_description(g->title);
-                    break;
-                default:
-                    g->set_description(fn);
-                    break;
+            c_game *g = new c_game(li.type, li.rom_path, fn, li.save_path, li.constructor);
+            if (li.title != "") {
+                strcpy(g->title, li.title.c_str());
+                g->set_description(g->title);
+            }
+            else {
+                g->set_description(fn);
             }
             gameList.push_back(g);
         }

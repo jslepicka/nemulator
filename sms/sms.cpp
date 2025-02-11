@@ -18,6 +18,21 @@ import crc32;
 
 void strip_extension(char *path);
 
+// clang-format off
+const std::vector<c_console::load_info_t> c_sms::load_info = {
+    {
+        .game_type = GAME_SMS,
+        .extension = "sms",
+        .constructor = []() { return new c_sms(SMS_MODEL::SMS); },
+    },
+    {
+        .game_type = GAME_GG,
+        .extension = "gg",
+        .constructor = []() { return new c_sms(SMS_MODEL::GAMEGEAR); },
+    },
+};
+// clang-format on
+
 c_sms::c_sms(SMS_MODEL model)
 {
     switch (model) {
@@ -51,6 +66,21 @@ c_sms::c_sms(SMS_MODEL model)
     vdp = std::make_unique<c_vdp>(this);
     psg = std::make_unique<c_psg>();
     ram = std::make_unique<unsigned char[]>(8192);
+    button_map = {
+        { BUTTON_1B,              0x10 }, //button 1
+        { BUTTON_1A,              0x20 }, //button 2
+        { BUTTON_1UP,             0x01 },
+        { BUTTON_1DOWN,           0x02 },
+        { BUTTON_1LEFT,           0x04 },
+        { BUTTON_1RIGHT,          0x08 },
+        { BUTTON_2B,             0x400 }, //button 1
+        { BUTTON_2A,             0x800 }, //button 2
+        { BUTTON_2UP,             0x40 },
+        { BUTTON_2DOWN,           0x80 },
+        { BUTTON_2LEFT,          0x100 },
+        { BUTTON_2RIGHT,         0x200 },
+        { BUTTON_SMS_PAUSE, 0x80000000 },
+    };
 }
 
 c_sms::~c_sms()

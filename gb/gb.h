@@ -61,6 +61,8 @@ class c_gb : public c_console
         return model;
     }
 
+    static const std::vector<load_info_t> load_info;
+
   private:
     std::unique_ptr<c_gbmapper> mapper;
     std::unique_ptr<uint8_t[]> ram;

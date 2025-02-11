@@ -33,8 +33,9 @@ class c_invaders : public c_console
 
     void enable_mixer();
     void disable_mixer();
-
+    static const std::vector<load_info_t> load_info;
   private:
+    
     dsp::c_resampler *resampler;
     dsp::c_biquad *post_filter;
     dsp::c_biquad4 *lpf;

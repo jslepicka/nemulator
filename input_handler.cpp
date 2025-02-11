@@ -255,3 +255,14 @@ void c_input_handler::poll(double dt, int ignore_input)
         s++;
     }
 }
+
+uint32_t c_input_handler::get_console_input(std::vector<s_button_map> &button_map)
+{
+    uint32_t ret = 0;
+    for (auto &k : button_map) {
+        if (!state[k.button].ack && state[k.button].state_cur) {
+            ret |= k.mask;
+        }
+    }
+    return ret;
+}

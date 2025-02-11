@@ -10,26 +10,13 @@
 #include "TexturePanelItem.h"
 #include "d3dx10.h"
 #include <memory>
-
-enum GAME_TYPE
-{
-    GAME_NES,
-    GAME_SMS,
-    GAME_GG,
-    GAME_GB,
-    GAME_GBC,
-    GAME_PACMAN,
-    GAME_MSPACMAN,
-    GAME_MSPACMNF, //ms pac man fast
-    GAME_MSPACMAB, //ms pac man pre-decrypted roms
-    GAME_INVADERS,
-    GAME_NONE
-};
+#include <functional>
+#include "game_types.h"
 
 class c_game : public TexturePanelItem
 {
 public:
-    c_game(GAME_TYPE type, std::string path, std::string filename, std::string sram_path);
+    c_game(GAME_TYPE type, std::string path, std::string filename, std::string sram_path, std::function<c_console*()> constructor);
     HANDLE GetEventStart() { return eventStart; } //Retrieve eventStart handle
     HANDLE GetEventDone() { return eventDone; } //Retrieve eventDone handle
     ~c_game();
@@ -58,6 +45,7 @@ public:
     };
 
   private:
+    std::function<c_console *()> constructor;
     void OnActivate(bool load);
     void OnDeactivate();
     void OnLoad();

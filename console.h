@@ -3,6 +3,11 @@
 #include <cstdint>
 #include <string>
 #include <tuple>
+#include "buttons.h"
+#include <vector>
+#include <functional>
+#include "game_types.h"
+
 class c_console
 {
 public:
@@ -23,6 +28,15 @@ public:
     virtual int *get_video() = 0;
     virtual void set_sprite_limit(bool limit_sprites) {}
     virtual bool get_sprite_limit() { return true; }
+    virtual std::vector<s_button_map> *get_button_map() {return &button_map;}
+    struct load_info_t
+    {
+        int game_type;
+        int is_arcade = 0;
+        std::string extension;
+        std::string title;
+        std::function<c_console *()> constructor;
+    };
     char path[MAX_PATH];
     char sram_path[MAX_PATH];
     char filename[MAX_PATH];
@@ -42,6 +56,7 @@ public:
         double aspect_ratio = 4.0 / 3.0;
 
     } display_info;
+    std::vector<s_button_map> button_map;
     void get_display_info(display_info_t* dst) { memcpy(dst, &display_info, sizeof(display_info_t)); }
   protected:
     std::string system_name = "Unknown";

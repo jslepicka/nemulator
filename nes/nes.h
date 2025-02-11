@@ -48,6 +48,7 @@ public:
     iNesHeader *header;
     void enable_mixer();
     void disable_mixer();
+    static const std::vector<load_info_t> load_info;
 
 private:
     int LoadImage(char *pathFile);
@@ -64,4 +65,5 @@ private:
     int file_length;
     char sramFilename[MAX_PATH];
     bool limit_sprites;
+    
 };

@@ -37,7 +37,7 @@ public:
     void disable_mixer();
     void set_input(int input);
     SMS_MODEL get_model() const { return model; }
-
+    static const std::vector<load_info_t> load_info;
   private:
     SMS_MODEL model;
     int psg_cycles;

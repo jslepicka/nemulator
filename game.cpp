@@ -15,7 +15,7 @@ std::string c_game::get_filename()
     return filename;
 }
 
-c_game::c_game(GAME_TYPE type, std::string path, std::string filename, std::string sram_path)
+c_game::c_game(GAME_TYPE type, std::string path, std::string filename, std::string sram_path, std::function<c_console*()> constructor)
     {
     limit_sprites = false;
     this->path = path;
@@ -35,7 +35,9 @@ c_game::c_game(GAME_TYPE type, std::string path, std::string filename, std::stri
     bd.BindFlags = D3D10_BIND_VERTEX_BUFFER;
     bd.CPUAccessFlags = 0;
     bd.MiscFlags = 0;
-}
+
+    this->constructor = constructor;
+    }
 
 c_game::~c_game()
 {
@@ -75,41 +77,7 @@ void c_game::OnActivate(bool load)
 
         if (!console)
         {
-            switch (type)
-            {
-            case GAME_NES:
-                console = new c_nes();
-                break;
-            case GAME_SMS:
-                console = new c_sms(SMS_MODEL::SMS);
-                break;
-            case GAME_GG:
-                console = new c_sms(SMS_MODEL::GAMEGEAR);
-                break;
-            case GAME_GB:
-                console = new c_gb(GB_MODEL::DMG);
-                break;
-            case GAME_GBC:
-                console = new c_gb(GB_MODEL::CGB);
-                break;
-            case GAME_PACMAN:
-                console = new c_pacman();
-                break;
-            case GAME_MSPACMAN:
-                console = new c_mspacman(PACMAN_MODEL::MSPACMAN);
-                break;
-            case GAME_MSPACMNF:
-                console = new c_mspacman(PACMAN_MODEL::MSPACMNF);
-                break;
-            case GAME_MSPACMAB:
-                console = new c_pacman(PACMAN_MODEL::MSPACMAB);
-                break;
-            case GAME_INVADERS:
-                console = new invaders::c_invaders();
-                break;
-            default:
-                break;
-            }
+            console = constructor();
             if (console)
             {
                 console->get_display_info(&display_info);
