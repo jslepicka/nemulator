@@ -1,6 +1,7 @@
 #include "invaders.h"
 #include <fstream>
 #include <string.h>
+#include <algorithm>
 
 import z80;
 import crc32;
@@ -101,8 +102,6 @@ c_invaders::c_invaders()
         {BUTTON_1LEFT,      0x20},
         {BUTTON_1RIGHT,     0x40},
     };
-
-    reset();
 }
 
 c_invaders::~c_invaders()
@@ -193,6 +192,7 @@ int c_invaders::load()
     load_samples(invaders_sample_load_info);
 
     loaded = 1;
+    reset();
     return 0;
 }
 
@@ -236,7 +236,7 @@ int c_invaders::emulate_frame()
 
 void c_invaders::clock_sound(int cycles)
 {
-    static const float vol = .5f;
+    static const float vol = .4f;
     //generating sound at 1996800 / audio_divisor Hz
     for (int i = 0; i < cycles; i++) {
         float sample = 0.0f;
@@ -246,6 +246,7 @@ void c_invaders::clock_sound(int cycles)
             }
         }
         if (mixer_enabled) {
+            sample = std::clamp(sample, -1.0f, 1.0f);
             resampler->process(sample);
         }
     }
