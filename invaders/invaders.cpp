@@ -1,6 +1,8 @@
 #include "invaders.h"
 #include <fstream>
 #include <string.h>
+#undef min
+#undef max
 #include <algorithm>
 
 import z80;
@@ -40,59 +42,23 @@ c_invaders::c_invaders()
                 &nmi, &irq, &data_bus);
     loaded = 0;
     sample_channels[0].loop = 1;
-    /*
-    lowpass elliptical, 20kHz
-    d = fdesign.lowpass('N,Fp,Ap,Ast', 8, 20000, .1, 80, 1996800/2);
-    Hd = design(d, 'ellip', 'FilterStructure', 'df2tsos');
-    set(Hd, 'Arithmetic', 'single');
-    g = regexprep(num2str(reshape(Hd.ScaleValues(1 : 4), [1 4]), '%.16ff '), '\s+', ',')
-    b2 = regexprep(num2str(Hd.sosMatrix(5 : 8), '%.16ff '), '\s+', ',')
-    a2 = regexprep(num2str(Hd.sosMatrix(17 : 20), '%.16ff '), '\s+', ',')
-    a3 = regexprep(num2str(Hd.sosMatrix(21 : 24), '%.16ff '), '\s+', ',')
-    */
 
-    /*
-    lowpass elliptical, 20kHz
-    d = fdesign.lowpass('N,Fp,Ap,Ast', 8, 20000, .1, 80, 1996800/4);
-    Hd = design(d, 'ellip', 'FilterStructure', 'df2tsos');
-    set(Hd, 'Arithmetic', 'single');
-    g = regexprep(num2str(reshape(Hd.ScaleValues(1 : 4), [1 4]), '%.16ff '), '\s+', ',')
-    b2 = regexprep(num2str(Hd.sosMatrix(5 : 8), '%.16ff '), '\s+', ',')
-    a2 = regexprep(num2str(Hd.sosMatrix(17 : 20), '%.16ff '), '\s+', ',')
-    a3 = regexprep(num2str(Hd.sosMatrix(21 : 24), '%.16ff '), '\s+', ',')
-    */
-    switch (audio_divider) {
-        case 2:
-            lpf = new dsp::c_biquad4(
-                {0.5070392489433289f, 0.3306076824665070f, 0.1138657182455063f, 0.0055798427201807f},
-                {-1.9594025611877441f, -1.9208804368972778f, -1.4828784465789795f, -1.9681241512298584f},
-                {-1.9513448476791382f, -1.9262821674346924f, -1.9057153463363647f, -1.9728368520736694f},
-                {0.9648271203041077f, 0.9343814253807068f, 0.9088804125785828f, 0.9893420338630676f});
-            break;
-        case 4:
-            lpf = new dsp::c_biquad4(
-                {0.5084333419799805f, 0.3372127115726471f, 0.1511920541524887f, 0.0056142648681998f},
-                {-1.8411995172500610f, -1.6990419626235962f, -0.5021169781684876f, -1.8745096921920776f},
-                {-1.8784115314483643f, -1.8417872190475464f, -1.8132950067520142f, -1.9135959148406982f},
-                {0.9312939047813416f, 0.8732110261917114f, 0.8254680037498474f, 0.9789751172065735f});
-            break;
-        default:
-            break;
-    }
+    // 30Hz high pass
+    // d = fdesign.highpass('N,F3dB', 2, 30, 48000);
+    // Hd = design(d, 'butter', 'FilterStructure', 'df2tsos');
+    // set(Hd, 'Arithmetic', 'single');
+    // g = num2str(Hd.ScaleValues(1), '%.16ff ')
+    // b = regexprep(num2str(Hd.sosMatrix(1 : 3), '%.16ff '), '\s+', ',')
+    // a = regexprep(num2str(Hd.sosMatrix(4 : 6), '%.16ff '), '\s+', ',')
 
+    post_filter =
+        new dsp::c_biquad(0.9972270727157593f,
+            {1.0000000000000000f,-2.0000000000000000f,1.0000000000000000f},
+            {1.0000000000000000f,-1.9944463968276978f,0.9944617748260498f});
 
-    /*
-    post-filter is butterworth bandpass, 30Hz - 12kHz
-    d = fdesign.bandpass('N,F3dB1,F3dB2', 2, 30, 12000, 48000);
-    Hd = design(d,'butter', 'FilterStructure', 'df2tsos');
-    set(Hd, 'Arithmetic', 'single');
-    g = num2str(Hd.ScaleValues(1), '%.16ff ')
-    b = regexprep(num2str(Hd.sosMatrix(1:3), '%.16ff '), '\s+', ',')
-    a = regexprep(num2str(Hd.sosMatrix(4:6), '%.16ff '), '\s+', ',')
-    */
-    post_filter = new dsp::c_biquad(0.4990182518959045f, {1.0000000000000000f, 0.0000000000000000f, -1.0000000000000000f},
-                          {1.0000000000000000f, -0.9980365037918091f, 0.0019634978380054f});
-    resampler = new dsp::c_resampler((double)audio_freq / 48000.0, lpf, post_filter);
+    //no need for low pass filter since we're playing back samples
+    null_filter = new dsp::c_null_filter();
+    resampler = new dsp::c_resampler((double)audio_freq / 48000.0, null_filter, post_filter);
     mixer_enabled = 0;
 
     button_map = {
@@ -106,8 +72,8 @@ c_invaders::c_invaders()
 
 c_invaders::~c_invaders()
 {
+    delete null_filter;
     delete post_filter;
-    delete lpf;
     delete resampler;
 }
 
@@ -246,7 +212,7 @@ void c_invaders::clock_sound(int cycles)
             }
         }
         if (mixer_enabled) {
-            sample = std::clamp(sample, -1.0f, 1.0f);
+            sample = std::min(std::max(sample, -1.0f), 1.0f);
             resampler->process(sample);
         }
     }

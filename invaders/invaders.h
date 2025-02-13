@@ -11,7 +11,7 @@ namespace dsp
 {
 class c_resampler;
 class c_biquad;
-class c_biquad4;
+class c_null_filter;
 }
 
 namespace invaders
@@ -37,7 +37,7 @@ class c_invaders : public c_console
     
     dsp::c_resampler *resampler;
     dsp::c_biquad *post_filter;
-    dsp::c_biquad4 *lpf;
+    dsp::c_null_filter *null_filter;
     int mixer_enabled;
     struct s_roms
     {
