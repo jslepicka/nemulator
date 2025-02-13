@@ -10,6 +10,8 @@
 #include "mbc5.h"
 #include "sm83.h"
 #include <algorithm>
+#include "..\input_handler.h"
+#include <array>
 
 void strip_extension(char *path);
 
@@ -107,6 +109,9 @@ int c_gb::reset()
 
     memset(ram.get(), 0, RAM_SIZE);
     memset(hram.get(), 0, 128);
+
+    prev_input = 0;
+    input_mask = ~0x06;
     return 0;
 }
 
@@ -619,7 +624,9 @@ void c_gb::set_stat_irq(int status)
 }
 void c_gb::set_input(int input)
 {
-    next_input = ~input;
+    uint32_t filtered = c_input_handler::filter_input_pairs(input, prev_input, input_mask, std::array{0x03, 0x0C});
+    prev_input = input;
+    next_input = ~filtered;
 }
 
 void c_gb::enable_mixer()

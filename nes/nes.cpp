@@ -6,6 +6,7 @@
 #include "mappers\mappers.h"
 #include "ines.h"
 #include "cartdb.h"
+#include "..\input_handler.h"
 
 #include <fstream>
 
@@ -134,6 +135,27 @@ c_nes::c_nes()
     limit_sprites = false;
     crc32 = 0;
     game_genie = std::make_unique<c_game_genie>();
+
+    // clang-format off
+    button_map = {
+        { BUTTON_1A,         0x01 },
+        { BUTTON_1B,         0x02 },
+        { BUTTON_1SELECT,    0x04 },
+        { BUTTON_1START,     0x08 },
+        { BUTTON_1UP,        0x10 },
+        { BUTTON_1DOWN,      0x20 },
+        { BUTTON_1LEFT,      0x40 },
+        { BUTTON_1RIGHT,     0x80 },
+        { BUTTON_2A,        0x101 },
+        { BUTTON_2B,        0x102 },
+        { BUTTON_2SELECT,   0x104 },
+        { BUTTON_2START,    0x108 },
+        { BUTTON_2UP,       0x110 },
+        { BUTTON_2DOWN,     0x120 },
+        { BUTTON_2LEFT,     0x140 },
+        { BUTTON_2RIGHT,    0x180 },
+    };
+    // clang-format on
 }
 
 c_nes::~c_nes()
@@ -422,6 +444,9 @@ int c_nes::reset()
     //game_genie->add_code("IPVGZGZE");
     //game_genie->add_code("LEIIXZ");
     //game_genie->add_code("GXVAAASA");
+
+    prev_input = 0;
+    input_mask = ~0x5050;
     return 1;
 }
 
@@ -491,6 +516,9 @@ const char *c_nes::get_mapper_name()
 
 void c_nes::set_input(int input)
 {
-    joypad->joy1 = input & 0xFF;
-    joypad->joy2 = (input >> 8) & 0xFF;
+    uint32_t filtered = c_input_handler::filter_input_pairs(input, prev_input, input_mask, std::array{0xC0, 0x30, 0xC000, 0x3000});
+    prev_input = input;
+
+    joypad->joy1 = filtered & 0xFF;
+    joypad->joy2 = (filtered >> 8) & 0xFF;
 }

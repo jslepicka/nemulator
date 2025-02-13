@@ -63,5 +63,6 @@ private:
     int file_length;
     char sramFilename[MAX_PATH];
     bool limit_sprites;
-    
+    uint32_t prev_input;
+    uint32_t input_mask;
 };

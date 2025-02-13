@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <Windows.h>
 #include "crc.h"
+#include "..\input_handler.h"
+#include <array>
 
 #include <crtdbg.h>
 #if defined(DEBUG) | defined(_DEBUG)
@@ -194,6 +196,8 @@ int c_sms::reset()
     joy = 0xFFFF;
     psg_cycles = 0;
     last_psg_run = 0;
+    prev_input = 0;
+    input_mask = ~0x14005;
     return 0;
 }
 
@@ -385,9 +389,11 @@ unsigned char c_sms::read_port(int port)
 
 void c_sms::set_input(int input)
 {
+    uint32_t filtered = c_input_handler::filter_input_pairs(input, prev_input, input_mask, std::array{0x03, 0x0C, 0xC0, 0x300});
+    prev_input = input;
     if (model == SMS_MODEL::SMS)
-        nmi = input & 0x8000'0000;
-    joy = ~input;
+        nmi = filtered & 0x8000'0000;
+    joy = ~filtered;
 }
 
 int *c_sms::get_video()

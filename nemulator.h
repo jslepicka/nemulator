@@ -13,7 +13,6 @@
 #include "TexturePanel.h"
 #include "TexturePanelItem.h"
 #include "sound.h"
-#include "nes_input_handler.h"
 #include "config.h"
 #include "task.h"
 #include <deque>

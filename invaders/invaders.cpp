@@ -327,6 +327,8 @@ void c_invaders::write_byte(uint16_t address, uint8_t data)
 
 uint8_t c_invaders::read_port(uint8_t port)
 {
+    uint16_t a;
+    uint16_t b;
     switch (port) {
         case 0: //INP0
             break;
@@ -335,7 +337,7 @@ uint8_t c_invaders::read_port(uint8_t port)
         case 2: //INP2
             return INP2.value;
         case 3: //SHFT_IN
-            return ((shift_register << shift_amount) & 0xFF00) >> 8;
+            return (shift_register >> (8 - shift_amount)) & 0xFF;
         default:
             break;
     }

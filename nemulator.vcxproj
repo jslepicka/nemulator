@@ -332,7 +332,6 @@
     <ClCompile Include="nes\mappers\mapper_nsf.cpp" />
     <ClCompile Include="nes\mappers\mapper_vrc4.cpp" />
     <ClCompile Include="nes\mappers\vrc7_audio.cpp" />
-    <ClCompile Include="nes_input_handler.cpp" />
     <ClCompile Include="nsf_stats.cpp" />
     <ClCompile Include="pacman\mspacman.cpp" />
     <ClCompile Include="pacman\pacman.cpp" />
@@ -469,7 +468,6 @@
     <ClInclude Include="nes\mappers\vrc7_audio.h" />
     <ClInclude Include="nes\mirroring_types.h" />
     <ClInclude Include="nes\ppu.h" />
-    <ClInclude Include="nes_input_handler.h" />
     <ClInclude Include="nsf_stats.h" />
     <ClInclude Include="pacman\mspacman.h" />
     <ClInclude Include="pacman\pacman.h" />

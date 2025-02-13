@@ -72,9 +72,6 @@
     <ClCompile Include="menu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="nes_input_handler.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="sound.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -447,6 +444,9 @@
     <ClCompile Include="dsp\null_filter.ixx">
       <Filter>Source Files\dsp</Filter>
     </ClCompile>
+    <ClCompile Include="invaders\sample_channel.cpp">
+      <Filter>Source Files\invaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="config.h">
@@ -465,9 +465,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="menu.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="nes_input_handler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="sound.h">
@@ -831,6 +828,15 @@
       <Filter>Header Files\pacman</Filter>
     </ClInclude>
     <ClInclude Include="invaders\invaders.h">
+      <Filter>Header Files\invaders</Filter>
+    </ClInclude>
+    <ClInclude Include="buttons.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="game_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="invaders\sample_channel.h">
       <Filter>Header Files\invaders</Filter>
     </ClInclude>
   </ItemGroup>

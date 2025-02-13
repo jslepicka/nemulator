@@ -59,5 +59,7 @@ public:
     char sram_file_name[MAX_PATH];
     void catchup_psg();
     uint64_t last_psg_run;
+    uint32_t prev_input;
+    uint32_t input_mask;
 };
 

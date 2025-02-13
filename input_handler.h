@@ -26,6 +26,11 @@ public:
     //do something better here
     void enable_extrafast() { extrafast_enabled = 1; }
     void disable_extrafast() { extrafast_enabled = 0; }
+
+    void set_turbo_state(int button, int turbo_enabled);
+    int get_turbo_state(int button);
+    void set_turbo_rate(int button, int rate);
+    int get_turbo_rate(int button);
     enum results
     {
         RESULT_NONE = 0,
@@ -52,6 +57,21 @@ public:
         AXIS_Z
     };
 
+    template<typename T, std::size_t n> 
+    static uint32_t filter_input_pairs(uint32_t input, uint32_t prev_input, uint32_t &input_mask,
+                                       const std::array<T, n> &pair_masks)
+    {
+        uint32_t changed = input ^ prev_input;
+        uint32_t hidden = input & ~input_mask;
+
+        for (auto p : pair_masks) {
+            if ((changed & p) && (hidden & p)) {
+                input_mask ^= p;
+            }
+        }
+        return input & input_mask;
+    }
+
 protected:
     bool ackd;
     int num_buttons;
@@ -70,6 +90,8 @@ protected:
         int joy;
         int joy_button;
         int ack;
+        int turbo_enabled;
+        int turbo_rate;
     };
 
     std::unique_ptr<s_state[]> state;

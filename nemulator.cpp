@@ -319,7 +319,7 @@ void c_nemulator::configure_input()
     };
 
     int num_buttons = sizeof(button_map) / sizeof(s_button_map);
-    g_ih = std::make_unique<c_nes_input_handler>(BUTTON_COUNT);
+    g_ih = std::make_unique<c_input_handler>(BUTTON_COUNT);
 
     for (int i = 0; i < num_buttons; i++)
     {
@@ -380,25 +380,13 @@ void c_nemulator::RunGames()
             WaitForMultipleObjects((DWORD)game_threads.size(), done_events.get(), TRUE, INFINITE);
         }
     }
-    else
-    {
-        c_game *g = (c_game*)texturePanels[selectedPanel]->GetSelected();
+    else {
+        c_game *g = (c_game *)texturePanels[selectedPanel]->GetSelected();
         std::vector<s_button_map> *button_map;
-        auto ih = (c_nes_input_handler *)g_ih.get();
-        switch (g->type)
-        {
-        case GAME_NES:
-            g->console->set_input(
-                ih->get_nes_byte(0) |
-                (ih->get_nes_byte(1) << 8));
-            break;
-        default:
-            button_map = g->console->get_button_map();
-            if (button_map->size() != 0) {
-                g->console->set_input(ih->get_console_input(*button_map));
-            }
-            break;
-        }
+        auto ih = (c_input_handler *)g_ih.get();
+
+        button_map = g->console->get_button_map();
+        g->console->set_input(ih->get_console_input(*button_map));
 
         g->console->emulate_frame();
         if (benchmark_mode) {
@@ -407,7 +395,6 @@ void c_nemulator::RunGames()
             }
         }
     }
-
 }
 
 void c_nemulator::handle_button_reset(s_button_handler_params* params)
@@ -779,25 +766,24 @@ void c_nemulator::show_qam()
 
 void c_nemulator::do_turbo_press(int button, std::string button_name)
 {
-    auto nih = (c_nes_input_handler *)g_ih.get();
     if (g_ih->get_result(BUTTON_LEFT_SHIFT) & c_input_handler::RESULT_DEPRESSED)
     {
-        nih->set_turbo_rate(button, nih->get_turbo_rate(button) + 2);
+        g_ih->set_turbo_rate(button, g_ih->get_turbo_rate(button) + 2);
     }
     else if (g_ih->get_result(BUTTON_RIGHT_SHIFT) & c_input_handler::RESULT_DEPRESSED)
     {
-        nih->set_turbo_rate(button, nih->get_turbo_rate(button) - 2);
+        g_ih->set_turbo_rate(button, g_ih->get_turbo_rate(button) - 2);
     }
     else
     {
-        int turbo_state = nih->get_turbo_state(button);
-        nih->set_turbo_state(button, !turbo_state);
+        int turbo_state = g_ih->get_turbo_state(button);
+        g_ih->set_turbo_state(button, !turbo_state);
         status->add_message(button_name + " turbo " + (turbo_state ? "disabled" : "enabled"));
         return;
     }
     char message[64];
-    sprintf_s(message, "%s turbo rate: %d/s", button_name.c_str(),
-        60/nih->get_turbo_rate(button));
+    sprintf_s(message, "%s turbo rate: %.1f/s", button_name.c_str(),
+        60.0/g_ih->get_turbo_rate(button));
     status->add_message(message);
 }
 

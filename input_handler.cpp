@@ -21,6 +21,8 @@ c_input_handler::c_input_handler(int buttons)
         s->joy_button = 0;
         s->ack = 0;
         s->depressed_count = 0;
+        s->turbo_enabled = 0;
+        s->turbo_rate = 10;
         s++;
     }
     repeat_start = 333.3;
@@ -44,10 +46,39 @@ c_input_handler::~c_input_handler()
 {
 }
 
+void c_input_handler::set_turbo_state(int button, int turbo_enabled)
+{
+    state[button % num_buttons].turbo_enabled = turbo_enabled ? 1 : 0;
+}
+
+int c_input_handler::get_turbo_state(int button)
+{
+    return state[button % num_buttons].turbo_enabled;
+}
+
+void c_input_handler::set_turbo_rate(int button, int rate)
+{
+    static const int turbo_rate_max = 20;
+    static const int turbo_rate_min = 2;
+    if (rate > turbo_rate_max)
+        rate = turbo_rate_max;
+    if (rate < turbo_rate_min)
+        rate = turbo_rate_min;
+    state[button % num_buttons].turbo_rate = rate;
+}
+
+int c_input_handler::get_turbo_rate(int button)
+{
+    return state[button % num_buttons].turbo_rate;
+}
+
 double c_input_handler::get_hold_time(int button)
 {
-     if (ackd) return 0.0; return state[button].ack ? 0.0 : state[button].hold_time; 
-}
+    if (ackd) {
+        return 0.0;
+    }
+    return state[button].ack ? 0.0 : state[button].hold_time;
+ }
 
 void c_input_handler::set_repeat_mode(int button, int mode)
 {
@@ -260,8 +291,16 @@ uint32_t c_input_handler::get_console_input(std::vector<s_button_map> &button_ma
 {
     uint32_t ret = 0;
     for (auto &k : button_map) {
-        if (!state[k.button].ack && state[k.button].state_cur) {
-            ret |= k.mask;
+        auto &s = state[k.button];
+        if (!s.ack && s.state_cur) {
+            if (s.turbo_enabled) {
+                if (!(s.depressed_count % s.turbo_rate >= (s.turbo_rate / 2))) {
+                    ret |= k.mask;
+                }
+            }
+            else {
+                ret |= k.mask;
+            }
         }
     }
     return ret;
