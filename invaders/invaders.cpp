@@ -24,7 +24,8 @@ const std::vector<c_console::load_info_t> c_invaders::load_info = {
 };
 // clang-format on
 
-c_invaders::c_invaders()
+c_invaders::c_invaders() :
+    input_pair_filter({0x60})
 {
     system_name = "Arcade";
 
@@ -251,6 +252,7 @@ int c_invaders::reset()
 
 void c_invaders::set_input(int input)
 {
+    input = input_pair_filter.filter(input);
     INP1.value = input | 0x8;
 }
 

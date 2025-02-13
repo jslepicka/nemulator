@@ -10,8 +10,6 @@
 #include "mbc5.h"
 #include "sm83.h"
 #include <algorithm>
-#include "..\input_handler.h"
-#include <array>
 
 void strip_extension(char *path);
 
@@ -47,7 +45,8 @@ const std::vector<c_console::load_info_t> c_gb::load_info = {
 };
 // clang-format on
 
-c_gb::c_gb(GB_MODEL model)
+c_gb::c_gb(GB_MODEL model) :
+    input_pair_filter({0x03, 0x0C})
 {
     system_name = model == GB_MODEL::CGB ? "Nintendo Game Boy Color" : "Nintendo Game Boy";
     display_info.fb_width = 160;
@@ -110,8 +109,6 @@ int c_gb::reset()
     memset(ram.get(), 0, RAM_SIZE);
     memset(hram.get(), 0, 128);
 
-    prev_input = 0;
-    input_mask = ~0x06;
     return 0;
 }
 
@@ -624,9 +621,8 @@ void c_gb::set_stat_irq(int status)
 }
 void c_gb::set_input(int input)
 {
-    uint32_t filtered = c_input_handler::filter_input_pairs(input, prev_input, input_mask, std::array{0x03, 0x0C});
-    prev_input = input;
-    next_input = ~filtered;
+    input = input_pair_filter.filter(input);
+    next_input = ~input;
 }
 
 void c_gb::enable_mixer()

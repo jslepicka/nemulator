@@ -7,6 +7,7 @@
 #include "..\console.h"
 #include "game_genie.h"
 #include <memory>
+#include "..\input_pair_filter.h"
 
 class c_cpu;
 class c_ppu;
@@ -63,6 +64,5 @@ private:
     int file_length;
     char sramFilename[MAX_PATH];
     bool limit_sprites;
-    uint32_t prev_input;
-    uint32_t input_mask;
+    c_input_pair_filter input_pair_filter;
 };

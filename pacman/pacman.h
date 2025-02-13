@@ -4,6 +4,7 @@
 #include <memory>
 #include <array>
 #include <vector>
+#include "..\input_pair_filter.h"
 
 #define BIT(x, n) (((x) >> (n)) & 1)
 #define BITSWAP16(val, B15, B14, B13, B12, B11, B10, B9, B8, B7, B6, B5, B4, B3, B2, B1, B0)                           \
@@ -85,6 +86,6 @@ class c_pacman : public c_console
 
     PACMAN_MODEL model;
     int prg_mask;
-
+    c_input_pair_filter input_pair_filter;
 
 };

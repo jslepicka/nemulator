@@ -27,7 +27,8 @@ const std::vector<c_console::load_info_t> c_pacman::load_info = {
 };
 // clang-format on
 
-c_pacman::c_pacman(PACMAN_MODEL model)
+c_pacman::c_pacman(PACMAN_MODEL model) :
+    input_pair_filter({0x09, 0x06})
 {
     system_name = "Arcade";
 
@@ -176,6 +177,7 @@ int c_pacman::reset()
 
 void c_pacman::set_input(int input)
 {
+    input = input_pair_filter.filter(input);
     IN0 = (~input) & 0x2F |
         0x10 | //rack advance
         0x80;  //credit button

@@ -4,6 +4,7 @@
 #include <memory>
 #include <array>
 #include <vector>
+#include "..\input_pair_filter.h"
 
 class c_z80;
 
@@ -114,5 +115,6 @@ class c_invaders : public c_console
     uint8_t ram[1 * 1024];
     uint8_t vram[7 * 1024];
     uint32_t fb[FB_WIDTH * FB_HEIGHT];
+    c_input_pair_filter input_pair_filter;
 };
 } //namespace invaders

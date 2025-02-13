@@ -1,6 +1,7 @@
 #pragma once
 #include "..\console.h"
 #include <memory>
+#include "..\input_pair_filter.h"
 
 class c_z80;
 class c_vdp;
@@ -59,7 +60,6 @@ public:
     char sram_file_name[MAX_PATH];
     void catchup_psg();
     uint64_t last_psg_run;
-    uint32_t prev_input;
-    uint32_t input_mask;
+    c_input_pair_filter input_pair_filter;
 };
 

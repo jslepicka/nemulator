@@ -5,6 +5,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include "..\input_pair_filter.h"
 
 class c_sm83;
 class c_gbmapper;
@@ -119,6 +120,5 @@ class c_gb : public c_console
     GB_MODEL model;
     static const int RAM_SIZE = 32768;
 
-    uint32_t prev_input;
-    uint32_t input_mask;
+    c_input_pair_filter input_pair_filter;
 };

@@ -57,21 +57,6 @@ public:
         AXIS_Z
     };
 
-    template<typename T, std::size_t n> 
-    static uint32_t filter_input_pairs(uint32_t input, uint32_t prev_input, uint32_t &input_mask,
-                                       const std::array<T, n> &pair_masks)
-    {
-        uint32_t changed = input ^ prev_input;
-        uint32_t hidden = input & ~input_mask;
-
-        for (auto p : pair_masks) {
-            if ((changed & p) && (hidden & p)) {
-                input_mask ^= p;
-            }
-        }
-        return input & input_mask;
-    }
-
 protected:
     bool ackd;
     int num_buttons;
