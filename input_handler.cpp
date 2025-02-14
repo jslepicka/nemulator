@@ -292,8 +292,8 @@ void c_input_handler::poll(double dt, int ignore_input)
 uint32_t c_input_handler::get_console_input(std::vector<s_button_map> &button_map)
 {
     for (auto &p : pairs) {
-        s_state &s1 = state[p.button1];
-        s_state &s2 = state[p.button2];
+        auto &s1 = state[p.button1];
+        auto &s2 = state[p.button2];
         int cur = s1.state_cur | (s2.state_cur << 1);
         int changed = cur ^ p.prev;
         p.prev = cur;
