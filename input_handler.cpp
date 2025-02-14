@@ -293,12 +293,7 @@ uint32_t c_input_handler::get_console_input(std::vector<s_button_map> &button_ma
     for (auto &k : button_map) {
         auto &s = state[k.button];
         if (!s.ack && s.state_cur) {
-            if (s.turbo_enabled) {
-                if (!(s.depressed_count % s.turbo_rate >= (s.turbo_rate / 2))) {
-                    ret |= k.mask;
-                }
-            }
-            else {
+            if (!s.turbo_enabled || !(s.depressed_count % s.turbo_rate >= (s.turbo_rate / 2))) {
                 ret |= k.mask;
             }
         }
