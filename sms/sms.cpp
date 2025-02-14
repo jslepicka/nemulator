@@ -33,8 +33,7 @@ const std::vector<c_console::load_info_t> c_sms::load_info = {
 };
 // clang-format on
 
-c_sms::c_sms(SMS_MODEL model) :
-    input_pair_filter({0x03, 0x0C, 0xC0, 0x300})
+c_sms::c_sms(SMS_MODEL model)
 {
     switch (model) {
         case SMS_MODEL::SMS:
@@ -386,7 +385,6 @@ unsigned char c_sms::read_port(int port)
 
 void c_sms::set_input(int input)
 {
-    input = input_pair_filter.filter(input);
     if (model == SMS_MODEL::SMS)
         nmi = input & 0x8000'0000;
     joy = ~input;

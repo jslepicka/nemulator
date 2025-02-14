@@ -320,14 +320,17 @@ void c_nemulator::configure_input()
 
     int num_buttons = sizeof(button_map) / sizeof(s_button_map);
     g_ih = std::make_unique<c_input_handler>(BUTTON_COUNT);
-
+    g_ih->set_pair(BUTTON_1LEFT, BUTTON_1RIGHT);
+    g_ih->set_pair(BUTTON_1UP, BUTTON_1DOWN);
+    g_ih->set_pair(BUTTON_2LEFT, BUTTON_2RIGHT);
+    g_ih->set_pair(BUTTON_2UP, BUTTON_2DOWN);
+    
     for (int i = 0; i < num_buttons; i++)
     {
         int j = i;
         int default_key = button_map[i].default_key;
         int button = button_map[i].button;
         std::string key = button_map[i].config_base + "." + button_map[i].config_name;
-        //int d = key == "." ? default_key : config->get_int(key, default_key);
         if (default_key & button_mask)
         {
             default_key &= button_mask - 1;

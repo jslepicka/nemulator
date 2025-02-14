@@ -115,8 +115,7 @@ const std::map<int, std::function<std::unique_ptr<c_mapper>()> > c_nes::mapper_f
     {0x102, []() { return std::make_unique<c_mapper_nsf>(); }}};
 
 
-c_nes::c_nes() :
-    input_pair_filter({0xC0, 0x30, 0xC000, 0x3000})
+c_nes::c_nes()
 {
     system_name = "Nintendo NES";
     display_info.fb_width = 256;
@@ -514,9 +513,6 @@ const char *c_nes::get_mapper_name()
 
 void c_nes::set_input(int input)
 {
-    //uint32_t filtered = c_input_handler::filter_input_pairs(input, prev_input, input_mask, std::array{0xC0, 0x30, 0xC000, 0x3000});
-    //prev_input = input;
-    input = input_pair_filter.filter(input);
     joypad->joy1 = input & 0xFF;
     joypad->joy2 = (input >> 8) & 0xFF;
 }

@@ -56,8 +56,12 @@ public:
         AXIS_Y,
         AXIS_Z
     };
+    void set_pair(int button1, int button2)
+    {
+        pairs.push_back({button1, button2});
+    }
 
-protected:
+  protected:
     bool ackd;
     int num_buttons;
     struct s_state
@@ -77,8 +81,17 @@ protected:
         int ack;
         int turbo_enabled;
         int turbo_rate;
+        int pair_mask;
     };
 
+    struct s_pair
+    {
+        int button1;
+        int button2;
+        int prev = 0;
+        int mask = 2;
+    };
+    std::vector<s_pair> pairs;
     std::unique_ptr<s_state[]> state;
 
     int get_key_state(int key);

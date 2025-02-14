@@ -839,9 +839,6 @@
     <ClInclude Include="invaders\sample_channel.h">
       <Filter>Header Files\invaders</Filter>
     </ClInclude>
-    <ClInclude Include="input_pair_filter.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="effect.fx">

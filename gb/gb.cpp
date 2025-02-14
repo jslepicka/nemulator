@@ -45,8 +45,7 @@ const std::vector<c_console::load_info_t> c_gb::load_info = {
 };
 // clang-format on
 
-c_gb::c_gb(GB_MODEL model) :
-    input_pair_filter({0x03, 0x0C})
+c_gb::c_gb(GB_MODEL model)
 {
     system_name = model == GB_MODEL::CGB ? "Nintendo Game Boy Color" : "Nintendo Game Boy";
     display_info.fb_width = 160;
@@ -621,7 +620,6 @@ void c_gb::set_stat_irq(int status)
 }
 void c_gb::set_input(int input)
 {
-    input = input_pair_filter.filter(input);
     next_input = ~input;
 }
 

@@ -23,6 +23,7 @@ c_input_handler::c_input_handler(int buttons)
         s->depressed_count = 0;
         s->turbo_enabled = 0;
         s->turbo_rate = 10;
+        s->pair_mask = 1;
         s++;
     }
     repeat_start = 333.3;
@@ -211,6 +212,7 @@ void c_input_handler::poll(double dt, int ignore_input)
     }
 
     s_state *s = state.get();
+    s->pair_mask = 1;
     unsigned char result = 0;
     for (int i = 0; i < num_buttons; i++)
     {
@@ -289,10 +291,25 @@ void c_input_handler::poll(double dt, int ignore_input)
 
 uint32_t c_input_handler::get_console_input(std::vector<s_button_map> &button_map)
 {
+    for (auto &p : pairs) {
+        s_state &s1 = state[p.button1];
+        s_state &s2 = state[p.button2];
+        int cur = s1.state_cur | (s2.state_cur << 1);
+        int changed = cur ^ p.prev;
+        p.prev = cur;
+        int hidden = cur & ~p.mask;
+        if ((changed & 3) && (hidden & 3)) {
+            p.mask ^= 3;
+        }
+        cur &= p.mask;
+        s1.pair_mask = cur & 1 ? 1 : 0;
+        s2.pair_mask = cur & 2 ? 1 : 0;
+    }
+
     uint32_t ret = 0;
     for (auto &k : button_map) {
         auto &s = state[k.button];
-        if (!s.ack && s.state_cur) {
+        if (!s.ack && (s.state_cur & s.pair_mask)) {
             if (!s.turbo_enabled || !(s.depressed_count % s.turbo_rate >= (s.turbo_rate / 2))) {
                 ret |= k.mask;
             }
