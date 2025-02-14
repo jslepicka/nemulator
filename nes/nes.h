@@ -1,6 +1,5 @@
 #pragma once
 //TODO: Remove this.  Only need it for a few defines and macros
-#include <windows.h>
 #include <map>
 #include <vector>
 #include <functional>

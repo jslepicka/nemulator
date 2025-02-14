@@ -1,8 +1,6 @@
 #include "invaders.h"
 #include <fstream>
 #include <string.h>
-#undef min
-#undef max
 #include <algorithm>
 
 import z80;
@@ -327,8 +325,6 @@ void c_invaders::write_byte(uint16_t address, uint8_t data)
 
 uint8_t c_invaders::read_port(uint8_t port)
 {
-    uint16_t a;
-    uint16_t b;
     switch (port) {
         case 0: //INP0
             break;

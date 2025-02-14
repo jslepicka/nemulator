@@ -1,10 +1,8 @@
 #include "sms.h"
 #include <fstream>
-//#include "..\z80\z80.h"
 #include "vdp.h"
 #include "psg.h"
 #include <stdio.h>
-#include <Windows.h>
 #include "crc.h"
 
 #include <crtdbg.h>

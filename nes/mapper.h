@@ -1,6 +1,6 @@
 #pragma once
+#define MAX_PATH 260
 #include "ines.h"
-#include "windows.h"
 #include "mirroring_types.h"
 #include <memory>
 

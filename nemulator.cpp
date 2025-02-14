@@ -41,8 +41,6 @@ c_nemulator::c_nemulator()
     updateEvents = true;
     selectedPanel = 0;
     inGame = false;
-    joy1 = 0;
-    joy2 = 0;
     sound = 0;
     font1 = 0;
     font2 = 0;
@@ -792,12 +790,6 @@ void c_nemulator::do_turbo_press(int button, std::string button_name)
 
 void c_nemulator::leave_game()
 {
-    if (joy1 != NULL)
-        *joy1 = 0;
-    if (joy2 != NULL)
-        *joy2 = 0;
-    joy1 = NULL;
-    joy2 = NULL;
     sound->stop();
     c_console *n = ((c_game*)texturePanels[selectedPanel]->GetSelected())->console;
     n->disable_mixer();

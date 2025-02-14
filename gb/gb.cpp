@@ -1,5 +1,3 @@
-#define NOMINMAX
- //#include "windows.h"
 #include "gb.h"
 #include "gbapu.h"
 #include "gbmapper.h"

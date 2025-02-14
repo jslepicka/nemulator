@@ -138,9 +138,6 @@ private:
     bool inGame;
     std::unique_ptr<c_sound> sound;
 
-    unsigned char *joy1, *joy2;
-
-    //TexturePanel *mainPanel2;
     std::unique_ptr<TexturePanel> mainPanel2;
     static const int num_texture_panels = 1;
     TexturePanel *texturePanels[num_texture_panels];

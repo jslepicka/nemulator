@@ -11,6 +11,21 @@
 #define SETZ(x) SR.Z = x == 0 ? true : false
 #define CHECK_PAGE_CROSS2(a, b) required_cycles += (((a^b)&0xFF00) != 0) * 3
 
+INLINE uint16_t MAKEWORD(uint8_t lo, uint8_t hi)
+{
+    return (hi << 8) | lo;
+}
+
+INLINE uint8_t HIBYTE(uint16_t val)
+{
+    return val >> 8;
+}
+
+INLINE uint8_t LOBYTE(uint16_t val)
+{
+    return val & 0xFF;
+}
+
 //replaced all zeros with 3 so that invalid opcodes don't cause cpu loop to spin
 const int c_cpu::cycle_table[] = {
 //       0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F

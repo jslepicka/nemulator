@@ -1,5 +1,5 @@
 #pragma once
-#include <Windows.h>
+#define MAX_PATH 260
 #include <cstdint>
 #include <string>
 #include "buttons.h"
