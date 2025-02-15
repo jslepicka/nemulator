@@ -1,6 +1,8 @@
 #pragma once
 #include "..\mapper.h"
 
+namespace nes {
+
 class c_mapper_nsf :
     public c_mapper
 {
@@ -42,3 +44,5 @@ private:
     void WriteChrRom(unsigned short address, unsigned char value);
     unsigned char ReadChrRom(unsigned short address);
 };
+
+} //namespace nes

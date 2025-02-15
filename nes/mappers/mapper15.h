@@ -1,6 +1,8 @@
 #pragma once
 #include "..\mapper.h"
 
+namespace nes {
+
 class c_mapper15 :
     public c_mapper
 {
@@ -14,3 +16,5 @@ private:
     int reg;
     int mode;
 };
+
+} //namespace nes

@@ -2,6 +2,8 @@
 
 #include "..\cpu.h"
 
+namespace nes {
+
 c_mapper40::c_mapper40()
 {
     mapperName = "Mapper 40";
@@ -77,3 +79,5 @@ void c_mapper40::clock(int cycles)
         }
     }
 }
+
+} //namespace nes

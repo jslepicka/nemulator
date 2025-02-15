@@ -1,5 +1,7 @@
 #include "mapper3.h"
 
+namespace nes {
+
 c_mapper3::c_mapper3()
 {
     mapperName = "CNROM";
@@ -30,3 +32,5 @@ void c_mapper3::reset()
 {
     c_mapper::reset();
 }
+
+} //namespace nes

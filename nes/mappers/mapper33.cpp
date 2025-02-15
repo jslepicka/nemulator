@@ -1,6 +1,8 @@
 #include "mapper33.h"
 
 
+namespace nes {
+
 c_mapper33::c_mapper33()
 {
     //Bubble Bobble 2 (J)
@@ -52,3 +54,5 @@ void c_mapper33::reset()
 {
     SetPrgBank16k(PRG_C000, prgRomPageCount16k - 1);
 }
+
+} //namespace nes

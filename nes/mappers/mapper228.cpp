@@ -1,6 +1,8 @@
 #include "mapper228.h"
 
 
+namespace nes {
+
 c_mapper228::c_mapper228()
 {
     //Action 52, Cheetamen II
@@ -61,3 +63,5 @@ void c_mapper228::reset()
     for (int i = 0; i < 4; i++)
         regs[i] = 0;
 }
+
+} //namespace nes

@@ -1,6 +1,8 @@
 #pragma once
 #include "..\mapper.h"
 
+namespace nes {
+
 class c_mapper64 :
     public c_mapper
 {
@@ -54,3 +56,5 @@ protected:
     int cycles_since_irq;
     int latched_value;
 };
+
+} //namespace nes

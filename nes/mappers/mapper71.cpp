@@ -1,6 +1,8 @@
 #include "mapper71.h"
 
 
+namespace nes {
+
 c_mapper71::c_mapper71()
 {
     //Camerica games: Bee 52, Mig 29, etc.
@@ -33,3 +35,5 @@ void c_mapper71::reset()
         enable_mirroring_control = 1;
     }
 }
+
+} //namespace nes

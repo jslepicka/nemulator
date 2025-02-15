@@ -1,5 +1,7 @@
 #include "mapper2.h"
 
+namespace nes {
+
 c_mapper2::c_mapper2()
 {
     mapperName = "UxROM";
@@ -21,3 +23,5 @@ void c_mapper2::reset()
 {
     c_mapper::reset();
 }
+
+} //namespace nes

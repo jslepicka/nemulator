@@ -1,6 +1,8 @@
 #include "mapper66.h"
 
 
+namespace nes {
+
 c_mapper66::c_mapper66()
 {
     //SMB + Duckhunt
@@ -27,3 +29,5 @@ void c_mapper66::reset()
     SetPrgBank32k(0);
     SetChrBank8k(0);
 }
+
+} //namespace nes

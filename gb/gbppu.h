@@ -3,22 +3,28 @@
 #include <atomic>
 #include <memory>
 
+namespace gb
+{
+
 class c_gb;
 
 class c_gbppu
 {
-public:
+  public:
     c_gbppu(c_gb *gb);
     ~c_gbppu();
     void execute(int cycles);
     void reset();
     uint8_t read_byte(uint16_t address);
     void write_byte(uint16_t address, uint8_t data);
-    uint32_t* get_fb() { return fb.get(); }
+    uint32_t *get_fb()
+    {
+        return fb.get();
+    }
     void on_stop();
 
   private:
-    c_gb* gb;
+    c_gb *gb;
     int line;
     int current_cycle;
     int SCX;
@@ -39,7 +45,6 @@ public:
     int window_tile;
     int window_start_line;
 
-
     int cpu_divider;
 
     std::unique_ptr<uint8_t[]> vram;
@@ -49,14 +54,15 @@ public:
     std::unique_ptr<uint32_t[]> fb_back;
 
     void eval_sprites(int y);
-    struct s_sprite {
+    struct s_sprite
+    {
         uint8_t y;
         uint8_t x;
         uint8_t tile;
         uint8_t flags;
     } sprite_buffer[10];
 
-    uint32_t* f;
+    uint32_t *f;
 
     struct s_bg_fifo_entry
     {
@@ -87,7 +93,7 @@ public:
     int fetch_phase;
     int obj_fetch_phase;
     int ybase;
-    
+
     int current_pixel;
     int start_vblank;
     int dma_count;
@@ -123,7 +129,6 @@ public:
     int SCX_latch;
 
     static const unsigned int palettes[][4];
-    
 
     static uint32_t color_lookup[32];
 
@@ -131,7 +136,6 @@ public:
     uint32_t double_speed;
 
     uint32_t OPRI;
-
 
     int hdma_general_count;
     int hdma_hblank_count;
@@ -155,7 +159,7 @@ public:
     uint8_t cgb_bg_attr;
     uint16_t hdma_source;
     uint16_t hdma_dest;
-    
+
     const unsigned int *palette;
     alignas(8) uint8_t cgb_bg_pal[64];
     alignas(8) uint8_t cgb_ob_pal[64];
@@ -169,3 +173,4 @@ public:
     void exec_mode3();
 };
 
+} //namespace gb

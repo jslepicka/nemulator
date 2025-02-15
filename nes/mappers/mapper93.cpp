@@ -1,6 +1,8 @@
 #include "mapper93.h"
 
 
+namespace nes {
+
 c_mapper93::c_mapper93()
 {
     //Fantasy Zone
@@ -29,3 +31,5 @@ void c_mapper93::reset()
 {
     SetPrgBank16k(PRG_C000, prgRomPageCount16k - 1);
 }
+
+} //namespace nes

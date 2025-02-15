@@ -2,6 +2,8 @@
 #include "..\cpu.h"
 #include "..\apu2.h"
 
+namespace nes {
+
 c_mapper24::c_mapper24(int submapper)
 {
     //Akumajou Densetsu (J)
@@ -298,3 +300,5 @@ void c_mapper24::c_saw::clock_channel()
         }
     }
 }
+
+} //namespace nes

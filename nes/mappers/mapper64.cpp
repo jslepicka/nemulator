@@ -3,6 +3,8 @@
 #include "..\cpu.h"
 #include "..\ppu.h"
 
+namespace nes {
+
 c_mapper64::c_mapper64()
 {
     mapperName = "RAMBO-1";
@@ -273,3 +275,5 @@ void c_mapper64::clock(int cycles)
         }
     }
 }
+
+} //namespace nes

@@ -1,6 +1,8 @@
 #include "mapper68.h"
 
 
+namespace nes {
+
 c_mapper68::c_mapper68()
 {
     //After Burner
@@ -86,3 +88,5 @@ void c_mapper68::ppu_write(unsigned short address, unsigned char value)
     else
         c_mapper::ppu_write(address, value);
 }
+
+} //namespace nes

@@ -1,6 +1,8 @@
 #include "mapper232.h"
 
 
+namespace nes {
+
 c_mapper232::c_mapper232()
 {
     //Quattro *
@@ -37,3 +39,5 @@ void c_mapper232::WriteByte(unsigned short address, unsigned char value)
         break;
     }
 }
+
+} //namespace nes

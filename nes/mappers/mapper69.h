@@ -1,6 +1,8 @@
 #pragma once
 #include "..\mapper.h"
 
+namespace nes {
+
 class c_mapper69 :
     public c_mapper
 {
@@ -35,3 +37,5 @@ private:
     static const float vol_table[16];
     int squares_enabled;
 };
+
+} //namespace nes

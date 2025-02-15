@@ -1,6 +1,8 @@
 #pragma once
 #include "..\mapper.h"
 
+namespace nes {
+
 class c_mapper9 :
     public c_mapper
 {
@@ -22,3 +24,5 @@ private:
     unsigned int latch_buffer_head;
     unsigned int latch_buffer_tail;
 };
+
+} //namespace nes

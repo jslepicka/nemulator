@@ -10,9 +10,12 @@
 #define NES_PPU_USE_BMI2
 #define NES_PPU_USE_AVX2
 
+namespace nes
+{
+
 class c_ppu
 {
-public:
+  public:
     c_ppu();
     ~c_ppu();
     unsigned char read_byte(int address);
@@ -21,9 +24,18 @@ public:
     int get_sprite_size();
     void eval_sprites();
     void run_ppu_line();
-    int *get_frame_buffer() { return (int*)frame_buffer; }
-    bool get_sprite_limit() { return limit_sprites; }
-    void set_sprite_limit(bool limit) { limit_sprites = limit; }
+    int *get_frame_buffer()
+    {
+        return (int *)frame_buffer;
+    }
+    bool get_sprite_limit()
+    {
+        return limit_sprites;
+    }
+    void set_sprite_limit(bool limit)
+    {
+        limit_sprites = limit;
+    }
     uint8_t *get_sprite_memory();
 
     c_mapper *mapper;
@@ -32,7 +44,7 @@ public:
     c_apu2 *apu2;
     int drawing_bg;
 
-private:
+  private:
     void inc_horizontal_address();
     void inc_vertical_address();
     void generate_palette();
@@ -78,7 +90,7 @@ private:
     int vram_address_latch;
     int fine_x;
     int address_increment;
-    
+
     int update_rendering;
     int next_rendering;
     int hit;
@@ -88,11 +100,11 @@ private:
     int sprite_count;
     int sprite0_index;
     int rendering;
-    
+
     int tile;
     int pattern_address;
     int attribute_address;
-    
+
     uint64_t pattern1;
     uint64_t pattern2;
     uint64_t attribute;
@@ -101,7 +113,8 @@ private:
     int vid_out;
     int reload_v;
     int attribute_shift;
-    enum FETCH_STATE {
+    enum FETCH_STATE
+    {
         FETCH_BG = 0 << 3,
         FETCH_SPRITE = 1 << 3,
         FETCH_NT = 2 << 3,
@@ -170,3 +183,5 @@ private:
     uint8_t image_palette[32];
     alignas(64) uint32_t frame_buffer[256 * 240];
 };
+
+} //namespace nes

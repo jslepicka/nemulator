@@ -2,6 +2,8 @@
 
 #include "..\cpu.h"
 
+namespace nes {
+
 c_mapper16::c_mapper16(int submapper)
 {
     //Dragon Ball Z, etc.
@@ -105,3 +107,5 @@ void c_mapper16::clock(int cycles)
         }
     }
 }
+
+} //namespace nes

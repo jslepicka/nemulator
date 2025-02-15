@@ -1,6 +1,8 @@
 #include "mapper88.h"
 
 
+namespace nes {
+
 c_mapper88::c_mapper88()
 {
     //Quinty (J)
@@ -67,3 +69,5 @@ void c_mapper88::reset()
     for (int i = CHR_0000; i <= CHR_1C00; i++)
         SetChrBank1k(i, 0);
 }
+
+} //namespace nes

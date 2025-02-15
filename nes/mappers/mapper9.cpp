@@ -1,5 +1,7 @@
 #include "mapper9.h"
 
+namespace nes {
+
 c_mapper9::c_mapper9()
 {
     //Punch-Out
@@ -104,3 +106,5 @@ void c_mapper9::WriteByte(unsigned short address, unsigned char value)
         break;
     }
 }
+
+} //namespace nes

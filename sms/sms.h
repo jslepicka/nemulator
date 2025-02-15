@@ -3,6 +3,10 @@
 #include <memory>
 
 class c_z80;
+
+namespace sms
+{
+
 class c_vdp;
 class c_psg;
 
@@ -14,7 +18,7 @@ enum class SMS_MODEL
 
 class c_sms : public c_system
 {
-public:
+  public:
     c_sms(SMS_MODEL model);
     ~c_sms();
     int emulate_frame();
@@ -31,12 +35,19 @@ public:
     int nmi;
     void set_audio_freq(double freq);
     int load();
-    int is_loaded() { return loaded; }
+    int is_loaded()
+    {
+        return loaded;
+    }
     void enable_mixer();
     void disable_mixer();
     void set_input(int input);
-    SMS_MODEL get_model() const { return model; }
+    SMS_MODEL get_model() const
+    {
+        return model;
+    }
     static const std::vector<load_info_t> load_info;
+
   private:
     SMS_MODEL model;
     int psg_cycles;
@@ -61,3 +72,4 @@ public:
     uint64_t last_psg_run;
 };
 
+} //namespace sms

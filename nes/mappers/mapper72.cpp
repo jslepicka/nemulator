@@ -1,6 +1,8 @@
 #include "mapper72.h"
 
 
+namespace nes {
+
 c_mapper72::c_mapper72()
 {
     //Pinball Quest (J)
@@ -43,3 +45,5 @@ void c_mapper72::reset()
     //SetPrgBank16k(PRG_8000, 0);
     SetPrgBank16k(PRG_C000, prgRomPageCount16k - 1);
 }
+
+} //namespace nes

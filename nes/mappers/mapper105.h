@@ -1,6 +1,8 @@
 #pragma once
 #include "mapper1.h"
 
+namespace nes {
+
 class c_mapper105 :
     public c_mapper1
 {
@@ -19,3 +21,5 @@ private:
     int ticks;
     static const int irq_trigger = 0x28000000;
 };
+
+} //namespace nes

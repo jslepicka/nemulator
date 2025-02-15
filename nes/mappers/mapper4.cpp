@@ -3,6 +3,8 @@
 #include "..\cpu.h"
 #include "..\ppu.h"
 
+namespace nes {
+
 c_mapper4::c_mapper4()
 {
     mapperName = "MMC3";
@@ -241,3 +243,5 @@ void c_mapper4::reset()
     chr[5] = 7;
     Sync();
 }
+
+} //namespace nes

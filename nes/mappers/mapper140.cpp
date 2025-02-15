@@ -1,6 +1,8 @@
 #include "mapper140.h"
 
 
+namespace nes {
+
 c_mapper140::c_mapper140()
 {
     //Bio Senshi Dan - Increaser Tono Tatakai
@@ -20,3 +22,5 @@ void c_mapper140::WriteByte(unsigned short address, unsigned char value)
         c_mapper::WriteByte(address, value);
     }
 }
+
+} //namespace nes

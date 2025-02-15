@@ -4,6 +4,9 @@
 #include "mirroring_types.h"
 #include <memory>
 
+namespace nes
+{
+
 class c_ppu;
 class c_cpu;
 class c_nes;
@@ -11,7 +14,7 @@ class c_apu2;
 
 class c_mapper
 {
-public:
+  public:
     c_mapper();
     virtual ~c_mapper();
     virtual unsigned char ReadByte(unsigned short address);
@@ -29,7 +32,7 @@ public:
     c_apu2 *apu2;
     int renderingBg;
     void set_submapper(int submapper);
-    iNesHeader* header;
+    iNesHeader *header;
     unsigned char *image;
     char filename[MAX_PATH];
     char sramFilename[MAX_PATH];
@@ -38,12 +41,16 @@ public:
     int crc32;
     virtual unsigned char ppu_read(unsigned short address);
     virtual void ppu_write(unsigned short address, unsigned char value);
-    virtual int get_nwc_time() { return 0; }
+    virtual int get_nwc_time()
+    {
+        return 0;
+    }
     int in_sprite_eval;
     c_nes *nes;
     int get_mirroring();
     int file_length;
-protected:
+
+  protected:
     int expansion_audio;
 
     static const int CHR_0000 = 0;
@@ -103,3 +110,5 @@ protected:
 
     int submapper;
 };
+
+} //namespace nes

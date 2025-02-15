@@ -1,6 +1,8 @@
 #pragma once
 #include "..\mapper.h"
 
+namespace nes {
+
 class c_mapper19 :
     public c_mapper
 {
@@ -23,3 +25,5 @@ private:
     int reg_e800;
     int irq_asserted;
 };
+
+} //namespace nes

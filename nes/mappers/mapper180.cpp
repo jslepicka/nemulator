@@ -1,5 +1,7 @@
 #include "mapper180.h"
 
+namespace nes {
+
 c_mapper180::c_mapper180()
 {
     //Crazy Climber
@@ -22,3 +24,5 @@ void c_mapper180::WriteByte(unsigned short address, unsigned char value)
         c_mapper::WriteByte(address, value);
     }
 }
+
+} //namespace nes

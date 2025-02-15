@@ -1,6 +1,8 @@
 #include "mapper79.h"
 
 
+namespace nes {
+
 c_mapper79::c_mapper79()
 {
     //Krazy Kreatures
@@ -22,3 +24,5 @@ void c_mapper79::WriteByte(unsigned short address, unsigned char value)
     else
         c_mapper::WriteByte(address, value);
 }
+
+} //namespace nes

@@ -1,6 +1,8 @@
 #include "mapper115.h"
 
 
+namespace nes {
+
 c_mapper115::c_mapper115()
 {
     //AV Jiu Ji Ma Jiang 2 (Unl)
@@ -45,3 +47,5 @@ void c_mapper115::Sync()
         SetPrgBank16k(PRG_8000, reg1 & 0xF);
     }
 }
+
+} //namespace nes

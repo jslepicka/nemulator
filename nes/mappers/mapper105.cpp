@@ -1,6 +1,8 @@
 #include "mapper105.h"
 #include "..\cpu.h"
 
+namespace nes {
+
 c_mapper105::c_mapper105()
 {
     mapperName = "NWC";
@@ -100,3 +102,5 @@ int c_mapper105::get_nwc_time()
     int remaining_ticks = irq_trigger - (irq_counter > irq_trigger ? irq_trigger : irq_counter);
     return remaining_ticks / 1786840;
 }
+
+} //namespace nes

@@ -1,6 +1,8 @@
 #include "mapper152.h"
 
 
+namespace nes {
+
 c_mapper152::c_mapper152()
 {
     //Arkanoid II (J)
@@ -27,3 +29,5 @@ void c_mapper152::reset()
 {
     SetPrgBank16k(PRG_C000, prgRomPageCount16k - 1);
 }
+
+} //namespace nes

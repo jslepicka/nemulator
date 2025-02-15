@@ -2,6 +2,8 @@
 
 #include "..\cpu.h"
 
+namespace nes {
+
 c_mapper_vrc4::c_mapper_vrc4(int submapper)
 {
     mapperName = "VRC4";
@@ -184,3 +186,5 @@ void c_mapper_vrc4::reset()
         swap_bits = 1;
 
 }
+
+} //namespace nes

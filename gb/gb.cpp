@@ -11,6 +11,9 @@
 
 void strip_extension(char *path);
 
+namespace gb
+{
+
 // clang-format off
 const std::map<int, c_gb::s_pak> c_gb::pak_factory = {
     {0,    {[]() { return std::make_unique<c_gbmapper>(); }, PAK_FEATURES::NONE}},
@@ -61,14 +64,8 @@ c_gb::c_gb(GB_MODEL model)
     wram_bank = 1;
     this->model = model;
     button_map = {
-        { BUTTON_1RIGHT,  0x01},
-        { BUTTON_1LEFT,   0x02},
-        { BUTTON_1UP,     0x04},
-        { BUTTON_1DOWN,   0x08},
-        { BUTTON_1A,      0x10},
-        { BUTTON_1B,      0x20},
-        { BUTTON_1SELECT, 0x40},
-        { BUTTON_1START,  0x80},
+        {BUTTON_1RIGHT, 0x01}, {BUTTON_1LEFT, 0x02}, {BUTTON_1UP, 0x04},     {BUTTON_1DOWN, 0x08},
+        {BUTTON_1A, 0x10},     {BUTTON_1B, 0x20},    {BUTTON_1SELECT, 0x40}, {BUTTON_1START, 0x80},
     };
 }
 
@@ -630,3 +627,5 @@ void c_gb::disable_mixer()
 {
     apu->disable_mixer();
 }
+
+} //namespace gb

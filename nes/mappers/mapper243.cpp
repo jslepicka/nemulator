@@ -1,6 +1,8 @@
 #include "mapper243.h"
 
 
+namespace nes {
+
 c_mapper243::c_mapper243()
 {
     //Sachen games
@@ -69,3 +71,5 @@ void c_mapper243::sync_chr()
 {
     SetChrBank8k(chr);
 }
+
+} //namespace nes

@@ -1,6 +1,8 @@
 #pragma once
 #include "mapper4.h"
 
+namespace nes {
+
 class c_mapper_mmc6 :
     public c_mapper4
 {
@@ -15,3 +17,5 @@ protected:
     int wram_enable;
     int wram_control;
 };
+
+} //namespace nes

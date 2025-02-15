@@ -1,5 +1,7 @@
 #include "mapper7.h"
 
+namespace nes {
+
 c_mapper7::c_mapper7()
 {
     //Battletoads, Wizards and Warriors
@@ -29,3 +31,5 @@ void c_mapper7::reset()
     set_mirroring(MIRRORING_ONESCREEN_LOW);
     SetPrgBank32k(0);
 }
+
+} //namespace nes

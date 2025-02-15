@@ -1,6 +1,8 @@
 #include "mapper32.h"
 
 
+namespace nes {
+
 c_mapper32::c_mapper32()
 {
     //Image Fight (J)
@@ -89,3 +91,5 @@ void c_mapper32::sync()
         SetPrgBank16k(PRG_C000, prgRomPageCount16k - 1);
     }
 }
+
+} //namespace nes

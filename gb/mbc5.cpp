@@ -1,5 +1,8 @@
 #include "mbc5.h"
 
+namespace gb
+{
+
 c_mbc5::c_mbc5()
 {
 }
@@ -31,8 +34,7 @@ void c_mbc5::write_byte(uint16_t address, uint8_t data)
             break;
         default: {
             int x = 1;
-        }
-            break;
+        } break;
     }
 }
 uint8_t c_mbc5::read_byte(uint16_t address)
@@ -68,3 +70,5 @@ void c_mbc5::reset()
     bank_hi = 0;
     c_gbmapper::reset();
 }
+
+} //namespace gb

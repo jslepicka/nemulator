@@ -1,6 +1,8 @@
 #pragma once
 #include "..\mapper.h"
 
+namespace nes {
+
 class c_mapper4 :
     public c_mapper
 {
@@ -48,3 +50,5 @@ protected:
     int last_prg_page;
     int four_screen;
 };
+
+} //namespace nes

@@ -1,27 +1,18 @@
 #pragma once
-#include "nes\nes.h"
-#include "sms\sms.h"
-#include "gb\gb.h"
 #include "system_container.h"
 #include <vector>
 #include <memory>
-#include <list>
-#include <stack>
-#include <fstream>
-#include <io.h>
 #include "constants.h"
 #include "TexturePanel.h"
 #include "TexturePanelItem.h"
 #include "sound.h"
 #include "config.h"
 #include "task.h"
-#include <deque>
 #include "task1.h"
 #include "d3d10app.h"
 #include "stats.h"
 #include "status.h"
 #include "audio_info.h"
-#include "bmp_writer.h"
 #include "qam.h"
 #include "nsf_stats.h"
 #include <numbers>
@@ -76,7 +67,6 @@ private:
     void handle_button_audio_info(s_button_handler_params* params);
     void handle_button_stats(s_button_handler_params* params);
     void handle_button_mask_sides(s_button_handler_params* params);
-    void handle_button_screenshot(s_button_handler_params* params);
     void handle_button_sprite_limit(s_button_handler_params* params);
     void handle_button_dec_sharpness(s_button_handler_params* params);
     void handle_button_inc_sharpness(s_button_handler_params* params);
@@ -145,8 +135,7 @@ private:
     HRESULT hr;
 
     D3DXMATRIX matrixWorld;
-    c_nes *nes;
-
+    
     ID3D10EffectShaderResourceVariable *varTex;
     ID3D10ShaderResourceView *texRv;
 

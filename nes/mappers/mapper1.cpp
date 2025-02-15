@@ -1,5 +1,7 @@
 #include "mapper1.h"
 
+namespace nes {
+
 c_mapper1::c_mapper1()
 {
     mapperName = "MMC1";
@@ -150,3 +152,5 @@ void c_mapper1::reset()
     cycle_count = 1;
     Sync();
 }
+
+} //namespace nes

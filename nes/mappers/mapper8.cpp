@@ -1,5 +1,7 @@
 #include "mapper8.h"
 
+namespace nes {
+
 c_mapper8::c_mapper8()
 {
     mapperName = "FFE F3xxx";
@@ -24,3 +26,5 @@ void c_mapper8::reset()
 {
     SetPrgBank16k(PRG_C000, 1);
 }
+
+} //namespace nes

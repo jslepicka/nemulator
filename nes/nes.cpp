@@ -15,6 +15,9 @@ extern int mem_viewer_active;
 
 void strip_extension(char *path);
 
+namespace nes
+{
+
 // clang-format off
 const std::vector<c_system::load_info_t> c_nes::load_info = {
     {
@@ -30,8 +33,7 @@ const std::vector<c_system::load_info_t> c_nes::load_info = {
 };
 // clang-format on
 
-const std::map<int, std::function<std::unique_ptr<c_mapper>()> > c_nes::mapper_factory = 
-{
+const std::map<int, std::function<std::unique_ptr<c_mapper>()>> c_nes::mapper_factory = {
     {0, []() { return std::make_unique<c_mapper>(); }},
     {1, []() { return std::make_unique<c_mapper1>(); }},
     {2, []() { return std::make_unique<c_mapper2>(); }},
@@ -114,7 +116,6 @@ const std::map<int, std::function<std::unique_ptr<c_mapper>()> > c_nes::mapper_f
     {0x101, []() { return std::make_unique<c_mapper_mc_acc>(); }},
     {0x102, []() { return std::make_unique<c_mapper_nsf>(); }}};
 
-
 c_nes::c_nes()
 {
     system_name = "Nintendo NES";
@@ -192,8 +193,7 @@ unsigned char c_nes::dmc_read(unsigned short address)
 unsigned char c_nes::read_byte(unsigned short address)
 {
 #ifdef MEM_VIEWER
-    if (mem_viewer_active)
-    {
+    if (mem_viewer_active) {
         mem_access_log[address].timestamp = 1000.0;
         mem_access_log[address].type = 1;
     }
@@ -214,38 +214,36 @@ unsigned char c_nes::read_byte(unsigned short address)
  //   if (address == 0x00B1) {
  //       return 0x3F;
  //   }
-    switch (address >> 12)
-    {
-    case 0:
-    case 1:
-        return cpuRam[address & 0x7FF];
-        break;
-    case 2:
-    case 3:
-        //if (address <= 0x2007)
-        return ppu->read_byte(address & 0x2007);
-        break;
-    case 4:
-        switch (address)
-        {
-        case 0x4015:
-            return apu2->read_byte(address);
+    switch (address >> 12) {
+        case 0:
+        case 1:
+            return cpuRam[address & 0x7FF];
             break;
-        case 0x4016:
-        case 0x4017:
-            return joypad->read_byte(address);
+        case 2:
+        case 3:
+        //if (address <= 0x2007)
+            return ppu->read_byte(address & 0x2007);
+            break;
+        case 4:
+            switch (address) {
+                case 0x4015:
+                    return apu2->read_byte(address);
+                    break;
+                case 0x4016:
+                case 0x4017:
+                    return joypad->read_byte(address);
+                    break;
+                default:
+                    break;
+            }
             break;
         default:
+            unsigned char val = mapper->ReadByte(address);
+            if (game_genie->count > 0) {
+                val = game_genie->filter_read(address, val);
+            }
+            return val;
             break;
-        }
-        break;
-    default:
-        unsigned char val = mapper->ReadByte(address);
-        if (game_genie->count > 0) {
-            val = game_genie->filter_read(address, val);
-        }
-        return val;
-        break;
     }
     return 0;
 }
@@ -253,43 +251,38 @@ unsigned char c_nes::read_byte(unsigned short address)
 void c_nes::write_byte(unsigned short address, unsigned char value)
 {
 #ifdef MEM_VIEWER
-    if (mem_viewer_active)
-    {
+    if (mem_viewer_active) {
         mem_access_log[address].timestamp = 1000.0;
         mem_access_log[address].type = 0;
     }
 #endif
-    switch (address >> 12)
-    {
-    case 0:
-    case 1:
-        cpuRam[address & 0x7FF] = value;
-        break;
-    case 2:
-    case 3:
-        ppu->write_byte(address & 0x2007, value);
-        mapper->mmc5_ppu_write(address & 0x2007, value);
-        break;
-    case 4:
-        if (address == 0x4014)
-        {
-            cpu->do_sprite_dma(ppu->get_sprite_memory(), (value & 0xFF) << 8);
-        }
-        else if (address == 0x4016)
-        {
-            joypad->write_byte(address, value);
-        }
-        else if (address >= 0x4000 && address <= 0x4017)
-        {
+    switch (address >> 12) {
+        case 0:
+        case 1:
+            cpuRam[address & 0x7FF] = value;
+            break;
+        case 2:
+        case 3:
+            ppu->write_byte(address & 0x2007, value);
+            mapper->mmc5_ppu_write(address & 0x2007, value);
+            break;
+        case 4:
+            if (address == 0x4014) {
+                cpu->do_sprite_dma(ppu->get_sprite_memory(), (value & 0xFF) << 8);
+            }
+            else if (address == 0x4016) {
+                joypad->write_byte(address, value);
+            }
+            else if (address >= 0x4000 && address <= 0x4017) {
             //apu->WriteByte(address, value);
-            apu2->write_byte(address, value);
-        }
-        else
+                apu2->write_byte(address, value);
+            }
+            else
+                mapper->WriteByte(address, value);
+            break;
+        default:
             mapper->WriteByte(address, value);
-        break;
-    default:
-        mapper->WriteByte(address, value);
-        break;
+            break;
     }
 }
 
@@ -305,7 +298,7 @@ int c_nes::LoadImage(char *pathFile)
     file_length = (int)file.tellg();
     file.seekg(0, std::ios_base::beg);
     image = std::make_unique_for_overwrite<unsigned char[]>(file_length);
-    file.read((char*)image.get(), file_length);
+    file.read((char *)image.get(), file_length);
     file.close();
     if (file_length < sizeof(iNesHeader)) {
         return -1;
@@ -314,32 +307,30 @@ int c_nes::LoadImage(char *pathFile)
 
     char ines_signature[] = {'N', 'E', 'S', 0x1a};
     char fds_signature[] = "*NINTENDO-HVC*";
-    char nsf_signature[] = { 'N', 'E', 'S', 'M', 0x1A };
+    char nsf_signature[] = {'N', 'E', 'S', 'M', 0x1A};
 
     //if (memcmp(header->Signature, signature, 4) != 0)
     //    return -1;
 
-    if (memcmp(header->Signature, ines_signature, 4) == 0)
-    {
+    if (memcmp(header->Signature, ines_signature, 4) == 0) {
 
         //if expected file size doesn't match real file size, try to fix chr rom page count
         //fixes fire emblem
-        int expected_file_size = (header->PrgRomPageCount * 16384) + (header->ChrRomPageCount * 8192) + sizeof(iNesHeader);
+        int expected_file_size =
+            (header->PrgRomPageCount * 16384) + (header->ChrRomPageCount * 8192) + sizeof(iNesHeader);
         int actual_chr_size = file_length - (header->PrgRomPageCount * 16384) - sizeof(iNesHeader);
 
-        if (file_length != expected_file_size && header->ChrRomPageCount != 0)
-        {
+        if (file_length != expected_file_size && header->ChrRomPageCount != 0) {
             header->ChrRomPageCount = (actual_chr_size / 8192);
         }
 
-        unsigned char *h = (unsigned char*)&header->Rcb2;
+        unsigned char *h = (unsigned char *)&header->Rcb2;
 
         if (*h & 0x0C)
             *h = 0;
         m = (header->Rcb1.mapper_lo) | (header->Rcb2.mapper_hi << 4);
     }
-    else if (memcmp(image.get() + 1, fds_signature, 14) == 0)
-    {
+    else if (memcmp(image.get() + 1, fds_signature, 14) == 0) {
         //m = 0x101;
         m = -1;
     }
@@ -347,9 +338,8 @@ int c_nes::LoadImage(char *pathFile)
         m = 0x102;
     }
 
-    if (m != -1 && m != 0x102)
-    {
-        crc32 = get_crc32((unsigned char*)image.get() + sizeof(iNesHeader), file_length - sizeof(iNesHeader));
+    if (m != -1 && m != 0x102) {
+        crc32 = get_crc32((unsigned char *)image.get() + sizeof(iNesHeader), file_length - sizeof(iNesHeader));
     }
     return m;
 }
@@ -368,7 +358,6 @@ int c_nes::load()
     ppu = std::make_unique<c_ppu>();
     joypad = std::make_unique<c_joypad>();
     apu2 = std::make_unique<c_apu2>();
-    
 
     mapperNumber = LoadImage(pathFile);
 
@@ -383,12 +372,12 @@ int c_nes::load()
         }
         if (c.mirroring != -1) {
             switch (c.mirroring) {
-            case 0:
-            case 1:
-                header->Rcb1.Mirroring = c.mirroring;
-                break;
-            case 4:
-                header->Rcb1.Fourscreen = 1;
+                case 0:
+                case 1:
+                    header->Rcb1.Mirroring = c.mirroring;
+                    break;
+                case 4:
+                    header->Rcb1.Fourscreen = 1;
             }
         }
     }
@@ -423,7 +412,7 @@ int c_nes::reset()
     ppu->cpu = cpu.get();
     ppu->reset();
     ppu->mapper = mapper.get();
-    
+
     ppu->apu2 = apu2.get();
     ppu->set_sprite_limit(limit_sprites);
     mapper->ppu = ppu.get();
@@ -462,8 +451,7 @@ int c_nes::emulate_frame()
     if (!loaded)
         return 1;
     apu2->clear_buffer();
-    for (int scanline = 0; scanline < 262; scanline++)
-    {
+    for (int scanline = 0; scanline < 262; scanline++) {
         if (scanline == 261 || (scanline >= 0 && scanline <= 239)) {
             ppu->eval_sprites();
         }
@@ -516,3 +504,5 @@ void c_nes::set_input(int input)
     joypad->joy1 = input & 0xFF;
     joypad->joy2 = (input >> 8) & 0xFF;
 }
+
+} //namespace nes

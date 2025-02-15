@@ -2,6 +2,8 @@
 
 #include "..\cpu.h"
 
+namespace nes {
+
 c_mapper65::c_mapper65()
 {
     //Daiku no Gen San 2
@@ -101,3 +103,5 @@ void c_mapper65::WriteByte(unsigned short address, unsigned char value)
     else
         c_mapper::WriteByte(address, value);
 }
+
+} //namespace nes

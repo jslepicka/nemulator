@@ -1,6 +1,8 @@
 #include "mapper103.h"
 
 
+namespace nes {
+
 c_mapper103::c_mapper103()
 {
     //Doki Doki Panic FDS conversion
@@ -83,3 +85,5 @@ void c_mapper103::reset()
     prg_6000 = pPrgRom;
     SetPrgBank32k(prgRomPageCount32k - 1);
 }
+
+} //namespace nes

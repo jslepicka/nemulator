@@ -2,6 +2,8 @@
 
 #include "..\cpu.h"
 
+namespace nes {
+
 c_mapper18::c_mapper18()
 {
     //The Lord of King
@@ -186,3 +188,5 @@ void c_mapper18::clock(int cycles)
         }
     }
 }
+
+} //namespace nes

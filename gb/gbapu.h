@@ -2,7 +2,6 @@
 #include <cstdint>
 #include <memory>
 
-class c_gb;
 
 namespace dsp
 {
@@ -11,10 +10,15 @@ class c_biquad4;
 class c_resampler;
 } //namespace dsp
 
+namespace gb
+{
+
+class c_gb;
+
 class c_gbapu
 {
-public:
-    c_gbapu(c_gb* gb);
+  public:
+    c_gbapu(c_gb *gb);
     ~c_gbapu();
     void reset();
     void clock();
@@ -23,11 +27,12 @@ public:
     void mix();
     void enable_mixer();
     void disable_mixer();
-    int get_buffers(const short** buf_l, const short** buf_r);
+    int get_buffers(const short **buf_l, const short **buf_r);
     void clear_buffers();
     void set_audio_rate(double freq);
-private:
-    c_gb* gb;
+
+  private:
+    c_gb *gb;
     //c_resampler* resampler_l;
     //c_resampler* resampler_r;
     //c_biquad4* lpf_l;
@@ -63,7 +68,6 @@ private:
     int enable_1_l;
     int enable_1_r;
 
-
     void power_on();
     void power_off();
 
@@ -74,13 +78,14 @@ private:
 
     class c_timer
     {
-    public:
+      public:
         c_timer();
         ~c_timer();
         void reset();
         void set_period(int period);
         int clock();
-    private:
+
+      private:
         int counter;
         int period;
         int mask;
@@ -88,7 +93,7 @@ private:
 
     class c_duty
     {
-    public:
+      public:
         c_duty();
         ~c_duty();
         int get_output();
@@ -96,7 +101,8 @@ private:
         void clock();
         void reset();
         void reset_step();
-    private:
+
+      private:
         static const int duty_cycle_table[4][8];
         int duty_cycle;
         int step;
@@ -104,7 +110,7 @@ private:
 
     class c_length
     {
-    public:
+      public:
         c_length();
         ~c_length();
         int get_output();
@@ -113,13 +119,14 @@ private:
         void reset();
         int clock();
         int counter;
-    private:
+
+      private:
         int enabled;
     };
 
     class c_envelope
     {
-    public:
+      public:
         c_envelope();
         ~c_envelope();
         void reset();
@@ -128,19 +135,19 @@ private:
         void set_period(int period);
         void set_mode(int mode);
         void clock();
-    private:
+
+      private:
         int volume;
         int counter;
         int period;
         int output;
         int mode;
         int enabled;
-
     };
 
     class c_square
     {
-    public:
+      public:
         c_square();
         ~c_square();
         void clock_timer();
@@ -153,7 +160,8 @@ private:
         void power_on();
         void trigger();
         int enabled;
-    private:
+
+      private:
         c_timer timer;
         c_duty duty;
         c_length length;
@@ -176,7 +184,7 @@ private:
 
     class c_noise
     {
-    public:
+      public:
         c_noise();
         ~c_noise();
         void reset();
@@ -188,7 +196,8 @@ private:
         void clock_envelope();
         void power_on();
         int enabled;
-    private:
+
+      private:
         int clock_shift;
         int width_mode;
         int divisor;
@@ -206,7 +215,7 @@ private:
 
     class c_wave
     {
-    public:
+      public:
         c_wave();
         ~c_wave();
         void reset();
@@ -218,13 +227,13 @@ private:
         void clock_length();
         void power_on();
         int enabled;
-    private:
 
+      private:
         int starting_volume;
         int envelope_period;
         c_timer timer;
         c_length length;
-        
+
         int timer_period;
         int sample_buffer;
         int wave_table[32];
@@ -241,3 +250,4 @@ private:
     c_wave wave;
 };
 
+} //namespace gb

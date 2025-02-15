@@ -1,6 +1,8 @@
 #include "mapper95.h"
 
 
+namespace nes {
+
 c_mapper95::c_mapper95()
 {
     //Dragon Buster (J)
@@ -29,3 +31,5 @@ void c_mapper95::Sync()
     name_table[3] = &vram[0x400 * ((chr[(1 << _or) + add] & 0x20) >> 5)];
     c_mapper4::Sync();
 }
+
+} //namespace nes

@@ -1,6 +1,8 @@
 #include "mapper146.h"
 
 
+namespace nes {
+
 c_mapper146::c_mapper146()
 {
     //Sachen
@@ -21,3 +23,5 @@ void c_mapper146::WriteByte(unsigned short address, unsigned char value)
     else
         c_mapper::WriteByte(address, value);
 }
+
+} //namespace nes

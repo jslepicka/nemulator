@@ -1,6 +1,8 @@
 #include "mapper_mmc6.h"
 
 
+namespace nes {
+
 c_mapper_mmc6::c_mapper_mmc6()
 {
     //Startropics
@@ -76,3 +78,5 @@ void c_mapper_mmc6::WriteByte(unsigned short address, unsigned char value)
             sram[address] = value;
     }
 }
+
+} //namespace nes

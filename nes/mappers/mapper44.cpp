@@ -1,5 +1,7 @@
 #include "mapper44.h"
 
+namespace nes {
+
 c_mapper44::c_mapper44()
 {
     //Super Cool Boy 4-in-1
@@ -45,3 +47,5 @@ void c_mapper44::reset()
     chr_mask = 0x7F;
     Sync();
 }
+
+} //namespace nes

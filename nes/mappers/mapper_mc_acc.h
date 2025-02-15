@@ -1,6 +1,8 @@
 #pragma once
 #include "mapper4.h"
 
+namespace nes {
+
 class c_mapper_mc_acc :
     public c_mapper4
 {
@@ -14,3 +16,5 @@ protected:
 private:
     int irq_delay;
 };
+
+} //namespace nes

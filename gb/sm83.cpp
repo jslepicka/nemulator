@@ -9,6 +9,9 @@
             printf(fmt, __VA_ARGS__);                                                                                  \
     } while (0)
 
+namespace gb
+{
+
 // clang-format off
 alignas(64) const c_sm83::s_ins c_sm83::ins_info[517] = {
               /*x0*/    /*x1*/    /*x2*/    /*x3*/    /*x4*/    /*x5*/    /*x6*/    /*x7*/    /*x8*/    /*x9*/    /*xA*/    /*xB*/    /*xC*/    /*xD*/    /*xE*/    /*xF*/
@@ -991,3 +994,5 @@ void c_sm83::SET(int bit, uint8_t &d)
 {
     d |= (1 << bit);
 }
+
+} //namespace gb

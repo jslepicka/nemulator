@@ -1,6 +1,8 @@
 #include "mapper94.h"
 
 
+namespace nes {
+
 c_mapper94::c_mapper94()
 {
     //Senjou no Ookami
@@ -27,3 +29,5 @@ void c_mapper94::reset()
     SetPrgBank16k(PRG_C000, prgRomPageCount16k - 1);
 }
 
+
+} //namespace nes

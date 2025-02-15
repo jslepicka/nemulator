@@ -7,6 +7,9 @@
 #include "game_genie.h"
 #include <memory>
 
+namespace nes
+{
+
 class c_cpu;
 class c_ppu;
 class c_mapper;
@@ -17,14 +20,17 @@ struct iNesHeader;
 
 class c_nes : public c_system
 {
-public:
+  public:
     c_nes();
     ~c_nes();
     int reset();
     int emulate_frame();
     void set_audio_freq(double freq);
     int get_nwc_time();
-    int is_loaded() { return loaded; }
+    int is_loaded()
+    {
+        return loaded;
+    }
     void set_input(int input);
 
     int *get_video();
@@ -47,7 +53,7 @@ public:
     void enable_mixer();
     void disable_mixer();
     static const std::vector<load_info_t> load_info;
-    
+
   private:
     int LoadImage(char *pathFile);
     std::unique_ptr<c_apu2> apu2;
@@ -63,3 +69,5 @@ public:
     char sramFilename[MAX_PATH];
     bool limit_sprites;
 };
+
+} //namespace nes

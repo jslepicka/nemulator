@@ -1,6 +1,8 @@
 #include "mapper34.h"
 
 
+namespace nes {
+
 c_mapper34::c_mapper34()
 {
     mapperName = "BxROM";
@@ -19,3 +21,5 @@ void c_mapper34::WriteByte(unsigned short address, unsigned char value)
     else
         c_mapper::WriteByte(address, value);
 }
+
+} //namespace nes

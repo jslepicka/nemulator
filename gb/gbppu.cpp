@@ -7,6 +7,8 @@
 #include <utility>
 #include <algorithm>
 
+namespace gb {
+
 // clang-format off
 const unsigned int c_gbppu::palettes[][4] = {
     {
@@ -1025,3 +1027,5 @@ void c_gbppu::write_byte(uint16_t address, uint8_t data)
     }
     return;
 }
+
+} //namespace gb

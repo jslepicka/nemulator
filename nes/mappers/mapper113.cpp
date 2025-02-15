@@ -1,6 +1,8 @@
 #include "mapper113.h"
 
 
+namespace nes {
+
 c_mapper113::c_mapper113()
 {
     //Rad Racket, Papillon
@@ -21,3 +23,5 @@ void c_mapper113::WriteByte(unsigned short address, unsigned char value)
     else
         c_mapper::WriteByte(address, value);
 }
+
+} //namespace nes

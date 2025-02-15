@@ -1,6 +1,8 @@
 #include "mapper76.h"
 
 
+namespace nes {
+
 c_mapper76::c_mapper76()
 {
     //Digital Devil Monogatari (J)
@@ -60,3 +62,5 @@ void c_mapper76::reset()
     SetPrgBank8k(PRG_C000, 0xFE);
 
 }
+
+} //namespace nes

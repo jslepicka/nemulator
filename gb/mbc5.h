@@ -1,6 +1,9 @@
 #pragma once
 #include "gbmapper.h"
 
+namespace gb
+{
+
 class c_mbc5 : public c_gbmapper
 {
   public:
@@ -21,3 +24,5 @@ class c_mbc5 : public c_gbmapper
     void fixup_bank();
     int rom_banks;
 };
+
+} //namespace gb

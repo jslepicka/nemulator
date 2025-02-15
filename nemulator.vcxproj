@@ -241,7 +241,6 @@
     <ClCompile Include="invaders\sample_channel.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="audio_info.cpp" />
-    <ClCompile Include="bmp_writer.cpp" />
     <ClCompile Include="config.cpp" />
     <ClCompile Include="D3d10App.cpp" />
     <ClCompile Include="system_container.cpp" />
@@ -359,7 +358,6 @@
   <ItemGroup>
     <ClInclude Include="audio_info.h" />
     <ClInclude Include="benchmark.h" />
-    <ClInclude Include="bmp_writer.h" />
     <ClInclude Include="buttons.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="system.h" />

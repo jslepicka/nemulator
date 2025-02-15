@@ -1,6 +1,8 @@
 #include "mapper86.h"
 
 
+namespace nes {
+
 c_mapper86::c_mapper86()
 {
     //Moero!! Pro Yakyuu (Red) (J)
@@ -22,3 +24,5 @@ void c_mapper86::WriteByte(unsigned short address, unsigned char value)
         c_mapper::WriteByte(address, value);
     }
 }
+
+} //namespace nes

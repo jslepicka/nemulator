@@ -1,6 +1,8 @@
 #include "mapper70.h"
 
 
+namespace nes {
+
 c_mapper70::c_mapper70()
 {
     //Family Trainer - Manhattan Police (J)
@@ -28,3 +30,5 @@ void c_mapper70::reset()
 {
     SetPrgBank16k(PRG_C000, prgRomPageCount16k - 1);
 }
+
+} //namespace nes

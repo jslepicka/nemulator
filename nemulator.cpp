@@ -513,7 +513,7 @@ void c_nemulator::handle_button_sprite_limit(s_button_handler_params *params)
     c_system_container* g = (c_system_container*)texturePanels[selectedPanel]->GetSelected();
     if (g->type == GAME_NES)
     {
-        c_nes *n = ((c_nes *)g->system);
+        nes::c_nes *n = ((nes::c_nes *)g->system);
         n->set_sprite_limit(!n->get_sprite_limit());
         if (n->get_sprite_limit())
             status->add_message("sprites limited");
@@ -803,7 +803,7 @@ void c_nemulator::leave_game()
     c_system_container* g = (c_system_container*)texturePanels[selectedPanel]->GetSelected();
     if (g->type == GAME_NES)
     {
-        c_nes *n = (c_nes *)g->system;
+        nes::c_nes *n = (nes::c_nes *)g->system;
         if (n->get_mapper_number() == 258) { //NFS
             nsf_stats->dead = true;
             nsf_stats = NULL;
@@ -832,7 +832,7 @@ void c_nemulator::start_game()
 
         if (g->type == GAME_NES)
         {
-            c_nes *n = (c_nes *)g->system;
+            nes::c_nes *n = (nes::c_nes *)g->system;
             if (n->get_mapper_number() == 258) { //NFS
                 nsf_stats = new c_nsf_stats();
                 nsf_stats->x = eye_x;
@@ -1120,7 +1120,7 @@ void c_nemulator::UpdateScene(double dt)
 
             if (game->type == GAME_NES)
             {
-                c_nes *n = (c_nes *)system;
+                nes::c_nes *n = (nes::c_nes *)system;
                 stats->report_stat("mapper #", n->get_mapper_number());
                 stats->report_stat("mapper name", n->get_mapper_name());
                 stats->report_stat("sprite limit", n->get_sprite_limit() ? "limited" : "unlimited");
@@ -1146,7 +1146,7 @@ void c_nemulator::UpdateScene(double dt)
         }
         if (nsf_stats) { //NSF
             c_system_container* game = (c_system_container*)texturePanels[selectedPanel]->GetSelected();
-            c_nes *n = (c_nes *)game->system;
+            nes::c_nes *n = (nes::c_nes *)game->system;
             nsf_stats->report_stat("Song #", n->read_byte(0x54F7) + 1);
         }
         framesDrawn = 0;
@@ -1315,9 +1315,9 @@ void c_nemulator::LoadGames()
     std::vector<c_system::load_info_t> cli;
 
     #define REGISTER(x) std::ranges::copy(x::load_info, std::back_inserter(cli));
-    REGISTER(c_nes);
-    REGISTER(c_sms);
-    REGISTER(c_gb);
+    REGISTER(nes::c_nes);
+    REGISTER(sms::c_sms);
+    REGISTER(gb::c_gb);
     REGISTER(pacman::c_pacman);
     REGISTER(pacman::c_mspacman);
     REGISTER(invaders::c_invaders);

@@ -1,6 +1,8 @@
 #include "mapper185.h"
 
 
+namespace nes {
+
 c_mapper185::c_mapper185()
 {
     mapperName = "Mapper 185";
@@ -36,3 +38,5 @@ unsigned char c_mapper185::ReadChrRom(unsigned short address)
     else
         return c_mapper::ReadChrRom(address);
 }
+
+} //namespace nes

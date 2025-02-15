@@ -6,6 +6,9 @@
 #include <memory>
 #include <string>
 
+namespace gb
+{
+
 class c_sm83;
 class c_gbmapper;
 class c_gbppu;
@@ -87,10 +90,10 @@ class c_gb : public c_system
 
     enum PAK_FEATURES
     {
-        NONE    = 1 << 0,
-        RAM     = 1 << 1,
+        NONE = 1 << 0,
+        RAM = 1 << 1,
         BATTERY = 1 << 2,
-        RUMBLE  = 1 << 3
+        RUMBLE = 1 << 3
     };
     struct s_pak
     {
@@ -119,3 +122,5 @@ class c_gb : public c_system
     GB_MODEL model;
     static const int RAM_SIZE = 32768;
 };
+
+} //namespace gb

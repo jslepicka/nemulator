@@ -2,6 +2,8 @@
 
 #include "..\cpu.h"
 
+namespace nes {
+
 c_mapper73::c_mapper73()
 {
     mapperName = "VRC3";
@@ -105,3 +107,5 @@ void c_mapper73::clock(int cycles)
         }
     }
 }
+
+} //namespace nes

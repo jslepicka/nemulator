@@ -1,6 +1,8 @@
 #include "mapper47.h"
 
 
+namespace nes {
+
 c_mapper47::c_mapper47()
 {
     //Super Spike V'Ball + Nintendo World Cup
@@ -33,3 +35,5 @@ void c_mapper47::reset()
     last_prg_page = 15;
     Sync();
 }
+
+} //namespace nes

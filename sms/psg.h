@@ -8,20 +8,30 @@ class c_biquad4;
 class c_resampler;
 } //namespace dsp
 
+namespace sms
+{
+
 class c_psg
 {
-public:
+  public:
     c_psg();
     ~c_psg();
-    int get_buffer(const short** buf);
+    int get_buffer(const short **buf);
     void clear_buffer();
     void clock(int cycles);
     void write(int data);
     void reset();
     void set_audio_rate(double freq);
-    void enable_mixer() { mixer_enabled = 1; }
-    void disable_mixer() { mixer_enabled = 0; };
-private:
+    void enable_mixer()
+    {
+        mixer_enabled = 1;
+    }
+    void disable_mixer()
+    {
+        mixer_enabled = 0;
+    };
+
+  private:
     int available_cycles;
     int mixer_enabled = 0;
     int tick;
@@ -52,3 +62,4 @@ private:
     std::unique_ptr<dsp::c_resampler> resampler;
 };
 
+} //namespace sms

@@ -1,5 +1,8 @@
 #include "gbmapper.h"
 
+namespace gb
+{
+
 c_gbmapper::c_gbmapper()
 {
     ram = NULL;
@@ -34,3 +37,5 @@ void c_gbmapper::config_ram(int ram_size)
     this->ram_size = ram_size;
     ram = std::make_unique<uint8_t[]>(ram_size);
 }
+
+} //namespace gb

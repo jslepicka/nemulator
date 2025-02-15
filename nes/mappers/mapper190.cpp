@@ -1,5 +1,7 @@
 #include "mapper190.h"
 
+namespace nes {
+
 c_mapper190::c_mapper190()
 {
     //Magic Kid GooGoo
@@ -50,3 +52,5 @@ void c_mapper190::reset()
     SetPrgBank16k(PRG_C000, 0);
     memset(ram, 0, 8192);
 }
+
+} //namespace nes

@@ -1,6 +1,8 @@
 #pragma once
 #include "..\mapper.h"
 
+namespace nes {
+
 class c_mapper180 :
     public c_mapper
 {
@@ -10,3 +12,5 @@ public:
     void reset();
     void WriteByte(unsigned short address, unsigned char value);
 };
+
+} //namespace nes

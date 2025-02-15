@@ -2,6 +2,8 @@
 #include "mapper_nsf_rom.h"
 #include <fstream>
 
+namespace nes {
+
 c_mapper_nsf::c_mapper_nsf()
 {
     mapperName = "NSF";
@@ -177,3 +179,5 @@ int c_mapper_nsf::LoadImage()
     memcpy(nsf_data + padding, image + sizeof(NSF_HEADER), nsf_length);
     return 0;
 }
+
+} //namespace nes

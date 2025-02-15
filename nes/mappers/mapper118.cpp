@@ -1,6 +1,8 @@
 #include "mapper118.h"
 
 
+namespace nes {
+
 c_mapper118::c_mapper118()
 {
     //Alien Syndrome
@@ -32,3 +34,5 @@ void c_mapper118::Sync()
 
     c_mapper4::Sync();
 }
+
+} //namespace nes

@@ -1,6 +1,8 @@
 #include "mapper184.h"
 
 
+namespace nes {
+
 c_mapper184::c_mapper184()
 {
     //Atlantis no Nazo
@@ -25,3 +27,5 @@ void c_mapper184::WriteByte(unsigned short address, unsigned char value)
         break;
     }
 }
+
+} //namespace nes

@@ -26,6 +26,8 @@ INLINE uint8_t LOBYTE(uint16_t val)
     return val & 0xFF;
 }
 
+namespace nes {
+
 //replaced all zeros with 3 so that invalid opcodes don't cause cpu loop to spin
 const int c_cpu::cycle_table[] = {
 //       0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
@@ -1236,3 +1238,5 @@ INLINE void c_cpu::XAA()
 {
     //unpredictable behavior
 }
+
+} //namespace nes

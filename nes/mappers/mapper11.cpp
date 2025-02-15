@@ -1,6 +1,8 @@
 #include "mapper11.h"
 
 
+namespace nes {
+
 c_mapper11::c_mapper11()
 {
     mapperName = "Color Dreams";
@@ -27,3 +29,5 @@ void c_mapper11::reset()
     //SetChrBank8k(2);
     //c_mapper::Reset();
 }
+
+} //namespace nes

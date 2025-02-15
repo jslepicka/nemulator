@@ -1,6 +1,8 @@
 #include "mapper77.h"
 
 
+namespace nes {
+
 c_mapper77::c_mapper77()
 {
     //Napoleon Senki (J) [!].nes
@@ -33,3 +35,5 @@ void c_mapper77::reset()
     }
     chrRam = true;
 }
+
+} //namespace nes

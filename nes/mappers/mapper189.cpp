@@ -1,5 +1,7 @@
 #include "mapper189.h"
 
+namespace nes {
+
 c_mapper189::c_mapper189()
 {
     //Thunder Warrior, SF2 World Warrior
@@ -36,3 +38,5 @@ void c_mapper189::Sync()
     c_mapper4::Sync();
     SetPrgBank32k(reg_a);
 }
+
+} //namespace nes

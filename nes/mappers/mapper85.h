@@ -3,6 +3,8 @@
 #include <cstdint>
 #include "vrc7_audio.h"
 
+namespace nes {
+
 class c_mapper85 :
     public c_mapper
 {
@@ -105,3 +107,5 @@ private:
 
     int dB(double dB);
 };
+
+} //namespace nes

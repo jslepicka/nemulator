@@ -1,6 +1,8 @@
 #include "mapper15.h"
 
 
+namespace nes {
+
 c_mapper15::c_mapper15()
 {
     //100-in-1 Contra Function 16
@@ -65,3 +67,5 @@ void c_mapper15::sync()
     else
         set_mirroring(MIRRORING_VERTICAL);
 }
+
+} //namespace nes

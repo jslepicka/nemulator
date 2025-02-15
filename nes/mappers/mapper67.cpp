@@ -2,6 +2,8 @@
 
 #include "..\cpu.h"
 
+namespace nes {
+
 c_mapper67::c_mapper67()
 {
     //Fantasy Zone 2
@@ -102,3 +104,5 @@ void c_mapper67::clock(int cycles)
         }
     }
 }
+
+} //namespace nes

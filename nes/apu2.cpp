@@ -14,6 +14,8 @@ std::ofstream file;
 
 import dsp;
 
+namespace nes {
+
 const float c_apu2::NES_AUDIO_RATE = 341.0f / 3.0f * 262.0f * 60.0f/* / 3.0f*/;
 
 std::atomic<int> c_apu2::lookup_tables_built = 0;
@@ -1203,3 +1205,5 @@ int c_apu2::c_dmc::get_irq_flag()
 {
     return irq_flag ? 1 : 0;
 }
+
+} //namespace nes

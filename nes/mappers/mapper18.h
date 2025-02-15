@@ -1,6 +1,8 @@
 #pragma once
 #include "..\mapper.h"
 
+namespace nes {
+
 class c_mapper18 :
     public c_mapper
 {
@@ -23,3 +25,5 @@ private:
     int prg[3];
     void ack_irq();
 };
+
+} //namespace nes

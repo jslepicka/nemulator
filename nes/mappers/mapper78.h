@@ -1,6 +1,8 @@
 #pragma once
 #include "..\mapper.h"
 
+namespace nes {
+
 class c_mapper78 :
     public c_mapper
 {
@@ -12,3 +14,5 @@ public:
 private:
     int mirror_mode;
 };
+
+} //namespace nes

@@ -2,16 +2,19 @@
 #include <cstdint>
 #include <functional>
 
+namespace gb
+{
+
 class c_gb;
 
 class c_sm83
 {
-public:
-    c_sm83(c_gb* gb);
+  public:
+    c_sm83(c_gb *gb);
     void reset(uint16_t PC = 0x100);
     void execute(int cycles);
 
-private:
+  private:
     void execute_opcode();
 
     uint8_t o8;
@@ -22,16 +25,16 @@ private:
 
     void ADD8(uint8_t d, int carry = 0);
     void SUB8(uint8_t d, int carry = 0);
-    void SWAP(uint8_t& reg);
-    void ADD16(uint16_t& reg, uint16_t d);
-    void ADD16r(uint16_t& reg, int8_t d);
+    void SWAP(uint8_t &reg);
+    void ADD16(uint16_t &reg, uint16_t d);
+    void ADD16r(uint16_t &reg, int8_t d);
 
     void ADC8(uint8_t d);
     void SBC8(uint8_t d);
-    void DEC(uint8_t& reg);
-    void INC(uint8_t& reg);
-    void LD(uint8_t& reg, uint8_t d);
-    void LD(uint16_t& reg, uint16_t d);
+    void DEC(uint8_t &reg);
+    void INC(uint8_t &reg);
+    void LD(uint8_t &reg, uint8_t d);
+    void LD(uint16_t &reg, uint16_t d);
     void LD(uint16_t address, uint8_t d);
     void CP(uint8_t d);
 
@@ -39,16 +42,16 @@ private:
     void OR(uint8_t d);
     void XOR(uint8_t d);
 
-    void SRL(uint8_t& reg);
-    void RR(uint8_t& reg);
-    void RL(uint8_t& reg);
-    void RLC(uint8_t& reg);
-    void RRC(uint8_t& reg);
-    void SLA(uint8_t& reg);
-    void SRA(uint8_t& reg);
+    void SRL(uint8_t &reg);
+    void RR(uint8_t &reg);
+    void RL(uint8_t &reg);
+    void RLC(uint8_t &reg);
+    void RRC(uint8_t &reg);
+    void SLA(uint8_t &reg);
+    void SRA(uint8_t &reg);
     void BIT(int bit, uint8_t d);
-    void RES(int bit, uint8_t& d);
-    void SET(int bit, uint8_t& d);
+    void RES(int bit, uint8_t &d);
+    void SET(int bit, uint8_t &d);
 
     void CALL(uint16_t addr);
     void DAA();
@@ -60,7 +63,7 @@ private:
     void update_f();
     void update_flags();
 
-    c_gb* gb;
+    c_gb *gb;
     int available_cycles;
     int required_cycles;
     int fetch_opcode;
@@ -74,8 +77,7 @@ private:
     uint16_t PC;
     uint16_t SP;
 
-    union
-    {
+    union {
         struct
         {
             unsigned char l;
@@ -98,3 +100,4 @@ private:
     alignas(64) static const s_ins ins_info[517];
 };
 
+} //namespace gb

@@ -1,5 +1,8 @@
 #include "joypad.h"
 
+namespace nes
+{
+
 int c_joypad::reset()
 {
     strobe = 0;
@@ -15,54 +18,51 @@ int c_joypad::reset()
 unsigned char c_joypad::read_byte(unsigned short address)
 {
     unsigned char x = 0;
-    switch (address)
-    {
-    case 0x4016:
-        {
+    switch (address) {
+        case 0x4016: {
             if (strobe)
                 read1 = 0;
             if (read1 < 8)
                 x = (joy1 >> (read1 & 0x07)) & 0x01;
             else if (read1 < 16)
-                x = (joy3 >> ((read1-8) & 0x07)) & 0x01;
+                x = (joy3 >> ((read1 - 8) & 0x07)) & 0x01;
 
             if (read1 < 20)
                 read1++;
             return x | 0x40;
         }
-    case 0x4017:
-        {
+        case 0x4017: {
             if (strobe)
                 read2 = 0;
             if (read2 < 8)
                 x = (joy2 >> (read2 & 0x07)) & 0x01;
             else if (read2 < 16)
-                x = (joy4 >> ((read2-8) & 0x07)) & 0x01;
+                x = (joy4 >> ((read2 - 8) & 0x07)) & 0x01;
 
             if (read2 < 20)
                 read2++;
             return x | 0x40;
         }
-    default:
-        return 0;
+        default:
+            return 0;
     }
 }
 
 void c_joypad::write_byte(unsigned short address, unsigned char value)
 {
-    switch (address)
-    {
-    case 0x4016:
+    switch (address) {
+        case 0x4016:
 
-        strobe = value & 0x01;
-        if (strobe)
-        {
-            read1 = 0;
-            read2 = 0;
-        }
-        break;
+            strobe = value & 0x01;
+            if (strobe) {
+                read1 = 0;
+                read2 = 0;
+            }
+            break;
 
-    default:
-        break;
+        default:
+            break;
     }
 }
+
+} //namespace nes

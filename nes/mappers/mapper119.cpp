@@ -1,6 +1,8 @@
 #include "mapper119.h"
 
 
+namespace nes {
+
 c_mapper119::c_mapper119()
 {
     //High Speed, Pinbot
@@ -27,3 +29,5 @@ void c_mapper119::SetChrBank1k(int bank, int value)
     else
         c_mapper::SetChrBank1k(bank, (value & 0x3F));
 }
+
+} //namespace nes

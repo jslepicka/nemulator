@@ -2,6 +2,8 @@
 
 #include "..\cpu.h"
 
+namespace nes {
+
 c_mapper42::c_mapper42()
 {
     //Bio Miracle Bokutte Upa (J) (Mario Baby - FDS Conversion)
@@ -77,3 +79,5 @@ void c_mapper42::WriteByte(unsigned short address, unsigned char value)
         }
     }
 }
+
+} //namespace nes

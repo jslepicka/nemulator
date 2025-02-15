@@ -1,6 +1,8 @@
 #include "mapper80.h"
 
 
+namespace nes {
+
 c_mapper80::c_mapper80()
 {
     mapperName = "Mapper 80";
@@ -45,3 +47,5 @@ void c_mapper80::reset()
 {
     SetPrgBank8k(PRG_E000, prgRomPageCount8k - 1);
 }
+
+} //namespace nes

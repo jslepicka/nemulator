@@ -2,6 +2,8 @@
 
 #include "..\cpu.h"
 
+namespace nes {
+
 const float c_mapper69::vol_table[16] = {
     0.0f,
     1.412537545f,
@@ -245,3 +247,5 @@ void c_mapper69::reset()
     audio_tick = 0;
     squares_enabled = 0;
 }
+
+} //namespace nes

@@ -2,7 +2,11 @@
 #include <map>
 #include "mirroring_types.h"
 
-struct s_cartdb {
+namespace nes
+{
+
+struct s_cartdb
+{
     int mapper;
     int submapper;
     int mirroring;
@@ -79,3 +83,5 @@ const std::map<unsigned int, s_cartdb> cartdb = {
     {0x3D1C3137, {-1, 2, -1}}, //Uchuusen - Cosmo Carrier (J).nes
     {0xD1691028, {-1, 1, -1}}, //Devil Man (J)
 };
+
+} //namespace nes

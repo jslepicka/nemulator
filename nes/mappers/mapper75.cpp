@@ -1,6 +1,8 @@
 #include "mapper75.h"
 
 
+namespace nes {
+
 c_mapper75::c_mapper75()
 {
     //Tetsuwan Atom, Exciting Boxing
@@ -58,3 +60,5 @@ void c_mapper75::sync()
     SetChrBank4k(CHR_0000, chr0);
     SetChrBank4k(CHR_1000, chr1);
 }
+
+} //namespace nes

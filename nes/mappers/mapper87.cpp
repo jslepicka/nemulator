@@ -1,6 +1,8 @@
 #include "mapper87.h"
 
 
+namespace nes {
+
 c_mapper87::c_mapper87()
 {
     //City Connection (J)
@@ -20,3 +22,5 @@ void c_mapper87::WriteByte(unsigned short address, unsigned char value)
         c_mapper::WriteByte(address, value);
     }
 }
+
+} //namespace nes

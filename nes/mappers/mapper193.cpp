@@ -1,5 +1,7 @@
 #include "mapper193.h"
 
+namespace nes {
+
 c_mapper193::c_mapper193()
 {
     //Fighting Hero
@@ -41,3 +43,5 @@ void c_mapper193::WriteByte(unsigned short address, unsigned char value)
         c_mapper::WriteByte(address, value);
     }
 }
+
+} //namespace nes

@@ -3,6 +3,8 @@
 #include "..\cpu.h"
 #include "..\ppu.h"
 
+namespace nes {
+
 c_mapper5::c_mapper5()
 {
     mapperName = "MMC5";
@@ -704,3 +706,5 @@ void c_mapper5::clock(int cycles)
 
     }
 }
+
+} //namespace nes

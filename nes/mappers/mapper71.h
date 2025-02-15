@@ -1,6 +1,8 @@
 #pragma once
 #include "..\mapper.h"
 
+namespace nes {
+
 class c_mapper71 :
     public c_mapper
 {
@@ -11,3 +13,5 @@ public:
     void reset();
     int enable_mirroring_control;
 };
+
+} //namespace nes

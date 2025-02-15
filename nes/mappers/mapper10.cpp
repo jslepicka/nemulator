@@ -1,6 +1,8 @@
 #include "mapper10.h"
 
 
+namespace nes {
+
 c_mapper10::c_mapper10()
 {
     //Fire Emblem
@@ -22,3 +24,5 @@ void c_mapper10::WriteByte(unsigned short address, unsigned char value)
     else
         c_mapper9::WriteByte(address, value);
 }
+
+} //namespace nes

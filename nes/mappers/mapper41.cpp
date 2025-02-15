@@ -1,6 +1,8 @@
 #include "mapper41.h"
 
 
+namespace nes {
+
 c_mapper41::c_mapper41()
 {
     mapperName = "Caltron 6-in-1";
@@ -35,3 +37,5 @@ void c_mapper41::WriteByte(unsigned short address, unsigned char value)
     else
         c_mapper::WriteByte(address, value);
 }
+
+} //namespace nes

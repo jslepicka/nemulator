@@ -1,6 +1,8 @@
 #include "mapper82.h"
 
 
+namespace nes {
+
 c_mapper82::c_mapper82()
 {
     //SD Keiji - Blader
@@ -65,3 +67,5 @@ void c_mapper82::WriteByte(unsigned short address, unsigned char value)
         }
     }
 }
+
+} //namespace nes

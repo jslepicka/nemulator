@@ -1,6 +1,8 @@
 #include "mapper97.h"
 
 
+namespace nes {
+
 c_mapper97::c_mapper97()
 {
     //Kaiketsu Yanchamaru (J)
@@ -36,3 +38,5 @@ void c_mapper97::WriteByte(unsigned short address, unsigned char value)
     else
         c_mapper::WriteByte(address, value);
 }
+
+} //namespace nes

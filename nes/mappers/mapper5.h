@@ -2,6 +2,8 @@
 #include "..\mapper.h"
 #include "..\apu2.h"
 
+namespace nes {
+
 class c_mapper5 :
     public c_mapper
 {
@@ -94,3 +96,5 @@ private:
     int tile_fetch_count;
     //int in_split_region();
 };
+
+} //namespace nes

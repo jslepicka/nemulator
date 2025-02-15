@@ -2,6 +2,8 @@
 
 #include "..\cpu.h"
 
+namespace nes {
+
 c_mapper19::c_mapper19()
 {
     chr_ram = new unsigned char[1024*32];
@@ -171,3 +173,5 @@ void c_mapper19::clock(int cycles)
         ticks -= 3;
     }
 }
+
+} //namespace nes

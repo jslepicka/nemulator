@@ -1,6 +1,8 @@
 #include "mapper92.h"
 
 
+namespace nes {
+
 c_mapper92::c_mapper92()
 {
     //Moero!! Pro Soccer (J)
@@ -41,3 +43,5 @@ void c_mapper92::reset()
     latch = 0;
     SetPrgBank16k(PRG_8000, 0);
 }
+
+} //namespace nes

@@ -57,7 +57,7 @@ void c_system_container::OnLoad()
         system->load();
         if (type == GAME_NES && system->is_loaded())
         {
-            ((c_nes*)system)->set_sprite_limit(limit_sprites);
+            ((nes::c_nes*)system)->set_sprite_limit(limit_sprites);
         }
     }
 }

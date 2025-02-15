@@ -1,5 +1,7 @@
 #include "mapper_mc_acc.h"
 
+namespace nes {
+
 c_mapper_mc_acc::c_mapper_mc_acc()
 {
     //Incredible Crash Dummies
@@ -40,3 +42,5 @@ void c_mapper_mc_acc::reset()
     irq_delay = 0;
     c_mapper4::reset();
 }
+
+} //namespace nes
