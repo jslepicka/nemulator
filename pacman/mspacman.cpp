@@ -2,8 +2,11 @@
 #include "pacman_vid.h"
 #include "pacman_psg.h"
 
+namespace pacman
+{
+
 // clang-format off
-const std::vector<c_console::load_info_t> c_mspacman::load_info = {
+const std::vector<c_system::load_info_t> c_mspacman::load_info = {
     {
         .game_type = GAME_MSPACMAN,
         .is_arcade = 1,
@@ -21,9 +24,7 @@ const std::vector<c_console::load_info_t> c_mspacman::load_info = {
 };
 // clang-format on
 
-
-c_mspacman::c_mspacman(PACMAN_MODEL model) :
-    c_pacman(model)
+c_mspacman::c_mspacman(PACMAN_MODEL model) : c_pacman(model)
 {
     prg_rom_overlay = std::make_unique<uint8_t[]>(64 * 1024);
     use_overlay = 0;
@@ -202,3 +203,5 @@ void c_mspacman::write_byte(uint16_t address, uint8_t data)
     check_mspacman_trap(address);
     c_pacman::write_byte(address, data);
 }
+
+} //namespace pacman

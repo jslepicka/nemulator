@@ -1,5 +1,5 @@
 #pragma once
-#include "..\console.h"
+#include "..\system.h"
 #include <memory>
 
 class c_z80;
@@ -12,7 +12,7 @@ enum class SMS_MODEL
     GAMEGEAR
 };
 
-class c_sms : public c_console
+class c_sms : public c_system
 {
 public:
     c_sms(SMS_MODEL model);

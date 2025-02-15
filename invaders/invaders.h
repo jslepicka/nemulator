@@ -1,5 +1,5 @@
 #pragma once
-#include "..\console.h"
+#include "..\system.h"
 #include "sample_channel.h"
 #include <memory>
 #include <array>
@@ -16,7 +16,7 @@ class c_null_filter;
 
 namespace invaders
 {
-class c_invaders : public c_console
+class c_invaders : public c_system
 {
   public:
     c_invaders();

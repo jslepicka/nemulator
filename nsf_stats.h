@@ -1,6 +1,6 @@
 #pragma once
 #include "stats.h"
-#include "console.h"
+#include "system.h"
 #include "meow_fft.h"
 #include <memory>
 
@@ -40,7 +40,7 @@ private:
     ID3D10EffectMatrixVariable* var_view;
     ID3D10EffectMatrixVariable* var_proj;
 
-    c_console* c;
+    c_system* c;
 
     static const int tex_size = 512;
     int draw_count;

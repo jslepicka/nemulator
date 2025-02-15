@@ -16,7 +16,7 @@ extern int mem_viewer_active;
 void strip_extension(char *path);
 
 // clang-format off
-const std::vector<c_console::load_info_t> c_nes::load_info = {
+const std::vector<c_system::load_info_t> c_nes::load_info = {
     {
         .game_type = GAME_NES,
         .extension = "nes",

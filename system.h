@@ -7,11 +7,12 @@
 #include <functional>
 #include "game_types.h"
 
-class c_console
+// An emulated system (game console, arcade machine, etc.)
+class c_system
 {
 public:
-    c_console();
-    virtual ~c_console();
+    c_system() {};
+    virtual ~c_system() {};
     virtual int load() = 0;
     virtual int is_loaded() = 0;
     virtual int emulate_frame() = 0;
@@ -23,8 +24,6 @@ public:
     virtual void enable_mixer() {}
     virtual void disable_mixer() {}
     virtual int *get_video() = 0;
-    virtual void set_sprite_limit(bool limit_sprites) {}
-    virtual bool get_sprite_limit() { return true; }
     std::vector<s_button_map> *get_button_map() {return &button_map;}
     struct load_info_t
     {
@@ -32,7 +31,7 @@ public:
         int is_arcade = 0;
         std::string extension;
         std::string title;
-        std::function<c_console *()> constructor;
+        std::function<c_system *()> constructor;
     };
     char path[MAX_PATH];
     char sram_path[MAX_PATH];
@@ -51,7 +50,8 @@ public:
         int rotation = 0;
         double aspect_ratio = 4.0 / 3.0;
     };
-    void get_display_info(display_info_t* dst) { memcpy(dst, &display_info, sizeof(display_info_t)); }
+    //void get_display_info(display_info_t* dst) { memcpy(dst, &display_info, sizeof(display_info_t)); }
+    const display_info_t *get_display_info() { return &display_info; }
   protected:
     int crc32 = 0;
     std::string system_name = "Unknown";

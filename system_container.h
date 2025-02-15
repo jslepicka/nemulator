@@ -1,5 +1,5 @@
 #pragma once
-#include "console.h"
+#include "system.h"
 #include "nes\nes.h"
 #include "sms\sms.h"
 #include "gb\gb.h"
@@ -13,16 +13,13 @@
 #include <functional>
 #include "game_types.h"
 
-class c_game : public TexturePanelItem
+// A container that decouples nemulator-specific code from emulation code
+class c_system_container : public TexturePanelItem
 {
 public:
-    c_game(GAME_TYPE type, std::string path, std::string filename, std::string sram_path, std::function<c_console*()> constructor);
-    HANDLE GetEventStart() { return eventStart; } //Retrieve eventStart handle
-    HANDLE GetEventDone() { return eventDone; } //Retrieve eventDone handle
-    ~c_game();
-    HANDLE eventStart;
-    HANDLE eventDone;
-    c_console* console;
+    c_system_container(GAME_TYPE type, std::string path, std::string filename, std::string sram_path, std::function<c_system*()> constructor);
+    ~c_system_container();
+    c_system* system;
     void DrawToTexture(ID3D10Texture2D *tex);
     ID3D10Buffer *get_vertex_buffer(int stretched);
     bool Selectable();
@@ -44,7 +41,7 @@ public:
     };
 
   private:
-    std::function<c_console *()> constructor;
+    std::function<c_system *()> constructor;
     void OnActivate(bool load);
     void OnDeactivate();
     void OnLoad();
@@ -58,7 +55,7 @@ public:
     D3D10_BUFFER_DESC bd;
     ID3D10Buffer *vertex_buffer = NULL;
     ID3D10Buffer *stretched_vertex_buffer = NULL;
-    ID3D10Buffer* default_vertex_buffer = NULL;
+    ID3D10Buffer *default_vertex_buffer = NULL;
     ID3D10Buffer *unloaded_vertex_buffer = NULL;
 
     double width;
@@ -68,5 +65,4 @@ public:
     static const int tex_height = 512;
     static const int static_width = 256;
     static const int static_height = 256;
-    c_console::display_info_t display_info;
 };

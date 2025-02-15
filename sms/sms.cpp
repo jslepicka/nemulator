@@ -17,7 +17,7 @@ import crc32;
 void strip_extension(char *path);
 
 // clang-format off
-const std::vector<c_console::load_info_t> c_sms::load_info = {
+const std::vector<c_system::load_info_t> c_sms::load_info = {
     {
         .game_type = GAME_SMS,
         .extension = "sms",

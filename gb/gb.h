@@ -1,5 +1,5 @@
 #pragma once
-#include "../console.h"
+#include "..\system.h"
 #include <cstdint>
 #include <functional>
 #include <map>
@@ -17,7 +17,7 @@ enum GB_MODEL
     CGB
 };
 
-class c_gb : public c_console
+class c_gb : public c_system
 {
   public:
     c_gb(GB_MODEL model);

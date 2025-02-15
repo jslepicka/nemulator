@@ -11,7 +11,7 @@ import interpolate;
 using namespace invaders;
 
 // clang-format off
-const std::vector<c_console::load_info_t> c_invaders::load_info = {
+const std::vector<c_system::load_info_t> c_invaders::load_info = {
     {
         .game_type = GAME_INVADERS,
         .is_arcade = 1,

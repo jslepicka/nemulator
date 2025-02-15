@@ -4,6 +4,9 @@
 
 import dsp;
 
+namespace pacman
+{
+
 c_pacman_psg::c_pacman_psg()
 {
     sound_rom = new uint8_t[512];
@@ -20,9 +23,9 @@ c_pacman_psg::c_pacman_psg()
     */
 
     lpf = new dsp::c_biquad4({0.5067391395568848f, 0.3314585983753204f, 0.1227479130029678f, 0.0055860662832856f},
-                        {-1.9303771257400513f, -1.8652504682540894f, -1.1834223270416260f, -1.9452478885650635f},
-                        {-1.9310271739959717f, -1.9009269475936890f, -1.8766038417816162f, -1.9576745033264160f},
-                        {0.9541351795196533f, 0.9147564172744751f, 0.8819914460182190f, 0.9860565066337585f});
+                             {-1.9303771257400513f, -1.8652504682540894f, -1.1834223270416260f, -1.9452478885650635f},
+                             {-1.9310271739959717f, -1.9009269475936890f, -1.8766038417816162f, -1.9576745033264160f},
+                             {0.9541351795196533f, 0.9147564172744751f, 0.8819914460182190f, 0.9860565066337585f});
     /*
     post-filter is butterworth bandpass, 30Hz - 12kHz
     d = fdesign.bandpass('N,F3dB1,F3dB2', 2, 30, 12000, 48000);
@@ -32,8 +35,9 @@ c_pacman_psg::c_pacman_psg()
     b = regexprep(num2str(Hd.sosMatrix(1:3), '%.16ff '), '\s+', ',')
     a = regexprep(num2str(Hd.sosMatrix(4:6), '%.16ff '), '\s+', ',')
     */
-    post_filter = new dsp::c_biquad(0.4990182518959045f, {1.0000000000000000f, 0.0000000000000000f, -1.0000000000000000f},
-                               {1.0000000000000000f, -0.9980365037918091f, 0.0019634978380054f});
+    post_filter =
+        new dsp::c_biquad(0.4990182518959045f, {1.0000000000000000f, 0.0000000000000000f, -1.0000000000000000f},
+                          {1.0000000000000000f, -0.9980365037918091f, 0.0019634978380054f});
     resampler = new dsp::c_resampler(audio_rate / 48000.0, lpf, post_filter);
     mixer_enabled = 0;
     reset();
@@ -87,18 +91,14 @@ void c_pacman_psg::execute(int cycles)
         float sample = 0.0f;
         for (int channel = 0; channel < 3; channel++) {
             uint32_t channel_offset = channel * 5;
-            uint32_t frequency = 
-                (channel == 0 ? sound_ram[0x10] << 0 : 0) |
-                sound_ram[0x11 + channel_offset] << 4 |
-                sound_ram[0x12 + channel_offset] << 8 |
-                sound_ram[0x13 + channel_offset] << 12 |
-                sound_ram[0x14 + channel_offset] << 16;
+            uint32_t frequency = (channel == 0 ? sound_ram[0x10] << 0 : 0) | sound_ram[0x11 + channel_offset] << 4 |
+                                 sound_ram[0x12 + channel_offset] << 8 | sound_ram[0x13 + channel_offset] << 12 |
+                                 sound_ram[0x14 + channel_offset] << 16;
             uint8_t volume = sound_ram[0x15 + channel_offset];
             uint8_t waveform = sound_ram[0x05 + channel_offset] & 0x7;
             accumulator[channel] = (accumulator[channel] + frequency) & 0xF'FFFF;
             uint8_t wave_index = (accumulator[channel] >> 15) & 0x1F;
             sample += muted ? 0.0f : (float)((sound_rom[waveform * 32 + wave_index] & 0xF) * volume);
-
         }
         if (mixer_enabled) {
             sample /= (225.0f * 3.0f); //this scaling is arbitrary
@@ -109,3 +109,5 @@ void c_pacman_psg::execute(int cycles)
         }
     }
 }
+
+} //namespace pacman

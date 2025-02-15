@@ -243,9 +243,8 @@
     <ClCompile Include="audio_info.cpp" />
     <ClCompile Include="bmp_writer.cpp" />
     <ClCompile Include="config.cpp" />
-    <ClCompile Include="console.cpp" />
     <ClCompile Include="D3d10App.cpp" />
-    <ClCompile Include="Game.cpp" />
+    <ClCompile Include="system_container.cpp" />
     <ClCompile Include="gb\gb.cpp" />
     <ClCompile Include="gb\gbmapper.cpp" />
     <ClCompile Include="gb\gbppu.cpp" />
@@ -363,10 +362,10 @@
     <ClInclude Include="bmp_writer.h" />
     <ClInclude Include="buttons.h" />
     <ClInclude Include="config.h" />
-    <ClInclude Include="console.h" />
+    <ClInclude Include="system.h" />
     <ClInclude Include="constants.h" />
     <ClInclude Include="D3d10App.h" />
-    <ClInclude Include="Game.h" />
+    <ClInclude Include="system_container.h" />
     <ClInclude Include="game_types.h" />
     <ClInclude Include="gb\gb.h" />
     <ClInclude Include="gb\gbapu.h" />

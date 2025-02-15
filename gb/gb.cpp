@@ -29,7 +29,7 @@ const std::map<int, c_gb::s_pak> c_gb::pak_factory = {
 // clang-format on
 
 // clang-format off
-const std::vector<c_console::load_info_t> c_gb::load_info = {
+const std::vector<c_system::load_info_t> c_gb::load_info = {
     {
         .game_type = GAME_GB,
         .extension = "gb",

@@ -2,6 +2,8 @@
 #include <cstdint>
 #include <memory>
 
+namespace pacman
+{
 class c_pacman;
 
 class c_pacman_vid
@@ -21,8 +23,8 @@ class c_pacman_vid
     std::unique_ptr<uint8_t[]> color_rom;
     std::unique_ptr<uint8_t[]> pal_rom;
     std::unique_ptr<uint8_t[]> sprite_locs;
-  
-private:
+
+  private:
     uint8_t lookup_color(int pal_number, int index);
     uint32_t lookup_rgb(uint8_t color);
     void draw_background_line(int line);
@@ -39,9 +41,10 @@ private:
     uint32_t state = 0;
     uint32_t vid_address;
     int pixels_out;
-    
+
     static const uint8_t rg_weights[];
     static const uint8_t b_weights[];
 
     uint32_t colors[32];
 };
+} //namespace pacman

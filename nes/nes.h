@@ -3,7 +3,7 @@
 #include <map>
 #include <vector>
 #include <functional>
-#include "..\console.h"
+#include "..\system.h"
 #include "game_genie.h"
 #include <memory>
 
@@ -15,7 +15,7 @@ class c_apu;
 class c_apu2;
 struct iNesHeader;
 
-class c_nes : public c_console
+class c_nes : public c_system
 {
 public:
     c_nes();
@@ -47,8 +47,8 @@ public:
     void enable_mixer();
     void disable_mixer();
     static const std::vector<load_info_t> load_info;
-
-private:
+    
+  private:
     int LoadImage(char *pathFile);
     std::unique_ptr<c_apu2> apu2;
     std::unique_ptr<c_joypad> joypad;

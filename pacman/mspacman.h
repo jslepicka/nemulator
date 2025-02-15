@@ -1,13 +1,16 @@
 #pragma once
 #include "pacman.h"
 
+namespace pacman
+{
 class c_mspacman : public c_pacman
 {
   public:
     c_mspacman(PACMAN_MODEL model);
-    ~c_mspacman(){};
+    ~c_mspacman() {};
     int load();
     static const std::vector<load_info_t> load_info;
+
   private:
     void decrypt_mspacman();
     void decrypt_rom(int src, int dst, int len, std::array<uint8_t, 16> addr_bits);
@@ -19,3 +22,4 @@ class c_mspacman : public c_pacman
     std::unique_ptr<uint8_t[]> prg_rom_overlay; //for ms. pacman
     int use_overlay;
 };
+} //namespace pacman

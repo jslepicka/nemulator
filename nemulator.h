@@ -2,7 +2,7 @@
 #include "nes\nes.h"
 #include "sms\sms.h"
 #include "gb\gb.h"
-#include "game.h"
+#include "system_container.h"
 #include <vector>
 #include <memory>
 #include <list>
@@ -132,7 +132,7 @@ private:
     void RunGames();
     void ProcessInput(double dt);
     int selectedPanel;
-    std::vector<c_game*> gameList;
+    std::vector<c_system_container*> gameList;
     double menu_delay;
 
     bool inGame;
@@ -178,7 +178,7 @@ private:
         HANDLE start_event;
         HANDLE done_event;
         int kill;
-        std::vector<c_game*> game_list;
+        std::vector<c_system_container*> game_list;
     };
     //std::vector<s_game_thread*> game_threads;
     std::vector<std::unique_ptr<s_game_thread>> game_threads;
