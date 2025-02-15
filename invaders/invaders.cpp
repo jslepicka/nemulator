@@ -10,18 +10,6 @@ import interpolate;
 
 using namespace invaders;
 
-// clang-format off
-const std::vector<c_system::load_info_t> c_invaders::load_info = {
-    {
-        .game_type = GAME_INVADERS,
-        .is_arcade = 1,
-        .extension = "invaders",
-        .title = "Space Invaders",
-        .constructor = []() { return new c_invaders(); },
-    },
-};
-// clang-format on
-
 c_invaders::c_invaders()
 {
     system_name = "Arcade";
@@ -59,6 +47,7 @@ c_invaders::c_invaders()
     resampler = new dsp::c_resampler((double)audio_freq / 48000.0, null_filter, post_filter);
     mixer_enabled = 0;
 
+    // clang-format off
     button_map = {
         {BUTTON_1SELECT,    0x01},
         {BUTTON_1START,     0x04},
@@ -66,6 +55,7 @@ c_invaders::c_invaders()
         {BUTTON_1LEFT,      0x20},
         {BUTTON_1RIGHT,     0x40},
     };
+    // clang-format on
 }
 
 c_invaders::~c_invaders()

@@ -5,25 +5,6 @@
 namespace pacman
 {
 
-// clang-format off
-const std::vector<c_system::load_info_t> c_mspacman::load_info = {
-    {
-        .game_type = GAME_MSPACMAN,
-        .is_arcade = 1,
-        .extension = "mspacman",
-        .title = "Ms. Pac-Man",
-        .constructor = []() { return new c_mspacman(PACMAN_MODEL::MSPACMAN); },
-    },
-    {
-        .game_type = GAME_MSPACMNF,
-        .is_arcade = 1,
-        .extension = "mspacmnf",
-        .title = "Ms. Pac-Man (Fast)",
-        .constructor = []() { return new c_mspacman(PACMAN_MODEL::MSPACMNF); },
-    },
-};
-// clang-format on
-
 c_mspacman::c_mspacman(PACMAN_MODEL model) : c_pacman(model)
 {
     prg_rom_overlay = std::make_unique<uint8_t[]>(64 * 1024);

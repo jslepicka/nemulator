@@ -16,7 +16,7 @@ enum class SMS_MODEL
     GAMEGEAR
 };
 
-class c_sms : public c_system
+class c_sms : public c_system, register_system<c_sms>
 {
   public:
     c_sms(SMS_MODEL model);
@@ -46,7 +46,22 @@ class c_sms : public c_system
     {
         return model;
     }
-    static const std::vector<load_info_t> load_info;
+    static std::vector<load_info_t> get_load_info()
+    {
+        return {
+            {
+                .game_type = GAME_SMS,
+                .identifier = "sms",
+                .constructor = []() { return new c_sms(SMS_MODEL::SMS); },
+            },
+            {
+                .game_type = GAME_GG,
+                .identifier = "gg",
+                .constructor = []() { return new c_sms(SMS_MODEL::GAMEGEAR); },
+            },
+        };
+    }
+
 
   private:
     SMS_MODEL model;

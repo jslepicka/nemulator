@@ -19,7 +19,7 @@ enum class PACMAN_MODEL
     MSPACMAB
 };
 
-class c_pacman : public c_system
+class c_pacman : public c_system, register_system<c_pacman>
 {
   public:
     c_pacman(PACMAN_MODEL model = PACMAN_MODEL::PACMAN);
@@ -36,7 +36,25 @@ class c_pacman : public c_system
     void set_irq(int irq);
     void enable_mixer();
     void disable_mixer();
-    static const std::vector<load_info_t> load_info;
+    static std::vector<load_info_t> get_load_info()
+    {
+        return {
+            {
+                .game_type = GAME_PACMAN,
+                .is_arcade = 1,
+                .identifier = "pacman",
+                .title = "Pac-Man",
+                .constructor = []() { return new c_pacman(); },
+            },
+            {
+                .game_type = GAME_MSPACMAB,
+                .is_arcade = 1,
+                .identifier = "mspacmab",
+                .title = "Ms. Pac-Man (Bootleg)",
+                .constructor = []() { return new c_pacman(PACMAN_MODEL::MSPACMAB); },
+            },
+        };
+    }
 
   protected:
     struct s_roms

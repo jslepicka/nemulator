@@ -18,7 +18,7 @@ class c_apu;
 class c_apu2;
 struct iNesHeader;
 
-class c_nes : public c_system
+class c_nes : public c_system, register_system<c_nes>
 {
   public:
     c_nes();
@@ -52,7 +52,20 @@ class c_nes : public c_system
     iNesHeader *header;
     void enable_mixer();
     void disable_mixer();
-    static const std::vector<load_info_t> load_info;
+    static std::vector<load_info_t> get_load_info() {
+        return {
+            {
+                .game_type = GAME_NES,
+                .identifier = "nes",
+                .constructor = []() { return new c_nes(); },
+            },
+            {
+                .game_type = GAME_NES,
+                .identifier = "nsf",
+                .constructor = []() { return new c_nes(); },
+            },
+        };
+    }
 
   private:
     int LoadImage(char *pathFile);

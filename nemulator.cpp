@@ -1301,7 +1301,7 @@ void c_nemulator::LoadGames()
     {
         GAME_TYPE type;
         int is_arcade;
-        std::string extension;
+        std::string identifier;
         std::function<c_system*()> constructor;
         std::string rom_path_key;
         std::string save_path_key;
@@ -1314,23 +1314,19 @@ void c_nemulator::LoadGames()
     std::vector<s_loadinfo> loadinfo;
     std::vector<c_system::load_info_t> cli;
 
-    #define REGISTER(x) std::ranges::copy(x::load_info, std::back_inserter(cli));
-    REGISTER(nes::c_nes);
-    REGISTER(sms::c_sms);
-    REGISTER(gb::c_gb);
-    REGISTER(pacman::c_pacman);
-    REGISTER(pacman::c_mspacman);
-    REGISTER(invaders::c_invaders);
+    for (auto &li : c_system_registry::get_registry()) {
+        std::ranges::copy(li, std::back_inserter(cli));
+    }
 
     for (auto &l : cli) {
        s_loadinfo i = {
            .type = (GAME_TYPE)l.game_type,
            .is_arcade = l.is_arcade,
-           .extension = l.extension,
+           .identifier = l.identifier,
            .constructor = l.constructor,
-           .rom_path_key = l.extension + ".rom_path",
-           .save_path_key = l.extension + ".save_path",
-           .rom_path_default = l.is_arcade ? arcade_path + "\\" + l.extension : "c:\\roms\\" + l.extension,
+           .rom_path_key = l.identifier + ".rom_path",
+           .save_path_key = l.identifier + ".save_path",
+           .rom_path_default = l.is_arcade ? arcade_path + "\\" + l.identifier : "c:\\roms\\" + l.identifier,
            .title = l.title,
        };
        loadinfo.push_back(i);
@@ -1354,7 +1350,7 @@ void c_nemulator::LoadGames()
         else {
             std::error_code ec;
             for (auto const &dir_entry : std::filesystem::directory_iterator(li.rom_path, ec)) {
-                if (dir_entry.is_regular_file() && dir_entry.path().extension() == "." + li.extension) {
+                if (dir_entry.is_regular_file() && dir_entry.path().extension() == "." + li.identifier) {
                     rom_count++;
                     li.file_list.push_back(dir_entry.path().filename().string());
                 }

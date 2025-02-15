@@ -20,7 +20,7 @@ enum GB_MODEL
     CGB
 };
 
-class c_gb : public c_system
+class c_gb : public c_system, register_system<c_gb>
 {
   public:
     c_gb(GB_MODEL model);
@@ -61,7 +61,21 @@ class c_gb : public c_system
         return model;
     }
 
-    static const std::vector<load_info_t> load_info;
+    static std::vector<load_info_t> get_load_info()
+    {
+        return {
+            {
+                .game_type = GAME_GB,
+                .identifier = "gb",
+                .constructor = []() { return new c_gb(GB_MODEL::DMG); },
+            },
+            {
+                .game_type = GAME_GBC,
+                .identifier = "gbc",
+                .constructor = []() { return new c_gb(GB_MODEL::CGB); },
+            },
+        };
+    }
 
   private:
     std::unique_ptr<c_gbmapper> mapper;

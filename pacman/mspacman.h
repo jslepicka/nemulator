@@ -3,13 +3,31 @@
 
 namespace pacman
 {
-class c_mspacman : public c_pacman
+class c_mspacman : public c_pacman, register_system<c_mspacman>
 {
   public:
     c_mspacman(PACMAN_MODEL model);
     ~c_mspacman() {};
     int load();
-    static const std::vector<load_info_t> load_info;
+    static std::vector<load_info_t> get_load_info()
+    {
+        return {
+            {
+                .game_type = GAME_MSPACMAN,
+                .is_arcade = 1,
+                .identifier = "mspacman",
+                .title = "Ms. Pac-Man",
+                .constructor = []() { return new c_mspacman(PACMAN_MODEL::MSPACMAN); },
+            },
+            {
+                .game_type = GAME_MSPACMNF,
+                .is_arcade = 1,
+                .identifier = "mspacmnf",
+                .title = "Ms. Pac-Man (Fast)",
+                .constructor = []() { return new c_mspacman(PACMAN_MODEL::MSPACMNF); },
+            },
+        };
+    }
 
   private:
     void decrypt_mspacman();

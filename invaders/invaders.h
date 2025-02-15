@@ -16,7 +16,7 @@ class c_null_filter;
 
 namespace invaders
 {
-class c_invaders : public c_system
+class c_invaders : public c_system, register_system<c_invaders>
 {
   public:
     c_invaders();
@@ -32,7 +32,19 @@ class c_invaders : public c_system
 
     void enable_mixer();
     void disable_mixer();
-    static const std::vector<load_info_t> load_info;
+    static std::vector<load_info_t> get_load_info()
+    {
+        return {
+            {
+                .game_type = GAME_INVADERS,
+                .is_arcade = 1,
+                .identifier = "invaders",
+                .title = "Space Invaders",
+                .constructor = []() { return new c_invaders(); },
+            },
+        };
+    }
+
   private:
     
     dsp::c_resampler *resampler;

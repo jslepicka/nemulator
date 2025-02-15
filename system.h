@@ -29,7 +29,9 @@ public:
     {
         int game_type;
         int is_arcade = 0;
-        std::string extension;
+        //for consoles, identifier is the file extension (e.g., nes)
+        //for arcade games, it's the name of the rom set (e.g., pacman)
+        std::string identifier;
         std::string title;
         std::function<c_system *()> constructor;
     };
@@ -59,3 +61,34 @@ public:
     std::vector<s_button_map> button_map;
 };
 
+class c_system_registry
+{
+  public:
+    static std::vector<std::vector<c_system::load_info_t>> &get_registry()
+    {
+        static std::vector<std::vector<c_system::load_info_t>> registry;
+        return registry;
+    }
+    static void register_system(std::vector<c_system::load_info_t> li)
+    {
+        get_registry().push_back(li);
+    }
+};
+
+template <typename derived>
+class register_system
+{
+    static void _register_system()
+    {
+        c_system_registry::register_system(derived::get_load_info());
+    }
+
+    struct s_registrar
+    {
+        s_registrar()
+        {
+            _register_system();
+        }
+    };
+    static inline s_registrar registrar;
+};

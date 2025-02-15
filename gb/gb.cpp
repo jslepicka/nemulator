@@ -31,21 +31,6 @@ const std::map<int, c_gb::s_pak> c_gb::pak_factory = {
 };
 // clang-format on
 
-// clang-format off
-const std::vector<c_system::load_info_t> c_gb::load_info = {
-    {
-        .game_type = GAME_GB,
-        .extension = "gb",
-        .constructor = []() { return new c_gb(GB_MODEL::DMG); },
-    },
-    {
-        .game_type = GAME_GBC,
-        .extension = "gbc",
-        .constructor = []() { return new c_gb(GB_MODEL::CGB); },
-    },
-};
-// clang-format on
-
 c_gb::c_gb(GB_MODEL model)
 {
     system_name = model == GB_MODEL::CGB ? "Nintendo Game Boy Color" : "Nintendo Game Boy";
@@ -63,10 +48,18 @@ c_gb::c_gb(GB_MODEL model)
     ram_size = 0;
     wram_bank = 1;
     this->model = model;
+    // clang-format off
     button_map = {
-        {BUTTON_1RIGHT, 0x01}, {BUTTON_1LEFT, 0x02}, {BUTTON_1UP, 0x04},     {BUTTON_1DOWN, 0x08},
-        {BUTTON_1A, 0x10},     {BUTTON_1B, 0x20},    {BUTTON_1SELECT, 0x40}, {BUTTON_1START, 0x80},
+        {BUTTON_1RIGHT,  0x01},
+        {BUTTON_1LEFT,   0x02},
+        {BUTTON_1UP,     0x04},
+        {BUTTON_1DOWN,   0x08},
+        {BUTTON_1A,      0x10},
+        {BUTTON_1B,      0x20},
+        {BUTTON_1SELECT, 0x40},
+        {BUTTON_1START,  0x80},
     };
+    // clang-format on
 }
 
 c_gb::~c_gb()
