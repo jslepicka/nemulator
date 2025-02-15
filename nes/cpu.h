@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 namespace nes
 {
 
@@ -185,6 +187,14 @@ class c_cpu
     void XAA();
 
     int irq_checked();
+
+    void push(uint8_t value);
+    uint8_t pop();
+    void setn(uint8_t value);
+    void setz(uint8_t value);
+    uint16_t makeword(uint8_t lo, uint8_t hi);
+    uint8_t hibyte(uint16_t value);
+    uint8_t lobyte(uint16_t value);
 };
 
 } //namespace nes
