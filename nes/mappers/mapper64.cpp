@@ -210,7 +210,7 @@ void c_mapper64::clock_irq_counter()
     //int y = ppu->current_scanline;
     if (irq_counter_reload)
     {
-        irq_counter = reg_c000 + 1;
+        irq_counter = reg_c000 | 1;
         irq_counter_reload = 0;
     }
     else if (irq_counter == 0)
