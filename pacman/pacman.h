@@ -19,7 +19,7 @@ enum class PACMAN_MODEL
     MSPACMAB
 };
 
-class c_pacman : public c_system, register_system<c_pacman>
+class c_pacman : public c_system, register_class<c_system_registry, c_pacman>
 {
   public:
     c_pacman(PACMAN_MODEL model = PACMAN_MODEL::PACMAN);
@@ -63,7 +63,7 @@ class c_pacman : public c_system, register_system<c_pacman>
         return display_info;
     }
 
-    static std::vector<s_system_info> get_system_info()
+    static std::vector<s_system_info> get_registry_info()
     {
         return {
             {

@@ -6,6 +6,7 @@
 #include <functional>
 #include <map>
 #include <string>
+#include "..\class_registry.h"
 
 namespace nes
 {
@@ -113,15 +114,10 @@ class c_mapper
     int submapper;
 };
 
-class c_mapper_registry
+class c_mapper_registry : public c_class_registry<std::map<int, c_mapper::s_mapper_info>>
 {
   public:
-    static std::map<int, c_mapper::s_mapper_info> &get_registry()
-    {
-        static std::map<int, c_mapper::s_mapper_info> registry;
-        return registry;
-    }
-    static void register_mapper(std::vector<c_mapper::s_mapper_info> mapper_info)
+    static void _register(std::vector<c_mapper::s_mapper_info> mapper_info)
     {
         for (auto &mi : mapper_info) {
             if (mi.name == "") {
@@ -131,36 +127,5 @@ class c_mapper_registry
         }
     }
 };
-
-template <typename derived> class register_mapper
-{
-    static void _register_mapper()
-    {
-        c_mapper_registry::register_mapper(derived::get_mapper_info());
-    }
-
-    struct s_registrar
-    {
-        s_registrar()
-        {
-            _register_mapper();
-        }
-    };
-    static inline s_registrar registrar;
-};
-
-class c_mapper0 : public c_mapper, register_mapper<c_mapper0>
-{
-  public:
-    static std::vector<c_mapper::s_mapper_info> get_mapper_info()
-    {
-        return {{
-            .number = 0,
-            .name = "NROM",
-            .constructor = []() { return std::make_unique<c_mapper0>(); },
-        }};
-    }
-};
-
 
 } //namespace nes

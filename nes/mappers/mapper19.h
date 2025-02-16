@@ -3,7 +3,7 @@
 
 namespace nes {
 
-class c_mapper19 : public c_mapper, register_mapper<c_mapper19>
+class c_mapper19 : public c_mapper, register_class<c_mapper_registry, c_mapper19>
 {
 public:
     c_mapper19();
@@ -12,7 +12,7 @@ public:
     unsigned char read_byte(unsigned short address);
     void reset();
     void clock(int cycles);
-    static std::vector<c_mapper::s_mapper_info> get_mapper_info()
+    static std::vector<c_mapper::s_mapper_info> get_registry_info()
     {
         return {
             {

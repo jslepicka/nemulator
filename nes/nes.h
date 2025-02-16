@@ -20,7 +20,7 @@ class c_apu;
 class c_apu;
 struct iNesHeader;
 
-class c_nes : public c_system, register_system<c_nes>
+class c_nes : public c_system, register_class<c_system_registry, c_nes>
 {
   public:
     c_nes();
@@ -55,7 +55,7 @@ class c_nes : public c_system, register_system<c_nes>
     void enable_mixer();
     void disable_mixer();
 
-    static std::vector<s_system_info> get_system_info()
+    static std::vector<s_system_info> get_registry_info()
     {
         // clang-format off
         static const std::vector<s_button_map> button_map = {

@@ -3,13 +3,13 @@
 
 namespace pacman
 {
-class c_mspacman : public c_pacman, register_system<c_mspacman>
+class c_mspacman : public c_pacman, register_class<c_system_registry, c_mspacman>
 {
   public:
     c_mspacman(PACMAN_MODEL model);
     ~c_mspacman() {};
     int load();
-    static std::vector<s_system_info> get_system_info()
+    static std::vector<s_system_info> get_registry_info()
     {
         return {
             {

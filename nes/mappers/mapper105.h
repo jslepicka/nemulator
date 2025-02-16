@@ -3,7 +3,7 @@
 
 namespace nes {
 
-class c_mapper105 : public c_mapper1, register_mapper<c_mapper105>
+class c_mapper105 : public c_mapper1, register_class<c_mapper_registry, c_mapper105>
 {
 public:
     c_mapper105();
@@ -11,7 +11,7 @@ public:
     void reset();
     void clock(int cycles);
     int get_nwc_time();
-    static std::vector<c_mapper::s_mapper_info> get_mapper_info()
+    static std::vector<c_mapper::s_mapper_info> get_registry_info()
     {
         return {
             {

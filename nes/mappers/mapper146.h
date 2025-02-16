@@ -3,13 +3,13 @@
 
 namespace nes {
 
-class c_mapper146 : public c_mapper, register_mapper<c_mapper146>
+class c_mapper146 : public c_mapper, register_class<c_mapper_registry, c_mapper146>
 {
 public:
     c_mapper146();
     ~c_mapper146() {};
     void write_byte(unsigned short address, unsigned char value);
-    static std::vector<c_mapper::s_mapper_info> get_mapper_info()
+    static std::vector<c_mapper::s_mapper_info> get_registry_info()
     {
         return {
             {

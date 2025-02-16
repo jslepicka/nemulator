@@ -3,7 +3,7 @@
 
 namespace nes {
 
-class c_mapper228 : public c_mapper, register_mapper<c_mapper228>
+class c_mapper228 : public c_mapper, register_class<c_mapper_registry, c_mapper228>
 {
 public:
     c_mapper228();
@@ -11,7 +11,7 @@ public:
     void write_byte(unsigned short address, unsigned char value);
     unsigned char read_byte(unsigned short address);
     void reset();
-    static std::vector<c_mapper::s_mapper_info> get_mapper_info()
+    static std::vector<c_mapper::s_mapper_info> get_registry_info()
     {
         return {
             {

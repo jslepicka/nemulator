@@ -3,7 +3,7 @@
 
 namespace nes {
 
-class c_mapper24 : public c_mapper, register_mapper<c_mapper24>
+class c_mapper24 : public c_mapper, register_class<c_mapper_registry, c_mapper24>
 {
 public:
     c_mapper24(int submapper = 0);
@@ -12,7 +12,7 @@ public:
     void clock(int cycles);
     void reset();
     float mix_audio(float sample);
-    static std::vector<c_mapper::s_mapper_info> get_mapper_info()
+    static std::vector<c_mapper::s_mapper_info> get_registry_info()
     {
         return {
             {

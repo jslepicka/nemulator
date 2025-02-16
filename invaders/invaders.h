@@ -16,7 +16,7 @@ class c_null_filter;
 
 namespace invaders
 {
-class c_invaders : public c_system, register_system<c_invaders>
+class c_invaders : public c_system, register_class<c_system_registry, c_invaders>
 {
   public:
     c_invaders();
@@ -33,7 +33,7 @@ class c_invaders : public c_system, register_system<c_invaders>
     void enable_mixer();
     void disable_mixer();
 
-    static std::vector<s_system_info> get_system_info()
+    static std::vector<s_system_info> get_registry_info()
     {
         return {
             {

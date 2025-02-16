@@ -243,6 +243,7 @@
     <ClCompile Include="audio_info.cpp" />
     <ClCompile Include="config.cpp" />
     <ClCompile Include="D3d10App.cpp" />
+    <ClCompile Include="nes\mappers\mapper0.cpp" />
     <ClCompile Include="system_container.cpp" />
     <ClCompile Include="gb\gb.cpp" />
     <ClCompile Include="gb\gbmapper.cpp" />
@@ -358,7 +359,9 @@
     <ClInclude Include="benchmark.h" />
     <ClInclude Include="buttons.h" />
     <ClInclude Include="config.h" />
+    <ClInclude Include="nes\mappers\mapper0.h" />
     <ClInclude Include="nes\mappers\mapper190.h" />
+    <ClInclude Include="class_registry.h" />
     <ClInclude Include="system.h" />
     <ClInclude Include="constants.h" />
     <ClInclude Include="D3d10App.h" />

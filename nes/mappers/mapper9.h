@@ -3,7 +3,7 @@
 
 namespace nes {
 
-class c_mapper9 : public c_mapper, register_mapper<c_mapper9>
+class c_mapper9 : public c_mapper, register_class<c_mapper_registry, c_mapper9>
 {
 public:
     c_mapper9();
@@ -12,7 +12,7 @@ public:
     virtual void reset();
     void mmc2_latch(int address);
     unsigned char read_chr(unsigned short address);
-    static std::vector<c_mapper::s_mapper_info> get_mapper_info()
+    static std::vector<c_mapper::s_mapper_info> get_registry_info()
     {
         return {
             {

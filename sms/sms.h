@@ -16,7 +16,7 @@ enum class SMS_MODEL
     GAMEGEAR
 };
 
-class c_sms : public c_system, register_system<c_sms>
+class c_sms : public c_system, register_class<c_system_registry, c_sms>
 {
   public:
     c_sms(SMS_MODEL model);
@@ -47,7 +47,7 @@ class c_sms : public c_system, register_system<c_sms>
         return model;
     }
 
-    static std::vector<s_system_info> get_system_info()
+    static std::vector<s_system_info> get_registry_info()
     {
         // clang-format off
         static const std::vector<s_button_map> button_map = {

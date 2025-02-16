@@ -5,6 +5,7 @@
 #include "buttons.h"
 #include <vector>
 #include <functional>
+#include "class_registry.h"
 
 // An emulated system (game console, arcade machine, etc.)
 class c_system
@@ -56,34 +57,13 @@ public:
     int crc32 = 0;
 };
 
-class c_system_registry
+class c_system_registry : public c_class_registry<std::vector<c_system::s_system_info>>
 {
   public:
-    static std::vector<std::vector<c_system::s_system_info>> &get_registry()
+    static void _register(std::vector<c_system::s_system_info> system_info)
     {
-        static std::vector<std::vector<c_system::s_system_info>> registry;
-        return registry;
-    }
-    static void register_system(std::vector<c_system::s_system_info> system_info)
-    {
-        get_registry().push_back(system_info);
-    }
-};
-
-template <typename derived>
-class register_system
-{
-    static void _register_system()
-    {
-        c_system_registry::register_system(derived::get_system_info());
-    }
-
-    struct s_registrar
-    {
-        s_registrar()
-        {
-            _register_system();
+        for (auto &s : system_info) {
+            get_registry().push_back(s);
         }
-    };
-    static inline s_registrar registrar;
+    }
 };

@@ -3,7 +3,7 @@
 
 namespace nes {
 
-class c_mapper40 : public c_mapper, register_mapper<c_mapper40>
+class c_mapper40 : public c_mapper, register_class<c_mapper_registry, c_mapper40>
 {
 public:
     c_mapper40();
@@ -12,7 +12,7 @@ public:
     unsigned char read_byte(unsigned short address);
     void reset();
     void clock(int cycles);
-    static std::vector<c_mapper::s_mapper_info> get_mapper_info()
+    static std::vector<c_mapper::s_mapper_info> get_registry_info()
     {
         return {
             {

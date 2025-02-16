@@ -20,7 +20,7 @@ enum GB_MODEL
     CGB
 };
 
-class c_gb : public c_system, register_system<c_gb>
+class c_gb : public c_system, register_class<c_system_registry, c_gb>
 {
   public:
     c_gb(GB_MODEL model);
@@ -61,7 +61,7 @@ class c_gb : public c_system, register_system<c_gb>
         return model;
     }
 
-    static std::vector<s_system_info> get_system_info()
+    static std::vector<s_system_info> get_registry_info()
     {
         // clang-format off
         static const std::vector<s_button_map> button_map = {
