@@ -17,6 +17,7 @@ public:
         return {
             {
                 .number = 0x100,
+                .name = "MMC6",
                 .constructor = []() { return std::make_unique<c_mapper_mmc6>(); },
             },
         };

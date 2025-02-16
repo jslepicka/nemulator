@@ -16,18 +16,22 @@ public:
         return {
             {
                 .number = 21,
+                .name = "VRC4",
                 .constructor = []() { return std::make_unique<c_mapper_vrc4>(1); },
             },
             {
                 .number = 22,
+                .name = "VRC4",
                 .constructor = []() { return std::make_unique<c_mapper_vrc4>(3); },
             },
             {
                 .number = 23,
+                .name = "VRC4",
                 .constructor = []() { return std::make_unique<c_mapper_vrc4>(); },
             },
             {
                 .number = 25,
+                .name = "VRC4",
                 .constructor = []() { return std::make_unique<c_mapper_vrc4>(2); },
             },
         };

@@ -15,6 +15,7 @@ public:
         return {
             {
                 .number = 0x101,
+                .name = "MC-ACC",
                 .constructor = []() { return std::make_unique<c_mapper_mc_acc>(); },
             },
         };

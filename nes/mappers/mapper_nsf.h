@@ -17,6 +17,7 @@ public:
         return {
             {
                 .number = 0x102,
+                .name = "NSF",
                 .constructor = []() { return std::make_unique<c_mapper_nsf>(); },
             },
         };
