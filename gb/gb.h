@@ -61,17 +61,38 @@ class c_gb : public c_system, register_system<c_gb>
         return model;
     }
 
-    static std::vector<load_info_t> get_load_info()
+    static std::vector<s_system_info> get_system_info()
     {
+        // clang-format off
+        static const std::vector<s_button_map> button_map = {
+            {BUTTON_1RIGHT,  0x01},
+            {BUTTON_1LEFT,   0x02},
+            {BUTTON_1UP,     0x04},
+            {BUTTON_1DOWN,   0x08},
+            {BUTTON_1A,      0x10},
+            {BUTTON_1B,      0x20},
+            {BUTTON_1SELECT, 0x40},
+            {BUTTON_1START,  0x80},
+        };
+        // clang-format on
+        static const s_system_info::s_display_info display_info = {
+            .fb_width = 160,
+            .fb_height = 144,
+            .aspect_ratio = 4.7 / 4.3,
+        };
         return {
             {
-                .game_type = GAME_GB,
+                .name = "Nintendo Game Boy",
                 .identifier = "gb",
+                .display_info = display_info,
+                .button_map = button_map,
                 .constructor = []() { return new c_gb(GB_MODEL::DMG); },
             },
             {
-                .game_type = GAME_GBC,
+                .name = "Nintendo Game Boy Color",
                 .identifier = "gbc",
+                .display_info = display_info,
+                .button_map = button_map,
                 .constructor = []() { return new c_gb(GB_MODEL::CGB); },
             },
         };

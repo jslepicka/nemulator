@@ -36,21 +36,52 @@ class c_pacman : public c_system, register_system<c_pacman>
     void set_irq(int irq);
     void enable_mixer();
     void disable_mixer();
-    static std::vector<load_info_t> get_load_info()
+
+    static const std::vector<s_button_map> &get_button_map()
+    {
+        // clang-format off
+        static const std::vector<s_button_map> button_map = {
+            {BUTTON_1UP,     0x01},
+            {BUTTON_1LEFT,   0x02},
+            {BUTTON_1RIGHT,  0x04},
+            {BUTTON_1DOWN,   0x08},
+            {BUTTON_1SELECT, 0x20},
+            {BUTTON_1START,  0x80},
+        };
+        // clang-format on
+        return button_map;
+    }
+
+    static const s_system_info::s_display_info &get_display_info()
+    {
+        static const s_system_info::s_display_info display_info = {
+            .fb_width = 288,
+            .fb_height = 224,
+            .rotation = 90,
+            .aspect_ratio = 3.0 / 4.0,
+        };
+        return display_info;
+    }
+
+    static std::vector<s_system_info> get_system_info()
     {
         return {
             {
-                .game_type = GAME_PACMAN,
                 .is_arcade = 1,
+                .name = "Arcade",
                 .identifier = "pacman",
                 .title = "Pac-Man",
+                .display_info = get_display_info(),
+                .button_map = get_button_map(),
                 .constructor = []() { return new c_pacman(); },
             },
             {
-                .game_type = GAME_MSPACMAB,
                 .is_arcade = 1,
+                .name = "Arcade",
                 .identifier = "mspacmab",
                 .title = "Ms. Pac-Man (Bootleg)",
+                .display_info = get_display_info(),
+                .button_map = get_button_map(),
                 .constructor = []() { return new c_pacman(PACMAN_MODEL::MSPACMAB); },
             },
         };

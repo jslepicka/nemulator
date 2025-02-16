@@ -21,24 +21,6 @@ namespace sms
 
 c_sms::c_sms(SMS_MODEL model)
 {
-    switch (model) {
-        case SMS_MODEL::SMS:
-            system_name = "Sega Master System";
-            display_info.crop_top = -14;
-            display_info.crop_bottom = -14;
-            break;
-        case SMS_MODEL::GAMEGEAR:
-            system_name = "Sega Game Gear";
-            display_info.crop_left = 48;
-            display_info.crop_right = 48;
-            display_info.crop_top = 24;
-            display_info.crop_bottom = 24;
-            break;
-    }
-
-    display_info.fb_width = 256;
-    display_info.fb_height = 192;
-
     this->model = model;
     z80 = std::make_unique<c_z80>(
         [this](uint16_t address) { return this->read_byte(address); }, //read_byte
@@ -50,23 +32,6 @@ c_sms::c_sms(SMS_MODEL model)
     vdp = std::make_unique<c_vdp>(this);
     psg = std::make_unique<c_psg>();
     ram = std::make_unique<unsigned char[]>(8192);
-    // clang-format off
-    button_map = {
-        {BUTTON_1UP,             0x01},
-        {BUTTON_1DOWN,           0x02},
-        {BUTTON_1LEFT,           0x04},
-        {BUTTON_1RIGHT,          0x08},
-        {BUTTON_1B,              0x10}, //button 1
-        {BUTTON_1A,              0x20}, //button 2
-        {BUTTON_2UP,             0x40},
-        {BUTTON_2DOWN,           0x80},
-        {BUTTON_2LEFT,          0x100},
-        {BUTTON_2RIGHT,         0x200},
-        {BUTTON_2B,             0x400}, //button 1
-        {BUTTON_2A,             0x800}, //button 2
-        {BUTTON_SMS_PAUSE, 0x80000000},
-    };
-    // clang-format on
 }
 
 c_sms::~c_sms()

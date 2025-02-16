@@ -32,14 +32,28 @@ class c_invaders : public c_system, register_system<c_invaders>
 
     void enable_mixer();
     void disable_mixer();
-    static std::vector<load_info_t> get_load_info()
+
+    static std::vector<s_system_info> get_system_info()
     {
         return {
             {
-                .game_type = GAME_INVADERS,
                 .is_arcade = 1,
+                .name = "Arcade",
                 .identifier = "invaders",
                 .title = "Space Invaders",
+                .display_info = {
+                    .fb_width = FB_WIDTH,
+                    .fb_height = FB_HEIGHT,
+                    .rotation = 270,
+                    .aspect_ratio = 3.0 / 4.0,
+                },
+                .button_map = {
+                    {BUTTON_1SELECT, 0x01},
+                    {BUTTON_1START,  0x04},
+                    {BUTTON_1A,      0x10},
+                    {BUTTON_1LEFT,   0x20},
+                    {BUTTON_1RIGHT,  0x40},
+                },
                 .constructor = []() { return new c_invaders(); },
             },
         };

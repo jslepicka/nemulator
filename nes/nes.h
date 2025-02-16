@@ -52,16 +52,50 @@ class c_nes : public c_system, register_system<c_nes>
     iNesHeader *header;
     void enable_mixer();
     void disable_mixer();
-    static std::vector<load_info_t> get_load_info() {
+
+    static std::vector<s_system_info> get_system_info()
+    {
+        // clang-format off
+        static const std::vector<s_button_map> button_map = {
+            {BUTTON_1A,       0x01},
+            {BUTTON_1B,       0x02},
+            {BUTTON_1SELECT,  0x04},
+            {BUTTON_1START,   0x08},
+            {BUTTON_1UP,      0x10},
+            {BUTTON_1DOWN,    0x20},
+            {BUTTON_1LEFT,    0x40},
+            {BUTTON_1RIGHT,   0x80},
+            {BUTTON_2A,      0x101},
+            {BUTTON_2B,      0x102},
+            {BUTTON_2SELECT, 0x104},
+            {BUTTON_2START,  0x108},
+            {BUTTON_2UP,     0x110},
+            {BUTTON_2DOWN,   0x120},
+            {BUTTON_2LEFT,   0x140},
+            {BUTTON_2RIGHT,  0x180},
+        };
+        // clang-format on
+
+        static const s_system_info::s_display_info display_info = {
+            .fb_width = 256,
+            .fb_height = 240,
+            .crop_top = 8,
+            .crop_bottom = 8,
+        };
+
         return {
             {
-                .game_type = GAME_NES,
+                .name = "Nintendo NES",
                 .identifier = "nes",
+                .display_info = display_info,
+                .button_map = button_map,
                 .constructor = []() { return new c_nes(); },
             },
             {
-                .game_type = GAME_NES,
+                .name = "Nintendo NES",
                 .identifier = "nsf",
+                .display_info = display_info,
+                .button_map = button_map,
                 .constructor = []() { return new c_nes(); },
             },
         };

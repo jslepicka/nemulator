@@ -33,11 +33,6 @@ const std::map<int, c_gb::s_pak> c_gb::pak_factory = {
 
 c_gb::c_gb(GB_MODEL model)
 {
-    system_name = model == GB_MODEL::CGB ? "Nintendo Game Boy Color" : "Nintendo Game Boy";
-    display_info.fb_width = 160;
-    display_info.fb_height = 144;
-    display_info.aspect_ratio = 4.7 / 4.3;
-
     cpu = std::make_unique<c_sm83>(this);
     ppu = std::make_unique<c_gbppu>(this);
     apu = std::make_unique<c_gbapu>(this);
@@ -48,18 +43,6 @@ c_gb::c_gb(GB_MODEL model)
     ram_size = 0;
     wram_bank = 1;
     this->model = model;
-    // clang-format off
-    button_map = {
-        {BUTTON_1RIGHT,  0x01},
-        {BUTTON_1LEFT,   0x02},
-        {BUTTON_1UP,     0x04},
-        {BUTTON_1DOWN,   0x08},
-        {BUTTON_1A,      0x10},
-        {BUTTON_1B,      0x20},
-        {BUTTON_1SELECT, 0x40},
-        {BUTTON_1START,  0x80},
-    };
-    // clang-format on
 }
 
 c_gb::~c_gb()

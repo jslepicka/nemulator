@@ -364,7 +364,6 @@
     <ClInclude Include="constants.h" />
     <ClInclude Include="D3d10App.h" />
     <ClInclude Include="system_container.h" />
-    <ClInclude Include="game_types.h" />
     <ClInclude Include="gb\gb.h" />
     <ClInclude Include="gb\gbapu.h" />
     <ClInclude Include="gb\gbmapper.h" />

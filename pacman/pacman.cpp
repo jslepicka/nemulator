@@ -13,13 +13,6 @@ namespace pacman
 
 c_pacman::c_pacman(PACMAN_MODEL model)
 {
-    system_name = "Arcade";
-
-    display_info.fb_width = 288;
-    display_info.fb_height = 224;
-    display_info.aspect_ratio = 3.0 / 4.0;
-    display_info.rotation = 90;
-
     prg_rom = std::make_unique<uint8_t[]>(64 * 1024);
     work_ram = std::make_unique<uint8_t[]>(1 * 1024);
 
@@ -35,16 +28,6 @@ c_pacman::c_pacman(PACMAN_MODEL model)
     loaded = 0;
     this->model = model;
 
-    // clang-format off
-    button_map = {
-        {BUTTON_1UP,     0x01},
-        {BUTTON_1LEFT,   0x02},
-        {BUTTON_1RIGHT,  0x04},
-        {BUTTON_1DOWN,   0x08},
-        {BUTTON_1SELECT, 0x20},
-        {BUTTON_1START,  0x80},
-    };
-    // clang-format on
     reset();
 }
 

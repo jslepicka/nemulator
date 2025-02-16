@@ -202,4 +202,6 @@ private:
     unsigned int benchmark_frame_count = 0;
 
     static constexpr double fovy = std::numbers::pi / 4.0;
+
+    int nes_id = -1;
 };

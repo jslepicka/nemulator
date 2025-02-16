@@ -21,7 +21,7 @@ public:
     void set_button_joymap(int button, int joy, int joy_button);
     void ack_button(int button);
     void set_button_type(int button, int type);
-    uint32_t get_console_input(std::vector<s_button_map> &button_map);
+    uint32_t get_console_input(const std::vector<s_button_map> &button_map);
     
     //do something better here
     void enable_extrafast() { extrafast_enabled = 1; }

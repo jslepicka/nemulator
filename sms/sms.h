@@ -46,17 +46,52 @@ class c_sms : public c_system, register_system<c_sms>
     {
         return model;
     }
-    static std::vector<load_info_t> get_load_info()
+
+    static std::vector<s_system_info> get_system_info()
     {
+        // clang-format off
+        static const std::vector<s_button_map> button_map = {
+            {BUTTON_1UP,             0x01},
+            {BUTTON_1DOWN,           0x02},
+            {BUTTON_1LEFT,           0x04},
+            {BUTTON_1RIGHT,          0x08},
+            {BUTTON_1B,              0x10}, //button 1
+            {BUTTON_1A,              0x20}, //button 2
+            {BUTTON_2UP,             0x40},
+            {BUTTON_2DOWN,           0x80},
+            {BUTTON_2LEFT,          0x100},
+            {BUTTON_2RIGHT,         0x200},
+            {BUTTON_2B,             0x400}, //button 1
+            {BUTTON_2A,             0x800}, //button 2
+            {BUTTON_SMS_PAUSE, 0x80000000},
+        };
+        // clang-format on
+
         return {
             {
-                .game_type = GAME_SMS,
+                .name = "Sega Master System",
                 .identifier = "sms",
+                .display_info = {
+                    .fb_width = 256,
+                    .fb_height = 192,
+                    .crop_top = -14,
+                    .crop_bottom = -14,
+                },
+                .button_map = button_map,
                 .constructor = []() { return new c_sms(SMS_MODEL::SMS); },
             },
             {
-                .game_type = GAME_GG,
+                .name = "Sega Game Gear",
                 .identifier = "gg",
+                .display_info = {
+                    .fb_width = 256,
+                    .fb_height = 192,
+                    .crop_left = 48,
+                    .crop_right = 48,
+                    .crop_top = 24,
+                    .crop_bottom = 24,
+                },
+                .button_map = button_map,
                 .constructor = []() { return new c_sms(SMS_MODEL::GAMEGEAR); },
             },
         };

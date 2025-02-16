@@ -9,21 +9,25 @@ class c_mspacman : public c_pacman, register_system<c_mspacman>
     c_mspacman(PACMAN_MODEL model);
     ~c_mspacman() {};
     int load();
-    static std::vector<load_info_t> get_load_info()
+    static std::vector<s_system_info> get_system_info()
     {
         return {
             {
-                .game_type = GAME_MSPACMAN,
                 .is_arcade = 1,
+                .name = "Arcade",
                 .identifier = "mspacman",
                 .title = "Ms. Pac-Man",
+                .display_info = c_pacman::get_display_info(),
+                .button_map = c_pacman::get_button_map(),
                 .constructor = []() { return new c_mspacman(PACMAN_MODEL::MSPACMAN); },
             },
             {
-                .game_type = GAME_MSPACMNF,
                 .is_arcade = 1,
+                .name = "Arcade",
                 .identifier = "mspacmnf",
                 .title = "Ms. Pac-Man (Fast)",
+                .display_info = c_pacman::get_display_info(),
+                .button_map = c_pacman::get_button_map(),
                 .constructor = []() { return new c_mspacman(PACMAN_MODEL::MSPACMNF); },
             },
         };

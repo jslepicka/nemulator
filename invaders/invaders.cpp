@@ -12,13 +12,6 @@ using namespace invaders;
 
 c_invaders::c_invaders()
 {
-    system_name = "Arcade";
-
-    display_info.fb_width = FB_WIDTH;
-    display_info.fb_height = FB_HEIGHT;
-    display_info.aspect_ratio = 3.0 / 4.0;
-    display_info.rotation = 270;
-
     //real hardware uses an i8080, but z80, being (mostly) compatible, seems to work just fine
     z80 = std::make_unique<c_z80>([this](uint16_t address) { return this->read_byte(address); }, //read_byte
                 [this](uint16_t address, uint8_t data) { this->write_byte(address, data); }, //write_byte
@@ -47,15 +40,6 @@ c_invaders::c_invaders()
     resampler = new dsp::c_resampler((double)audio_freq / 48000.0, null_filter, post_filter);
     mixer_enabled = 0;
 
-    // clang-format off
-    button_map = {
-        {BUTTON_1SELECT,    0x01},
-        {BUTTON_1START,     0x04},
-        {BUTTON_1A,         0x10},
-        {BUTTON_1LEFT,      0x20},
-        {BUTTON_1RIGHT,     0x40},
-    };
-    // clang-format on
 }
 
 c_invaders::~c_invaders()

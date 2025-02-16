@@ -383,11 +383,10 @@ void c_nemulator::RunGames()
     }
     else {
         c_system_container *g = (c_system_container *)texturePanels[selectedPanel]->GetSelected();
-        std::vector<s_button_map> *button_map;
         auto ih = (c_input_handler *)g_ih.get();
 
-        button_map = g->system->get_button_map();
-        g->system->set_input(ih->get_console_input(*button_map));
+        auto &button_map = g->get_button_map();
+        g->system->set_input(ih->get_console_input(button_map));
 
         g->system->emulate_frame();
         if (benchmark_mode) {
@@ -511,7 +510,7 @@ void c_nemulator::handle_button_mask_sides(s_button_handler_params *params)
 void c_nemulator::handle_button_sprite_limit(s_button_handler_params *params)
 {
     c_system_container* g = (c_system_container*)texturePanels[selectedPanel]->GetSelected();
-    if (g->type == GAME_NES)
+    if (g->is_nes)
     {
         nes::c_nes *n = ((nes::c_nes *)g->system);
         n->set_sprite_limit(!n->get_sprite_limit());
@@ -801,7 +800,7 @@ void c_nemulator::leave_game()
         ResumeThread(game_thread->thread_handle);
     }
     c_system_container* g = (c_system_container*)texturePanels[selectedPanel]->GetSelected();
-    if (g->type == GAME_NES)
+    if (g->is_nes)
     {
         nes::c_nes *n = (nes::c_nes *)g->system;
         if (n->get_mapper_number() == 258) { //NFS
@@ -830,7 +829,7 @@ void c_nemulator::start_game()
             SuspendThread(game_thread->thread_handle);
         }
 
-        if (g->type == GAME_NES)
+        if (g->is_nes)
         {
             nes::c_nes *n = (nes::c_nes *)g->system;
             if (n->get_mapper_number() == 258) { //NFS
@@ -843,7 +842,7 @@ void c_nemulator::start_game()
         }
         
         std::string title = g->title;
-        std::string system = n->get_system_name();
+        std::string system = g->get_system_name();
 
         SetWindowText(
             hWnd,
@@ -1100,6 +1099,7 @@ void c_nemulator::UpdateScene(double dt)
 
         if (stats)
         {
+            stats->clear();
             c_system_container* game = (c_system_container*)texturePanels[selectedPanel]->GetSelected();
             c_system *system = game->system;
             stats->report_stat("fps", fps);
@@ -1118,7 +1118,7 @@ void c_nemulator::UpdateScene(double dt)
             s << std::hex << std::uppercase << system->get_crc();
             stats->report_stat("CRC", s.str());
 
-            if (game->type == GAME_NES)
+            if (game->is_nes)
             {
                 nes::c_nes *n = (nes::c_nes *)system;
                 stats->report_stat("mapper #", n->get_mapper_number());
@@ -1204,7 +1204,7 @@ void c_nemulator::DrawScene()
         {
             double dim = mainPanel2->dim ? .25 : 1.0;
             DrawText(font1, .05f, .85f, g->title, D3DXCOLOR((float)(1.0f * dim), 0.0f, 0.0f, 1.0f));
-            DrawText(font2, .0525f, .925f, g->system->get_system_name(),
+            DrawText(font2, .0525f, .925f, g->get_system_name(),
                      D3DXCOLOR((float)(.22f * dim), (float)(.22f * dim), (float)(.22f * dim), 1.0f));
         }
 
@@ -1220,7 +1220,7 @@ void c_nemulator::DrawScene()
             d3dDev->OMSetDepthStencilState(state, oldref);
         }
 
-        if (inGame && g->type == GAME_NES && g->system->get_crc() == 0x0B0E128F)
+        if (inGame && g->is_nes && g->system->get_crc() == 0x0B0E128F)
         {
             char time[6];
             int nwc_time = 0;
@@ -1296,40 +1296,30 @@ DWORD WINAPI c_nemulator::load_thread(LPVOID param)
 void c_nemulator::LoadGames()
 {
     std::string arcade_path = config->get_string("arcade.rom_path", "c:\\roms\\arcade");
-    // clang-format off
     struct s_loadinfo
     {
-        GAME_TYPE type;
-        int is_arcade;
-        std::string identifier;
-        std::function<c_system*()> constructor;
         std::string rom_path_key;
         std::string save_path_key;
         std::string rom_path_default;
-        std::string title;
+        c_system::s_system_info &system_info;
+        
         std::string rom_path;
         std::string save_path;
         std::vector<std::string> file_list;
     };
     std::vector<s_loadinfo> loadinfo;
-    std::vector<c_system::load_info_t> cli;
+ 
+    for (auto &system_info_vector : c_system_registry::get_registry()) {
+        for (auto &si : system_info_vector) {
+           s_loadinfo i = {
+               .rom_path_key = si.identifier + ".rom_path",
+               .save_path_key = si.identifier + ".save_path",
+               .rom_path_default = si.is_arcade ? arcade_path + "\\" + si.identifier : "c:\\roms\\" + si.identifier,
+               .system_info = si,
+           };
 
-    for (auto &li : c_system_registry::get_registry()) {
-        std::ranges::copy(li, std::back_inserter(cli));
-    }
-
-    for (auto &l : cli) {
-       s_loadinfo i = {
-           .type = (GAME_TYPE)l.game_type,
-           .is_arcade = l.is_arcade,
-           .identifier = l.identifier,
-           .constructor = l.constructor,
-           .rom_path_key = l.identifier + ".rom_path",
-           .save_path_key = l.identifier + ".save_path",
-           .rom_path_default = l.is_arcade ? arcade_path + "\\" + l.identifier : "c:\\roms\\" + l.identifier,
-           .title = l.title,
-       };
-       loadinfo.push_back(i);
+           loadinfo.push_back(i);
+        }
     }
 
     bool global_mask_sides = config->get_bool("mask_sides", false);
@@ -1342,7 +1332,7 @@ void c_nemulator::LoadGames()
         if (!std::filesystem::exists(li.save_path))
             li.save_path = li.rom_path;
 
-        if (li.is_arcade) {
+        if (li.system_info.is_arcade) {
             if (std::filesystem::exists(li.rom_path)) {
                 li.file_list.push_back(li.rom_path + ".dir");
             }
@@ -1350,7 +1340,7 @@ void c_nemulator::LoadGames()
         else {
             std::error_code ec;
             for (auto const &dir_entry : std::filesystem::directory_iterator(li.rom_path, ec)) {
-                if (dir_entry.is_regular_file() && dir_entry.path().extension() == "." + li.identifier) {
+                if (dir_entry.is_regular_file() && dir_entry.path().extension() == "." + li.system_info.identifier) {
                     rom_count++;
                     li.file_list.push_back(dir_entry.path().filename().string());
                 }
@@ -1376,10 +1366,12 @@ void c_nemulator::LoadGames()
                     file.close();
                 }
             }
-
-            c_system_container *g = new c_system_container(li.type, li.rom_path, fn, li.save_path, li.constructor);
-            if (li.title != "") {
-                strcpy(g->title, li.title.c_str());
+            c_system_container *g = new c_system_container(li.system_info, li.rom_path, fn, li.save_path);
+            if (li.system_info.name == "Nintendo NES") {
+                g->is_nes = true;
+            }
+            if (li.system_info.title != "") {
+                strcpy(g->title, li.system_info.title.c_str());
                 g->set_description(g->title);
             }
             else {
