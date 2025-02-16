@@ -1309,16 +1309,14 @@ void c_nemulator::LoadGames()
     };
     std::vector<s_loadinfo> loadinfo;
  
-    for (auto &system_info_vector : c_system_registry::get_registry()) {
-        for (auto &si : system_info_vector) {
-           s_loadinfo i = {
-               .rom_path_key = si.identifier + ".rom_path",
-               .save_path_key = si.identifier + ".save_path",
-               .rom_path_default = si.is_arcade ? arcade_path + "\\" + si.identifier : "c:\\roms\\" + si.identifier,
-               .system_info = si,
-           };
-
-           loadinfo.push_back(i);
+    for (auto &registry : c_system_registry::get_registry()) {
+        for (auto &si : registry) {
+            loadinfo.push_back({
+                .rom_path_key = si.identifier + ".rom_path",
+                .save_path_key = si.identifier + ".save_path",
+                .rom_path_default = si.is_arcade ? arcade_path + "\\" + si.identifier : "c:\\roms\\" + si.identifier,
+                .system_info = si,
+            });
         }
     }
 
