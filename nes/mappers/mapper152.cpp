@@ -10,7 +10,7 @@ c_mapper152::c_mapper152()
 }
 
 
-void c_mapper152::WriteByte(unsigned short address, unsigned char value)
+void c_mapper152::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x8000)
     {
@@ -22,7 +22,7 @@ void c_mapper152::WriteByte(unsigned short address, unsigned char value)
         SetChrBank8k(value & 0x0F);
     }
     else
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
 }
 
 void c_mapper152::reset()

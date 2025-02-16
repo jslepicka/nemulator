@@ -3,6 +3,9 @@
 #include "ines.h"
 #include "mirroring_types.h"
 #include <memory>
+#include <functional>
+#include <map>
+#include <string>
 
 namespace nes
 {
@@ -10,26 +13,20 @@ namespace nes
 class c_ppu;
 class c_cpu;
 class c_nes;
-class c_apu2;
 
 class c_mapper
 {
   public:
     c_mapper();
     virtual ~c_mapper();
-    virtual unsigned char ReadByte(unsigned short address);
-    virtual void WriteByte(unsigned short address, unsigned char value);
-    virtual void WriteChrRom(unsigned short address, unsigned char value);
-    virtual unsigned char ReadChrRom(unsigned short address);
-    virtual void mmc5_ppu_write(unsigned short address, unsigned char value) {};
+    virtual unsigned char read_byte(unsigned short address);
+    virtual void write_byte(unsigned short address, unsigned char value);
     virtual void clock(int cycles) {};
     virtual void reset();
-    virtual int LoadImage();
+    virtual int load_image();
     virtual float mix_audio(float sample);
-    int has_expansion_audio();
     c_ppu *ppu;
     c_cpu *cpu;
-    c_apu2 *apu2;
     int renderingBg;
     void set_submapper(int submapper);
     iNesHeader *header;
@@ -37,7 +34,7 @@ class c_mapper
     char filename[MAX_PATH];
     char sramFilename[MAX_PATH];
     const char *mapperName;
-    int CloseSram();
+    int close_sram();
     int crc32;
     virtual unsigned char ppu_read(unsigned short address);
     virtual void ppu_write(unsigned short address, unsigned char value);
@@ -50,9 +47,14 @@ class c_mapper
     int get_mirroring();
     int file_length;
 
-  protected:
-    int expansion_audio;
+    struct s_mapper_info
+    {
+        int number;
+        std::string name;
+        std::function<std::unique_ptr<c_mapper>()> constructor;
+    };
 
+  protected:
     static const int CHR_0000 = 0;
     static const int CHR_0400 = 1;
     static const int CHR_0800 = 2;
@@ -70,7 +72,6 @@ class c_mapper
     bool hasSram;
     bool writeProtectSram;
     int sram_enabled;
-    int four_screen;
     void set_mirroring(int mode);
     int mirroring_mode;
 
@@ -103,12 +104,63 @@ class c_mapper
     void SetChrBank2k(int bank, int value);
     void SetChrBank4k(int bank, int value);
     void SetChrBank8k(int value);
+    virtual void write_chr(unsigned short address, unsigned char value);
+    virtual unsigned char read_chr(unsigned short address);
     bool chrRam;
-    bool dynamicImage;
 
-    int OpenSram();
+    int open_sram();
 
     int submapper;
 };
+
+class c_mapper_registry
+{
+  public:
+    static std::map<int, c_mapper::s_mapper_info> &get_registry()
+    {
+        static std::map<int, c_mapper::s_mapper_info> registry;
+        return registry;
+    }
+    static void register_mapper(std::vector<c_mapper::s_mapper_info> mapper_info)
+    {
+        for (auto &mi : mapper_info) {
+            if (mi.name == "") {
+                mi.name = "Mapper " + std::to_string(mi.number);
+            }
+            get_registry()[mi.number] = mi;
+        }
+    }
+};
+
+template <typename derived> class register_mapper
+{
+    static void _register_mapper()
+    {
+        c_mapper_registry::register_mapper(derived::get_mapper_info());
+    }
+
+    struct s_registrar
+    {
+        s_registrar()
+        {
+            _register_mapper();
+        }
+    };
+    static inline s_registrar registrar;
+};
+
+class c_mapper0 : public c_mapper, register_mapper<c_mapper0>
+{
+  public:
+    static std::vector<c_mapper::s_mapper_info> get_mapper_info()
+    {
+        return {{
+            .number = 0,
+            .name = "NROM",
+            .constructor = []() { return std::make_unique<c_mapper0>(); },
+        }};
+    }
+};
+
 
 } //namespace nes

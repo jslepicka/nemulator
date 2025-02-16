@@ -10,7 +10,7 @@ c_mapper71::c_mapper71()
     enable_mirroring_control = 1;
 }
 
-void c_mapper71::WriteByte(unsigned short address, unsigned char value)
+void c_mapper71::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0xC000)
     {
@@ -24,7 +24,7 @@ void c_mapper71::WriteByte(unsigned short address, unsigned char value)
             set_mirroring(MIRRORING_ONESCREEN_LOW);
     }
     else
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
 }
 
 void c_mapper71::reset()

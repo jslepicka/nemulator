@@ -41,7 +41,6 @@ class c_ppu
     c_mapper *mapper;
     c_cpu *cpu;
     c_apu *apu;
-    c_apu2 *apu2;
     int drawing_bg;
 
   private:

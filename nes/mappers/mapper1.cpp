@@ -11,7 +11,7 @@ c_mapper1::~c_mapper1()
 {
 }
 
-void c_mapper1::WriteByte(unsigned short address, unsigned char value)
+void c_mapper1::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x8000 && !ignore_writes)
     {
@@ -37,7 +37,7 @@ void c_mapper1::WriteByte(unsigned short address, unsigned char value)
         }
     }
     else
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
 }
 
 void c_mapper1::Sync()

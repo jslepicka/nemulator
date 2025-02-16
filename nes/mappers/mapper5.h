@@ -1,22 +1,31 @@
 #pragma once
 #include "..\mapper.h"
-#include "..\apu2.h"
+#include "..\apu.h"
 
 namespace nes {
 
-class c_mapper5 :
-    public c_mapper
+class c_mapper5 : public c_mapper, register_mapper<c_mapper5>
 {
 public:
     c_mapper5();
     ~c_mapper5();
-    void WriteByte(unsigned short address, unsigned char value);
-    unsigned char ReadByte(unsigned short address);
+    void write_byte(unsigned short address, unsigned char value);
+    unsigned char read_byte(unsigned short address);
     void reset();
     void clock(int cycles);
     float mix_audio(float sample);
+    static std::vector<c_mapper::s_mapper_info> get_mapper_info()
+    {
+        return {
+            {
+                .number = 5,
+                .name = "MMC5",
+                .constructor = []() { return std::make_unique<c_mapper5>(); },
+            }
+        };
+    }
 private:
-    class c_mmc5_square : public c_apu2::c_square
+    class c_mmc5_square : public c_apu::c_square
     {
     public:
         int get_output();
@@ -25,7 +34,7 @@ private:
     static const int CLOCKS_PER_FRAME_SEQ = 89489;
     void clock_frame();
     int ticks;
-    //c_apu2::c_square squares[2];
+    //c_apu::c_square squares[2];
     enum {
         PCM_IRQ_MODE_WRITE,
         PCM_IRQ_MODE_READ
@@ -52,7 +61,7 @@ private:
     void SetChrBank2k(unsigned char *b[8], int bank, int value);
     void SetChrBank4k(unsigned char *b[8], int bank, int value);
     void SetChrBank8k(unsigned char *b[8], int value);
-    unsigned char ReadChrRom(unsigned short address);
+    unsigned char read_chr(unsigned short address);
     unsigned char ppu_read(unsigned short address);
     void ppu_write(unsigned short address, unsigned char value);
     int last_tile;

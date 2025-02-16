@@ -15,7 +15,7 @@ c_mapper103::~c_mapper103()
     delete[] ram;
 }
 
-void c_mapper103::WriteByte(unsigned short address, unsigned char value)
+void c_mapper103::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x6000)
     {
@@ -46,10 +46,10 @@ void c_mapper103::WriteByte(unsigned short address, unsigned char value)
         }
     }
     else
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
 }
 
-unsigned char c_mapper103::ReadByte(unsigned short address)
+unsigned char c_mapper103::read_byte(unsigned short address)
 {
     if (address >= 0x6000)
     {
@@ -73,10 +73,10 @@ unsigned char c_mapper103::ReadByte(unsigned short address)
             if (!rom_mode && address >= 0xB800 && address < 0xD800)
                 return *(ram + 0x2000 + ((address - 0xB800) & 0x1FFF));
             else
-                return c_mapper::ReadByte(address);
+                return c_mapper::read_byte(address);
         }
     }
-    return c_mapper::ReadByte(address);
+    return c_mapper::read_byte(address);
 }
 
 void c_mapper103::reset()

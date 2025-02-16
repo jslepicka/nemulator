@@ -41,16 +41,15 @@ public:
     float zoomDestX;
     float zoomDestY;
     float zoomDestZ;
-    void Suspend();
-    void Resume();
-    void OnResize();
+    //void Suspend();
+    //void Resume();
+    //void OnResize();
 
     static const int STATE_NULL = 0;
     static const int STATE_MENU = 1;
     static const int STATE_SCROLLING = 2;
     static const int STATE_ZOOMING = 3;
     static const int STATE_ZOOMED = 4;
-    static const int STATE_SUSPENDED = 5;
     static constexpr float tile_spacing = .02;
     static constexpr float tile_height = (1.0) * 2.0 + (tile_spacing * 2.0);
     static constexpr float tile_width = (4.0 / 3.0) * 2.0 + (tile_spacing * 2.0);
@@ -58,7 +57,6 @@ public:
     bool dim;
     bool selectable;
     bool in_focus; //is this panel selected/does it have focus?
-    float camera_distance;
     int *get_valid_chars();
     void set_sharpness(float factor);
 

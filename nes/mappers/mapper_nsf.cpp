@@ -22,12 +22,12 @@ c_mapper_nsf::~c_mapper_nsf()
     }
 }
 
-void c_mapper_nsf::WriteChrRom(unsigned short address, unsigned char value)
+void c_mapper_nsf::write_chr(unsigned short address, unsigned char value)
 {
     chr_ram[address & 0x1FFF] = value;
 }
 
-unsigned char c_mapper_nsf::ReadChrRom(unsigned short address)
+unsigned char c_mapper_nsf::read_chr(unsigned short address)
 {
     if (address > 16) {
         int x = 1;
@@ -38,7 +38,7 @@ unsigned char c_mapper_nsf::ReadChrRom(unsigned short address)
     return chr_ram[address & 0x1FFF];
 }
 
-void c_mapper_nsf::WriteByte(unsigned short address, unsigned char value)
+void c_mapper_nsf::write_byte(unsigned short address, unsigned char value)
 {
     if (address == 0x54F2) {
         int x = 1;
@@ -62,7 +62,7 @@ void c_mapper_nsf::WriteByte(unsigned short address, unsigned char value)
     }
 }
 
-unsigned char c_mapper_nsf::ReadByte(unsigned short address)
+unsigned char c_mapper_nsf::read_byte(unsigned short address)
 {
     if (address == 0xa000) {
         int x = 1;
@@ -141,20 +141,20 @@ void c_mapper_nsf::reset()
     }
     load_player();
 
-    WriteByte(0x54F2, header->init_address & 0xFF);
-    WriteByte(0x54F3, (header->init_address >> 8) & 0xFF);
+    write_byte(0x54F2, header->init_address & 0xFF);
+    write_byte(0x54F3, (header->init_address >> 8) & 0xFF);
 
-    WriteByte(0x54F4, header->play_address & 0xFF);
-    WriteByte(0x54F5, (header->play_address >> 8) & 0xFF);
+    write_byte(0x54F4, header->play_address & 0xFF);
+    write_byte(0x54F5, (header->play_address >> 8) & 0xFF);
 
-    WriteByte(0x54F6, 1); //1 = play song
-    WriteByte(0x54F7, 0); //song number
-    WriteByte(0x54F8, header->song_count);
+    write_byte(0x54F6, 1); //1 = play song
+    write_byte(0x54F7, 0); //song number
+    write_byte(0x54F8, header->song_count);
 
     set_mirroring(MIRRORING_HORIZONTAL);
 }
 
-int c_mapper_nsf::LoadImage()
+int c_mapper_nsf::load_image()
 {
     //TODO: support unaligned load address
 

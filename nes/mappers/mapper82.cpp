@@ -32,7 +32,7 @@ void c_mapper82::sync()
     SetChrBank1k(CHR_1C00 ^ _xor, chr[5]);
 }
 
-void c_mapper82::WriteByte(unsigned short address, unsigned char value)
+void c_mapper82::write_byte(unsigned short address, unsigned char value)
 {
     if ((address & 0x7EF0) == 0x7EF0)
     {

@@ -253,7 +253,7 @@
     <ClCompile Include="input_handler.cpp" />
     <ClCompile Include="menu.cpp" />
     <ClCompile Include="nemulator.cpp" />
-    <ClCompile Include="nes\apu2.cpp" />
+    <ClCompile Include="nes\apu.cpp" />
     <ClCompile Include="nes\game_genie.cpp" />
     <ClCompile Include="nes\mappers\mapper1.cpp" />
     <ClCompile Include="nes\mappers\mapper10.cpp" />
@@ -344,8 +344,6 @@
     <ClCompile Include="stats.cpp" />
     <ClCompile Include="status.cpp" />
     <ClCompile Include="task.cpp" />
-    <ClCompile Include="task1.cpp" />
-    <ClCompile Include="tasklist.cpp" />
     <ClCompile Include="TexturePanel.cpp" />
     <ClCompile Include="TexturePanelItem.cpp" />
     <ClCompile Include="nes\cpu.cpp" />
@@ -360,6 +358,7 @@
     <ClInclude Include="benchmark.h" />
     <ClInclude Include="buttons.h" />
     <ClInclude Include="config.h" />
+    <ClInclude Include="nes\mappers\mapper190.h" />
     <ClInclude Include="system.h" />
     <ClInclude Include="constants.h" />
     <ClInclude Include="D3d10App.h" />
@@ -379,7 +378,7 @@
     <ClInclude Include="menu.h" />
     <ClInclude Include="meow_fft.h" />
     <ClInclude Include="nemulator.h" />
-    <ClInclude Include="nes\apu2.h" />
+    <ClInclude Include="nes\apu.h" />
     <ClInclude Include="nes\cartdb.h" />
     <ClInclude Include="nes\cpu.h" />
     <ClInclude Include="nes\game_genie.h" />
@@ -455,7 +454,6 @@
     <ClInclude Include="nes\mappers\mapper94.h" />
     <ClInclude Include="nes\mappers\mapper95.h" />
     <ClInclude Include="nes\mappers\mapper97.h" />
-    <ClInclude Include="nes\mappers\mappers.h" />
     <ClInclude Include="nes\mappers\mapper_mc_acc.h" />
     <ClInclude Include="nes\mappers\mapper_mmc6.h" />
     <ClInclude Include="nes\mappers\mapper_nsf.h" />
@@ -479,8 +477,6 @@
     <ClInclude Include="stats.h" />
     <ClInclude Include="status.h" />
     <ClInclude Include="task.h" />
-    <ClInclude Include="task1.h" />
-    <ClInclude Include="tasklist.h" />
     <ClInclude Include="TexturePanel.h" />
     <ClInclude Include="TexturePanelItem.h" />
     <ClInclude Include="nes\nes.h" />

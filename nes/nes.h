@@ -5,7 +5,9 @@
 #include <functional>
 #include "..\system.h"
 #include "game_genie.h"
+#include "mapper.h"
 #include <memory>
+#include <string>
 
 namespace nes
 {
@@ -15,7 +17,7 @@ class c_ppu;
 class c_mapper;
 class c_joypad;
 class c_apu;
-class c_apu2;
+class c_apu;
 struct iNesHeader;
 
 class c_nes : public c_system, register_system<c_nes>
@@ -38,7 +40,7 @@ class c_nes : public c_system, register_system<c_nes>
     bool loaded;
     unsigned char dmc_read(unsigned short address);
     int load();
-    const char *get_mapper_name();
+    std::string &get_mapper_name();
     int get_mapper_number();
     int get_mirroring_mode();
     void set_sprite_limit(bool limit_sprites);
@@ -103,15 +105,15 @@ class c_nes : public c_system, register_system<c_nes>
 
   private:
     int LoadImage(char *pathFile);
-    std::unique_ptr<c_apu2> apu2;
+    std::unique_ptr<c_apu> apu;
     std::unique_ptr<c_joypad> joypad;
     std::unique_ptr<c_game_genie> game_genie;
     std::unique_ptr<unsigned char[]> image;
-    std::unique_ptr<unsigned char[]> cpuRam;
+    std::unique_ptr<unsigned char[]> ram;
     std::unique_ptr<unsigned char[]> sram;
     const static std::map<int, std::function<std::unique_ptr<c_mapper>()>> mapper_factory;
     int mapperNumber;
-    int num_apu_samples;
+    c_mapper::s_mapper_info *mapper_info;
     int file_length;
     char sramFilename[MAX_PATH];
     bool limit_sprites;

@@ -2,7 +2,7 @@
 #include "ppu.h"
 #include "memory.h"
 #include "mapper.h"
-#include "apu2.h"
+#include "apu.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
 #undef min
@@ -804,7 +804,7 @@ void c_ppu::run_ppu_line()
         if (--executed_cycles == 0) [[unlikely]] {
             cpu->execute();
             cpu->odd_cycle ^= 1;
-            apu2->clock_once();
+            apu->clock_once();
             executed_cycles = 3;
         };
         if (last_cycle) {

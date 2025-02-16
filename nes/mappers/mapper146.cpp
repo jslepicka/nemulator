@@ -10,7 +10,7 @@ c_mapper146::c_mapper146()
     mapperName = "Mapper 146";
 }
 
-void c_mapper146::WriteByte(unsigned short address, unsigned char value)
+void c_mapper146::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x4100 && address < 0x6000)
     {
@@ -21,7 +21,7 @@ void c_mapper146::WriteByte(unsigned short address, unsigned char value)
         }
     }
     else
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
 }
 
 } //namespace nes

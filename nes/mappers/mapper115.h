@@ -3,14 +3,23 @@
 
 namespace nes {
 
-class c_mapper115 :
-    public c_mapper4
+class c_mapper115 : public c_mapper4, register_mapper<c_mapper115>
 {
 public:
     c_mapper115();
     ~c_mapper115() {};
-    void WriteByte(unsigned short address, unsigned char value);
-private:
+    void write_byte(unsigned short address, unsigned char value);
+    static std::vector<c_mapper::s_mapper_info> get_mapper_info()
+    {
+        return {
+            {
+                .number = 115,
+                .constructor = []() { return std::make_unique<c_mapper115>(); },
+            },
+        };
+    }
+
+  private:
     int reg1;
     void reset();
     void Sync();

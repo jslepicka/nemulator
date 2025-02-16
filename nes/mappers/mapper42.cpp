@@ -37,17 +37,17 @@ void c_mapper42::clock(int cycles)
     }
 }
 
-unsigned char c_mapper42::ReadByte(unsigned short address)
+unsigned char c_mapper42::read_byte(unsigned short address)
 {
     if (address >= 0x6000 && address < 0x8000)
     {
         return *(prg_6k + (address & 0x1FFF));
     }
     else
-        return c_mapper::ReadByte(address);
+        return c_mapper::read_byte(address);
 }
 
-void c_mapper42::WriteByte(unsigned short address, unsigned char value)
+void c_mapper42::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0xE000)
     {

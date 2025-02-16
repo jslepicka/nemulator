@@ -3,16 +3,25 @@
 
 namespace nes {
 
-class c_mapper9 :
-    public c_mapper
+class c_mapper9 : public c_mapper, register_mapper<c_mapper9>
 {
 public:
     c_mapper9();
     virtual ~c_mapper9();
-    virtual void WriteByte(unsigned short address, unsigned char value);
+    virtual void write_byte(unsigned short address, unsigned char value);
     virtual void reset();
     void mmc2_latch(int address);
-    unsigned char ReadChrRom(unsigned short address);
+    unsigned char read_chr(unsigned short address);
+    static std::vector<c_mapper::s_mapper_info> get_mapper_info()
+    {
+        return {
+            {
+                .number = 9,
+                .name = "MMC2",
+                .constructor = []() { return std::make_unique<c_mapper9>(); },
+            }
+        };
+    }
 private:
     int latch0;
     int latch1;

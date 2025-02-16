@@ -16,7 +16,7 @@ c_mapper16::~c_mapper16()
 {
 }
 
-void c_mapper16::WriteByte(unsigned short address, unsigned char value)
+void c_mapper16::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x6000)
     {
@@ -73,7 +73,7 @@ void c_mapper16::WriteByte(unsigned short address, unsigned char value)
         }
     }
     else
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
 }
 
 void c_mapper16::reset()

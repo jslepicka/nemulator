@@ -9,7 +9,7 @@ c_mapper140::c_mapper140()
     mapperName = "Mapper 140";
 }
 
-void c_mapper140::WriteByte(unsigned short address, unsigned char value)
+void c_mapper140::write_byte(unsigned short address, unsigned char value)
 {
     switch (address >> 12)
     {
@@ -19,7 +19,7 @@ void c_mapper140::WriteByte(unsigned short address, unsigned char value)
         SetPrgBank32k((value >> 4) & 0x3);
         break;
     default:
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
     }
 }
 

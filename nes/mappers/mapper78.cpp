@@ -9,7 +9,7 @@ c_mapper78::c_mapper78()
     mirror_mode = 0;
 }
 
-void c_mapper78::WriteByte(unsigned short address, unsigned char value)
+void c_mapper78::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x8000)
     {
@@ -33,14 +33,12 @@ void c_mapper78::WriteByte(unsigned short address, unsigned char value)
     }
     else
 
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
 
 }
 
 void c_mapper78::reset()
 {
-    four_screen = false;
-
     switch (submapper) {
     case 1:
         mirror_mode = 0;

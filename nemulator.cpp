@@ -25,20 +25,11 @@ extern const char *app_title;
 extern c_config *config;
 extern std::unique_ptr<c_input_handler> g_ih;
 
-int mode;
-int prevMode;
-bool updateEvents;
-
-int mem_viewer_active = 0;
-
 HANDLE g_start_event;
 
 c_nemulator::c_nemulator()
 {
-    prevMode = mode = MODE_MENU;
     done_events = NULL;
-    runnableCount = 0;
-    updateEvents = true;
     selectedPanel = 0;
     inGame = false;
     sound = 0;
@@ -68,9 +59,6 @@ c_nemulator::c_nemulator()
     rom_count = 0;
     preload = false;
     load_thread_handle = 0;
-    input_buffer_index = 0;
-    input_buffer_playback = 0;
-    input_buffer_end = 0;
     show_suspend = false;
 
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
@@ -237,7 +225,6 @@ void c_nemulator::Init()
     mainPanel2->zoomDestX = eye_x;
     mainPanel2->zoomDestY = eye_y;
     mainPanel2->zoomDestZ = (float)(eye_z + (1.0 / tan( fovy/2.0 )));
-    mainPanel2->camera_distance = eye_z;
     auto eye = D3DXVECTOR3(eye_x, eye_y, eye_z);
     auto at = D3DXVECTOR3(eye_x, eye_y, 0.0f);
     auto up = D3DXVECTOR3(0.0f, 1.0f, 0.0f);
@@ -303,7 +290,6 @@ void c_nemulator::configure_input()
         { BUTTON_STATS,          "",        "",        VK_F9,                       0 },
         { BUTTON_MASK_SIDES,     "",        "",        VK_F8,                       0 },
         { BUTTON_SPRITE_LIMIT,   "",        "",        VK_F7,                       0 },
-        { BUTTON_MEM_VIEWER,     "",        "",        VK_F5,                       0 },
         { BUTTON_AUDIO_INFO,     "",        "",        VK_F4,                       0 },
         { BUTTON_RESET,          "",        "",        VK_F2,                       0 },
         { BUTTON_LEFT_SHIFT,     "",        "",        VK_LSHIFT,                   0 },
@@ -364,7 +350,6 @@ void c_nemulator::OnResize()
 
     float aspect = (float)clientWidth/clientHeight;
     D3DXMatrixPerspectiveFovLH(&matrixProj, (float)fovy, aspect, 1.0f, 1000.0f);
-    texturePanels[selectedPanel]->OnResize();
 }
 
 void c_nemulator::RunGames()
@@ -405,62 +390,7 @@ void c_nemulator::handle_button_reset(s_button_handler_params* params)
     if (g->system->is_loaded())
     {
         g->system->reset();
-        input_buffer_index = 0;
-        input_buffer_playback = 0;
         status->add_message("reset");
-    }
-}
-
-void c_nemulator::handle_button_input_save(s_button_handler_params* params)
-{
-    c_system_container* g = (c_system_container*)texturePanels[selectedPanel]->GetSelected();
-    if (g->system->is_loaded())
-    {
-        std::ofstream file;
-        std::string filename = g->system->pathFile;
-        filename += ".input";
-        file.open(filename, std::ios_base::trunc | std::ios_base::binary);
-        if (file.is_open())
-        {
-            for (int i = 0; i < input_buffer_index; i++)
-            {
-                file.write((char*)&input_buffer[i], sizeof(char));
-            }
-            file.close();
-            status->add_message("saved input");
-        }
-    }
-}
-
-void c_nemulator::handle_button_input_replay(s_button_handler_params *params)
-{
-    c_system_container* g = (c_system_container*)texturePanels[selectedPanel]->GetSelected();
-    if (g->system->is_loaded())
-    {
-        //load input from file
-        char* buf = new char[65536];
-        std::ifstream file;
-        std::string filename = g->system->pathFile;
-        filename += ".input";
-        file.open(filename, std::ios_base::in | std::ios_base::binary);
-        int i = 0;
-        if (file.is_open())
-        {
-            while (!file.eof())
-            {
-                file.read(buf, 65536);
-                int num_bytes = (int)file.gcount();
-                memcpy(&input_buffer[i], buf, num_bytes);
-                i += (num_bytes / sizeof(char));
-            }
-            g->system->reset();
-
-            input_buffer_end = i;
-            input_buffer_index = 0;
-            input_buffer_playback = 1;
-            file.close();
-            status->add_message("input replay start");
-        }
     }
 }
 
@@ -671,8 +601,6 @@ void c_nemulator::handle_button_leave_game(s_button_handler_params* params)
 const c_nemulator::s_button_handler c_nemulator::button_handlers[] =
 {
     { SCOPE::GAMES_LOADED, {BUTTON_RESET}, true, RESULT_DOWN, &c_nemulator::handle_button_reset },
-    { SCOPE::GAMES_LOADED, {BUTTON_INPUT_SAVE}, true, RESULT_DOWN, &c_nemulator::handle_button_input_save },
-    { SCOPE::GAMES_LOADED, {BUTTON_INPUT_REPLAY}, true, RESULT_DOWN, &c_nemulator::handle_button_input_replay },
     { SCOPE::GAMES_LOADED, {BUTTON_AUDIO_INFO}, true, RESULT_DOWN, &c_nemulator::handle_button_audio_info },
     { SCOPE::GAMES_LOADED, {BUTTON_STATS}, true, RESULT_DOWN, &c_nemulator::handle_button_stats },
     { SCOPE::GAMES_LOADED, {BUTTON_MASK_SIDES}, true, RESULT_DOWN ,&c_nemulator::handle_button_mask_sides },
@@ -818,7 +746,6 @@ void c_nemulator::start_game()
     c_system *n = g->system;
     if (n && n->is_loaded())
     {
-        g->played = 1;
         sound->play();
         inGame = true;
         n->enable_mixer();
@@ -942,8 +869,6 @@ int c_nemulator::update(double dt, int child_result, void *params)
                     {
                     c_system *n = ((c_system_container *)texturePanels[selectedPanel]->GetSelected())->system;
                         n->reset();
-                        input_buffer_index = 0;
-                        input_buffer_playback = 0;
                         status->add_message("reset");
                     }
                     break;
@@ -1040,7 +965,6 @@ void c_nemulator::UpdateScene(double dt)
     if (changed)
     {
         GetEvents();
-        updateEvents = false;
     }
     if (scroll_fade_timer > 0.0)
     {

@@ -10,7 +10,7 @@ c_mapper115::c_mapper115()
     mapperName = "Mapper 115";
 }
 
-void c_mapper115::WriteByte(unsigned short address, unsigned char value)
+void c_mapper115::write_byte(unsigned short address, unsigned char value)
 {
 
     switch (address >> 12)
@@ -28,7 +28,7 @@ void c_mapper115::WriteByte(unsigned short address, unsigned char value)
         Sync();
         break;
     default:
-        c_mapper4::WriteByte(address, value);
+        c_mapper4::write_byte(address, value);
         break;
     }
 }

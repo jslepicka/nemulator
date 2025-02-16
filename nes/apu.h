@@ -17,11 +17,11 @@ namespace nes
 class c_nes;
 class c_mapper;
 
-class c_apu2
+class c_apu
 {
   public:
-    c_apu2();
-    virtual ~c_apu2();
+    c_apu();
+    virtual ~c_apu();
     void reset();
     void write_byte(unsigned short address, unsigned char value);
     unsigned char read_byte(unsigned short address);

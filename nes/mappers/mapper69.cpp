@@ -28,14 +28,13 @@ c_mapper69::c_mapper69()
     //Batman Return of the Joker, Hebereke
     //Honoo no Doukyuuji - Dodge Danpei (J) [PRG-ROM]
     mapperName = "FME-7";
-    expansion_audio = 1;
 }
 
 c_mapper69::~c_mapper69()
 {
 }
 
-void c_mapper69::WriteByte(unsigned short address, unsigned char value)
+void c_mapper69::write_byte(unsigned short address, unsigned char value)
 {
     switch (address >> 12)
     {
@@ -44,7 +43,7 @@ void c_mapper69::WriteByte(unsigned short address, unsigned char value)
         if (prg_mode & 0x40)
         {
             if (prg_mode & 0x80)
-                c_mapper::WriteByte(address, value);
+                c_mapper::write_byte(address, value);
         }
         break;
     case 8:
@@ -145,7 +144,7 @@ void c_mapper69::WriteByte(unsigned short address, unsigned char value)
         }
         break;
     default:
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
         break;
     }
 }
@@ -201,7 +200,7 @@ float c_mapper69::mix_audio(float sample)
     }
 }
 
-unsigned char c_mapper69::ReadByte(unsigned short address)
+unsigned char c_mapper69::read_byte(unsigned short address)
 {
     switch (address >> 12)
     {
@@ -210,7 +209,7 @@ unsigned char c_mapper69::ReadByte(unsigned short address)
         if (prg_mode & 0x40)
         {
             if (prg_mode & 0x80)
-                return c_mapper::ReadByte(address);
+                return c_mapper::read_byte(address);
             else
                 return 0;
         }
@@ -223,7 +222,7 @@ unsigned char c_mapper69::ReadByte(unsigned short address)
         break;
     }
 
-    return c_mapper::ReadByte(address);
+    return c_mapper::read_byte(address);
 }
 
 void c_mapper69::reset()

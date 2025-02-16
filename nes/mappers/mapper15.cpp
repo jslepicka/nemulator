@@ -9,7 +9,7 @@ c_mapper15::c_mapper15()
     mapperName = "Mapper 15";
 }
 
-void c_mapper15::WriteByte(unsigned short address, unsigned char value)
+void c_mapper15::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x8000)
     {
@@ -18,7 +18,7 @@ void c_mapper15::WriteByte(unsigned short address, unsigned char value)
         sync();
     }
     else
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
 }
 
 void c_mapper15::reset()

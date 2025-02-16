@@ -25,11 +25,8 @@ public:
     bool mask_sides;
     bool limit_sprites;
     std::string get_filename();
-    bool favorite;
-    int submapper;
     char title[MAX_PATH];
     std::string filename;
-    int played = 0;
     double get_height();
     double get_width();
     struct SimpleVertex

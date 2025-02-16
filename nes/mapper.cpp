@@ -14,7 +14,6 @@ c_mapper::c_mapper()
 {
     ppu = 0;
     cpu = 0;
-    apu2 = 0;
     writeProtectSram = false;
     sram_enabled = 1;
     hasSram = false;
@@ -23,19 +22,12 @@ c_mapper::c_mapper()
     mapperName = "NROM";
     submapper = 0;
     chrRom = NULL;
-    four_screen = 0;
     memset(vram, 0, 4096);
 
     for (int i = 0; i < 4; i++)
         name_table[i] = vram;
     in_sprite_eval = 0;
     mirroring_mode = 0;
-    expansion_audio = 0;
-}
-
-int c_mapper::has_expansion_audio()
-{
-    return expansion_audio;
 }
 
 void c_mapper::set_submapper(int submapper)
@@ -45,12 +37,12 @@ void c_mapper::set_submapper(int submapper)
 
 c_mapper::~c_mapper()
 {
-    CloseSram();
+    close_sram();
     if (chrRam)
         delete[] chrRom;
 }
 
-unsigned char c_mapper::ReadByte(unsigned short address)
+unsigned char c_mapper::read_byte(unsigned short address)
 {
     if (address >= 0x6000 && address < 0x8000) {
         if (sram_enabled)
@@ -63,7 +55,7 @@ unsigned char c_mapper::ReadByte(unsigned short address)
     return val;
 }
 
-void c_mapper::WriteByte(unsigned short address, unsigned char value)
+void c_mapper::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x6000 && address < 0x8000) {
         if (sram_enabled && !writeProtectSram)
@@ -71,12 +63,12 @@ void c_mapper::WriteByte(unsigned short address, unsigned char value)
     }
 }
 
-unsigned char c_mapper::ReadChrRom(unsigned short address)
+unsigned char c_mapper::read_chr(unsigned short address)
 {
     return *(chrBank[(address >> 10) % 8] + (address & 0x3FF));
 }
 
-void c_mapper::WriteChrRom(unsigned short address, unsigned char value)
+void c_mapper::write_chr(unsigned short address, unsigned char value)
 {
     if (chrRam)
         *(chrBank[(address >> 10) % 8] + (address & 0x3FF)) = value;
@@ -133,7 +125,7 @@ void c_mapper::SetChrBank8k(int value)
         chrBank[i] = base + (0x400 * i);
 }
 
-int c_mapper::LoadImage()
+int c_mapper::load_image()
 {
     prgRom = (prgRomBank *)(image + sizeof(iNesHeader));
     if (header->ChrRomPageCount > 0) {
@@ -170,12 +162,12 @@ int c_mapper::LoadImage()
     for (int x = CHR_0000; x <= CHR_1C00; x++)
         chrBank[x] = pChrRom + 0x0400 * x;
 
-    OpenSram();
+    open_sram();
 
     return 0;
 }
 
-int c_mapper::OpenSram()
+int c_mapper::open_sram()
 {
     if (!sram) {
         sram = std::make_unique<unsigned char[]>(8192);
@@ -193,7 +185,7 @@ int c_mapper::OpenSram()
     return 0;
 }
 
-int c_mapper::CloseSram()
+int c_mapper::close_sram()
 {
     if (hasSram) {
         std::ofstream file;
@@ -215,7 +207,7 @@ unsigned char c_mapper::ppu_read(unsigned short address)
         return *(name_table[(address >> 10) & 3] + (address & 0x3FF));
     }
     else {
-        return ReadChrRom(address);
+        return read_chr(address);
     }
 }
 
@@ -226,7 +218,7 @@ void c_mapper::ppu_write(unsigned short address, unsigned char value)
         *(name_table[(address >> 10) & 3] + (address & 0x3FF)) = value;
     }
     else {
-        WriteChrRom(address, value);
+        write_chr(address, value);
     }
 }
 

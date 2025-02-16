@@ -16,7 +16,7 @@ void c_mapper189::reset()
     Sync();
 }
 
-void c_mapper189::WriteByte(unsigned short address, unsigned char value)
+void c_mapper189::write_byte(unsigned short address, unsigned char value)
 {
     if (address < 0x8000 && address >= 0x4120)
     {
@@ -28,7 +28,7 @@ void c_mapper189::WriteByte(unsigned short address, unsigned char value)
     }
     else if (address >= 0x8000)
     {
-        c_mapper4::WriteByte(address, value);
+        c_mapper4::write_byte(address, value);
     }
     Sync();
 }

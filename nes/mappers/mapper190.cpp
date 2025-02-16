@@ -14,7 +14,7 @@ c_mapper190::~c_mapper190()
     delete[] ram;
 }
 
-void c_mapper190::WriteByte(unsigned short address, unsigned char value)
+void c_mapper190::write_byte(unsigned short address, unsigned char value)
 {
     switch ((address >> 12) & 0xE)
     {
@@ -35,14 +35,14 @@ void c_mapper190::WriteByte(unsigned short address, unsigned char value)
     }
 }
 
-unsigned char c_mapper190::ReadByte(unsigned short address)
+unsigned char c_mapper190::read_byte(unsigned short address)
 {
     if (address >= 0x6000 && address < 0x8000)
     {
         return ram[address - 0x6000];
     }
     else
-        return c_mapper::ReadByte(address);
+        return c_mapper::read_byte(address);
 }
 
 void c_mapper190::reset()

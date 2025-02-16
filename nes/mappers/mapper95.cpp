@@ -9,14 +9,14 @@ c_mapper95::c_mapper95()
     mapperName = "Mapper 95";
 }
 
-void c_mapper95::WriteByte(unsigned short address, unsigned char value)
+void c_mapper95::write_byte(unsigned short address, unsigned char value)
 {
     switch (address & 0xE001)
     {
     case 0xA000:
         break;
     default:
-        c_mapper4::WriteByte(address, value);
+        c_mapper4::write_byte(address, value);
     }
 }
 

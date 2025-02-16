@@ -49,7 +49,6 @@ c_mapper85::c_mapper85()
         //sin_table[i] = linear2db(sin(pi * i / 256.0f));
     }
 
-    expansion_audio = 1;
     build_luts();
 }
 
@@ -78,7 +77,7 @@ void c_mapper85::reset()
     va.Reset(true);
 }
 
-void c_mapper85::WriteByte(unsigned short address, unsigned char value)
+void c_mapper85::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x8000)
     {
@@ -173,7 +172,7 @@ void c_mapper85::WriteByte(unsigned short address, unsigned char value)
     }
     else
     {
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
     }
 }
 

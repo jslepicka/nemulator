@@ -64,9 +64,9 @@ class c_system_registry
         static std::vector<std::vector<c_system::s_system_info>> registry;
         return registry;
     }
-    static void register_system(std::vector<c_system::s_system_info> li)
+    static void register_system(std::vector<c_system::s_system_info> system_info)
     {
-        get_registry().push_back(li);
+        get_registry().push_back(system_info);
     }
 };
 

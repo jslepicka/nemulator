@@ -11,7 +11,7 @@ c_mapper70::c_mapper70()
     mapperName = "Mapper 70";
 }
 
-void c_mapper70::WriteByte(unsigned short address, unsigned char value)
+void c_mapper70::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x8000)
     {
@@ -23,7 +23,7 @@ void c_mapper70::WriteByte(unsigned short address, unsigned char value)
             set_mirroring(MIRRORING_ONESCREEN_LOW);
     }
     else
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
 }
 
 void c_mapper70::reset()

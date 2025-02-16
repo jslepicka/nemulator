@@ -15,7 +15,7 @@ void c_mapper75::reset()
     chr0 = chr1 = 0;
 }
 
-void c_mapper75::WriteByte(unsigned short address, unsigned char value)
+void c_mapper75::write_byte(unsigned short address, unsigned char value)
 {
     switch(address >> 12)
     {
@@ -50,7 +50,7 @@ void c_mapper75::WriteByte(unsigned short address, unsigned char value)
         sync();
         break;
     default:
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
         break;
     }
 }

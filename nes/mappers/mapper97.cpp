@@ -14,7 +14,7 @@ void c_mapper97::reset()
     SetPrgBank16k(PRG_8000, prgRomPageCount16k-1);
 }
 
-void c_mapper97::WriteByte(unsigned short address, unsigned char value)
+void c_mapper97::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x8000)
     {
@@ -36,7 +36,7 @@ void c_mapper97::WriteByte(unsigned short address, unsigned char value)
         }
     }
     else
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
 }
 
 } //namespace nes

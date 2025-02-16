@@ -22,7 +22,7 @@ void c_mapper232::sync()
     SetPrgBank16k(PRG_C000, bank | 3);
 }
 
-void c_mapper232::WriteByte(unsigned short address, unsigned char value)
+void c_mapper232::write_byte(unsigned short address, unsigned char value)
 {
     switch (address & 0xC000)
     {
@@ -35,7 +35,7 @@ void c_mapper232::WriteByte(unsigned short address, unsigned char value)
         sync();
         break;
     default:
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
         break;
     }
 }

@@ -14,7 +14,7 @@ c_mapper64::~c_mapper64()
 {
 }
 
-void c_mapper64::WriteByte(unsigned short address, unsigned char value)
+void c_mapper64::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x8000)
     {

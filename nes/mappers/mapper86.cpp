@@ -10,7 +10,7 @@ c_mapper86::c_mapper86()
     mapperName = "Mapper 86";
 }
 
-void c_mapper86::WriteByte(unsigned short address, unsigned char value)
+void c_mapper86::write_byte(unsigned short address, unsigned char value)
 {
     switch (address >> 12)
     {
@@ -21,7 +21,7 @@ void c_mapper86::WriteByte(unsigned short address, unsigned char value)
     case 7:
         break;
     default:
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
     }
 }
 

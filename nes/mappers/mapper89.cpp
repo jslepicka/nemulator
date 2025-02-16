@@ -9,7 +9,7 @@ c_mapper89::c_mapper89()
     mapperName = "Mapper 89";
 }
 
-void c_mapper89::WriteByte(unsigned short address, unsigned char value)
+void c_mapper89::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x8000)
     {

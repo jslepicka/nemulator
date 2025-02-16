@@ -3,18 +3,33 @@
 
 namespace nes {
 
-class c_mapper4 :
-    public c_mapper
+class c_mapper4 : public c_mapper, register_mapper<c_mapper4>
 {
 public:
     c_mapper4();
     ~c_mapper4();
     unsigned char ppu_read(unsigned short address);
     void ppu_write(unsigned short address, unsigned char value);
-    virtual void WriteByte(unsigned short address, unsigned char value);
-    virtual unsigned char ReadByte(unsigned short address);
+    virtual void write_byte(unsigned short address, unsigned char value);
+    virtual unsigned char read_byte(unsigned short address);
     virtual void reset();
     virtual void clock(int cycles);
+
+    static std::vector<c_mapper::s_mapper_info> get_mapper_info()
+    {
+        return {
+            {
+                .number = 4,
+                .name = "MMC3",
+                .constructor = []() { return std::make_unique<c_mapper4>(); },
+            },
+            {
+                .number = 220,
+                .name = "MMC3 (FCEUX Debugging)",
+                .constructor = []() { return std::make_unique<c_mapper4>(); },
+            },
+        };
+    }
 protected:
     virtual void fire_irq();
     int irq_mode;

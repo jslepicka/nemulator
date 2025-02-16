@@ -13,7 +13,7 @@ c_mapper40::~c_mapper40()
 {
 }
 
-void c_mapper40::WriteByte(unsigned short address, unsigned char value)
+void c_mapper40::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x8000)
     {
@@ -41,10 +41,10 @@ void c_mapper40::WriteByte(unsigned short address, unsigned char value)
         }
     }
     else
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
 }
 
-unsigned char c_mapper40::ReadByte(unsigned short address)
+unsigned char c_mapper40::read_byte(unsigned short address)
 {
     if (address >= 0x6000 && address < 0x8000)
     {

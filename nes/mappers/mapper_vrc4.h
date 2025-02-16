@@ -3,16 +3,37 @@
 
 namespace nes {
 
-class c_mapper_vrc4 :
-    public c_mapper
+class c_mapper_vrc4 : public c_mapper, register_mapper<c_mapper_vrc4>
 {
 public:
     c_mapper_vrc4(int submapper = 0);
     ~c_mapper_vrc4();
-    void WriteByte(unsigned short address, unsigned char value);
+    void write_byte(unsigned short address, unsigned char value);
     void reset();
     void clock(int cycles);
-private:
+    static std::vector<c_mapper::s_mapper_info> get_mapper_info()
+    {
+        return {
+            {
+                .number = 21,
+                .constructor = []() { return std::make_unique<c_mapper_vrc4>(1); },
+            },
+            {
+                .number = 22,
+                .constructor = []() { return std::make_unique<c_mapper_vrc4>(3); },
+            },
+            {
+                .number = 23,
+                .constructor = []() { return std::make_unique<c_mapper_vrc4>(); },
+            },
+            {
+                .number = 25,
+                .constructor = []() { return std::make_unique<c_mapper_vrc4>(2); },
+            },
+        };
+    }
+
+  private:
     int swap_bits;
     int get_bits(int address);
     void sync();

@@ -15,7 +15,7 @@ c_mapper119::~c_mapper119()
     delete[] ram;
 }
 
-void c_mapper119::WriteChrRom(unsigned short address, unsigned char value)
+void c_mapper119::write_chr(unsigned short address, unsigned char value)
 {
     *(chrBank[(address >> 10) % 8] + (address & 0x3FF)) = value;
 }

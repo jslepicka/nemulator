@@ -12,7 +12,6 @@ c_mapper5::c_mapper5()
     exram = new unsigned char[1024];
     memset(exram, 0, 1024);
     memset(prg_ram, 0, 65535);
-    this->expansion_audio = 1;
 }
 
 c_mapper5::~c_mapper5()
@@ -21,7 +20,7 @@ c_mapper5::~c_mapper5()
     delete[] prg_ram;
 }
 
-void c_mapper5::WriteByte(unsigned short address, unsigned char value)
+void c_mapper5::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x8000) {
         int x = 1;
@@ -364,7 +363,7 @@ unsigned char c_mapper5::ppu_read(unsigned short address)
     }
     else
     {
-        return ReadChrRom(address);
+        return read_chr(address);
     }
     return 0;
 }
@@ -379,7 +378,7 @@ void c_mapper5::ppu_write(unsigned short address, unsigned char value)
         c_mapper::ppu_write(address, value);
 }
 
-unsigned char c_mapper5::ReadChrRom(unsigned short address)
+unsigned char c_mapper5::read_chr(unsigned short address)
 {
     int page = (exram[last_tile] & 0x3F) | (chr_high << 6);
     unsigned char *base = pChrRom + ((page % chrRomPageCount4k) * 0x1000);
@@ -503,7 +502,7 @@ void c_mapper5::Sync()
     }
 }
 
-unsigned char c_mapper5::ReadByte(unsigned short address)
+unsigned char c_mapper5::read_byte(unsigned short address)
 {
     if (address == 0xFFFA || address == 0xFFFB) {
         inFrame = 0;
@@ -593,10 +592,10 @@ unsigned char c_mapper5::ReadByte(unsigned short address)
     }
         
 
-        return c_mapper::ReadByte(address);
+        return c_mapper::read_byte(address);
     }
 
-    //return c_mapper::ReadByte(address);
+    //return c_mapper::read_byte(address);
 }
 
 void c_mapper5::reset()
@@ -678,7 +677,7 @@ void c_mapper5::clock_frame()
 float c_mapper5::mix_audio(float sample)
 {
     int square_vol = squares[0].get_output_mmc5() + squares[1].get_output_mmc5();
-    float square_out = c_apu2::square_lut[square_vol];
+    float square_out = c_apu::square_lut[square_vol];
     float pcm_out = (float)pcm_data / 255.0f * .42f;
 
     return sample + -square_out + -pcm_out;

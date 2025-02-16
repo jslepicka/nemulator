@@ -25,8 +25,6 @@ c_system_container::c_system_container(c_system::s_system_info &si, std::string 
     ref = 0;
     system = 0;
     mask_sides = false;
-    favorite = false;
-    submapper = 0;
     strcpy_s(title, filename.c_str());
     strip_extension(title);
 
@@ -113,7 +111,6 @@ void c_system_container::OnDeactivate()
             default_vertex_buffer = NULL;
         }
         is_active = 0;
-        played = 0;
     }
 }
 

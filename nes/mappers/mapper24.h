@@ -3,16 +3,30 @@
 
 namespace nes {
 
-class c_mapper24 :
-    public c_mapper
+class c_mapper24 : public c_mapper, register_mapper<c_mapper24>
 {
 public:
     c_mapper24(int submapper = 0);
     ~c_mapper24() {};
-    void WriteByte(unsigned short address, unsigned char value);
+    void write_byte(unsigned short address, unsigned char value);
     void clock(int cycles);
     void reset();
     float mix_audio(float sample);
+    static std::vector<c_mapper::s_mapper_info> get_mapper_info()
+    {
+        return {
+            {
+                .number = 24,
+                .name = "VRC6",
+                .constructor = []() { return std::make_unique<c_mapper24>(); },
+            },
+            {
+                .number = 26,
+                .name = "VRC6",
+                .constructor = []() { return std::make_unique<c_mapper24>(1); },
+            },
+        };
+    }
 private:
     int ticks;
     int irq_counter;

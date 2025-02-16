@@ -8,7 +8,6 @@
 #include "sound.h"
 #include "config.h"
 #include "task.h"
-#include "task1.h"
 #include "d3d10app.h"
 #include "stats.h"
 #include "status.h"
@@ -43,11 +42,6 @@ private:
     int init_threads();
     void kill_threads();
     void show_qam();
-    static const int input_buffer_size = 60*60*240;
-    char input_buffer[input_buffer_size];
-    int input_buffer_index;
-    int input_buffer_playback;
-    int input_buffer_end;
     void do_turbo_press(int button, std::string button_name);
     int splash_done;
     int splash_stage;
@@ -62,8 +56,6 @@ private:
     };
     
     void handle_button_reset(s_button_handler_params *params);
-    void handle_button_input_save(s_button_handler_params* params);
-    void handle_button_input_replay(s_button_handler_params* params);
     void handle_button_audio_info(s_button_handler_params* params);
     void handle_button_stats(s_button_handler_params* params);
     void handle_button_mask_sides(s_button_handler_params* params);
@@ -110,8 +102,6 @@ private:
     void start_game();
     void leave_game();
     int menu;
-    //c_nes_input_handler *ih;
-    char romPath[MAX_PATH];
     bool fastscroll;
     double scroll_fade_timer;
     void LoadFonts();
@@ -149,7 +139,6 @@ private:
     LARGE_INTEGER liCurrent;
     LARGE_INTEGER liLast;
 
-    int runnableCount;
 
     double max_fps;
     static const int fps_records = 4;
@@ -169,10 +158,8 @@ private:
         int kill;
         std::vector<c_system_container*> game_list;
     };
-    //std::vector<s_game_thread*> game_threads;
     std::vector<std::unique_ptr<s_game_thread>> game_threads;
     int num_threads;
-    //HANDLE *done_events;
     std::unique_ptr<HANDLE[]> done_events;
 
     bool show_suspend;
@@ -202,6 +189,4 @@ private:
     unsigned int benchmark_frame_count = 0;
 
     static constexpr double fovy = std::numbers::pi / 4.0;
-
-    int nes_id = -1;
 };

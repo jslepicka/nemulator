@@ -53,7 +53,7 @@ int c_mapper_vrc4::get_bits(int address)
 }
 
 
-void c_mapper_vrc4::WriteByte(unsigned short address, unsigned char value)
+void c_mapper_vrc4::write_byte(unsigned short address, unsigned char value)
 {
     int swapped = 0;
     switch(address >> 12)
@@ -140,7 +140,7 @@ void c_mapper_vrc4::WriteByte(unsigned short address, unsigned char value)
         }
         break;
     default:
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
         break;
     }
 }

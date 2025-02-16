@@ -17,7 +17,7 @@ void c_mapper193::reset()
     set_mirroring(MIRRORING_VERTICAL);
 }
 
-void c_mapper193::WriteByte(unsigned short address, unsigned char value)
+void c_mapper193::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x6000 && address < 0x8000)
     {
@@ -40,7 +40,7 @@ void c_mapper193::WriteByte(unsigned short address, unsigned char value)
     }
     else
     {
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
     }
 }
 
