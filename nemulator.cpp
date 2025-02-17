@@ -1254,6 +1254,7 @@ void c_nemulator::LoadGames()
 
         if (li.system_info.is_arcade) {
             if (std::filesystem::exists(li.rom_path)) {
+                rom_count++;
                 li.file_list.push_back(li.rom_path + ".dir");
             }
         }
