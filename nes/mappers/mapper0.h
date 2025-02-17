@@ -4,7 +4,7 @@
 namespace nes
 {
 
-class c_mapper0 : public c_mapper, register_class<c_mapper_registry, c_mapper0>
+class c_mapper0 : public c_mapper, register_class<nes_mapper_registry, c_mapper0>
 {
   public:
     static std::vector<c_mapper::s_mapper_info> get_registry_info()

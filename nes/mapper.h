@@ -114,7 +114,7 @@ class c_mapper
     int submapper;
 };
 
-class c_mapper_registry : public c_class_registry<std::map<int, c_mapper::s_mapper_info>>
+class nes_mapper_registry : public c_class_registry<std::map<int, c_mapper::s_mapper_info>>
 {
   public:
     static void _register(std::vector<c_mapper::s_mapper_info> mapper_info)

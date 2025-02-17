@@ -20,7 +20,7 @@ enum GB_MODEL
     CGB
 };
 
-class c_gb : public c_system, register_class<c_system_registry, c_gb>
+class c_gb : public c_system, register_class<system_registry, c_gb>
 {
   public:
     c_gb(GB_MODEL model);

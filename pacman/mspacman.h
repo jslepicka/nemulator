@@ -3,7 +3,7 @@
 
 namespace pacman
 {
-class c_mspacman : public c_pacman, register_class<c_system_registry, c_mspacman>
+class c_mspacman : public c_pacman, register_class<system_registry, c_mspacman>
 {
   public:
     c_mspacman(PACMAN_MODEL model);

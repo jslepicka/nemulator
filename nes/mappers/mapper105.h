@@ -3,7 +3,7 @@
 
 namespace nes {
 
-class c_mapper105 : public c_mapper1, register_class<c_mapper_registry, c_mapper105>
+class c_mapper105 : public c_mapper1, register_class<nes_mapper_registry, c_mapper105>
 {
 public:
     c_mapper105();

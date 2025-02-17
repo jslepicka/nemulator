@@ -16,7 +16,7 @@ enum class SMS_MODEL
     GAMEGEAR
 };
 
-class c_sms : public c_system, register_class<c_system_registry, c_sms>
+class c_sms : public c_system, register_class<system_registry, c_sms>
 {
   public:
     c_sms(SMS_MODEL model);

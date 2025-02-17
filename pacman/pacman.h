@@ -19,7 +19,7 @@ enum class PACMAN_MODEL
     MSPACMAB
 };
 
-class c_pacman : public c_system, register_class<c_system_registry, c_pacman>
+class c_pacman : public c_system, register_class<system_registry, c_pacman>
 {
   public:
     c_pacman(PACMAN_MODEL model = PACMAN_MODEL::PACMAN);

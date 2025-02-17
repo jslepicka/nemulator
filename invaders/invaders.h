@@ -16,7 +16,7 @@ class c_null_filter;
 
 namespace invaders
 {
-class c_invaders : public c_system, register_class<c_system_registry, c_invaders>
+class c_invaders : public c_system, register_class<system_registry, c_invaders>
 {
   public:
     c_invaders();

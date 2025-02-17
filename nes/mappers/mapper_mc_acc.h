@@ -3,7 +3,7 @@
 
 namespace nes {
 
-class c_mapper_mc_acc : public c_mapper4, register_class<c_mapper_registry, c_mapper_mc_acc>
+class c_mapper_mc_acc : public c_mapper4, register_class<nes_mapper_registry, c_mapper_mc_acc>
 {
 public:
     c_mapper_mc_acc();

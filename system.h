@@ -57,7 +57,7 @@ public:
     int crc32 = 0;
 };
 
-class c_system_registry : public c_class_registry<std::vector<c_system::s_system_info>>
+class system_registry : public c_class_registry<std::vector<c_system::s_system_info>>
 {
   public:
     static void _register(std::vector<c_system::s_system_info> system_info)

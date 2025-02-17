@@ -239,7 +239,7 @@ int c_nes::load()
     }
 
     //auto m = mapper_factory.find(mapperNumber);
-    auto &r = c_mapper_registry::get_registry();
+    auto &r = nes_mapper_registry::get_registry();
     auto m = r.find(mapperNumber);
     if (m == r.end())
         return 0;
