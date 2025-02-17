@@ -52,8 +52,14 @@ class c_sound
     void reset_slope();
 
     static const int num_values = 60;
-    int values[num_values];
     int value_index;
+    struct s_buf_sample
+    {
+        int value;
+        uint64_t ts;
+    };
+
+    s_buf_sample values[num_values];
 
     double ema;
     int first_b;
