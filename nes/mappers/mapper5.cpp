@@ -8,7 +8,7 @@ namespace nes {
 c_mapper5::c_mapper5()
 {
     mapperName = "MMC5";
-    prg_ram = new unsigned char[65535];
+    prg_ram = new unsigned char[128  * 1024];
     exram = new unsigned char[1024];
     memset(exram, 0, 1024);
     memset(prg_ram, 0, 65535);
@@ -123,7 +123,7 @@ void c_mapper5::write_byte(unsigned short address, unsigned char value)
             fillColor |= fillColor << 4;
             break;
         case 0x5113:
-            prg_6000 = prg_ram + (value & 0x7) * 0x2000;
+            prg_6000 = prg_ram + (value & 0xF) * 0x2000;
             break;
         case 0x5114:
         case 0x5115:
@@ -217,6 +217,10 @@ void c_mapper5::SetPrgBank16k(int bank, int value)
     if (value & 0x80) {
         int x = 1;
     }
+    // TODO: prg_ram access shouldn't be masked with prg rom page count
+    // probably doesn't matter since no game has more ram than rom, but still...
+    // We should really mask with actual ram size, but that requires entry in
+    // cartridge database or info from NES 2.0 header.
     unsigned char *base = (value & 0x80 ? pPrgRom : prg_ram) + ((((value & 0x7F) >> 1) % header->PrgRomPageCount) * 0x4000);
     prgBank[bank] = base;
     prgBank[bank + 1] = base + 0x2000;
