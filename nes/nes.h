@@ -111,7 +111,6 @@ class c_nes : public c_system, register_class<system_registry, c_nes>
     std::unique_ptr<unsigned char[]> image;
     std::unique_ptr<unsigned char[]> ram;
     std::unique_ptr<unsigned char[]> sram;
-    const static std::map<int, std::function<std::unique_ptr<c_mapper>()>> mapper_factory;
     int mapperNumber;
     c_mapper::s_mapper_info *mapper_info;
     int file_length;
