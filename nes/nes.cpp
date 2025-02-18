@@ -29,6 +29,7 @@ c_nes::c_nes()
     limit_sprites = false;
     crc32 = 0;
     game_genie = std::make_unique<c_game_genie>();
+    mapper_info = 0;
 }
 
 c_nes::~c_nes()
@@ -350,7 +351,13 @@ int c_nes::get_mirroring_mode()
 
 std::string &c_nes::get_mapper_name()
 {
-    return mapper_info->name;
+    static std::string unknown = "Unknown";
+    if (mapper_info) {
+        return mapper_info->name;
+    }
+    else {
+        return unknown;
+    }
 }
 
 void c_nes::set_input(int input)
