@@ -8,10 +8,12 @@ namespace nes {
 c_mapper5::c_mapper5()
 {
     mapperName = "MMC5";
-    prg_ram = new unsigned char[128  * 1024];
-    exram = new unsigned char[1024];
-    memset(exram, 0, 1024);
-    memset(prg_ram, 0, 65535);
+    const int prg_ram_size = 128 * 1024;
+    const int exram_size = 1 * 1024;
+    prg_ram = new unsigned char[prg_ram_size];
+    exram = new unsigned char[exram_size];
+    memset(exram, 0, exram_size);
+    memset(prg_ram, 0, prg_ram_size);
 }
 
 c_mapper5::~c_mapper5()
