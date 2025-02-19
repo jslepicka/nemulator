@@ -11,8 +11,6 @@
 
 import crc32;
 
-void strip_extension(char *path);
-
 namespace nes
 {
 
@@ -146,7 +144,7 @@ void c_nes::write_byte(unsigned short address, unsigned char value)
     }
 }
 
-int c_nes::LoadImage(char *pathFile)
+int c_nes::LoadImage(std::string &pathFile)
 {
     std::ifstream file;
     int m = -1;
@@ -203,20 +201,13 @@ int c_nes::LoadImage(char *pathFile)
 
 int c_nes::load()
 {
-    char sram_path_file[MAX_PATH];
     int submapper = -1;
-    sprintf_s(sram_path_file, "%s\\%s", sram_path, filename);
-    sprintf_s(pathFile, "%s\\%s", path, filename);
-
-    strip_extension(sram_path_file);
-    sprintf_s(sramFilename, "%s.ram", sram_path_file);
-
     cpu = std::make_unique<c_cpu>();
     ppu = std::make_unique<c_ppu>();
     joypad = std::make_unique<c_joypad>();
     apu = std::make_unique<c_apu>();
 
-    mapperNumber = LoadImage(pathFile);
+    mapperNumber = LoadImage(path_file);
 
     auto cartdb_entry = cartdb.find(crc32);
     if (cartdb_entry != cartdb.end()) {
@@ -251,8 +242,7 @@ int c_nes::load()
         mapper->set_submapper(submapper);
     }
 
-    strcpy_s(mapper->filename, pathFile);
-    strcpy_s(mapper->sramFilename, sramFilename);
+    mapper->sramFilename = sram_path_file;
     mapper->crc32 = crc32;
     mapper->file_length = file_length;
     reset();

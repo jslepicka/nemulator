@@ -14,8 +14,6 @@
 import z80;
 import crc32;
 
-void strip_extension(char *path);
-
 namespace sms
 {
 
@@ -42,9 +40,8 @@ c_sms::~c_sms()
 
 int c_sms::load()
 {
-    sprintf_s(pathFile, "%s\\%s", path, filename);
     std::ifstream file;
-    file.open(pathFile, std::ios_base::in | std::ios_base::binary);
+    file.open(path_file, std::ios_base::in | std::ios_base::binary);
     if (file.fail())
         return 0;
     file.seekg(0, std::ios_base::end);
@@ -81,21 +78,10 @@ int c_sms::load()
     return file_length;
 }
 
-void c_sms::get_sram_path(char *path)
-{
-    sprintf_s(path, MAX_PATH, "%s\\%s", sram_path, filename);
-    strip_extension(path);
-}
-
 int c_sms::load_sram()
 {
-    char fn[MAX_PATH];
-    sprintf(fn, "%s\\%s", sram_path, filename);
-    strip_extension(fn);
-    sprintf(sram_file_name, "%s.ram", fn);
-
     std::ifstream file;
-    file.open(sram_file_name, std::ios_base::in | std::ios_base::binary);
+    file.open(sram_path_file, std::ios_base::in | std::ios_base::binary);
     if (file.fail())
         return 1;
 
@@ -115,7 +101,7 @@ int c_sms::load_sram()
 int c_sms::save_sram()
 {
     std::ofstream file;
-    file.open(sram_file_name, std::ios_base::out | std::ios_base::binary);
+    file.open(sram_path_file, std::ios_base::out | std::ios_base::binary);
     if (file.fail())
         return 1;
     file.write((char *)cart_ram, 8192);

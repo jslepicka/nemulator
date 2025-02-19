@@ -116,8 +116,6 @@ class c_sms : public c_system, register_class<system_registry, c_sms>
     unsigned char cart_ram[16384];
     int load_sram();
     int save_sram();
-    void get_sram_path(char *path);
-    char sram_file_name[MAX_PATH];
     void catchup_psg();
     uint64_t last_psg_run;
 };

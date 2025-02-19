@@ -15,7 +15,7 @@ public:
     virtual void DrawToTexture(ID3D10Texture2D *tex) {}
     virtual bool Selectable() { return true;}
     void set_description(std::string s) { description = s; }
-    std::string get_description() { return description; }
+    std::string &get_description() { return description; }
     int is_active;
     virtual ID3D10Buffer *get_vertex_buffer(int stretched) = 0;
     virtual double get_height() = 0;

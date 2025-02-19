@@ -10,6 +10,7 @@
 #include "benchmark.h"
 #include <string_view>
 #include <ranges>
+#include "nes\nes.h"
 
 extern ID3D10Device *d3dDev;
 extern D3DXMATRIX matrixView;
@@ -1291,8 +1292,10 @@ void c_nemulator::LoadGames()
             if (li.system_info.name == "Nintendo NES") {
                 g->is_nes = true;
             }
+
             if (li.system_info.title != "") {
-                strcpy(g->title, li.system_info.title.c_str());
+                //strcpy(g->title, li.system_info.title.c_str());
+                g->title = li.system_info.title;
                 g->set_description(g->title);
             }
             else {

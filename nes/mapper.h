@@ -1,5 +1,4 @@
 #pragma once
-#define MAX_PATH 260
 #include "ines.h"
 #include "mirroring_types.h"
 #include <memory>
@@ -32,8 +31,7 @@ class c_mapper
     void set_submapper(int submapper);
     iNesHeader *header;
     unsigned char *image;
-    char filename[MAX_PATH];
-    char sramFilename[MAX_PATH];
+    std::string sramFilename;
     const char *mapperName;
     int close_sram();
     int crc32;
