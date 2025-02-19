@@ -1,6 +1,8 @@
 #include "mapper228.h"
 
 
+namespace nes {
+
 c_mapper228::c_mapper228()
 {
     //Action 52, Cheetamen II
@@ -11,7 +13,7 @@ c_mapper228::~c_mapper228()
 {
 }
 
-void c_mapper228::WriteByte(unsigned short address, unsigned char value)
+void c_mapper228::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x8000)
     {
@@ -44,15 +46,15 @@ void c_mapper228::WriteByte(unsigned short address, unsigned char value)
         regs[address & 0x03] = value & 0x0F;
     }
     else
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
 }
 
-unsigned char c_mapper228::ReadByte(unsigned short address)
+unsigned char c_mapper228::read_byte(unsigned short address)
 {
     if (address >= 0x4020 && address < 0x6000)
         return regs[address & 0x03];
     else
-        return c_mapper::ReadByte(address);
+        return c_mapper::read_byte(address);
 }
 
 void c_mapper228::reset()
@@ -61,3 +63,5 @@ void c_mapper228::reset()
     for (int i = 0; i < 4; i++)
         regs[i] = 0;
 }
+
+} //namespace nes

@@ -1,6 +1,8 @@
 #include "mapper79.h"
 
 
+namespace nes {
+
 c_mapper79::c_mapper79()
 {
     //Krazy Kreatures
@@ -11,7 +13,7 @@ c_mapper79::~c_mapper79()
 {
 }
 
-void c_mapper79::WriteByte(unsigned short address, unsigned char value)
+void c_mapper79::write_byte(unsigned short address, unsigned char value)
 {
     if (address < 0x6000 &&
         (address & 0x4100) == 0x4100)
@@ -20,5 +22,7 @@ void c_mapper79::WriteByte(unsigned short address, unsigned char value)
         SetPrgBank32k((value >> 3) & 0x07);
     }
     else
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
 }
+
+} //namespace nes

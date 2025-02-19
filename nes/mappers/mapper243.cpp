@@ -1,6 +1,8 @@
 #include "mapper243.h"
 
 
+namespace nes {
+
 c_mapper243::c_mapper243()
 {
     //Sachen games
@@ -8,7 +10,7 @@ c_mapper243::c_mapper243()
     mapperName = "Mapper 243";
 }
 
-void c_mapper243::WriteByte(unsigned short address, unsigned char value)
+void c_mapper243::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x4020 && address < 0x5000)
     {
@@ -69,3 +71,5 @@ void c_mapper243::sync_chr()
 {
     SetChrBank8k(chr);
 }
+
+} //namespace nes

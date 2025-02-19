@@ -1,5 +1,7 @@
 #include "mapper9.h"
 
+namespace nes {
+
 c_mapper9::c_mapper9()
 {
     //Punch-Out
@@ -58,15 +60,15 @@ void c_mapper9::mmc2_latch(int address)
 }
 
 
-unsigned char c_mapper9::ReadChrRom(unsigned short address)
+unsigned char c_mapper9::read_chr(unsigned short address)
 {
     latch_buffer[latch_buffer_head++ % 2] = address;
-    unsigned char temp = c_mapper::ReadChrRom(address);
+    unsigned char temp = c_mapper::read_chr(address);
     mmc2_latch(latch_buffer[latch_buffer_tail++ % 2]);
     return temp;
 }
 
-void c_mapper9::WriteByte(unsigned short address, unsigned char value)
+void c_mapper9::write_byte(unsigned short address, unsigned char value)
 {
     switch (address >> 12)
     {
@@ -100,7 +102,9 @@ void c_mapper9::WriteByte(unsigned short address, unsigned char value)
             set_mirroring(MIRRORING_VERTICAL);
         break;
     default:
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
         break;
     }
 }
+
+} //namespace nes

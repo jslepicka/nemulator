@@ -1,18 +1,24 @@
 #pragma once
+
+#include <cstdint>
+
+namespace nes
+{
+
 class c_nes;
 
 class c_cpu
 {
-public:
+  public:
     c_cpu();
     ~c_cpu();
     int reset();
     void execute_nmi();
     void execute_irq();
     int available_cycles;
-    void do_sprite_dma(unsigned char* dst, int source_address);
+    void do_sprite_dma(unsigned char *dst, int source_address);
     void execute_apu_dma();
-    c_nes* nes;
+    c_nes *nes;
     void clear_irq();
     int executed_cycles;
     void clear_nmi();
@@ -20,12 +26,13 @@ public:
     int odd_cycle;
     void add_cycle();
 
-private:
+  private:
     int cycles;
     unsigned char A;                //Accumulator
     unsigned char X;                //X Index Register
     unsigned char Y;                //Y Index Register
-    struct {
+    struct
+    {
         bool C : 1;        //Carry
         bool Z : 1;        //Zero
         bool I : 1;        //Interrupt enable
@@ -35,7 +42,7 @@ private:
         bool V : 1;        //Overflow
         bool N : 1;        //Sign
     } SR;
-    unsigned char* S;    //Status Register
+    unsigned char *S;    //Status Register
     unsigned char SP;            //Stack Pointer
     unsigned char M;                //Memory
     unsigned short PC;            //Program Counter
@@ -50,12 +57,11 @@ private:
     bool nmi_pending;
     int dma_pos;
     int required_cycles;
-    unsigned char* dma_dst;
+    unsigned char *dma_dst;
     int dma_src;
 
     int opcode;
     void execute_opcode();
-    
 
     static const int cycle_table[260];
 
@@ -103,13 +109,13 @@ private:
 
     //Group two instructions
     void LSR();
-    void LSR_R(unsigned char& reg);
+    void LSR_R(unsigned char &reg);
     void ASL();
-    void ASL_R(unsigned char& reg);
+    void ASL_R(unsigned char &reg);
     void ROL();
-    void ROL_R(unsigned char& reg);
+    void ROL_R(unsigned char &reg);
     void ROR();
-    void ROR_R(unsigned char& reg);
+    void ROR_R(unsigned char &reg);
     void INC();
     void DEC();
     void LDX();
@@ -181,4 +187,14 @@ private:
     void XAA();
 
     int irq_checked();
+
+    void push(uint8_t value);
+    uint8_t pop();
+    void setn(uint8_t value);
+    void setz(uint8_t value);
+    uint16_t makeword(uint8_t lo, uint8_t hi);
+    uint8_t hibyte(uint16_t value);
+    uint8_t lobyte(uint16_t value);
 };
+
+} //namespace nes

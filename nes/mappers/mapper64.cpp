@@ -3,6 +3,8 @@
 #include "..\cpu.h"
 #include "..\ppu.h"
 
+namespace nes {
+
 c_mapper64::c_mapper64()
 {
     mapperName = "RAMBO-1";
@@ -12,7 +14,7 @@ c_mapper64::~c_mapper64()
 {
 }
 
-void c_mapper64::WriteByte(unsigned short address, unsigned char value)
+void c_mapper64::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x8000)
     {
@@ -208,7 +210,7 @@ void c_mapper64::clock_irq_counter()
     //int y = ppu->current_scanline;
     if (irq_counter_reload)
     {
-        irq_counter = reg_c000 + 1;
+        irq_counter = reg_c000 | 1;
         irq_counter_reload = 0;
     }
     else if (irq_counter == 0)
@@ -273,3 +275,5 @@ void c_mapper64::clock(int cycles)
         }
     }
 }
+
+} //namespace nes

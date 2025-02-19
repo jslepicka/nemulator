@@ -1,20 +1,15 @@
 #pragma once
-#include "..\console.h"
-//#include "..\z80\z80.h"
+#include "..\system.h"
 #include <memory>
 #include <array>
 #include <vector>
 
-#define BIT(x, n) (((x) >> (n)) & 1)
-#define BITSWAP16(val, B15, B14, B13, B12, B11, B10, B9, B8, B7, B6, B5, B4, B3, B2, B1, B0)                           \
-    ((BIT(val, B15) << 15) | (BIT(val, B14) << 14) | (BIT(val, B13) << 13) | (BIT(val, B12) << 12) |                   \
-     (BIT(val, B11) << 11) | (BIT(val, B10) << 10) | (BIT(val, B9) << 9) | (BIT(val, B8) << 8) | (BIT(val, B7) << 7) | \
-     (BIT(val, B6) << 6) | (BIT(val, B5) << 5) | (BIT(val, B4) << 4) | (BIT(val, B3) << 3) | (BIT(val, B2) << 2) |     \
-     (BIT(val, B1) << 1) | (BIT(val, B0) << 0))
+class c_z80;
 
+namespace pacman
+{
 class c_pacman_vid;
 class c_pacman_psg;
-class c_z80;
 
 enum class PACMAN_MODEL
 {
@@ -24,7 +19,7 @@ enum class PACMAN_MODEL
     MSPACMAB
 };
 
-class c_pacman : public c_console
+class c_pacman : public c_system, register_class<system_registry, c_pacman>
 {
   public:
     c_pacman(PACMAN_MODEL model = PACMAN_MODEL::PACMAN);
@@ -32,16 +27,65 @@ class c_pacman : public c_console
     int is_loaded();
     int emulate_frame();
     virtual int reset();
-    int get_crc();
     int get_sound_bufs(const short **buf_l, const short **buf_r);
     void set_audio_freq(double freq);
     void set_input(int input);
     int *get_video();
     virtual ~c_pacman();
-    
+
     void set_irq(int irq);
     void enable_mixer();
     void disable_mixer();
+
+    static const std::vector<s_button_map> &get_button_map()
+    {
+        // clang-format off
+        static const std::vector<s_button_map> button_map = {
+            {BUTTON_1UP,     0x01},
+            {BUTTON_1LEFT,   0x02},
+            {BUTTON_1RIGHT,  0x04},
+            {BUTTON_1DOWN,   0x08},
+            {BUTTON_1SELECT, 0x20},
+            {BUTTON_1START,  0x80},
+        };
+        // clang-format on
+        return button_map;
+    }
+
+    static const s_system_info::s_display_info &get_display_info()
+    {
+        static const s_system_info::s_display_info display_info = {
+            .fb_width = 288,
+            .fb_height = 224,
+            .rotation = 90,
+            .aspect_ratio = 3.0 / 4.0,
+        };
+        return display_info;
+    }
+
+    static std::vector<s_system_info> get_registry_info()
+    {
+        return {
+            {
+                .is_arcade = 1,
+                .name = "Arcade",
+                .identifier = "pacman",
+                .title = "Pac-Man",
+                .display_info = get_display_info(),
+                .button_map = get_button_map(),
+                .constructor = []() { return new c_pacman(); },
+            },
+            {
+                .is_arcade = 1,
+                .name = "Arcade",
+                .identifier = "mspacmab",
+                .title = "Ms. Pac-Man (Bootleg)",
+                .display_info = get_display_info(),
+                .button_map = get_button_map(),
+                .constructor = []() { return new c_pacman(PACMAN_MODEL::MSPACMAB); },
+            },
+        };
+    }
 
   protected:
     struct s_roms
@@ -63,7 +107,6 @@ class c_pacman : public c_console
     //void check_mspacman_trap(uint16_t address);
     int load_romset(std::vector<s_roms> &romset);
 
-
     std::unique_ptr<c_z80> z80;
     std::unique_ptr<c_pacman_vid> pacman_vid;
     std::unique_ptr<c_pacman_psg> pacman_psg;
@@ -75,7 +118,6 @@ class c_pacman : public c_console
     int irq;
     uint8_t data_bus;
 
-    
     uint8_t IN0;
     uint8_t IN1;
     uint64_t frame_counter;
@@ -85,6 +127,5 @@ class c_pacman : public c_console
 
     PACMAN_MODEL model;
     int prg_mask;
-
-
 };
+} //namespace pacman

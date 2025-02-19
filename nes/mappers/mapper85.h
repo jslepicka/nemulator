@@ -3,17 +3,29 @@
 #include <cstdint>
 #include "vrc7_audio.h"
 
-class c_mapper85 :
-    public c_mapper
+namespace nes {
+
+class c_mapper85 : public c_mapper, register_class<nes_mapper_registry, c_mapper85>
 {
 public:
     c_mapper85();
     ~c_mapper85() {};
-    void WriteByte(unsigned short address, unsigned char value);
+    void write_byte(unsigned short address, unsigned char value);
     void clock(int cycles);
     void reset();
     float mix_audio(float sample);
-private:
+    static std::vector<c_mapper::s_mapper_info> get_registry_info()
+    {
+        return {
+            {
+                .number = 85,
+                .name = "VRC7",
+                .constructor = []() { return std::make_unique<c_mapper85>(); },
+            },
+        };
+    }
+
+  private:
     schpune::Vrc7Audio va;
     int ticks;
     int audio_ticks;
@@ -105,3 +117,5 @@ private:
 
     int dB(double dB);
 };
+
+} //namespace nes

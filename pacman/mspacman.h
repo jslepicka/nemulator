@@ -1,12 +1,37 @@
 #pragma once
 #include "pacman.h"
 
-class c_mspacman : public c_pacman
+namespace pacman
+{
+class c_mspacman : public c_pacman, register_class<system_registry, c_mspacman>
 {
   public:
     c_mspacman(PACMAN_MODEL model);
-    ~c_mspacman(){};
+    ~c_mspacman() {};
     int load();
+    static std::vector<s_system_info> get_registry_info()
+    {
+        return {
+            {
+                .is_arcade = 1,
+                .name = "Arcade",
+                .identifier = "mspacman",
+                .title = "Ms. Pac-Man",
+                .display_info = c_pacman::get_display_info(),
+                .button_map = c_pacman::get_button_map(),
+                .constructor = []() { return new c_mspacman(PACMAN_MODEL::MSPACMAN); },
+            },
+            {
+                .is_arcade = 1,
+                .name = "Arcade",
+                .identifier = "mspacmnf",
+                .title = "Ms. Pac-Man (Fast)",
+                .display_info = c_pacman::get_display_info(),
+                .button_map = c_pacman::get_button_map(),
+                .constructor = []() { return new c_mspacman(PACMAN_MODEL::MSPACMNF); },
+            },
+        };
+    }
 
   private:
     void decrypt_mspacman();
@@ -19,3 +44,4 @@ class c_mspacman : public c_pacman
     std::unique_ptr<uint8_t[]> prg_rom_overlay; //for ms. pacman
     int use_overlay;
 };
+} //namespace pacman

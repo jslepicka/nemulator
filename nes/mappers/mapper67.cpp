@@ -2,6 +2,8 @@
 
 #include "..\cpu.h"
 
+namespace nes {
+
 c_mapper67::c_mapper67()
 {
     //Fantasy Zone 2
@@ -12,7 +14,7 @@ c_mapper67::~c_mapper67()
 {
 }
 
-void c_mapper67::WriteByte(unsigned short address, unsigned char value)
+void c_mapper67::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x8000)
     {
@@ -71,7 +73,7 @@ void c_mapper67::WriteByte(unsigned short address, unsigned char value)
         }
     }
     else
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
 }
 
 void c_mapper67::reset()
@@ -102,3 +104,5 @@ void c_mapper67::clock(int cycles)
         }
     }
 }
+
+} //namespace nes

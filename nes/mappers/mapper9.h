@@ -1,16 +1,27 @@
 #pragma once
 #include "..\mapper.h"
 
-class c_mapper9 :
-    public c_mapper
+namespace nes {
+
+class c_mapper9 : public c_mapper, register_class<nes_mapper_registry, c_mapper9>
 {
 public:
     c_mapper9();
     virtual ~c_mapper9();
-    virtual void WriteByte(unsigned short address, unsigned char value);
+    virtual void write_byte(unsigned short address, unsigned char value);
     virtual void reset();
     void mmc2_latch(int address);
-    unsigned char ReadChrRom(unsigned short address);
+    unsigned char read_chr(unsigned short address);
+    static std::vector<c_mapper::s_mapper_info> get_registry_info()
+    {
+        return {
+            {
+                .number = 9,
+                .name = "MMC2",
+                .constructor = []() { return std::make_unique<c_mapper9>(); },
+            }
+        };
+    }
 private:
     int latch0;
     int latch1;
@@ -22,3 +33,5 @@ private:
     unsigned int latch_buffer_head;
     unsigned int latch_buffer_tail;
 };
+
+} //namespace nes

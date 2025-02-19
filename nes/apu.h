@@ -4,9 +4,6 @@
 #include <atomic>
 #include <memory>
 
-class c_nes;
-class c_mapper;
-
 namespace dsp
 {
 class c_biquad;
@@ -14,11 +11,17 @@ class c_biquad4;
 class c_resampler;
 } //namespace dsp
 
-class c_apu2
+namespace nes
 {
-public:
-    c_apu2();
-    virtual ~c_apu2();
+
+class c_nes;
+class c_mapper;
+
+class c_apu
+{
+  public:
+    c_apu();
+    virtual ~c_apu();
     void reset();
     void write_byte(unsigned short address, unsigned char value);
     unsigned char read_byte(unsigned short address);
@@ -27,7 +30,7 @@ public:
     void set_nes(c_nes *nes);
     void enable_mixer();
     void disable_mixer();
-    int get_buffer(const short** buf);
+    int get_buffer(const short **buf);
     void clear_buffer();
     void set_audio_rate(double freq);
 
@@ -36,7 +39,7 @@ public:
 
     class c_envelope
     {
-    public:
+      public:
         c_envelope();
         ~c_envelope();
         void clock();
@@ -44,7 +47,8 @@ public:
         void reset_counter();
         void reset();
         int get_output();
-    private:
+
+      private:
         int period;
         int reset_flag;
         int output;
@@ -57,7 +61,7 @@ public:
 
     class c_timer
     {
-    public:
+      public:
         c_timer();
         ~c_timer();
         //void clock(int shift);
@@ -68,7 +72,8 @@ public:
         void set_period(int value);
         int get_period();
         void reset();
-    private:
+
+      private:
         int shift;
         int counter;
         int period;
@@ -77,7 +82,7 @@ public:
 
     class c_sequencer
     {
-    public:
+      public:
         c_sequencer();
         ~c_sequencer();
         void clock();
@@ -85,7 +90,8 @@ public:
         int get_output();
         void reset_step();
         void reset();
-    private:
+
+      private:
         static const int duty_cycle_table[4][8];
         int duty_cycle;
         int step;
@@ -95,7 +101,7 @@ public:
 
     class c_length
     {
-    public:
+      public:
         c_length();
         ~c_length();
         void clock();
@@ -107,7 +113,8 @@ public:
         int get_halt();
         void enable();
         void disable();
-    private:
+
+      private:
         int enabled;
         int counter;
         int halt;
@@ -117,7 +124,7 @@ public:
 
     class c_square
     {
-    public:
+      public:
         c_square();
         ~c_square();
         void clock_envelope();
@@ -132,7 +139,8 @@ public:
         void write(unsigned short address, unsigned char value);
         void set_sweep_mode(int mode);
         void reset();
-    private:
+
+      private:
         int sweep_silencing;
         int sweep_mode;
         int sweep_reg;
@@ -153,7 +161,7 @@ public:
 
     class c_triangle
     {
-    public:
+      public:
         c_triangle();
         ~c_triangle();
         void clock_timer();
@@ -165,7 +173,8 @@ public:
         int get_output();
         void write(unsigned short address, unsigned char value);
         void reset();
-    private:
+
+      private:
         static const int sequence[32];
         int sequence_pos;
         int linear_control;
@@ -180,7 +189,7 @@ public:
 
     class c_noise
     {
-    public:
+      public:
         c_noise();
         ~c_noise();
         void clock_timer();
@@ -192,7 +201,8 @@ public:
         void disable();
         int get_status();
         void reset();
-    private:
+
+      private:
         int lfsr;
         static const int random_period_table[16];
         int output;
@@ -207,7 +217,7 @@ public:
 
     class c_dmc
     {
-    public:
+      public:
         c_dmc();
         ~c_dmc();
         int get_output();
@@ -220,7 +230,8 @@ public:
         void ack_irq();
         int get_irq_flag();
         void reset();
-    private:
+
+      private:
         c_nes *nes;
         static const int freq_table[16];
         void fill_sample_buffer();
@@ -256,7 +267,7 @@ public:
         c_timer timer;
     };
 
-private:
+  private:
     static const float NES_AUDIO_RATE;
     //c_resampler* resampler;
     //c_biquad4* lpf;
@@ -302,3 +313,5 @@ private:
     static std::atomic<int> lookup_tables_built;
     static float tnd_lut[203];
 };
+
+} //namespace nes

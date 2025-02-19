@@ -1,0 +1,69 @@
+#pragma once
+#define MAX_PATH 260
+#include <cstdint>
+#include <string>
+#include "buttons.h"
+#include <vector>
+#include <functional>
+#include "class_registry.h"
+
+// An emulated system (game console, arcade machine, etc.)
+class c_system
+{
+public:
+    c_system() {};
+    virtual ~c_system() {};
+    virtual int load() = 0;
+    virtual int is_loaded() = 0;
+    virtual int emulate_frame() = 0;
+    virtual int reset() = 0;
+    int get_crc() { return crc32; }
+    virtual int get_sound_bufs(const short **buf_l, const short **buf_r) = 0;
+    virtual void set_audio_freq(double freq) = 0;
+    virtual void set_input(int input) = 0;
+    virtual void enable_mixer() {}
+    virtual void disable_mixer() {}
+    virtual int *get_video() = 0;
+    char path[MAX_PATH];
+    char sram_path[MAX_PATH];
+    char filename[MAX_PATH];
+    char title[MAX_PATH];
+    char pathFile[MAX_PATH];
+
+    struct s_system_info
+    {
+        int is_arcade = 0;
+        std::string name;
+        //for consoles, identifier is the file extension (e.g., nes)
+        //for arcade games, it's the name of the rom set (e.g., pacman)
+        std::string identifier;
+        std::string title;
+        struct s_display_info
+        {
+            int fb_width = 0;
+            int fb_height = 0;
+            int crop_left = 0;
+            int crop_right = 0;
+            int crop_top = 0;
+            int crop_bottom = 0;
+            int rotation = 0;
+            double aspect_ratio = 4.0 / 3.0;
+        } display_info;
+        std::vector<s_button_map> button_map;
+        std::function<c_system *()> constructor;
+    };
+
+  protected:
+    int crc32 = 0;
+};
+
+class system_registry : public c_class_registry<std::vector<c_system::s_system_info>>
+{
+  public:
+    static void _register(std::vector<c_system::s_system_info> system_info)
+    {
+        for (auto &s : system_info) {
+            get_registry().push_back(s);
+        }
+    }
+};

@@ -1,13 +1,15 @@
 #include "mapper89.h"
 
 
+namespace nes {
+
 c_mapper89::c_mapper89()
 {
     //Tenka no Goikenban - Mito Koumon (J)
     mapperName = "Mapper 89";
 }
 
-void c_mapper89::WriteByte(unsigned short address, unsigned char value)
+void c_mapper89::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x8000)
     {
@@ -25,3 +27,5 @@ void c_mapper89::reset()
 {
     SetPrgBank16k(PRG_C000, prgRomPageCount16k - 1);
 }
+
+} //namespace nes

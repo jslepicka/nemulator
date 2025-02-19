@@ -1,13 +1,15 @@
 #include "mapper76.h"
 
 
+namespace nes {
+
 c_mapper76::c_mapper76()
 {
     //Digital Devil Monogatari (J)
     mapperName = "Mapper 76";
 }
 
-void c_mapper76::WriteByte(unsigned short address, unsigned char value)
+void c_mapper76::write_byte(unsigned short address, unsigned char value)
 {
     switch (address & 0xE001)
     {
@@ -44,7 +46,7 @@ void c_mapper76::WriteByte(unsigned short address, unsigned char value)
             set_mirroring(MIRRORING_VERTICAL);
         break;
     default:
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
     }
 }
 
@@ -60,3 +62,5 @@ void c_mapper76::reset()
     SetPrgBank8k(PRG_C000, 0xFE);
 
 }
+
+} //namespace nes

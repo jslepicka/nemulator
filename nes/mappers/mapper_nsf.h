@@ -1,17 +1,29 @@
 #pragma once
 #include "..\mapper.h"
 
-class c_mapper_nsf :
-    public c_mapper
+namespace nes {
+
+class c_mapper_nsf : public c_mapper, register_class<nes_mapper_registry, c_mapper_nsf>
 {
 public:
     c_mapper_nsf();
     ~c_mapper_nsf();
-    void WriteByte(unsigned short address, unsigned char value);
-    unsigned char ReadByte(unsigned short address);
+    void write_byte(unsigned short address, unsigned char value);
+    unsigned char read_byte(unsigned short address);
     void reset();
-    int LoadImage();
-private:
+    int load_image();
+    static std::vector<c_mapper::s_mapper_info> get_registry_info()
+    {
+        return {
+            {
+                .number = 0x102,
+                .name = "NSF",
+                .constructor = []() { return std::make_unique<c_mapper_nsf>(); },
+            },
+        };
+    }
+
+  private:
     struct NSF_HEADER {
         char signature[5];
         unsigned char version;
@@ -39,6 +51,8 @@ private:
     unsigned char chr_ram[8192];
 
     void load_player();
-    void WriteChrRom(unsigned short address, unsigned char value);
-    unsigned char ReadChrRom(unsigned short address);
+    void write_chr(unsigned short address, unsigned char value);
+    unsigned char read_chr(unsigned short address);
 };
+
+} //namespace nes

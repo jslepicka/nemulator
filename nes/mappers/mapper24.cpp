@@ -1,6 +1,7 @@
 #include "mapper24.h"
 #include "..\cpu.h"
-#include "..\apu2.h"
+
+namespace nes {
 
 c_mapper24::c_mapper24(int submapper)
 {
@@ -23,10 +24,9 @@ void c_mapper24::reset()
     pulse1.reset();
     pulse2.reset();
     saw.reset();
-    expansion_audio = 1;
 }
 
-void c_mapper24::WriteByte(unsigned short address, unsigned char value)
+void c_mapper24::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x8000)
     {
@@ -143,7 +143,7 @@ void c_mapper24::WriteByte(unsigned short address, unsigned char value)
     }
     else
     {
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
     }
 }
 
@@ -298,3 +298,5 @@ void c_mapper24::c_saw::clock_channel()
         }
     }
 }
+
+} //namespace nes

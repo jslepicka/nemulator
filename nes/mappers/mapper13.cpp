@@ -1,5 +1,7 @@
 #include "mapper13.h"
 
+namespace nes {
+
 c_mapper13::c_mapper13()
 {
     mapperName = "NES-CPROM";
@@ -25,7 +27,7 @@ void c_mapper13::reset()
     }
 }
 
-void c_mapper13::WriteByte(unsigned short address, unsigned char value)
+void c_mapper13::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x8000) {
         unsigned char* base = pChrRom + (value & 0x3) * 0x1000;
@@ -35,3 +37,5 @@ void c_mapper13::WriteByte(unsigned short address, unsigned char value)
         chrBank[CHR_1C00] = base + 0xC00;
     }
 }
+
+} //namespace nes

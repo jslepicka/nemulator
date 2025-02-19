@@ -1,8 +1,7 @@
 #include "invaders.h"
 #include <fstream>
-#include <vector>
 #include <string.h>
-#include <cassert>
+#include <algorithm>
 
 import z80;
 import crc32;
@@ -13,13 +12,6 @@ using namespace invaders;
 
 c_invaders::c_invaders()
 {
-    system_name = "Arcade";
-
-    display_info.fb_width = FB_WIDTH;
-    display_info.fb_height = FB_HEIGHT;
-    display_info.aspect_ratio = 3.0 / 4.0;
-    display_info.rotation = 270;
-
     //real hardware uses an i8080, but z80, being (mostly) compatible, seems to work just fine
     z80 = std::make_unique<c_z80>([this](uint16_t address) { return this->read_byte(address); }, //read_byte
                 [this](uint16_t address, uint8_t data) { this->write_byte(address, data); }, //write_byte
@@ -29,67 +21,31 @@ c_invaders::c_invaders()
                 &nmi, &irq, &data_bus);
     loaded = 0;
     sample_channels[0].loop = 1;
-    /*
-    lowpass elliptical, 20kHz
-    d = fdesign.lowpass('N,Fp,Ap,Ast', 8, 20000, .1, 80, 1996800/2);
-    Hd = design(d, 'ellip', 'FilterStructure', 'df2tsos');
-    set(Hd, 'Arithmetic', 'single');
-    g = regexprep(num2str(reshape(Hd.ScaleValues(1 : 4), [1 4]), '%.16ff '), '\s+', ',')
-    b2 = regexprep(num2str(Hd.sosMatrix(5 : 8), '%.16ff '), '\s+', ',')
-    a2 = regexprep(num2str(Hd.sosMatrix(17 : 20), '%.16ff '), '\s+', ',')
-    a3 = regexprep(num2str(Hd.sosMatrix(21 : 24), '%.16ff '), '\s+', ',')
-    */
 
-    /*
-    lowpass elliptical, 20kHz
-    d = fdesign.lowpass('N,Fp,Ap,Ast', 8, 20000, .1, 80, 1996800/4);
-    Hd = design(d, 'ellip', 'FilterStructure', 'df2tsos');
-    set(Hd, 'Arithmetic', 'single');
-    g = regexprep(num2str(reshape(Hd.ScaleValues(1 : 4), [1 4]), '%.16ff '), '\s+', ',')
-    b2 = regexprep(num2str(Hd.sosMatrix(5 : 8), '%.16ff '), '\s+', ',')
-    a2 = regexprep(num2str(Hd.sosMatrix(17 : 20), '%.16ff '), '\s+', ',')
-    a3 = regexprep(num2str(Hd.sosMatrix(21 : 24), '%.16ff '), '\s+', ',')
-    */
-    switch (audio_divider) {
-        case 2:
-            lpf = new dsp::c_biquad4(
-                {0.5070392489433289f, 0.3306076824665070f, 0.1138657182455063f, 0.0055798427201807f},
-                {-1.9594025611877441f, -1.9208804368972778f, -1.4828784465789795f, -1.9681241512298584f},
-                {-1.9513448476791382f, -1.9262821674346924f, -1.9057153463363647f, -1.9728368520736694f},
-                {0.9648271203041077f, 0.9343814253807068f, 0.9088804125785828f, 0.9893420338630676f});
-            break;
-        case 4:
-            lpf = new dsp::c_biquad4(
-                {0.5084333419799805f, 0.3372127115726471f, 0.1511920541524887f, 0.0056142648681998f},
-                {-1.8411995172500610f, -1.6990419626235962f, -0.5021169781684876f, -1.8745096921920776f},
-                {-1.8784115314483643f, -1.8417872190475464f, -1.8132950067520142f, -1.9135959148406982f},
-                {0.9312939047813416f, 0.8732110261917114f, 0.8254680037498474f, 0.9789751172065735f});
-            break;
-        default:
-            break;
-    }
+    // 30Hz high pass
+    // d = fdesign.highpass('N,F3dB', 2, 30, 48000);
+    // Hd = design(d, 'butter', 'FilterStructure', 'df2tsos');
+    // set(Hd, 'Arithmetic', 'single');
+    // g = num2str(Hd.ScaleValues(1), '%.16ff ')
+    // b = regexprep(num2str(Hd.sosMatrix(1 : 3), '%.16ff '), '\s+', ',')
+    // a = regexprep(num2str(Hd.sosMatrix(4 : 6), '%.16ff '), '\s+', ',')
 
+    post_filter =
+        new dsp::c_biquad(0.9972270727157593f,
+            {1.0000000000000000f,-2.0000000000000000f,1.0000000000000000f},
+            {1.0000000000000000f,-1.9944463968276978f,0.9944617748260498f});
 
-    /*
-    post-filter is butterworth bandpass, 30Hz - 12kHz
-    d = fdesign.bandpass('N,F3dB1,F3dB2', 2, 30, 12000, 48000);
-    Hd = design(d,'butter', 'FilterStructure', 'df2tsos');
-    set(Hd, 'Arithmetic', 'single');
-    g = num2str(Hd.ScaleValues(1), '%.16ff ')
-    b = regexprep(num2str(Hd.sosMatrix(1:3), '%.16ff '), '\s+', ',')
-    a = regexprep(num2str(Hd.sosMatrix(4:6), '%.16ff '), '\s+', ',')
-    */
-    post_filter = new dsp::c_biquad(0.4990182518959045f, {1.0000000000000000f, 0.0000000000000000f, -1.0000000000000000f},
-                          {1.0000000000000000f, -0.9980365037918091f, 0.0019634978380054f});
-    resampler = new dsp::c_resampler((double)audio_freq / 48000.0, lpf, post_filter);
+    //no need for low pass filter since we're playing back samples
+    null_filter = new dsp::c_null_filter();
+    resampler = new dsp::c_resampler((double)audio_freq / 48000.0, null_filter, post_filter);
     mixer_enabled = 0;
-    reset();
+
 }
 
 c_invaders::~c_invaders()
 {
+    delete null_filter;
     delete post_filter;
-    delete lpf;
     delete resampler;
 }
 
@@ -174,6 +130,7 @@ int c_invaders::load()
     load_samples(invaders_sample_load_info);
 
     loaded = 1;
+    reset();
     return 0;
 }
 
@@ -217,7 +174,7 @@ int c_invaders::emulate_frame()
 
 void c_invaders::clock_sound(int cycles)
 {
-    static const float vol = .5f;
+    static const float vol = .4f;
     //generating sound at 1996800 / audio_divisor Hz
     for (int i = 0; i < cycles; i++) {
         float sample = 0.0f;
@@ -227,6 +184,7 @@ void c_invaders::clock_sound(int cycles)
             }
         }
         if (mixer_enabled) {
+            sample = std::min(std::max(sample, -1.0f), 1.0f);
             resampler->process(sample);
         }
     }
@@ -263,14 +221,9 @@ int c_invaders::reset()
     return 0;
 }
 
-int c_invaders::get_crc()
-{
-    return 0;
-}
-
 void c_invaders::set_input(int input)
 {
-    INP1.value = input;
+    INP1.value = input | 0x8;
 }
 
 int *c_invaders::get_video()
@@ -354,7 +307,7 @@ uint8_t c_invaders::read_port(uint8_t port)
         case 2: //INP2
             return INP2.value;
         case 3: //SHFT_IN
-            return ((shift_register << shift_amount) & 0xFF00) >> 8;
+            return (shift_register >> (8 - shift_amount)) & 0xFF;
         default:
             break;
     }

@@ -34,7 +34,7 @@ void c_nsf_stats::init(void* params)
 {
     draw_count = 0;
     sbp = sb;
-    this->c = (c_console*)params;
+    this->c = (c_system*)params;
     c_stats::init(NULL);
 
 

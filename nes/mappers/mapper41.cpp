@@ -1,6 +1,8 @@
 #include "mapper41.h"
 
 
+namespace nes {
+
 c_mapper41::c_mapper41()
 {
     mapperName = "Caltron 6-in-1";
@@ -11,7 +13,7 @@ void c_mapper41::reset()
     SetPrgBank32k(0);
 }
 
-void c_mapper41::WriteByte(unsigned short address, unsigned char value)
+void c_mapper41::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x8000)
     {
@@ -33,5 +35,7 @@ void c_mapper41::WriteByte(unsigned short address, unsigned char value)
         SetChrBank8k(chr);
     }
     else
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
 }
+
+} //namespace nes

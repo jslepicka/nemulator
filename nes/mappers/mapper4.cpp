@@ -3,6 +3,8 @@
 #include "..\cpu.h"
 #include "..\ppu.h"
 
+namespace nes {
+
 c_mapper4::c_mapper4()
 {
     mapperName = "MMC3";
@@ -30,7 +32,7 @@ void c_mapper4::Sync()
     SetChrBank1k(CHR_1C00 ^ chr_xor, (chr[5] & chr_mask) + chr_offset);
 }
 
-unsigned char c_mapper4::ReadByte(unsigned short address)
+unsigned char c_mapper4::read_byte(unsigned short address)
 {
     if (submapper == 1)
     {
@@ -41,14 +43,14 @@ unsigned char c_mapper4::ReadByte(unsigned short address)
             return address >> 8;
             break;
         default:
-            return c_mapper::ReadByte(address);
+            return c_mapper::read_byte(address);
         }
     }
     else
-        return c_mapper::ReadByte(address);
+        return c_mapper::read_byte(address);
 }
 
-void c_mapper4::WriteByte(unsigned short address, unsigned char value)
+void c_mapper4::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x8000)
     {
@@ -122,7 +124,7 @@ void c_mapper4::WriteByte(unsigned short address, unsigned char value)
         }
     }
     else
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
 }
 
 
@@ -241,3 +243,5 @@ void c_mapper4::reset()
     chr[5] = 7;
     Sync();
 }
+
+} //namespace nes

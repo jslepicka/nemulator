@@ -4,11 +4,12 @@
 #include "time.h"
 #include <sstream>
 #include <xmmintrin.h>
-#include "console.h"
+#include "system.h"
 #include <algorithm>
 #include <pmmintrin.h>
 #include "benchmark.h"
 #include <string_view>
+#include <ranges>
 
 extern ID3D10Device *d3dDev;
 extern D3DXMATRIX matrixView;
@@ -24,24 +25,13 @@ extern const char *app_title;
 extern c_config *config;
 extern std::unique_ptr<c_input_handler> g_ih;
 
-int mode;
-int prevMode;
-bool updateEvents;
-
-int mem_viewer_active = 0;
-
 HANDLE g_start_event;
 
 c_nemulator::c_nemulator()
 {
-    prevMode = mode = MODE_MENU;
     done_events = NULL;
-    runnableCount = 0;
-    updateEvents = true;
     selectedPanel = 0;
     inGame = false;
-    joy1 = 0;
-    joy2 = 0;
     sound = 0;
     font1 = 0;
     font2 = 0;
@@ -69,9 +59,6 @@ c_nemulator::c_nemulator()
     rom_count = 0;
     preload = false;
     load_thread_handle = 0;
-    input_buffer_index = 0;
-    input_buffer_playback = 0;
-    input_buffer_end = 0;
     show_suspend = false;
 
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
@@ -162,8 +149,8 @@ DWORD WINAPI c_nemulator::game_thread(LPVOID lpParam)
             break;
         for (auto &g : t->game_list)
         {
-            if (g->console && g->console->is_loaded())
-                g->console->emulate_frame();
+            if (g->system && g->system->is_loaded())
+                g->system->emulate_frame();
         }
         SetEvent(t->done_event);
     }
@@ -238,7 +225,6 @@ void c_nemulator::Init()
     mainPanel2->zoomDestX = eye_x;
     mainPanel2->zoomDestY = eye_y;
     mainPanel2->zoomDestZ = (float)(eye_z + (1.0 / tan( fovy/2.0 )));
-    mainPanel2->camera_distance = eye_z;
     auto eye = D3DXVECTOR3(eye_x, eye_y, eye_z);
     auto at = D3DXVECTOR3(eye_x, eye_y, 0.0f);
     auto up = D3DXVECTOR3(0.0f, 1.0f, 0.0f);
@@ -304,7 +290,6 @@ void c_nemulator::configure_input()
         { BUTTON_STATS,          "",        "",        VK_F9,                       0 },
         { BUTTON_MASK_SIDES,     "",        "",        VK_F8,                       0 },
         { BUTTON_SPRITE_LIMIT,   "",        "",        VK_F7,                       0 },
-        { BUTTON_MEM_VIEWER,     "",        "",        VK_F5,                       0 },
         { BUTTON_AUDIO_INFO,     "",        "",        VK_F4,                       0 },
         { BUTTON_RESET,          "",        "",        VK_F2,                       0 },
         { BUTTON_LEFT_SHIFT,     "",        "",        VK_LSHIFT,                   0 },
@@ -318,15 +303,18 @@ void c_nemulator::configure_input()
     };
 
     int num_buttons = sizeof(button_map) / sizeof(s_button_map);
-    g_ih = std::make_unique<c_nes_input_handler>(BUTTON_COUNT);
-
+    g_ih = std::make_unique<c_input_handler>(BUTTON_COUNT);
+    g_ih->set_pair(BUTTON_1LEFT, BUTTON_1RIGHT);
+    g_ih->set_pair(BUTTON_1UP, BUTTON_1DOWN);
+    g_ih->set_pair(BUTTON_2LEFT, BUTTON_2RIGHT);
+    g_ih->set_pair(BUTTON_2UP, BUTTON_2DOWN);
+    
     for (int i = 0; i < num_buttons; i++)
     {
         int j = i;
         int default_key = button_map[i].default_key;
         int button = button_map[i].button;
         std::string key = button_map[i].config_base + "." + button_map[i].config_name;
-        //int d = key == "." ? default_key : config->get_int(key, default_key);
         if (default_key & button_mask)
         {
             default_key &= button_mask - 1;
@@ -362,7 +350,6 @@ void c_nemulator::OnResize()
 
     float aspect = (float)clientWidth/clientHeight;
     D3DXMatrixPerspectiveFovLH(&matrixProj, (float)fovy, aspect, 1.0f, 1000.0f);
-    texturePanels[selectedPanel]->OnResize();
 }
 
 void c_nemulator::RunGames()
@@ -379,112 +366,31 @@ void c_nemulator::RunGames()
             WaitForMultipleObjects((DWORD)game_threads.size(), done_events.get(), TRUE, INFINITE);
         }
     }
-    else
-    {
-        c_game *g = (c_game*)texturePanels[selectedPanel]->GetSelected();
-        auto ih = (c_nes_input_handler *)g_ih.get();
-        switch (g->type)
-        {
-        case GAME_NES:
-            g->console->set_input(
-                ih->get_nes_byte(0) |
-                (ih->get_nes_byte(1) << 8));
-            break;
-        case GAME_SMS:
-        case GAME_GG:
-            g->console->set_input(ih->get_sms_input());
-            break;
-        case GAME_GB:
-        case GAME_GBC:
-            g->console->set_input(ih->get_gb_input());
-            break;
-        case GAME_PACMAN:
-        case GAME_MSPACMAN:
-        case GAME_MSPACMNF:
-        case GAME_MSPACMAB:
-            g->console->set_input(ih->get_pacman_input());
-            break;
-        case GAME_INVADERS:
-            g->console->set_input(ih->get_invaders_input());
-            break;
-        default:
-            break;
-        }
+    else {
+        c_system_container *g = (c_system_container *)texturePanels[selectedPanel]->GetSelected();
+        auto ih = (c_input_handler *)g_ih.get();
 
-        g->console->emulate_frame();
+        auto &button_map = g->get_button_map();
+        g->system->set_input(ih->get_console_input(button_map));
+
+        g->system->emulate_frame();
         if (benchmark_mode) {
             if (++benchmark_frame_count == benchmark_frames) {
                 exit(0);
             }
         }
     }
-
 }
 
 void c_nemulator::handle_button_reset(s_button_handler_params* params)
 {
-    c_game* g = (c_game*)texturePanels[selectedPanel]->GetSelected();
+    c_system_container* g = (c_system_container*)texturePanels[selectedPanel]->GetSelected();
     if (g == NULL)
         return;
-    if (g->console->is_loaded())
+    if (g->system->is_loaded())
     {
-        g->console->reset();
-        input_buffer_index = 0;
-        input_buffer_playback = 0;
+        g->system->reset();
         status->add_message("reset");
-    }
-}
-
-void c_nemulator::handle_button_input_save(s_button_handler_params* params)
-{
-    c_game* g = (c_game*)texturePanels[selectedPanel]->GetSelected();
-    if (g->console->is_loaded())
-    {
-        std::ofstream file;
-        std::string filename = g->console->pathFile;
-        filename += ".input";
-        file.open(filename, std::ios_base::trunc | std::ios_base::binary);
-        if (file.is_open())
-        {
-            for (int i = 0; i < input_buffer_index; i++)
-            {
-                file.write((char*)&input_buffer[i], sizeof(char));
-            }
-            file.close();
-            status->add_message("saved input");
-        }
-    }
-}
-
-void c_nemulator::handle_button_input_replay(s_button_handler_params *params)
-{
-    c_game* g = (c_game*)texturePanels[selectedPanel]->GetSelected();
-    if (g->console->is_loaded())
-    {
-        //load input from file
-        char* buf = new char[65536];
-        std::ifstream file;
-        std::string filename = g->console->pathFile;
-        filename += ".input";
-        file.open(filename, std::ios_base::in | std::ios_base::binary);
-        int i = 0;
-        if (file.is_open())
-        {
-            while (!file.eof())
-            {
-                file.read(buf, 65536);
-                int num_bytes = (int)file.gcount();
-                memcpy(&input_buffer[i], buf, num_bytes);
-                i += (num_bytes / sizeof(char));
-            }
-            g->console->reset();
-
-            input_buffer_end = i;
-            input_buffer_index = 0;
-            input_buffer_playback = 1;
-            file.close();
-            status->add_message("input replay start");
-        }
     }
 }
 
@@ -521,7 +427,7 @@ void c_nemulator::handle_button_stats(s_button_handler_params *params)
 
 void c_nemulator::handle_button_mask_sides(s_button_handler_params *params)
 {
-    c_game* g = (c_game*)texturePanels[selectedPanel]->GetSelected();
+    c_system_container* g = (c_system_container*)texturePanels[selectedPanel]->GetSelected();
     g->mask_sides = !g->mask_sides;
     if (g->mask_sides) {
         status->add_message("side mask enabled");
@@ -533,16 +439,16 @@ void c_nemulator::handle_button_mask_sides(s_button_handler_params *params)
 
 void c_nemulator::handle_button_sprite_limit(s_button_handler_params *params)
 {
-    c_game* g = (c_game*)texturePanels[selectedPanel]->GetSelected();
-    if (g->type == GAME_NES)
+    c_system_container* g = (c_system_container*)texturePanels[selectedPanel]->GetSelected();
+    if (g->is_nes)
     {
-        g->console->set_sprite_limit(!g->console->get_sprite_limit());
+        nes::c_nes *n = ((nes::c_nes *)g->system);
+        n->set_sprite_limit(!n->get_sprite_limit());
+        if (n->get_sprite_limit())
+            status->add_message("sprites limited");
+        else
+            status->add_message("sprites unlimited");
     }
-
-    if (g->console->get_sprite_limit())
-        status->add_message("sprites limited");
-    else
-        status->add_message("sprites unlimited");
 }
 
 void c_nemulator::adjust_sharpness(float value)
@@ -695,8 +601,6 @@ void c_nemulator::handle_button_leave_game(s_button_handler_params* params)
 const c_nemulator::s_button_handler c_nemulator::button_handlers[] =
 {
     { SCOPE::GAMES_LOADED, {BUTTON_RESET}, true, RESULT_DOWN, &c_nemulator::handle_button_reset },
-    { SCOPE::GAMES_LOADED, {BUTTON_INPUT_SAVE}, true, RESULT_DOWN, &c_nemulator::handle_button_input_save },
-    { SCOPE::GAMES_LOADED, {BUTTON_INPUT_REPLAY}, true, RESULT_DOWN, &c_nemulator::handle_button_input_replay },
     { SCOPE::GAMES_LOADED, {BUTTON_AUDIO_INFO}, true, RESULT_DOWN, &c_nemulator::handle_button_audio_info },
     { SCOPE::GAMES_LOADED, {BUTTON_STATS}, true, RESULT_DOWN, &c_nemulator::handle_button_stats },
     { SCOPE::GAMES_LOADED, {BUTTON_MASK_SIDES}, true, RESULT_DOWN ,&c_nemulator::handle_button_mask_sides },
@@ -790,38 +694,31 @@ void c_nemulator::show_qam()
 
 void c_nemulator::do_turbo_press(int button, std::string button_name)
 {
-    auto nih = (c_nes_input_handler *)g_ih.get();
     if (g_ih->get_result(BUTTON_LEFT_SHIFT) & c_input_handler::RESULT_DEPRESSED)
     {
-        nih->set_turbo_rate(button, nih->get_turbo_rate(button) + 2);
+        g_ih->set_turbo_rate(button, g_ih->get_turbo_rate(button) + 2);
     }
     else if (g_ih->get_result(BUTTON_RIGHT_SHIFT) & c_input_handler::RESULT_DEPRESSED)
     {
-        nih->set_turbo_rate(button, nih->get_turbo_rate(button) - 2);
+        g_ih->set_turbo_rate(button, g_ih->get_turbo_rate(button) - 2);
     }
     else
     {
-        int turbo_state = nih->get_turbo_state(button);
-        nih->set_turbo_state(button, !turbo_state);
+        int turbo_state = g_ih->get_turbo_state(button);
+        g_ih->set_turbo_state(button, !turbo_state);
         status->add_message(button_name + " turbo " + (turbo_state ? "disabled" : "enabled"));
         return;
     }
     char message[64];
-    sprintf_s(message, "%s turbo rate: %d/s", button_name.c_str(),
-        60/nih->get_turbo_rate(button));
+    sprintf_s(message, "%s turbo rate: %.1f/s", button_name.c_str(),
+        60.0/g_ih->get_turbo_rate(button));
     status->add_message(message);
 }
 
 void c_nemulator::leave_game()
 {
-    if (joy1 != NULL)
-        *joy1 = 0;
-    if (joy2 != NULL)
-        *joy2 = 0;
-    joy1 = NULL;
-    joy2 = NULL;
     sound->stop();
-    c_console *n = ((c_game*)texturePanels[selectedPanel]->GetSelected())->console;
+    c_system *n = ((c_system_container *)texturePanels[selectedPanel]->GetSelected())->system;
     n->disable_mixer();
     inGame = false;
     for (int i = 0; i < num_texture_panels; i++)
@@ -830,10 +727,10 @@ void c_nemulator::leave_game()
     {
         ResumeThread(game_thread->thread_handle);
     }
-    c_game* g = (c_game*)texturePanels[selectedPanel]->GetSelected();
-    if (g->type == GAME_NES)
+    c_system_container* g = (c_system_container*)texturePanels[selectedPanel]->GetSelected();
+    if (g->is_nes)
     {
-        c_nes* n = (c_nes*)g->console;
+        nes::c_nes *n = (nes::c_nes *)g->system;
         if (n->get_mapper_number() == 258) { //NFS
             nsf_stats->dead = true;
             nsf_stats = NULL;
@@ -845,11 +742,10 @@ void c_nemulator::leave_game()
 void c_nemulator::start_game()
 {
     //todo: come back and fix has played logic
-    c_game *g = (c_game*)texturePanels[selectedPanel]->GetSelected();
-    c_console *n = g->console;
+    c_system_container *g = (c_system_container*)texturePanels[selectedPanel]->GetSelected();
+    c_system *n = g->system;
     if (n && n->is_loaded())
     {
-        g->played = 1;
         sound->play();
         inGame = true;
         n->enable_mixer();
@@ -860,20 +756,20 @@ void c_nemulator::start_game()
             SuspendThread(game_thread->thread_handle);
         }
 
-        if (g->type == GAME_NES)
+        if (g->is_nes)
         {
-            c_nes* n = (c_nes*)g->console;
+            nes::c_nes *n = (nes::c_nes *)g->system;
             if (n->get_mapper_number() == 258) { //NFS
                 nsf_stats = new c_nsf_stats();
                 nsf_stats->x = eye_x;
                 nsf_stats->y = eye_y;
                 nsf_stats->z = (float)(eye_z + (1.0 / tan(fov_h / 2)));
-                add_task(nsf_stats, g->console);
+                add_task(nsf_stats, g->system);
             }
         }
         
         std::string title = g->title;
-        std::string system = n->get_system_name();
+        std::string system = g->get_system_name();
 
         SetWindowText(
             hWnd,
@@ -971,10 +867,8 @@ int c_nemulator::update(double dt, int child_result, void *params)
                     break;
                 case 1: //reset
                     {
-                        c_console *n = ((c_game *)texturePanels[selectedPanel]->GetSelected())->console;
+                    c_system *n = ((c_system_container *)texturePanels[selectedPanel]->GetSelected())->system;
                         n->reset();
-                        input_buffer_index = 0;
-                        input_buffer_playback = 0;
                         status->add_message("reset");
                     }
                     break;
@@ -1071,7 +965,6 @@ void c_nemulator::UpdateScene(double dt)
     if (changed)
     {
         GetEvents();
-        updateEvents = false;
     }
     if (scroll_fade_timer > 0.0)
     {
@@ -1083,18 +976,18 @@ void c_nemulator::UpdateScene(double dt)
     {
         if (inGame)
         {
-            c_console *console = ((c_game*)texturePanels[selectedPanel]->GetSelected())->console;
+            c_system *system = ((c_system_container *)texturePanels[selectedPanel]->GetSelected())->system;
 
             const short* buf_l;
             const short* buf_r;
 
-            int num_samples = console->get_sound_bufs(&buf_l, &buf_r);
+            int num_samples = system->get_sound_bufs(&buf_l, &buf_r);
             
             if (!benchmark_mode && !paused) {
                 sound->copy(buf_l, buf_r, num_samples);
                 s = sound->sync();
             }
-            console->set_audio_freq(sound->get_requested_freq());
+            system->set_audio_freq(sound->get_requested_freq());
         }
         RunGames();
 
@@ -1130,8 +1023,9 @@ void c_nemulator::UpdateScene(double dt)
 
         if (stats)
         {
-            c_game* game = (c_game*)texturePanels[selectedPanel]->GetSelected();
-            c_console *console = game->console;
+            stats->clear();
+            c_system_container* game = (c_system_container*)texturePanels[selectedPanel]->GetSelected();
+            c_system *system = game->system;
             stats->report_stat("fps", fps);
             stats->report_stat("freq", sound->get_freq());
             stats->report_stat("audio position", s);
@@ -1145,12 +1039,12 @@ void c_nemulator::UpdateScene(double dt)
             stats->report_stat("audio_position_diff", sound->audio_position_diff);
             stats->report_stat("audio state", sound->state);
             std::ostringstream s;
-            s << std::hex << std::uppercase << console->get_crc();
+            s << std::hex << std::uppercase << system->get_crc();
             stats->report_stat("CRC", s.str());
 
-            if (game->type == GAME_NES)
+            if (game->is_nes)
             {
-                c_nes *n = (c_nes*)console;
+                nes::c_nes *n = (nes::c_nes *)system;
                 stats->report_stat("mapper #", n->get_mapper_number());
                 stats->report_stat("mapper name", n->get_mapper_name());
                 stats->report_stat("sprite limit", n->get_sprite_limit() ? "limited" : "unlimited");
@@ -1175,8 +1069,8 @@ void c_nemulator::UpdateScene(double dt)
             }
         }
         if (nsf_stats) { //NSF
-            c_game* game = (c_game*)texturePanels[selectedPanel]->GetSelected();
-            c_nes* n = (c_nes*)game->console;
+            c_system_container* game = (c_system_container*)texturePanels[selectedPanel]->GetSelected();
+            nes::c_nes *n = (nes::c_nes *)game->system;
             nsf_stats->report_stat("Song #", n->read_byte(0x54F7) + 1);
         }
         framesDrawn = 0;
@@ -1226,7 +1120,7 @@ void c_nemulator::DrawScene()
 
     if (texturePanels[selectedPanel]->get_num_items() > 0)
     {
-        c_game *g = (c_game*)texturePanels[selectedPanel]->GetSelected();
+        c_system_container *g = (c_system_container*)texturePanels[selectedPanel]->GetSelected();
         for (int i = 0; i < num_texture_panels; i++)
             texturePanels[i]->Draw();
 
@@ -1234,7 +1128,8 @@ void c_nemulator::DrawScene()
         {
             double dim = mainPanel2->dim ? .25 : 1.0;
             DrawText(font1, .05f, .85f, g->title, D3DXCOLOR((float)(1.0f * dim), 0.0f, 0.0f, 1.0f));
-            DrawText(font2, .0525f, .925f, g->console->get_system_name(), D3DXCOLOR((float)(.22f * dim), (float)(.22f * dim), (float)(.22f * dim), 1.0f));
+            DrawText(font2, .0525f, .925f, g->get_system_name(),
+                     D3DXCOLOR((float)(.22f * dim), (float)(.22f * dim), (float)(.22f * dim), 1.0f));
         }
 
         if (!inGame && !menu && (fastscroll || scroll_fade_timer > 0.0))
@@ -1249,7 +1144,7 @@ void c_nemulator::DrawScene()
             d3dDev->OMSetDepthStencilState(state, oldref);
         }
 
-        if (inGame && g->type == GAME_NES && g->console->get_crc() == 0x0B0E128F)
+        if (inGame && g->is_nes && g->system->get_crc() == 0x0B0E128F)
         {
             char time[6];
             int nwc_time = 0;
@@ -1309,7 +1204,7 @@ void c_nemulator::GetEvents()
         y = 0;
         for (auto &i : panelItems)
         {
-            game_threads[y % game_threads.size()]->game_list.push_back((c_game*)i);
+            game_threads[y % game_threads.size()]->game_list.push_back((c_system_container*)i);
             y++;
         }
     }
@@ -1327,28 +1222,25 @@ void c_nemulator::LoadGames()
     std::string arcade_path = config->get_string("arcade.rom_path", "c:\\roms\\arcade");
     struct s_loadinfo
     {
-        GAME_TYPE type;
-        std::string extension;
         std::string rom_path_key;
         std::string save_path_key;
         std::string rom_path_default;
+        c_system::s_system_info &system_info;
+        
         std::string rom_path;
         std::string save_path;
         std::vector<std::string> file_list;
-    } loadinfo[] = 
-    {
-        { GAME_NES, "nes", "nes.rom_path", "nes.save_path", "c:\\roms\\nes" },
-        { GAME_SMS, "sms", "sms.rom_path", "sms.save_path", "c:\\roms\\sms" },
-        { GAME_GG,   "gg",  "gg.rom_path",  "gg.save_path",  "c:\\roms\\gg" },
-        { GAME_GB,   "gb",  "gb.rom_path",  "gb.save_path",  "c:\\roms\\gb" },
-        { GAME_GBC, "gbc", "gbc.rom_path", "gbc.save_path", "c:\\roms\\gbc" },
-        { GAME_NES, "nsf", "nsf.rom_path", "nsf.save_path", "c:\\roms\\nsf" }, 
-        { GAME_PACMAN, "", "pacman.rom_path", "", arcade_path + "\\pacman" },
-        { GAME_MSPACMAN, "", "mspacman.rom_path", "", arcade_path + "\\mspacman"},
-        { GAME_MSPACMNF, "", "mspacmnf.rom_path", "", arcade_path + "\\mspacmnf"},
-        { GAME_MSPACMAB, "", "mspacmab.rom_path", "", arcade_path + "\\mspacmab" },
-        { GAME_INVADERS, "", "invaders.rom_path", "", arcade_path + "\\invaders" }
     };
+    std::vector<s_loadinfo> loadinfo;
+ 
+    for (auto &si : system_registry::get_registry()) {
+        loadinfo.push_back({
+            .rom_path_key = si.identifier + ".rom_path",
+            .save_path_key = si.identifier + ".save_path",
+            .rom_path_default = si.is_arcade ? arcade_path + "\\" + si.identifier : "c:\\roms\\" + si.identifier,
+            .system_info = si,
+        });
+    }
 
     bool global_mask_sides = config->get_bool("mask_sides", false);
     bool global_limit_sprites = config->get_bool("limit_sprites", false);
@@ -1360,15 +1252,16 @@ void c_nemulator::LoadGames()
         if (!std::filesystem::exists(li.save_path))
             li.save_path = li.rom_path;
 
-        if (li.extension == "") {
+        if (li.system_info.is_arcade) {
             if (std::filesystem::exists(li.rom_path)) {
+                rom_count++;
                 li.file_list.push_back(li.rom_path + ".dir");
             }
         }
         else {
             std::error_code ec;
             for (auto const &dir_entry : std::filesystem::directory_iterator(li.rom_path, ec)) {
-                if (dir_entry.is_regular_file() && dir_entry.path().extension() == "." + li.extension) {
+                if (dir_entry.is_regular_file() && dir_entry.path().extension() == "." + li.system_info.identifier) {
                     rom_count++;
                     li.file_list.push_back(dir_entry.path().filename().string());
                 }
@@ -1394,38 +1287,22 @@ void c_nemulator::LoadGames()
                     file.close();
                 }
             }
-
-            c_game *g = new c_game(li.type, li.rom_path, fn, li.save_path);
-            switch (li.type) {
-                case GAME_PACMAN:
-                    strcpy(g->title, "Pac-Man");
-                    g->set_description(g->title);
-                    break;
-                case GAME_MSPACMAN:
-                    strcpy(g->title, "Ms. Pac-Man");
-                    g->set_description(g->title);
-                    break;
-                case GAME_MSPACMNF:
-                    strcpy(g->title, "Ms. Pac-Man (Fast)");
-                    g->set_description(g->title);
-                    break;
-                case GAME_MSPACMAB:
-                    strcpy(g->title, "Ms. Pac-Man (Bootleg)");
-                    g->set_description(g->title);
-                    break;
-                case GAME_INVADERS:
-                    strcpy(g->title, "Space Invaders");
-                    g->set_description(g->title);
-                    break;
-                default:
-                    g->set_description(fn);
-                    break;
+            c_system_container *g = new c_system_container(li.system_info, li.rom_path, fn, li.save_path);
+            if (li.system_info.name == "Nintendo NES") {
+                g->is_nes = true;
+            }
+            if (li.system_info.title != "") {
+                strcpy(g->title, li.system_info.title.c_str());
+                g->set_description(g->title);
+            }
+            else {
+                g->set_description(fn);
             }
             gameList.push_back(g);
         }
     }
 
-    std::sort(gameList.begin(), gameList.end(), [](const c_game* a, const c_game* b) {
+    std::sort(gameList.begin(), gameList.end(), [](const c_system_container* a, const c_system_container* b) {
 
         std::string a_title = a->title;
         std::string b_title = b->title;

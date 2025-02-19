@@ -1,5 +1,7 @@
 #include "mapper44.h"
 
+namespace nes {
+
 c_mapper44::c_mapper44()
 {
     //Super Cool Boy 4-in-1
@@ -7,7 +9,7 @@ c_mapper44::c_mapper44()
     mapperName = "Mapper 44";
 }
 
-void c_mapper44::WriteByte(unsigned short address, unsigned char value)
+void c_mapper44::write_byte(unsigned short address, unsigned char value)
 {
     if ((address & 0xE001) == 0xA001)
     {
@@ -34,7 +36,7 @@ void c_mapper44::WriteByte(unsigned short address, unsigned char value)
     }
     else
     {
-        c_mapper4::WriteByte(address, value);
+        c_mapper4::write_byte(address, value);
     }
 }
 
@@ -45,3 +47,5 @@ void c_mapper44::reset()
     chr_mask = 0x7F;
     Sync();
 }
+
+} //namespace nes

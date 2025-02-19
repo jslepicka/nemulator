@@ -8,6 +8,8 @@ class c_biquad4;
 class c_resampler;
 } //namespace dsp
 
+namespace pacman
+{
 class c_pacman_psg
 {
   public:
@@ -22,8 +24,14 @@ class c_pacman_psg
     uint8_t *sound_rom;
     void mute(int muted);
 
-    void enable_mixer() { mixer_enabled = 1; };
-    void disable_mixer() { mixer_enabled = 0; };
+    void enable_mixer()
+    {
+        mixer_enabled = 1;
+    };
+    void disable_mixer()
+    {
+        mixer_enabled = 0;
+    };
 
   private:
     uint8_t sound_ram[32];
@@ -39,3 +47,4 @@ class c_pacman_psg
     //264 scanlines * 6 psg cycles/scanline * 60 fps * 8x oversampling
     static constexpr double audio_rate = 264.0 * 6.0 * 60.0 * 8.0;
 };
+} //namespace pacman

@@ -1,8 +1,12 @@
 #pragma once
-#include "..\console.h"
+#include "..\system.h"
 #include <memory>
 
 class c_z80;
+
+namespace sms
+{
+
 class c_vdp;
 class c_psg;
 
@@ -12,9 +16,9 @@ enum class SMS_MODEL
     GAMEGEAR
 };
 
-class c_sms : public c_console
+class c_sms : public c_system, register_class<system_registry, c_sms>
 {
-public:
+  public:
     c_sms(SMS_MODEL model);
     ~c_sms();
     int emulate_frame();
@@ -31,18 +35,73 @@ public:
     int nmi;
     void set_audio_freq(double freq);
     int load();
-    int is_loaded() { return loaded; }
-    int get_crc() { return crc; }
+    int is_loaded()
+    {
+        return loaded;
+    }
     void enable_mixer();
     void disable_mixer();
     void set_input(int input);
-    SMS_MODEL get_model() const { return model; }
+    SMS_MODEL get_model() const
+    {
+        return model;
+    }
+
+    static std::vector<s_system_info> get_registry_info()
+    {
+        // clang-format off
+        static const std::vector<s_button_map> button_map = {
+            {BUTTON_1UP,             0x01},
+            {BUTTON_1DOWN,           0x02},
+            {BUTTON_1LEFT,           0x04},
+            {BUTTON_1RIGHT,          0x08},
+            {BUTTON_1B,              0x10}, //button 1
+            {BUTTON_1A,              0x20}, //button 2
+            {BUTTON_2UP,             0x40},
+            {BUTTON_2DOWN,           0x80},
+            {BUTTON_2LEFT,          0x100},
+            {BUTTON_2RIGHT,         0x200},
+            {BUTTON_2B,             0x400}, //button 1
+            {BUTTON_2A,             0x800}, //button 2
+            {BUTTON_SMS_PAUSE, 0x80000000},
+        };
+        // clang-format on
+
+        return {
+            {
+                .name = "Sega Master System",
+                .identifier = "sms",
+                .display_info = {
+                    .fb_width = 256,
+                    .fb_height = 192,
+                    .crop_top = -14,
+                    .crop_bottom = -14,
+                },
+                .button_map = button_map,
+                .constructor = []() { return new c_sms(SMS_MODEL::SMS); },
+            },
+            {
+                .name = "Sega Game Gear",
+                .identifier = "gg",
+                .display_info = {
+                    .fb_width = 256,
+                    .fb_height = 192,
+                    .crop_left = 48,
+                    .crop_right = 48,
+                    .crop_top = 24,
+                    .crop_bottom = 24,
+                },
+                .button_map = button_map,
+                .constructor = []() { return new c_sms(SMS_MODEL::GAMEGEAR); },
+            },
+        };
+    }
+
 
   private:
     SMS_MODEL model;
     int psg_cycles;
     int has_sram = 0;
-    unsigned int crc = 0;
     int joy = 0xFF;
     int loaded = 0;
     int ram_select;
@@ -63,3 +122,4 @@ public:
     uint64_t last_psg_run;
 };
 
+} //namespace sms

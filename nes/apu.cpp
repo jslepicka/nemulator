@@ -1,4 +1,4 @@
-#include "apu2.h"
+#include "apu.h"
 #include <memory>
 #include <assert.h>
 #include "nes.h"
@@ -14,13 +14,15 @@ std::ofstream file;
 
 import dsp;
 
-const float c_apu2::NES_AUDIO_RATE = 341.0f / 3.0f * 262.0f * 60.0f/* / 3.0f*/;
+namespace nes {
 
-std::atomic<int> c_apu2::lookup_tables_built = 0;
-float c_apu2::square_lut[31];
-float c_apu2::tnd_lut[203];
+const float c_apu::NES_AUDIO_RATE = 341.0f / 3.0f * 262.0f * 60.0f/* / 3.0f*/;
 
-c_apu2::c_apu2()
+std::atomic<int> c_apu::lookup_tables_built = 0;
+float c_apu::square_lut[31];
+float c_apu::tnd_lut[203];
+
+c_apu::c_apu()
 {
     squares[0] = &square1;
     squares[1] = &square2;
@@ -32,14 +34,14 @@ c_apu2::c_apu2()
     build_lookup_tables();
 }
 
-c_apu2::~c_apu2()
+c_apu::~c_apu()
 {
 #ifdef AUDIO_LOG
     file.close();
 #endif
 }
 
-void c_apu2::build_lookup_tables()
+void c_apu::build_lookup_tables()
 {
     int expected = 0;
     if (lookup_tables_built.compare_exchange_strong(expected, 1))
@@ -53,24 +55,24 @@ void c_apu2::build_lookup_tables()
     }
 }
 
-void c_apu2::enable_mixer()
+void c_apu::enable_mixer()
 {
     mixer_enabled = 1;
 }
 
-void c_apu2::disable_mixer()
+void c_apu::disable_mixer()
 {
     mixer_enabled = 0;
 }
 
-void c_apu2::set_nes(c_nes* nes)
+void c_apu::set_nes(c_nes* nes)
 {
     this->nes = nes;
     mapper = nes->mapper.get();
     dmc.set_nes(nes);
 };
 
-void c_apu2::reset()
+void c_apu::reset()
 {
     ticks = 0;
     frame_seq_counter = CLOCKS_PER_FRAME_SEQ;
@@ -128,24 +130,24 @@ void c_apu2::reset()
     resampler = std::make_unique<dsp::c_resampler>(NES_AUDIO_RATE / 48000.0f, lpf.get(), post_filter.get());
 }
 
-int c_apu2::get_buffer(const short** buf)
+int c_apu::get_buffer(const short** buf)
 {
     int num_samples = resampler->get_output_buf(buf);
     return num_samples;
 }
 
-void c_apu2::clear_buffer()
+void c_apu::clear_buffer()
 {
     resampler->clear_buf();
 }
 
-void c_apu2::set_audio_rate(double freq)
+void c_apu::set_audio_rate(double freq)
 {
     double x = NES_AUDIO_RATE / freq;
     resampler->set_m((float)x);
 }
 
-void c_apu2::write_byte(unsigned short address, unsigned char value)
+void c_apu::write_byte(unsigned short address, unsigned char value)
 {
     reg[address - 0x4000] = value;
     switch (address - 0x4000)
@@ -238,7 +240,7 @@ void c_apu2::write_byte(unsigned short address, unsigned char value)
     }
 }
 
-unsigned char c_apu2::read_byte(unsigned short address)
+unsigned char c_apu::read_byte(unsigned short address)
 {
     //can only read 0x4015
     if (address == 0x4015)
@@ -267,7 +269,7 @@ unsigned char c_apu2::read_byte(unsigned short address)
     }
     return reg[address - 0x4000];
 }
-void c_apu2::clock_once()
+void c_apu::clock_once()
 {
     frame_seq_counter -= 12;
     if (frame_seq_counter < 0)
@@ -282,7 +284,7 @@ void c_apu2::clock_once()
     }
 }
 
-void c_apu2::clock(int cycles)
+void c_apu::clock(int cycles)
 {
     ticks += cycles;
 
@@ -293,7 +295,7 @@ void c_apu2::clock(int cycles)
     }
 }
 
-void c_apu2::mix()
+void c_apu::mix()
 {
     int square_vol = square1.get_output() + square2.get_output();
     float square_out = square_lut[square_vol];
@@ -309,7 +311,7 @@ void c_apu2::mix()
     resampler->process(sample);
 }
 
-void c_apu2::clock_timers()
+void c_apu::clock_timers()
 {
     if (square_clock)
     {
@@ -322,7 +324,7 @@ void c_apu2::clock_timers()
     dmc.clock_timer();
 }
 
-void c_apu2::clock_envelopes()
+void c_apu::clock_envelopes()
 {
     square1.clock_envelope();
     square2.clock_envelope();
@@ -330,7 +332,7 @@ void c_apu2::clock_envelopes()
     noise.clock_envelope();
 }
 
-void c_apu2::clock_length_sweep()
+void c_apu::clock_length_sweep()
 {
     square1.clock_length_sweep();
     square2.clock_length_sweep();
@@ -338,7 +340,7 @@ void c_apu2::clock_length_sweep()
     noise.clock_length();
 }
 
-void c_apu2::clock_frame_seq()
+void c_apu::clock_frame_seq()
 {
     if (frame_seq_steps == 5)
     {
@@ -403,16 +405,16 @@ void c_apu2::clock_frame_seq()
 
 }
 
-c_apu2::c_envelope::c_envelope()
+c_apu::c_envelope::c_envelope()
 {
     reset();
 }
 
-c_apu2::c_envelope::~c_envelope()
+c_apu::c_envelope::~c_envelope()
 {
 }
 
-void c_apu2::c_envelope::reset()
+void c_apu::c_envelope::reset()
 {
     reset_flag = 0;
     counter = 1;
@@ -423,7 +425,7 @@ void c_apu2::c_envelope::reset()
     env_vol = 0;
 }
 
-void c_apu2::c_envelope::clock()
+void c_apu::c_envelope::clock()
 {
     if (reset_flag)
     {
@@ -442,7 +444,7 @@ void c_apu2::c_envelope::clock()
         output = env_vol;
 }
 
-void c_apu2::c_envelope::write(unsigned char value)
+void c_apu::c_envelope::write(unsigned char value)
 {
     period = (value & 0xF) + 1;
     enabled = !(value & 0x10);
@@ -450,33 +452,33 @@ void c_apu2::c_envelope::write(unsigned char value)
     output = enabled ? env_vol : value & 0xF;
 }
 
-void c_apu2::c_envelope::reset_counter()
+void c_apu::c_envelope::reset_counter()
 {
     reset_flag = 1;
 }
 
-int c_apu2::c_envelope::get_output()
+int c_apu::c_envelope::get_output()
 {
     return output;
 }
 
-c_apu2::c_timer::c_timer()
+c_apu::c_timer::c_timer()
 {
     reset();
 }
 
-c_apu2::c_timer::~c_timer()
+c_apu::c_timer::~c_timer()
 {
 }
 
-void c_apu2::c_timer::reset()
+void c_apu::c_timer::reset()
 {
     period = 1;
     counter = 1;
     //output = 0;
 }
 
-int c_apu2::c_timer::clock()
+int c_apu::c_timer::clock()
 {
     if (--counter == 0)
     {
@@ -489,7 +491,7 @@ int c_apu2::c_timer::clock()
     }
 }
 
-//int c_apu2::c_timer::clock2x()
+//int c_apu::c_timer::clock2x()
 //{
 //    if (--counter == 0)
 //    {
@@ -502,37 +504,37 @@ int c_apu2::c_timer::clock()
 //    }
 //}
 
-void c_apu2::c_timer::set_period_lo(int period_lo)
+void c_apu::c_timer::set_period_lo(int period_lo)
 {
     period = (period & 0x0700) | (period_lo & 0xFF);
 }
 
-void c_apu2::c_timer::set_period_hi(int period_hi)
+void c_apu::c_timer::set_period_hi(int period_hi)
 {
     period = (period & 0xFF) | ((period_hi & 0x7) << 8);
 }
 
-int c_apu2::c_timer::get_period()
+int c_apu::c_timer::get_period()
 {
     return period;
 }
 
 
-void c_apu2::c_timer::set_period(int value)
+void c_apu::c_timer::set_period(int value)
 {
     period = value;
 }
 
-c_apu2::c_sequencer::c_sequencer()
+c_apu::c_sequencer::c_sequencer()
 {
     reset();
 }
 
-c_apu2::c_sequencer::~c_sequencer()
+c_apu::c_sequencer::~c_sequencer()
 {
 }
 
-void c_apu2::c_sequencer::reset()
+void c_apu::c_sequencer::reset()
 {
     duty_cycle = 0;
     step = 0;
@@ -540,45 +542,45 @@ void c_apu2::c_sequencer::reset()
     ticks = 0;
 }
 
-int c_apu2::c_sequencer::get_output()
+int c_apu::c_sequencer::get_output()
 {
     return duty_cycle_table[duty_cycle][step];
 }
 
-void c_apu2::c_sequencer::reset_step()
+void c_apu::c_sequencer::reset_step()
 {
     step = 0;
     //TODO: silence output?
     //output = 0;
 }
 
-void c_apu2::c_sequencer::set_duty_cycle(int duty)
+void c_apu::c_sequencer::set_duty_cycle(int duty)
 {
     duty_cycle = duty & 0x3;
 }
 
-const int c_apu2::c_sequencer::duty_cycle_table[4][8] = {
+const int c_apu::c_sequencer::duty_cycle_table[4][8] = {
     {0, 1, 0, 0, 0, 0, 0, 0},
     {0, 1, 1, 0, 0, 0, 0, 0},
     {0, 1, 1, 1, 1, 0, 0, 0},
     {1, 0, 0, 1, 1, 1, 1, 1}
 };
 
-void c_apu2::c_sequencer::clock()
+void c_apu::c_sequencer::clock()
 {
     step = --step & 0x7;
 }
 
-c_apu2::c_length::c_length()
+c_apu::c_length::c_length()
 {
     reset();
 }
 
-c_apu2::c_length::~c_length()
+c_apu::c_length::~c_length()
 {
 }
 
-void c_apu2::c_length::reset()
+void c_apu::c_length::reset()
 {
     counter = 0;
     halt = 0;
@@ -586,44 +588,44 @@ void c_apu2::c_length::reset()
     enabled = 0;
 }
 
-void c_apu2::c_length::clock()
+void c_apu::c_length::clock()
 {
     if (!halt && counter != 0)
         counter--;
 }
 
-int c_apu2::c_length::get_output()
+int c_apu::c_length::get_output()
 {
     return counter;
 }
 
-int c_apu2::c_length::get_counter()
+int c_apu::c_length::get_counter()
 {
     return counter;
 }
 
-void c_apu2::c_length::set_halt(int halt)
+void c_apu::c_length::set_halt(int halt)
 {
     this->halt = halt;
 }
 
-void c_apu2::c_length::enable()
+void c_apu::c_length::enable()
 {
     enabled = 1;
 }
 
-void c_apu2::c_length::disable()
+void c_apu::c_length::disable()
 {
     enabled = 0;
     counter = 0;
 }
 
-int c_apu2::c_length::get_halt()
+int c_apu::c_length::get_halt()
 {
     return halt;
 }
 
-const int c_apu2::c_length::length_table[32] =
+const int c_apu::c_length::length_table[32] =
 {
     0x0A, 0xFE, 0x14, 0x02, 0x28, 0x04, 0x50, 0x06,
     0xA0, 0x08, 0x3C, 0x0A, 0x0E, 0x0C, 0x1A, 0x0E,
@@ -631,18 +633,18 @@ const int c_apu2::c_length::length_table[32] =
     0xC0, 0x18, 0x48, 0x1A, 0x10, 0x1C, 0x20, 0x1E
 };
 
-void c_apu2::c_length::set_length(int index)
+void c_apu::c_length::set_length(int index)
 {
     if (enabled)
         counter = length_table[index & 0x1F];
 }
 
-c_apu2::c_square::c_square()
+c_apu::c_square::c_square()
 {
     reset();
 }
 
-void c_apu2::c_square::reset()
+void c_apu::c_square::reset()
 {
     sweep_silencing = 1;
     output = 0;
@@ -661,27 +663,27 @@ void c_apu2::c_square::reset()
     length.reset();
 }
 
-c_apu2::c_square::~c_square()
+c_apu::c_square::~c_square()
 {
 }
 
-void c_apu2::c_square::clock_timer()
+void c_apu::c_square::clock_timer()
 {
     if (timer.clock())
         sequencer.clock();
 }
 
-void c_apu2::c_square::clock_envelope()
+void c_apu::c_square::clock_envelope()
 {
     envelope.clock();
 }
 
-void c_apu2::c_square::clock_length()
+void c_apu::c_square::clock_length()
 {
     length.clock();
 }
 
-void c_apu2::c_square::clock_length_sweep()
+void c_apu::c_square::clock_length_sweep()
 {
     //length.clock();
     clock_length();
@@ -721,14 +723,14 @@ void c_apu2::c_square::clock_length_sweep()
     }
 }
 
-int c_apu2::c_square::get_output()
+int c_apu::c_square::get_output()
 {
     if (!sweep_silencing && sequencer.get_output() && length.get_output())
         return envelope.get_output();
     return 0;
 }
 
-int c_apu2::c_square::get_output_mmc5()
+int c_apu::c_square::get_output_mmc5()
 {
     //MMC5 squares don't have the sweep unit.  This is faster than turning get_output
     //into a virtual function call.
@@ -737,7 +739,7 @@ int c_apu2::c_square::get_output_mmc5()
     return 0;
 }
 
-void c_apu2::c_square::write(unsigned short address, unsigned char value)
+void c_apu::c_square::write(unsigned short address, unsigned char value)
 {
     int period;
     switch (address & 0x3)
@@ -770,48 +772,48 @@ void c_apu2::c_square::write(unsigned short address, unsigned char value)
     }
 }
 
-void c_apu2::c_square::update_sweep_silencing()
+void c_apu::c_square::update_sweep_silencing()
 {
     int period = timer.get_period();
     int offset = period >> sweep_shift;
     sweep_silencing = ((period < 8) || (!sweep_negate && ((period + offset) > 0x7FF)));
 }
 
-void c_apu2::c_square::enable()
+void c_apu::c_square::enable()
 {
     length.enable();
 }
 
-void c_apu2::c_square::disable()
+void c_apu::c_square::disable()
 {
     length.disable();
 }
 
-int c_apu2::c_square::get_status()
+int c_apu::c_square::get_status()
 {
     return length.get_counter() ? 1 : 0;
 }
 
-void c_apu2::c_square::set_sweep_mode(int mode)
+void c_apu::c_square::set_sweep_mode(int mode)
 {
     sweep_mode = mode & 0x1;
 }
 
-const int c_apu2::c_triangle::sequence[32] = {
+const int c_apu::c_triangle::sequence[32] = {
     0xF, 0xE, 0xD, 0xC, 0xB, 0xA, 0x9, 0x8, 0x7, 0x6, 0x5, 0x4, 0x3, 0x2, 0x1, 0x0,
     0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF
 };
 
-c_apu2::c_triangle::c_triangle()
+c_apu::c_triangle::c_triangle()
 {
     reset();
 }
 
-c_apu2::c_triangle::~c_triangle()
+c_apu::c_triangle::~c_triangle()
 {
 }
 
-void c_apu2::c_triangle::reset()
+void c_apu::c_triangle::reset()
 {
     output = 0;
     sequence_pos = 0;
@@ -824,7 +826,7 @@ void c_apu2::c_triangle::reset()
     length.reset();
 }
 
-void c_apu2::c_triangle::clock_timer()
+void c_apu::c_triangle::clock_timer()
 {
     //               +---------+    +---------+
     //               |LinearCtr|    | Length  |
@@ -849,17 +851,17 @@ void c_apu2::c_triangle::clock_timer()
     }
 }
 
-void c_apu2::c_triangle::enable()
+void c_apu::c_triangle::enable()
 {
     length.enable();
 }
 
-void c_apu2::c_triangle::disable()
+void c_apu::c_triangle::disable()
 {
     length.disable();
 }
 
-void c_apu2::c_triangle::write(unsigned short address, unsigned char value)
+void c_apu::c_triangle::write(unsigned short address, unsigned char value)
 {
     switch (address - 0x4000)
     {
@@ -883,22 +885,22 @@ void c_apu2::c_triangle::write(unsigned short address, unsigned char value)
     }
 }
 
-int c_apu2::c_triangle::get_output()
+int c_apu::c_triangle::get_output()
 {
     return output;
 }
 
-int c_apu2::c_triangle::get_status()
+int c_apu::c_triangle::get_status()
 {
     return length.get_counter() ? 1 : 0;
 }
 
-void c_apu2::c_triangle::clock_length()
+void c_apu::c_triangle::clock_length()
 {
     length.clock();
 }
 
-void c_apu2::c_triangle::clock_linear()
+void c_apu::c_triangle::clock_linear()
 {
     if (linear_halt)
     {
@@ -914,16 +916,16 @@ void c_apu2::c_triangle::clock_linear()
     }
 }
 
-c_apu2::c_noise::c_noise()
+c_apu::c_noise::c_noise()
 {
     reset();
 }
 
-c_apu2::c_noise::~c_noise()
+c_apu::c_noise::~c_noise()
 {
 }
 
-void c_apu2::c_noise::reset()
+void c_apu::c_noise::reset()
 {
     output = 0;
     lfsr_shift = 1;
@@ -936,12 +938,12 @@ void c_apu2::c_noise::reset()
     timer.reset();
 }
 
-const int c_apu2::c_noise::random_period_table[16] = {
+const int c_apu::c_noise::random_period_table[16] = {
     0x004, 0x008, 0x010, 0x020, 0x040, 0x060, 0x080, 0x0A0,
     0x0CA, 0x0FE, 0x17C, 0x1FC, 0x2FA, 0x3F8, 0x7F2, 0xFE4
 };
 
-void c_apu2::c_noise::write(unsigned short address, unsigned char value)
+void c_apu::c_noise::write(unsigned short address, unsigned char value)
 {
     //$400C   --le nnnn   loop env/disable length, env disable, vol/env period
     //$400E   s--- pppp   short mode, period index
@@ -964,7 +966,7 @@ void c_apu2::c_noise::write(unsigned short address, unsigned char value)
     }
 }
 
-void c_apu2::c_noise::clock_timer()
+void c_apu::c_noise::clock_timer()
 {
     //timer.clock(0);
     if (timer.clock())
@@ -975,17 +977,17 @@ void c_apu2::c_noise::clock_timer()
     }
 }
 
-void c_apu2::c_noise::clock_envelope()
+void c_apu::c_noise::clock_envelope()
 {
     envelope.clock();
 }
 
-void c_apu2::c_noise::clock_length()
+void c_apu::c_noise::clock_length()
 {
     length.clock();
 }
 
-int c_apu2::c_noise::get_output()
+int c_apu::c_noise::get_output()
 {
     if (length.get_output() && !(lfsr & 0x1))
     {
@@ -997,31 +999,31 @@ int c_apu2::c_noise::get_output()
     }
 }
 
-int c_apu2::c_noise::get_status()
+int c_apu::c_noise::get_status()
 {
     return length.get_counter() ? 1 : 0;
 }
 
-void c_apu2::c_noise::enable()
+void c_apu::c_noise::enable()
 {
     length.enable();
 }
 
-void c_apu2::c_noise::disable()
+void c_apu::c_noise::disable()
 {
     length.disable();
 }
 
-c_apu2::c_dmc::c_dmc()
+c_apu::c_dmc::c_dmc()
 {
     reset();
 }
 
-c_apu2::c_dmc::~c_dmc()
+c_apu::c_dmc::~c_dmc()
 {
 }
 
-void c_apu2::c_dmc::reset()
+void c_apu::c_dmc::reset()
 {
     cycle = 1;
     silence = 1;
@@ -1040,17 +1042,17 @@ void c_apu2::c_dmc::reset()
     timer.reset();
 }
 
-int c_apu2::c_dmc::get_output()
+int c_apu::c_dmc::get_output()
 {
     return output_counter;
 }
 
-const int c_apu2::c_dmc::freq_table[16] = {
+const int c_apu::c_dmc::freq_table[16] = {
     0x1AC, 0x17C, 0x154, 0x140, 0x11E, 0x0FE, 0x0E2, 0x0D6,
     0x0BE, 0x0A0, 0x08E, 0x080, 0x06A, 0x054, 0x048, 0x036
 };
 
-void c_apu2::c_dmc::write(unsigned short address, unsigned char value)
+void c_apu::c_dmc::write(unsigned short address, unsigned char value)
 {
     //$4010   il-- ffff   IRQ enable, loop, frequency index
     //$4011   -ddd dddd   DAC
@@ -1090,12 +1092,12 @@ void c_apu2::c_dmc::write(unsigned short address, unsigned char value)
     }
 }
 
-int c_apu2::c_dmc::get_status()
+int c_apu::c_dmc::get_status()
 {
     return duration ? 1 : 0;
 }
 
-void c_apu2::c_dmc::clock_timer()
+void c_apu::c_dmc::clock_timer()
 {
     if (timer.clock())
     {
@@ -1131,12 +1133,12 @@ void c_apu2::c_dmc::clock_timer()
     }
 }
 
-void c_apu2::c_dmc::set_nes(c_nes* nes)
+void c_apu::c_dmc::set_nes(c_nes* nes)
 {
     this->nes = nes;
 }
 
-void c_apu2::c_dmc::enable()
+void c_apu::c_dmc::enable()
 {
     if (duration == 0)
     {
@@ -1147,7 +1149,7 @@ void c_apu2::c_dmc::enable()
     }
 }
 
-void c_apu2::c_dmc::disable()
+void c_apu::c_dmc::disable()
 {
     duration = 0;
     enabled = 0;
@@ -1155,7 +1157,7 @@ void c_apu2::c_dmc::disable()
     //ack_irq();
 }
 
-void c_apu2::c_dmc::ack_irq()
+void c_apu::c_dmc::ack_irq()
 {
     irq_flag = 0;
     if (irq_asserted)
@@ -1165,7 +1167,7 @@ void c_apu2::c_dmc::ack_irq()
     }
 }
 
-void c_apu2::c_dmc::fill_sample_buffer()
+void c_apu::c_dmc::fill_sample_buffer()
 {
     if (sample_buffer_empty && duration)
     {
@@ -1199,7 +1201,9 @@ void c_apu2::c_dmc::fill_sample_buffer()
     }
 }
 
-int c_apu2::c_dmc::get_irq_flag()
+int c_apu::c_dmc::get_irq_flag()
 {
     return irq_flag ? 1 : 0;
 }
+
+} //namespace nes

@@ -21,6 +21,9 @@ c_input_handler::c_input_handler(int buttons)
         s->joy_button = 0;
         s->ack = 0;
         s->depressed_count = 0;
+        s->turbo_enabled = 0;
+        s->turbo_rate = 10;
+        s->pair_mask = 1;
         s++;
     }
     repeat_start = 333.3;
@@ -44,10 +47,39 @@ c_input_handler::~c_input_handler()
 {
 }
 
+void c_input_handler::set_turbo_state(int button, int turbo_enabled)
+{
+    state[button % num_buttons].turbo_enabled = turbo_enabled ? 1 : 0;
+}
+
+int c_input_handler::get_turbo_state(int button)
+{
+    return state[button % num_buttons].turbo_enabled;
+}
+
+void c_input_handler::set_turbo_rate(int button, int rate)
+{
+    static const int turbo_rate_max = 20;
+    static const int turbo_rate_min = 2;
+    if (rate > turbo_rate_max)
+        rate = turbo_rate_max;
+    if (rate < turbo_rate_min)
+        rate = turbo_rate_min;
+    state[button % num_buttons].turbo_rate = rate;
+}
+
+int c_input_handler::get_turbo_rate(int button)
+{
+    return state[button % num_buttons].turbo_rate;
+}
+
 double c_input_handler::get_hold_time(int button)
 {
-     if (ackd) return 0.0; return state[button].ack ? 0.0 : state[button].hold_time; 
-}
+    if (ackd) {
+        return 0.0;
+    }
+    return state[button].ack ? 0.0 : state[button].hold_time;
+ }
 
 void c_input_handler::set_repeat_mode(int button, int mode)
 {
@@ -180,6 +212,7 @@ void c_input_handler::poll(double dt, int ignore_input)
     }
 
     s_state *s = state.get();
+    s->pair_mask = 1;
     unsigned char result = 0;
     for (int i = 0; i < num_buttons; i++)
     {
@@ -254,4 +287,33 @@ void c_input_handler::poll(double dt, int ignore_input)
         }
         s++;
     }
+}
+
+uint32_t c_input_handler::get_console_input(const std::vector<s_button_map> &button_map)
+{
+    for (auto &p : pairs) {
+        auto &s1 = state[p.button1];
+        auto &s2 = state[p.button2];
+        int cur = s1.state_cur | (s2.state_cur << 1);
+        int changed = cur ^ p.prev;
+        p.prev = cur;
+        int hidden = cur & ~p.mask;
+        if ((changed & 3) && (hidden & 3)) {
+            p.mask ^= 3;
+        }
+        cur &= p.mask;
+        s1.pair_mask = cur & 1 ? 1 : 0;
+        s2.pair_mask = cur & 2 ? 1 : 0;
+    }
+
+    uint32_t ret = 0;
+    for (auto &k : button_map) {
+        auto &s = state[k.button];
+        if (!s.ack && (s.state_cur & s.pair_mask)) {
+            if (!s.turbo_enabled || !(s.depressed_count % s.turbo_rate >= (s.turbo_rate / 2))) {
+                ret |= k.mask;
+            }
+        }
+    }
+    return ret;
 }

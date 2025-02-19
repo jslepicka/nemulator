@@ -241,11 +241,10 @@
     <ClCompile Include="invaders\sample_channel.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="audio_info.cpp" />
-    <ClCompile Include="bmp_writer.cpp" />
     <ClCompile Include="config.cpp" />
-    <ClCompile Include="console.cpp" />
     <ClCompile Include="D3d10App.cpp" />
-    <ClCompile Include="Game.cpp" />
+    <ClCompile Include="nes\mappers\mapper0.cpp" />
+    <ClCompile Include="system_container.cpp" />
     <ClCompile Include="gb\gb.cpp" />
     <ClCompile Include="gb\gbmapper.cpp" />
     <ClCompile Include="gb\gbppu.cpp" />
@@ -255,7 +254,7 @@
     <ClCompile Include="input_handler.cpp" />
     <ClCompile Include="menu.cpp" />
     <ClCompile Include="nemulator.cpp" />
-    <ClCompile Include="nes\apu2.cpp" />
+    <ClCompile Include="nes\apu.cpp" />
     <ClCompile Include="nes\game_genie.cpp" />
     <ClCompile Include="nes\mappers\mapper1.cpp" />
     <ClCompile Include="nes\mappers\mapper10.cpp" />
@@ -332,7 +331,6 @@
     <ClCompile Include="nes\mappers\mapper_nsf.cpp" />
     <ClCompile Include="nes\mappers\mapper_vrc4.cpp" />
     <ClCompile Include="nes\mappers\vrc7_audio.cpp" />
-    <ClCompile Include="nes_input_handler.cpp" />
     <ClCompile Include="nsf_stats.cpp" />
     <ClCompile Include="pacman\mspacman.cpp" />
     <ClCompile Include="pacman\pacman.cpp" />
@@ -347,8 +345,6 @@
     <ClCompile Include="stats.cpp" />
     <ClCompile Include="status.cpp" />
     <ClCompile Include="task.cpp" />
-    <ClCompile Include="task1.cpp" />
-    <ClCompile Include="tasklist.cpp" />
     <ClCompile Include="TexturePanel.cpp" />
     <ClCompile Include="TexturePanelItem.cpp" />
     <ClCompile Include="nes\cpu.cpp" />
@@ -361,12 +357,15 @@
   <ItemGroup>
     <ClInclude Include="audio_info.h" />
     <ClInclude Include="benchmark.h" />
-    <ClInclude Include="bmp_writer.h" />
+    <ClInclude Include="buttons.h" />
     <ClInclude Include="config.h" />
-    <ClInclude Include="console.h" />
+    <ClInclude Include="nes\mappers\mapper0.h" />
+    <ClInclude Include="nes\mappers\mapper190.h" />
+    <ClInclude Include="class_registry.h" />
+    <ClInclude Include="system.h" />
     <ClInclude Include="constants.h" />
     <ClInclude Include="D3d10App.h" />
-    <ClInclude Include="Game.h" />
+    <ClInclude Include="system_container.h" />
     <ClInclude Include="gb\gb.h" />
     <ClInclude Include="gb\gbapu.h" />
     <ClInclude Include="gb\gbmapper.h" />
@@ -382,7 +381,7 @@
     <ClInclude Include="menu.h" />
     <ClInclude Include="meow_fft.h" />
     <ClInclude Include="nemulator.h" />
-    <ClInclude Include="nes\apu2.h" />
+    <ClInclude Include="nes\apu.h" />
     <ClInclude Include="nes\cartdb.h" />
     <ClInclude Include="nes\cpu.h" />
     <ClInclude Include="nes\game_genie.h" />
@@ -458,7 +457,6 @@
     <ClInclude Include="nes\mappers\mapper94.h" />
     <ClInclude Include="nes\mappers\mapper95.h" />
     <ClInclude Include="nes\mappers\mapper97.h" />
-    <ClInclude Include="nes\mappers\mappers.h" />
     <ClInclude Include="nes\mappers\mapper_mc_acc.h" />
     <ClInclude Include="nes\mappers\mapper_mmc6.h" />
     <ClInclude Include="nes\mappers\mapper_nsf.h" />
@@ -467,7 +465,6 @@
     <ClInclude Include="nes\mappers\vrc7_audio.h" />
     <ClInclude Include="nes\mirroring_types.h" />
     <ClInclude Include="nes\ppu.h" />
-    <ClInclude Include="nes_input_handler.h" />
     <ClInclude Include="nsf_stats.h" />
     <ClInclude Include="pacman\mspacman.h" />
     <ClInclude Include="pacman\pacman.h" />
@@ -483,8 +480,6 @@
     <ClInclude Include="stats.h" />
     <ClInclude Include="status.h" />
     <ClInclude Include="task.h" />
-    <ClInclude Include="task1.h" />
-    <ClInclude Include="tasklist.h" />
     <ClInclude Include="TexturePanel.h" />
     <ClInclude Include="TexturePanelItem.h" />
     <ClInclude Include="nes\nes.h" />

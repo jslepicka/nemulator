@@ -1,6 +1,8 @@
 #include "mapper77.h"
 
 
+namespace nes {
+
 c_mapper77::c_mapper77()
 {
     //Napoleon Senki (J) [!].nes
@@ -14,7 +16,7 @@ c_mapper77::~c_mapper77()
     chrRam = false;
 }
 
-void c_mapper77::WriteByte(unsigned short address, unsigned char value)
+void c_mapper77::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x8000)
     {
@@ -22,7 +24,7 @@ void c_mapper77::WriteByte(unsigned short address, unsigned char value)
         SetChrBank2k(CHR_0000, value >> 4);
     }
     else
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
 }
 
 void c_mapper77::reset()
@@ -33,3 +35,5 @@ void c_mapper77::reset()
     }
     chrRam = true;
 }
+
+} //namespace nes

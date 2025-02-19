@@ -4,36 +4,39 @@
 
 import dsp;
 
+namespace gb
+{
+
 constexpr double c_gbapu::GB_AUDIO_RATE = (456.0f * 154.0f * 60.0f) / 2.0f;
 
-c_gbapu::c_gbapu(c_gb* gb)
+c_gbapu::c_gbapu(c_gb *gb)
 {
     this->gb = gb;
     mixer_enabled = 1;
-    std::array lpf_g = { 0.5090923309326172f,0.3317873477935791f,0.1050286665558815f,0.0055788583122194f };
-    std::array lpf_b2 = { -1.9908285140991211f,-1.9819903373718262f,-1.8711743354797363f,-1.9928110837936401f };
-    std::array lpf_a2 = { -1.9800899028778076f,-1.9664875268936157f,-1.9550460577011108f,-1.9912019968032837f };
-    std::array lpf_a3 = { 0.9831480979919434f,0.9683376550674439f,0.9557733535766602f,0.9949237704277039f };
+    std::array lpf_g = {0.5090923309326172f, 0.3317873477935791f, 0.1050286665558815f, 0.0055788583122194f};
+    std::array lpf_b2 = {-1.9908285140991211f, -1.9819903373718262f, -1.8711743354797363f, -1.9928110837936401f};
+    std::array lpf_a2 = {-1.9800899028778076f, -1.9664875268936157f, -1.9550460577011108f, -1.9912019968032837f};
+    std::array lpf_a3 = {0.9831480979919434f, 0.9683376550674439f, 0.9557733535766602f, 0.9949237704277039f};
     lpf_l = std::make_unique<dsp::c_biquad4>(lpf_g, lpf_b2, lpf_a2, lpf_a3);
     lpf_r = std::make_unique<dsp::c_biquad4>(lpf_g, lpf_b2, lpf_a2, lpf_a3);
 
     float post_g = 0.4990182518959045f;
-    std::array post_b = { 1.0000000000000000f,0.0000000000000000f,-1.0000000000000000f };
-    std::array post_a = { 1.0000000000000000f,-0.9980365037918091f,0.0019634978380054f };
+    std::array post_b = {1.0000000000000000f, 0.0000000000000000f, -1.0000000000000000f};
+    std::array post_a = {1.0000000000000000f, -0.9980365037918091f, 0.0019634978380054f};
     //30Hz - 12kHz
     post_filter_l = std::make_unique<dsp::c_biquad>(post_g, post_b, post_a);
     post_filter_r = std::make_unique<dsp::c_biquad>(post_g, post_b, post_a);
 
-
-    resampler_l = std::make_unique<dsp::c_resampler>((float)(GB_AUDIO_RATE / 48000.0), lpf_l.get(), post_filter_l.get());
-    resampler_r = std::make_unique<dsp::c_resampler>((float)(GB_AUDIO_RATE / 48000.0), lpf_r.get(), post_filter_r.get());
+    resampler_l =
+        std::make_unique<dsp::c_resampler>((float)(GB_AUDIO_RATE / 48000.0), lpf_l.get(), post_filter_l.get());
+    resampler_r =
+        std::make_unique<dsp::c_resampler>((float)(GB_AUDIO_RATE / 48000.0), lpf_r.get(), post_filter_r.get());
     sound_buffer = std::make_unique_for_overwrite<int32_t[]>(1024);
 }
 
 c_gbapu::~c_gbapu()
 {
 }
-
 
 void c_gbapu::reset()
 {
@@ -67,7 +70,7 @@ void c_gbapu::disable_mixer()
     mixer_enabled = 0;
 }
 
-int c_gbapu::get_buffers(const short** buf_l, const short** buf_r)
+int c_gbapu::get_buffers(const short **buf_l, const short **buf_r)
 {
     int num_samples = resampler_l->get_output_buf(buf_l);
     resampler_r->get_output_buf(buf_r);
@@ -85,99 +88,96 @@ void c_gbapu::write_byte(uint16_t address, uint8_t data)
     int x = 1;
     registers[address & 0x3F] = data;
     if (!(NR52 & 0x80) && address != 0xFF26) {
-        //NR52 controls power to the sound hardware. When powered off, all registers (NR10-NR51) are instantly written with zero
-        //and any writes to those registers are ignored while power remains off (except on the DMG, where length counters are unaffected
-        //by power and can still be written while off)
+        //NR52 controls power to the sound hardware. When powered off, all registers (NR10-NR51) are instantly written
+        //with zero and any writes to those registers are ignored while power remains off (except on the DMG, where
+        //length counters are unaffected by power and can still be written while off)
         int x = 1;
         return;
     }
     switch (address) {
-    case 0xFF10:
-    case 0xFF11:
-    case 0xFF12:
-    case 0xFF13:
-    case 0xFF14:
-        //square 1
-        square1.write(address - 0xFF10, data);
-        break;
+        case 0xFF10:
+        case 0xFF11:
+        case 0xFF12:
+        case 0xFF13:
+        case 0xFF14:
+            //square 1
+            square1.write(address - 0xFF10, data);
+            break;
 
-    //case 0xFF15 - this is unused on square 2
-    case 0xFF16:
-    case 0xFF17:
-    case 0xFF18:
-    case 0xFF19:
-        //square 2
-        square2.write(address - 0xFF15, data);
-        break;
+        //case 0xFF15 - this is unused on square 2
+        case 0xFF16:
+        case 0xFF17:
+        case 0xFF18:
+        case 0xFF19:
+            //square 2
+            square2.write(address - 0xFF15, data);
+            break;
 
-    case 0xFF1A:
-    case 0xFF1B:
-    case 0xFF1C:
-    case 0xFF1D:
-    case 0xFF1E:
-    case 0xFF30:
-    case 0xFF31:
-    case 0xFF32:
-    case 0xFF33:
-    case 0xFF34:
-    case 0xFF35:
-    case 0xFF36:
-    case 0xFF37:
-    case 0xFF38:
-    case 0xFF39:
-    case 0xFF3A:
-    case 0xFF3B:
-    case 0xFF3C:
-    case 0xFF3D:
-    case 0xFF3E:
-    case 0xFF3F:
-        //wave
-        wave.write(address, data);
-        break;
+        case 0xFF1A:
+        case 0xFF1B:
+        case 0xFF1C:
+        case 0xFF1D:
+        case 0xFF1E:
+        case 0xFF30:
+        case 0xFF31:
+        case 0xFF32:
+        case 0xFF33:
+        case 0xFF34:
+        case 0xFF35:
+        case 0xFF36:
+        case 0xFF37:
+        case 0xFF38:
+        case 0xFF39:
+        case 0xFF3A:
+        case 0xFF3B:
+        case 0xFF3C:
+        case 0xFF3D:
+        case 0xFF3E:
+        case 0xFF3F:
+            //wave
+            wave.write(address, data);
+            break;
 
-    case 0xFF20:
-    case 0xFF21:
-    case 0xFF22:
-    case 0xFF23:
-        //noise
-        noise.write(address - 0xFF20, data);
-        break;
-    /*
-    NR50 FF24 ALLL BRRR Vin L enable, Left vol, Vin R enable, Right vol
-    NR51 FF25 NW21 NW21 Left enables, Right enables
-    NR52 FF26 P--- NW21 Power control/status, Channel length statuses
-    */
-    case 0xFF24:
-        left_vol = (data >> 4) & 0x7;
-        right_vol = data & 0x7;
-        NR50 = data;
-        break;
-    case 0xFF25:
-        enable_1_l = data & 0x1 ? 1 : 0;
-        enable_2_l = data & 0x2 ? 1 : 0;
-        enable_w_l = data & 0x4 ? 1 : 0;
-        enable_n_l = data & 0x8 ? 1 : 0;
-        
-        enable_1_r = data & 0x10 ? 1 : 0;
-        enable_2_r = data & 0x20 ? 1 : 0;
-        enable_w_r = data & 0x40 ? 1 : 0;
-        enable_n_r = data & 0x80 ? 1 : 0;
-        NR51 = data;
-        break;
-    case 0xFF26:
-        if ((NR52 ^ data) & 0x80) { //power state change
-            if (data & 0x80) {
-                power_on();
+        case 0xFF20:
+        case 0xFF21:
+        case 0xFF22:
+        case 0xFF23:
+            //noise
+            noise.write(address - 0xFF20, data);
+            break;
+        /*
+        NR50 FF24 ALLL BRRR Vin L enable, Left vol, Vin R enable, Right vol
+        NR51 FF25 NW21 NW21 Left enables, Right enables
+        NR52 FF26 P--- NW21 Power control/status, Channel length statuses
+        */
+        case 0xFF24:
+            left_vol = (data >> 4) & 0x7;
+            right_vol = data & 0x7;
+            NR50 = data;
+            break;
+        case 0xFF25:
+            enable_1_l = data & 0x1 ? 1 : 0;
+            enable_2_l = data & 0x2 ? 1 : 0;
+            enable_w_l = data & 0x4 ? 1 : 0;
+            enable_n_l = data & 0x8 ? 1 : 0;
+
+            enable_1_r = data & 0x10 ? 1 : 0;
+            enable_2_r = data & 0x20 ? 1 : 0;
+            enable_w_r = data & 0x40 ? 1 : 0;
+            enable_n_r = data & 0x80 ? 1 : 0;
+            NR51 = data;
+            break;
+        case 0xFF26:
+            if ((NR52 ^ data) & 0x80) { //power state change
+                if (data & 0x80) {
+                    power_on();
+                }
+                else {
+                    power_off();
+                }
             }
-            else {
-                power_off();
-            }
-        }
-        NR52 = data;
-        break;
-
-
-
+            NR52 = data;
+            break;
     }
 }
 
@@ -185,19 +185,14 @@ uint8_t c_gbapu::read_byte(uint16_t address)
 {
     if (address == 0xFF26) {
         //return NR52;
-        uint8_t return_value =
-            NR52 & 0xF0 |
-            (square1.enabled ? 1 << 0 : 0) |
-            (square2.enabled ? 1 << 1 : 0) |
-            (wave.enabled ? 1 << 2 : 0) |
-            (noise.enabled ? 1 << 3 : 0);
+        uint8_t return_value = NR52 & 0xF0 | (square1.enabled ? 1 << 0 : 0) | (square2.enabled ? 1 << 1 : 0) |
+                               (wave.enabled ? 1 << 2 : 0) | (noise.enabled ? 1 << 3 : 0);
         return return_value;
     }
     else {
         return registers[address & 0x3F];
     }
 }
-
 
 void c_gbapu::power_on()
 {
@@ -245,30 +240,30 @@ void c_gbapu::clock()
         if (frame_seq_counter <= 0) {
             frame_seq_counter = CLOCKS_PER_FRAME_SEQ;
             switch (frame_seq_step & 0x7) {
-            case 2:
-            case 6:
-                //clock sweep
-                square1.clock_sweep();
-                [[fallthrough]];
-            case 0:
-            case 4:
-                //length
-                square1.clock_length();
-                square2.clock_length();
-                noise.clock_length();
-                wave.clock_length();
-                break;
-            case 1:
-            case 3:
-            case 5:
-                //nothing
-                break;
-            case 7:
-                //vol env
-                square1.clock_envelope();
-                square2.clock_envelope();
-                noise.clock_envelope();
-                break;
+                case 2:
+                case 6:
+                    //clock sweep
+                    square1.clock_sweep();
+                    [[fallthrough]];
+                case 0:
+                case 4:
+                    //length
+                    square1.clock_length();
+                    square2.clock_length();
+                    noise.clock_length();
+                    wave.clock_length();
+                    break;
+                case 1:
+                case 3:
+                case 5:
+                    //nothing
+                    break;
+                case 7:
+                    //vol env
+                    square1.clock_envelope();
+                    square2.clock_envelope();
+                    noise.clock_envelope();
+                    break;
             }
             frame_seq_step++;
         }
@@ -290,15 +285,10 @@ void c_gbapu::mix()
     float wave_out = (float)wave.get_output();
     float noise_out = (float)noise.get_output();
 
-    left_sample += square1_out * enable_1_l +
-        square2_out * enable_2_l +
-        wave_out * enable_w_l +
-        noise_out * enable_n_l;
+    left_sample += square1_out * enable_1_l + square2_out * enable_2_l + wave_out * enable_w_l + noise_out * enable_n_l;
 
-    right_sample += square1_out * enable_1_r +
-        square2_out * enable_2_r +
-        wave_out * enable_w_r +
-        noise_out * enable_n_r;
+    right_sample +=
+        square1_out * enable_1_r + square2_out * enable_2_r + wave_out * enable_w_r + noise_out * enable_n_r;
 
     //left_sample = square1_out;
     //right_sample = 0;
@@ -306,7 +296,7 @@ void c_gbapu::mix()
     //divide by 60 (max 15/channel * 4), then normalize to -1..1
     left_sample = (left_sample / 60.0f) * 2.0f - 1.0f;
     right_sample = (right_sample / 60.0f) * 2.0f - 1.0f;
-    
+
     right_sample /= 16.0f;
     left_sample /= 16.0f;
 
@@ -315,9 +305,7 @@ void c_gbapu::mix()
 
     resampler_l->process(left_sample);
     resampler_r->process(right_sample);
-
 }
-
 
 c_gbapu::c_timer::c_timer()
 {
@@ -326,7 +314,6 @@ c_gbapu::c_timer::c_timer()
 
 c_gbapu::c_timer::~c_timer()
 {
-
 }
 
 void c_gbapu::c_timer::reset()
@@ -339,8 +326,7 @@ int c_gbapu::c_timer::clock()
 {
     int prev = counter;
     counter--;
-    if (prev && counter == 0)
-    {
+    if (prev && counter == 0) {
         counter = period;
         return 1;
     }
@@ -365,7 +351,6 @@ c_gbapu::c_duty::c_duty()
 
 c_gbapu::c_duty::~c_duty()
 {
-
 }
 
 void c_gbapu::c_duty::reset()
@@ -385,11 +370,7 @@ void c_gbapu::c_duty::clock()
 }
 
 const int c_gbapu::c_duty::duty_cycle_table[4][8] = {
-    {0, 0, 0, 0, 0, 0, 0, 1},
-    {1, 0, 0, 0, 0, 0, 0, 1},
-    {1, 0, 0, 0, 0, 1, 1, 1},
-    {0, 1, 1, 1, 1, 1, 1, 0}
-};
+    {0, 0, 0, 0, 0, 0, 0, 1}, {1, 0, 0, 0, 0, 0, 0, 1}, {1, 0, 0, 0, 0, 1, 1, 1}, {0, 1, 1, 1, 1, 1, 1, 0}};
 
 int c_gbapu::c_duty::get_output()
 {
@@ -401,7 +382,6 @@ void c_gbapu::c_duty::reset_step()
     step = 0;
 }
 
-
 c_gbapu::c_length::c_length()
 {
     reset();
@@ -409,7 +389,6 @@ c_gbapu::c_length::c_length()
 
 c_gbapu::c_length::~c_length()
 {
-
 }
 
 void c_gbapu::c_length::reset()
@@ -455,7 +434,6 @@ c_gbapu::c_envelope::c_envelope()
 
 c_gbapu::c_envelope::~c_envelope()
 {
-
 }
 
 void c_gbapu::c_envelope::reset()
@@ -465,7 +443,6 @@ void c_gbapu::c_envelope::reset()
     period = 0;
     output = 0;
     mode = 0;
-
 }
 
 int c_gbapu::c_envelope::get_output()
@@ -513,7 +490,6 @@ c_gbapu::c_square::c_square()
 
 c_gbapu::c_square::~c_square()
 {
-
 }
 
 void c_gbapu::c_square::clock_timer()
@@ -576,38 +552,38 @@ void c_gbapu::c_square::write(int reg, uint8_t data)
     NR14 FF14 TL-- -FFF Trigger, Length enable, Frequency MSB
     */
     switch (reg) {
-    case 0:
-        sweep_period = (data >> 4) & 0x7;
-        sweep_shift = data & 0x7;
-        sweep_negate = data & 0x8 ? -1 : 1;
-        break;
-    case 1:
-        duty.set_duty_cycle(data >> 6);
-        length.set_length(64-(data & 0x3F));
-        break;
-    case 2:
-        starting_volume = data >> 4;
-        envelope.set_volume(starting_volume);
-        envelope.set_mode(data & 0x8);
-        envelope_period = data & 0x7;
-        envelope.set_period(envelope_period);
-        dac_power = data >> 3;
-        if (!dac_power) {
-            enabled = 0;
-        }
-        break;
-    case 3:
-        period_lo = data;
-        timer.set_period((2048 - ((period_hi << 8) | period_lo)));
-        break;
-    case 4:
-        period_hi = data & 0x7;
-        timer.set_period((2048 - ((period_hi << 8) | period_lo)));
-        length.set_enable(data & 0x40);
-        if (data & 0x80) {
-            trigger();
-        }
-        break;
+        case 0:
+            sweep_period = (data >> 4) & 0x7;
+            sweep_shift = data & 0x7;
+            sweep_negate = data & 0x8 ? -1 : 1;
+            break;
+        case 1:
+            duty.set_duty_cycle(data >> 6);
+            length.set_length(64 - (data & 0x3F));
+            break;
+        case 2:
+            starting_volume = data >> 4;
+            envelope.set_volume(starting_volume);
+            envelope.set_mode(data & 0x8);
+            envelope_period = data & 0x7;
+            envelope.set_period(envelope_period);
+            dac_power = data >> 3;
+            if (!dac_power) {
+                enabled = 0;
+            }
+            break;
+        case 3:
+            period_lo = data;
+            timer.set_period((2048 - ((period_hi << 8) | period_lo)));
+            break;
+        case 4:
+            period_hi = data & 0x7;
+            timer.set_period((2048 - ((period_hi << 8) | period_lo)));
+            length.set_enable(data & 0x40);
+            if (data & 0x80) {
+                trigger();
+            }
+            break;
     }
 }
 
@@ -645,8 +621,7 @@ int c_gbapu::c_square::calc_sweep()
 
 void c_gbapu::c_square::clock_sweep()
 {
-    if (sweep_enabled && sweep_period)
-    {
+    if (sweep_enabled && sweep_period) {
         int prev = sweep_counter;
         sweep_counter = (sweep_counter - 1) & 0x7;
         if (sweep_counter == 0 && prev) {
@@ -654,7 +629,7 @@ void c_gbapu::c_square::clock_sweep()
             int f = calc_sweep();
             if (f < 2048 && sweep_shift) {
                 sweep_shadow = f;
-                timer.set_period(2048-f);
+                timer.set_period(2048 - f);
                 calc_sweep();
             }
         }
@@ -663,8 +638,7 @@ void c_gbapu::c_square::clock_sweep()
 
 int c_gbapu::c_square::get_output()
 {
-    if (enabled && dac_power && duty.get_output()/* && length.get_output()*/)
-    {
+    if (enabled && dac_power && duty.get_output() /* && length.get_output()*/) {
         return envelope.get_output();
     }
     return 0;
@@ -677,7 +651,6 @@ c_gbapu::c_noise::c_noise()
 
 c_gbapu::c_noise::~c_noise()
 {
-
 }
 
 void c_gbapu::c_noise::reset()
@@ -710,36 +683,36 @@ void c_gbapu::c_noise::write(uint16_t address, uint8_t data)
     */
 
     switch (address) {
-    case 0:
-        //length.set_length(64 - (data & 0x3F));
-        next_length = 64 - (data & 0x3F);
-        break;
-    case 1:
-        starting_volume = data >> 4;
-        envelope.set_volume(starting_volume);
-        envelope.set_mode(data & 0x8);
-        envelope_period = data & 0x7;
-        envelope.set_period(envelope_period);
-        dac_power = data >> 3;
-        if (!dac_power) {
-            enabled = 0;
-        }
-        break;
-    case 2:
-        clock_shift = data >> 4;
-        width_mode = data & 0x8;
-        divisor = (data & 0x7) * 16;
-        if (divisor == 0)
-            divisor = 8;
-        divisor /= 8; //we're clocking the timer at 512kHz
-        timer.set_period(divisor << clock_shift);
-        break;
-    case 3:
-        length.set_enable(data & 0x40);
-        if (data & 0x80) {
-            trigger();
-        }
-        break;
+        case 0:
+            //length.set_length(64 - (data & 0x3F));
+            next_length = 64 - (data & 0x3F);
+            break;
+        case 1:
+            starting_volume = data >> 4;
+            envelope.set_volume(starting_volume);
+            envelope.set_mode(data & 0x8);
+            envelope_period = data & 0x7;
+            envelope.set_period(envelope_period);
+            dac_power = data >> 3;
+            if (!dac_power) {
+                enabled = 0;
+            }
+            break;
+        case 2:
+            clock_shift = data >> 4;
+            width_mode = data & 0x8;
+            divisor = (data & 0x7) * 16;
+            if (divisor == 0)
+                divisor = 8;
+            divisor /= 8; //we're clocking the timer at 512kHz
+            timer.set_period(divisor << clock_shift);
+            break;
+        case 3:
+            length.set_enable(data & 0x40);
+            if (data & 0x80) {
+                trigger();
+            }
+            break;
     }
 }
 
@@ -752,7 +725,6 @@ void c_gbapu::c_noise::trigger()
     envelope.set_period(envelope_period);
     envelope.set_volume(starting_volume);
     enabled = dac_power ? 1 : 0;
-
 }
 
 void c_gbapu::c_noise::clock_timer()
@@ -793,7 +765,6 @@ int c_gbapu::c_noise::get_output()
 
 void c_gbapu::c_noise::power_on()
 {
-
 }
 
 c_gbapu::c_wave::c_wave()
@@ -803,7 +774,6 @@ c_gbapu::c_wave::c_wave()
 
 c_gbapu::c_wave::~c_wave()
 {
-
 }
 
 void c_gbapu::c_wave::reset()
@@ -815,8 +785,9 @@ void c_gbapu::c_wave::reset()
     length.counter = 256;
     period_hi = 0;
     period_lo = 0;
-    timer.set_period(2048 * (2/2));
-    int startup_values[] = { 0x84, 0x40, 0x43, 0xAA, 0x2D, 0x78, 0x92, 0x3C, 0x60, 0x59, 0x59, 0xB0, 0x34, 0xB8, 0x2E, 0xDA };
+    timer.set_period(2048 * (2 / 2));
+    int startup_values[] = {0x84, 0x40, 0x43, 0xAA, 0x2D, 0x78, 0x92, 0x3C,
+                            0x60, 0x59, 0x59, 0xB0, 0x34, 0xB8, 0x2E, 0xDA};
     auto w = wave_table;
     for (auto v : startup_values) {
         *w++ = (v >> 4) & 0xF;
@@ -833,7 +804,6 @@ void c_gbapu::c_wave::power_on()
 
 void c_gbapu::c_wave::clock()
 {
-
 }
 
 int c_gbapu::c_wave::get_output()
@@ -868,38 +838,38 @@ void c_gbapu::c_wave::write(uint16_t address, uint8_t data)
     NR33 FF1D FFFF FFFF Frequency LSB
     NR34 FF1E TL-- -FFF Trigger, Length enable, Frequency MSB
     */
-    static const int shift_table[4] = { 4, 0, 1, 2 };
+    static const int shift_table[4] = {4, 0, 1, 2};
     if (address >= 0xFF30) {
-        int* p = &wave_table[(address - 0xFF30) * 2];
+        int *p = &wave_table[(address - 0xFF30) * 2];
         *p = data >> 4;
         *(p + 1) = data & 0xF;
     }
     else {
         switch (address - 0xFF1A) {
-        case 0:
-            dac_power = data & 0x80;
-            if (!dac_power) {
-                enabled = 0;
-            }
-            break;
-        case 1:
-            length.set_length(256 - data);
-            break;
-        case 2:
-            volume_shift = shift_table[(data >> 5) & 0x3];
-            break;
-        case 3:
-            period_lo = data;
-            timer.set_period((2048 - ((period_hi << 8) | period_lo)) * (2/2));
-            break;
-        case 4:
-            period_hi = data & 0x7;
-            timer.set_period((2048 - ((period_hi << 8) | period_lo)) * (2/2));
-            length.set_enable(data & 0x40);
-            if (data & 0x80) {
-                trigger();
-            }
-            break;
+            case 0:
+                dac_power = data & 0x80;
+                if (!dac_power) {
+                    enabled = 0;
+                }
+                break;
+            case 1:
+                length.set_length(256 - data);
+                break;
+            case 2:
+                volume_shift = shift_table[(data >> 5) & 0x3];
+                break;
+            case 3:
+                period_lo = data;
+                timer.set_period((2048 - ((period_hi << 8) | period_lo)) * (2 / 2));
+                break;
+            case 4:
+                period_hi = data & 0x7;
+                timer.set_period((2048 - ((period_hi << 8) | period_lo)) * (2 / 2));
+                length.set_enable(data & 0x40);
+                if (data & 0x80) {
+                    trigger();
+                }
+                break;
         }
     }
 }
@@ -909,7 +879,9 @@ void c_gbapu::c_wave::trigger()
     if (length.counter == 0) {
         length.counter = 256;
     }
-    timer.set_period((2048 - ((period_hi << 8) | period_lo)) * (2/2));
+    timer.set_period((2048 - ((period_hi << 8) | period_lo)) * (2 / 2));
     wave_pos = 0;
     enabled = dac_power ? 1 : 0;
 }
+
+} //namespace gb

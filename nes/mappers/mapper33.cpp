@@ -1,6 +1,8 @@
 #include "mapper33.h"
 
 
+namespace nes {
+
 c_mapper33::c_mapper33()
 {
     //Bubble Bobble 2 (J)
@@ -8,7 +10,7 @@ c_mapper33::c_mapper33()
 }
 
 
-void c_mapper33::WriteByte(unsigned short address, unsigned char value)
+void c_mapper33::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x8000)
     {
@@ -45,10 +47,12 @@ void c_mapper33::WriteByte(unsigned short address, unsigned char value)
         }
     }
     else
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
 }
 
 void c_mapper33::reset()
 {
     SetPrgBank16k(PRG_C000, prgRomPageCount16k - 1);
 }
+
+} //namespace nes

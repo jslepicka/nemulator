@@ -83,6 +83,11 @@ void c_stats::report_stat(std::string stat_name, std::string stat_value)
     stats.insert(std::pair<std::string, std::string>(stat_name, stat_value));
 }
 
+void c_stats::clear()
+{
+    stats.clear();
+}
+
 void c_stats::draw()
 {
     double y = .025;
@@ -103,7 +108,6 @@ void c_stats::draw()
     }
 
     //draw_text("test", .1, .1, D3DXCOLOR(0.0f, 1.0f, 0.0f, 1.0f));
-
 }
 
 void c_stats::draw_text(char *text, double x, double y, D3DXCOLOR color)

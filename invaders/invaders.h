@@ -1,5 +1,5 @@
 #pragma once
-#include "..\console.h"
+#include "..\system.h"
 #include "sample_channel.h"
 #include <memory>
 #include <array>
@@ -11,12 +11,12 @@ namespace dsp
 {
 class c_resampler;
 class c_biquad;
-class c_biquad4;
+class c_null_filter;
 }
 
 namespace invaders
 {
-class c_invaders : public c_console
+class c_invaders : public c_system, register_class<system_registry, c_invaders>
 {
   public:
     c_invaders();
@@ -24,7 +24,6 @@ class c_invaders : public c_console
     int is_loaded();
     int emulate_frame();
     virtual int reset();
-    int get_crc();
     int get_sound_bufs(const short **buf_l, const short **buf_r);
     void set_audio_freq(double freq);
     void set_input(int input);
@@ -34,10 +33,37 @@ class c_invaders : public c_console
     void enable_mixer();
     void disable_mixer();
 
+    static std::vector<s_system_info> get_registry_info()
+    {
+        return {
+            {
+                .is_arcade = 1,
+                .name = "Arcade",
+                .identifier = "invaders",
+                .title = "Space Invaders",
+                .display_info = {
+                    .fb_width = FB_WIDTH,
+                    .fb_height = FB_HEIGHT,
+                    .rotation = 270,
+                    .aspect_ratio = 3.0 / 4.0,
+                },
+                .button_map = {
+                    {BUTTON_1SELECT, 0x01},
+                    {BUTTON_1START,  0x04},
+                    {BUTTON_1A,      0x10},
+                    {BUTTON_1LEFT,   0x20},
+                    {BUTTON_1RIGHT,  0x40},
+                },
+                .constructor = []() { return new c_invaders(); },
+            },
+        };
+    }
+
   private:
+    
     dsp::c_resampler *resampler;
     dsp::c_biquad *post_filter;
-    dsp::c_biquad4 *lpf;
+    dsp::c_null_filter *null_filter;
     int mixer_enabled;
     struct s_roms
     {

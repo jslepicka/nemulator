@@ -1,5 +1,4 @@
 #include "menu.h"
-#include "nes_input_handler.h"
 
 extern int clientHeight;
 extern int clientWidth;

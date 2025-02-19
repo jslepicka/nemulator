@@ -1,13 +1,15 @@
 #include "mapper32.h"
 
 
+namespace nes {
+
 c_mapper32::c_mapper32()
 {
     //Image Fight (J)
     mapperName = "Mapper 32";
 }
 
-void c_mapper32::WriteByte(unsigned short address, unsigned char value)
+void c_mapper32::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x8000 && address < 0xC000)
     {
@@ -63,7 +65,7 @@ void c_mapper32::WriteByte(unsigned short address, unsigned char value)
         }
     }
     else
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
 }
 
 void c_mapper32::reset()
@@ -89,3 +91,5 @@ void c_mapper32::sync()
         SetPrgBank16k(PRG_C000, prgRomPageCount16k - 1);
     }
 }
+
+} //namespace nes

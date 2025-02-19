@@ -3,6 +3,8 @@
 #include <math.h>
 #include "vrc7_audio.h"
 
+namespace nes {
+
 const int c_mapper85::instruments[16][8] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x03, 0x21, 0x04, 0x06, 0x8D, 0xF2, 0x42, 0x17,  // instrument 1
@@ -47,7 +49,6 @@ c_mapper85::c_mapper85()
         //sin_table[i] = linear2db(sin(pi * i / 256.0f));
     }
 
-    expansion_audio = 1;
     build_luts();
 }
 
@@ -76,7 +77,7 @@ void c_mapper85::reset()
     va.Reset(true);
 }
 
-void c_mapper85::WriteByte(unsigned short address, unsigned char value)
+void c_mapper85::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x8000)
     {
@@ -171,7 +172,7 @@ void c_mapper85::WriteByte(unsigned short address, unsigned char value)
     }
     else
     {
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
     }
 }
 
@@ -569,3 +570,5 @@ inline int c_mapper85::dB(double dB)
 {
     return static_cast<int>(dB * MaxAtten / 48.0);
 }
+
+} //namespace nes

@@ -1,10 +1,13 @@
 #pragma once
-#include "../console.h"
+#include "..\system.h"
 #include <cstdint>
 #include <functional>
 #include <map>
 #include <memory>
 #include <string>
+
+namespace gb
+{
 
 class c_sm83;
 class c_gbmapper;
@@ -17,7 +20,7 @@ enum GB_MODEL
     CGB
 };
 
-class c_gb : public c_console
+class c_gb : public c_system, register_class<system_registry, c_gb>
 {
   public:
     c_gb(GB_MODEL model);
@@ -44,10 +47,7 @@ class c_gb : public c_console
     {
         return loaded;
     }
-    int get_crc()
-    {
-        return 0;
-    }
+
     int *get_video();
 
     int get_sound_bufs(const short **buf_l, const short **buf_r);
@@ -59,6 +59,43 @@ class c_gb : public c_console
     GB_MODEL get_model() const
     {
         return model;
+    }
+
+    static std::vector<s_system_info> get_registry_info()
+    {
+        // clang-format off
+        static const std::vector<s_button_map> button_map = {
+            {BUTTON_1RIGHT,  0x01},
+            {BUTTON_1LEFT,   0x02},
+            {BUTTON_1UP,     0x04},
+            {BUTTON_1DOWN,   0x08},
+            {BUTTON_1A,      0x10},
+            {BUTTON_1B,      0x20},
+            {BUTTON_1SELECT, 0x40},
+            {BUTTON_1START,  0x80},
+        };
+        // clang-format on
+        static const s_system_info::s_display_info display_info = {
+            .fb_width = 160,
+            .fb_height = 144,
+            .aspect_ratio = 4.7 / 4.3,
+        };
+        return {
+            {
+                .name = "Nintendo Game Boy",
+                .identifier = "gb",
+                .display_info = display_info,
+                .button_map = button_map,
+                .constructor = []() { return new c_gb(GB_MODEL::DMG); },
+            },
+            {
+                .name = "Nintendo Game Boy Color",
+                .identifier = "gbc",
+                .display_info = display_info,
+                .button_map = button_map,
+                .constructor = []() { return new c_gb(GB_MODEL::CGB); },
+            },
+        };
     }
 
   private:
@@ -88,10 +125,10 @@ class c_gb : public c_console
 
     enum PAK_FEATURES
     {
-        NONE    = 1 << 0,
-        RAM     = 1 << 1,
+        NONE = 1 << 0,
+        RAM = 1 << 1,
         BATTERY = 1 << 2,
-        RUMBLE  = 1 << 3
+        RUMBLE = 1 << 3
     };
     struct s_pak
     {
@@ -120,3 +157,5 @@ class c_gb : public c_console
     GB_MODEL model;
     static const int RAM_SIZE = 32768;
 };
+
+} //namespace gb

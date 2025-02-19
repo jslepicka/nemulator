@@ -7,6 +7,9 @@
 #include <immintrin.h>
 #endif
 
+namespace pacman
+{
+
 const uint8_t c_pacman_vid::rg_weights[] = {0x0, 0x21, 0x47, 0x68, 0x97, 0xB8, 0xDE, 0xFF};
 const uint8_t c_pacman_vid::b_weights[] = {0x0, 0x51, 0xAE, 0xFF};
 
@@ -17,7 +20,7 @@ c_pacman_vid::c_pacman_vid(c_pacman *pacman, int *irq)
     fb = std::make_unique<uint32_t[]>(288 * 224);
     vram = std::make_unique<uint8_t[]>(2048);
     sprite_ram = std::make_unique<uint8_t[]>(16);
-    
+
     tile_rom = std::make_unique<uint8_t[]>(4096);
     sprite_rom = std::make_unique<uint8_t[]>(4096);
     color_rom = std::make_unique<uint8_t[]>(32);
@@ -28,7 +31,6 @@ c_pacman_vid::c_pacman_vid(c_pacman *pacman, int *irq)
 c_pacman_vid::~c_pacman_vid()
 {
 }
-
 
 void c_pacman_vid::reset()
 {
@@ -105,11 +107,11 @@ void c_pacman_vid::draw_tile()
     uint8_t chr_data = tile_rom[chr_loc];
     for (int i = 0; i < 2; i++) {
         for (int x = 0; x < 4; x++) {
-            #ifdef USE_BMI
+#ifdef USE_BMI
             uint32_t pixel = _pext_u32(chr_data, 0x88);
-            #else
+#else
             uint32_t pixel = ((chr_data & 0x8) >> 3) | ((chr_data & 0x80) >> 6);
-            #endif
+#endif
             chr_data <<= 1;
             //lookup color
             uint8_t color = lookup_color(pal_number, pixel);
@@ -170,19 +172,19 @@ void c_pacman_vid::draw_sprite_line(int line)
                 //uint8_t pixel = 0;
                 uint32_t pixel = 0;
                 if (sprite_y_flip) {
-                    #ifdef USE_BMI
+#ifdef USE_BMI
                     pixel = _pext_u32(chr_data, 0x11);
-                    #else
+#else
                     pixel = ((chr_data & 0x1) >> 0) | ((chr_data & 0x10) >> 3);
-                    #endif
+#endif
                     chr_data >>= 1;
                 }
                 else {
-                    #ifdef USE_BMI
+#ifdef USE_BMI
                     pixel = _pext_u32(chr_data, 0x88);
-                    #else
+#else
                     pixel = ((chr_data & 0x8) >> 3) | ((chr_data & 0x80) >> 6);
-                    #endif
+#endif
                     chr_data <<= 1;
                 }
                 uint8_t color = lookup_color(sprite_pal, pixel);
@@ -212,7 +214,7 @@ void c_pacman_vid::build_color_lookup()
 
 uint32_t c_pacman_vid::lookup_rgb(uint8_t color)
 {
-   
+
     uint32_t rgb = color_rom[color];
     uint8_t r = rgb & 0x7;
     uint8_t g = (rgb >> 3) & 0x7;
@@ -256,3 +258,5 @@ void c_pacman_vid::execute(int cycles)
         line = 248;
     }
 }
+
+} //namespace pacman

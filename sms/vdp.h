@@ -2,6 +2,10 @@
 #include <stdint.h>
 #include <atomic>
 #include <memory>
+
+namespace sms
+{
+
 class c_sms;
 
 class c_vdp
@@ -57,3 +61,4 @@ class c_vdp
     static uint32_t pal_gg[4096];
 };
 
+} //namespace sms

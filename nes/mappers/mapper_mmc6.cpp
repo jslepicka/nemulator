@@ -1,6 +1,8 @@
 #include "mapper_mmc6.h"
 
 
+namespace nes {
+
 c_mapper_mmc6::c_mapper_mmc6()
 {
     //Startropics
@@ -18,13 +20,13 @@ void c_mapper_mmc6::reset()
     c_mapper4::reset();
 }
 
-int c_mapper_mmc6::LoadImage()
+int c_mapper_mmc6::load_image()
 {
     header->Rcb1.Sram = true;
-    return c_mapper::LoadImage();
+    return c_mapper::load_image();
 }
 
-unsigned char c_mapper_mmc6::ReadByte(unsigned short address)
+unsigned char c_mapper_mmc6::read_byte(unsigned short address)
 {
     switch (address >> 12)
     {
@@ -38,11 +40,11 @@ unsigned char c_mapper_mmc6::ReadByte(unsigned short address)
         else
             return 0;
     default:
-        return c_mapper4::ReadByte(address);
+        return c_mapper4::read_byte(address);
     }
 }
 
-void c_mapper_mmc6::WriteByte(unsigned short address, unsigned char value)
+void c_mapper_mmc6::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x8000)
     {
@@ -64,7 +66,7 @@ void c_mapper_mmc6::WriteByte(unsigned short address, unsigned char value)
                 wram_control = value;
             break;
         default:
-            c_mapper4::WriteByte(address, value);
+            c_mapper4::write_byte(address, value);
             break;
         }
     }
@@ -76,3 +78,5 @@ void c_mapper_mmc6::WriteByte(unsigned short address, unsigned char value)
             sram[address] = value;
     }
 }
+
+} //namespace nes

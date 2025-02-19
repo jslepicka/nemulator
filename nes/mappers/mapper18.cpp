@@ -2,6 +2,8 @@
 
 #include "..\cpu.h"
 
+namespace nes {
+
 c_mapper18::c_mapper18()
 {
     //The Lord of King
@@ -26,7 +28,7 @@ void c_mapper18::reset()
     SetPrgBank8k(PRG_E000, prgRomPageCount8k - 1);
 }
 
-void c_mapper18::WriteByte(unsigned short address, unsigned char value)
+void c_mapper18::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x8000)
     {
@@ -146,7 +148,7 @@ void c_mapper18::WriteByte(unsigned short address, unsigned char value)
         sync();
     }
     else
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
 }
 
 void c_mapper18::ack_irq()
@@ -186,3 +188,5 @@ void c_mapper18::clock(int cycles)
         }
     }
 }
+
+} //namespace nes

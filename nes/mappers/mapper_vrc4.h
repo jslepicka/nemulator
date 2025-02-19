@@ -1,16 +1,43 @@
 #pragma once
 #include "..\mapper.h"
 
-class c_mapper_vrc4 :
-    public c_mapper
+namespace nes {
+
+class c_mapper_vrc4 : public c_mapper, register_class<nes_mapper_registry, c_mapper_vrc4>
 {
 public:
     c_mapper_vrc4(int submapper = 0);
     ~c_mapper_vrc4();
-    void WriteByte(unsigned short address, unsigned char value);
+    void write_byte(unsigned short address, unsigned char value);
     void reset();
     void clock(int cycles);
-private:
+    static std::vector<c_mapper::s_mapper_info> get_registry_info()
+    {
+        return {
+            {
+                .number = 21,
+                .name = "VRC4",
+                .constructor = []() { return std::make_unique<c_mapper_vrc4>(1); },
+            },
+            {
+                .number = 22,
+                .name = "VRC4",
+                .constructor = []() { return std::make_unique<c_mapper_vrc4>(3); },
+            },
+            {
+                .number = 23,
+                .name = "VRC4",
+                .constructor = []() { return std::make_unique<c_mapper_vrc4>(); },
+            },
+            {
+                .number = 25,
+                .name = "VRC4",
+                .constructor = []() { return std::make_unique<c_mapper_vrc4>(2); },
+            },
+        };
+    }
+
+  private:
     int swap_bits;
     int get_bits(int address);
     void sync();
@@ -23,3 +50,5 @@ private:
     int reg_a;
     int prg_mode;
 };
+
+} //namespace nes

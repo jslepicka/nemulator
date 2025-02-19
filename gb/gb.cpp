@@ -1,5 +1,3 @@
-#define NOMINMAX
- //#include "windows.h"
 #include "gb.h"
 #include "gbapu.h"
 #include "gbmapper.h"
@@ -12,6 +10,9 @@
 #include <algorithm>
 
 void strip_extension(char *path);
+
+namespace gb
+{
 
 // clang-format off
 const std::map<int, c_gb::s_pak> c_gb::pak_factory = {
@@ -32,11 +33,6 @@ const std::map<int, c_gb::s_pak> c_gb::pak_factory = {
 
 c_gb::c_gb(GB_MODEL model)
 {
-    system_name = model == GB_MODEL::CGB ? "Nintendo Game Boy Color" : "Nintendo Game Boy";
-    display_info.fb_width = 160;
-    display_info.fb_height = 144;
-    display_info.aspect_ratio = 4.7 / 4.3;
-
     cpu = std::make_unique<c_sm83>(this);
     ppu = std::make_unique<c_gbppu>(this);
     apu = std::make_unique<c_gbapu>(this);
@@ -82,6 +78,7 @@ int c_gb::reset()
 
     memset(ram.get(), 0, RAM_SIZE);
     memset(hram.get(), 0, 128);
+
     return 0;
 }
 
@@ -594,7 +591,7 @@ void c_gb::set_stat_irq(int status)
 }
 void c_gb::set_input(int input)
 {
-    next_input = input;
+    next_input = ~input;
 }
 
 void c_gb::enable_mixer()
@@ -606,3 +603,5 @@ void c_gb::disable_mixer()
 {
     apu->disable_mixer();
 }
+
+} //namespace gb

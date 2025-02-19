@@ -1,15 +1,18 @@
 #pragma once
 #include "gbmapper.h"
 
-class c_mbc1 :
-    public c_gbmapper
+namespace gb
 {
-public:
+
+class c_mbc1 : public c_gbmapper
+{
+  public:
     c_mbc1();
     void write_byte(uint16_t address, uint8_t data);
     uint8_t read_byte(uint16_t address);
     void reset();
-private:
+
+  private:
     int bank_lo;
     int bank_hi;
     int bank;
@@ -22,3 +25,4 @@ private:
     int rom_banks;
 };
 
+} //namespace gb

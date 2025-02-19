@@ -1,8 +1,9 @@
 #pragma once
 #include "mapper1.h"
 
-class c_mapper105 :
-    public c_mapper1
+namespace nes {
+
+class c_mapper105 : public c_mapper1, register_class<nes_mapper_registry, c_mapper105>
 {
 public:
     c_mapper105();
@@ -10,7 +11,18 @@ public:
     void reset();
     void clock(int cycles);
     int get_nwc_time();
-private:
+    static std::vector<c_mapper::s_mapper_info> get_registry_info()
+    {
+        return {
+            {
+                .number = 105,
+                .name = "NWC",
+                .constructor = []() { return std::make_unique<c_mapper105>(); },
+            },
+        };
+    }
+
+  private:
     int init;
     int irq_counter;
     int irq_asserted;
@@ -19,3 +31,5 @@ private:
     int ticks;
     static const int irq_trigger = 0x28000000;
 };
+
+} //namespace nes

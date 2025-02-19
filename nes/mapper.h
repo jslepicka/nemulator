@@ -1,51 +1,61 @@
 #pragma once
+#define MAX_PATH 260
 #include "ines.h"
-#include "windows.h"
 #include "mirroring_types.h"
 #include <memory>
+#include <functional>
+#include <map>
+#include <string>
+#include "..\class_registry.h"
+
+namespace nes
+{
 
 class c_ppu;
 class c_cpu;
 class c_nes;
-class c_apu2;
 
 class c_mapper
 {
-public:
+  public:
     c_mapper();
     virtual ~c_mapper();
-    virtual unsigned char ReadByte(unsigned short address);
-    virtual void WriteByte(unsigned short address, unsigned char value);
-    virtual void WriteChrRom(unsigned short address, unsigned char value);
-    virtual unsigned char ReadChrRom(unsigned short address);
-    virtual void mmc5_ppu_write(unsigned short address, unsigned char value) {};
+    virtual unsigned char read_byte(unsigned short address);
+    virtual void write_byte(unsigned short address, unsigned char value);
     virtual void clock(int cycles) {};
     virtual void reset();
-    virtual int LoadImage();
+    virtual int load_image();
     virtual float mix_audio(float sample);
-    int has_expansion_audio();
     c_ppu *ppu;
     c_cpu *cpu;
-    c_apu2 *apu2;
     int renderingBg;
     void set_submapper(int submapper);
-    iNesHeader* header;
+    iNesHeader *header;
     unsigned char *image;
     char filename[MAX_PATH];
     char sramFilename[MAX_PATH];
     const char *mapperName;
-    int CloseSram();
+    int close_sram();
     int crc32;
     virtual unsigned char ppu_read(unsigned short address);
     virtual void ppu_write(unsigned short address, unsigned char value);
-    virtual int get_nwc_time() { return 0; }
+    virtual int get_nwc_time()
+    {
+        return 0;
+    }
     int in_sprite_eval;
     c_nes *nes;
     int get_mirroring();
     int file_length;
-protected:
-    int expansion_audio;
 
+    struct s_mapper_info
+    {
+        int number;
+        std::string name;
+        std::function<std::unique_ptr<c_mapper>()> constructor;
+    };
+
+  protected:
     static const int CHR_0000 = 0;
     static const int CHR_0400 = 1;
     static const int CHR_0800 = 2;
@@ -63,7 +73,6 @@ protected:
     bool hasSram;
     bool writeProtectSram;
     int sram_enabled;
-    int four_screen;
     void set_mirroring(int mode);
     int mirroring_mode;
 
@@ -96,10 +105,27 @@ protected:
     void SetChrBank2k(int bank, int value);
     void SetChrBank4k(int bank, int value);
     void SetChrBank8k(int value);
+    virtual void write_chr(unsigned short address, unsigned char value);
+    virtual unsigned char read_chr(unsigned short address);
     bool chrRam;
-    bool dynamicImage;
 
-    int OpenSram();
+    int open_sram();
 
     int submapper;
 };
+
+class nes_mapper_registry : public c_class_registry<std::map<int, c_mapper::s_mapper_info>>
+{
+  public:
+    static void _register(std::vector<c_mapper::s_mapper_info> mapper_info)
+    {
+        for (auto &mi : mapper_info) {
+            if (mi.name == "") {
+                mi.name = "Mapper " + std::to_string(mi.number);
+            }
+            get_registry()[mi.number] = mi;
+        }
+    }
+};
+
+} //namespace nes

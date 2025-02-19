@@ -1,13 +1,15 @@
 #include "mapper15.h"
 
 
+namespace nes {
+
 c_mapper15::c_mapper15()
 {
     //100-in-1 Contra Function 16
     mapperName = "Mapper 15";
 }
 
-void c_mapper15::WriteByte(unsigned short address, unsigned char value)
+void c_mapper15::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x8000)
     {
@@ -16,7 +18,7 @@ void c_mapper15::WriteByte(unsigned short address, unsigned char value)
         sync();
     }
     else
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
 }
 
 void c_mapper15::reset()
@@ -65,3 +67,5 @@ void c_mapper15::sync()
     else
         set_mirroring(MIRRORING_VERTICAL);
 }
+
+} //namespace nes

@@ -1,12 +1,14 @@
 #include "mapper112.h"
 
 
+namespace nes {
+
 c_mapper112::c_mapper112()
 {
     mapperName = "Mapper 112";
 }
 
-void c_mapper112::WriteByte(unsigned short address, unsigned char value)
+void c_mapper112::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x8000)
     {
@@ -57,3 +59,5 @@ void c_mapper112::reset()
     command = 0;
     SetPrgBank16k(PRG_C000, prgRomPageCount16k - 1);
 }
+
+} //namespace nes

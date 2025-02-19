@@ -4,6 +4,8 @@
 #include "mmsystem.h"
 #include <stdint.h>
 #include <memory>
+#include "buttons.h"
+#include <vector>
 
 class c_input_handler
 {
@@ -19,10 +21,16 @@ public:
     void set_button_joymap(int button, int joy, int joy_button);
     void ack_button(int button);
     void set_button_type(int button, int type);
+    uint32_t get_console_input(const std::vector<s_button_map> &button_map);
     
     //do something better here
     void enable_extrafast() { extrafast_enabled = 1; }
     void disable_extrafast() { extrafast_enabled = 0; }
+
+    void set_turbo_state(int button, int turbo_enabled);
+    int get_turbo_state(int button);
+    void set_turbo_rate(int button, int rate);
+    int get_turbo_rate(int button);
     enum results
     {
         RESULT_NONE = 0,
@@ -48,8 +56,12 @@ public:
         AXIS_Y,
         AXIS_Z
     };
+    void set_pair(int button1, int button2)
+    {
+        pairs.push_back({button1, button2});
+    }
 
-protected:
+  protected:
     bool ackd;
     int num_buttons;
     struct s_state
@@ -67,8 +79,19 @@ protected:
         int joy;
         int joy_button;
         int ack;
+        int turbo_enabled;
+        int turbo_rate;
+        int pair_mask;
     };
 
+    struct s_pair
+    {
+        int button1;
+        int button2;
+        int prev = 0;
+        int mask = 2;
+    };
+    std::vector<s_pair> pairs;
     std::unique_ptr<s_state[]> state;
 
     int get_key_state(int key);

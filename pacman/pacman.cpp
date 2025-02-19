@@ -8,28 +8,26 @@
 import z80;
 import crc32;
 
+namespace pacman
+{
+
 c_pacman::c_pacman(PACMAN_MODEL model)
 {
-    system_name = "Arcade";
-
-    display_info.fb_width = 288;
-    display_info.fb_height = 224;
-    display_info.aspect_ratio = 3.0 / 4.0;
-    display_info.rotation = 90;
-
     prg_rom = std::make_unique<uint8_t[]>(64 * 1024);
     work_ram = std::make_unique<uint8_t[]>(1 * 1024);
 
-    z80 = std::make_unique<c_z80>([this](uint16_t address) { return this->read_byte(address); }, //read_byte
-                [this](uint16_t address, uint8_t data) { this->write_byte(address, data); }, //write_byte
-                [this](uint8_t port) { return this->read_port(port); }, //read_port
-                [this](uint8_t port, uint8_t data) { this->write_port(port, data); }, //write_port
-                nullptr, //int_ack callback
-                &nmi, &irq, &data_bus);
+    z80 = std::make_unique<c_z80>(
+        [this](uint16_t address) { return this->read_byte(address); }, //read_byte
+        [this](uint16_t address, uint8_t data) { this->write_byte(address, data); }, //write_byte
+        [this](uint8_t port) { return this->read_port(port); }, //read_port
+        [this](uint8_t port, uint8_t data) { this->write_port(port, data); }, //write_port
+        nullptr, //int_ack callback
+        &nmi, &irq, &data_bus);
     pacman_vid = std::make_unique<c_pacman_vid>(this, &irq);
     pacman_psg = std::make_unique<c_pacman_psg>();
     loaded = 0;
     this->model = model;
+
     reset();
 }
 
@@ -146,18 +144,12 @@ int c_pacman::reset()
     return 0;
 }
 
-int c_pacman::get_crc()
-{
-    return 0;
-}
-
 void c_pacman::set_input(int input)
 {
-    IN0 = (~input) & 0x2F |
-        0x10 | //rack advance
-        0x80;  //credit button
+    IN0 = (~input) & 0x2F | 0x10 | //rack advance
+          0x80;  //credit button
     IN1 = 0xFF;
-    
+
     if (input & 0x80) {
         IN1 &= ~0x20;
     }
@@ -165,40 +157,40 @@ void c_pacman::set_input(int input)
 
 int *c_pacman::get_video()
 {
-    return (int*)pacman_vid->fb.get();
+    return (int *)pacman_vid->fb.get();
 }
 
 /*
-* 0000 0000 0000 0000  0000 prg start
-* 0011 1111 1111 1111  3FFF prg end
-* 0100 0000 0000 0000  4000 vid ram start
-* 0100 0011 1111 1111  43FF vid ram end
-* 0100 0100 0000 0000  4400 color ram start
-* 0100 0111 1111 1111  47FF color ram end
-* 0100 1000 0000 0000  4800 empty start
-* 0100 1011 1111 1111  4BFF empty end
-* 0100 1100 0000 0000  4C00 work ram start
-* 0100 1111 1110 1111  4FEF work ram end
-* 0100 1111 1111 0000  4FF0 sprite ram start
-* 0100 1111 1111 1111  4FFF sprite ram end
-* 0101 0000 0000 0000  5000 io
-* 0101 1111 1111 1111  5FFF io end
-* 0110 0000 0000 0000  6000
-* 0111 0000 0000 0000  7000
-*/
+ * 0000 0000 0000 0000  0000 prg start
+ * 0011 1111 1111 1111  3FFF prg end
+ * 0100 0000 0000 0000  4000 vid ram start
+ * 0100 0011 1111 1111  43FF vid ram end
+ * 0100 0100 0000 0000  4400 color ram start
+ * 0100 0111 1111 1111  47FF color ram end
+ * 0100 1000 0000 0000  4800 empty start
+ * 0100 1011 1111 1111  4BFF empty end
+ * 0100 1100 0000 0000  4C00 work ram start
+ * 0100 1111 1110 1111  4FEF work ram end
+ * 0100 1111 1111 0000  4FF0 sprite ram start
+ * 0100 1111 1111 1111  4FFF sprite ram end
+ * 0101 0000 0000 0000  5000 io
+ * 0101 1111 1111 1111  5FFF io end
+ * 0110 0000 0000 0000  6000
+ * 0111 0000 0000 0000  7000
+ */
 
 /* io range
-* 0101 0000 0000 0000  5000 start
-* 0101 0000 0000 0111  5007 end
-* 0101 0000 0100 0000  5040 start sound
-* 0101 0000 0101 1111  505F sound end
-* 0101 0000 0110 0000  5060 sprite start
-* 0101 0000 0110 1111  506F sprite end
-* 0101 0000 0111 0000  5070 unused start
-* 0101 0000 0111 1111  507F unused end
-* 0101 0000 1000 0000  5080 dip switch
-* 0101 0000 1100 0000  50C0 watchdog
-*/
+ * 0101 0000 0000 0000  5000 start
+ * 0101 0000 0000 0111  5007 end
+ * 0101 0000 0100 0000  5040 start sound
+ * 0101 0000 0101 1111  505F sound end
+ * 0101 0000 0110 0000  5060 sprite start
+ * 0101 0000 0110 1111  506F sprite end
+ * 0101 0000 0111 0000  5070 unused start
+ * 0101 0000 0111 1111  507F unused end
+ * 0101 0000 1000 0000  5080 dip switch
+ * 0101 0000 1100 0000  50C0 watchdog
+ */
 
 uint8_t c_pacman::read_byte(uint16_t address)
 {
@@ -226,12 +218,11 @@ uint8_t c_pacman::read_byte(uint16_t address)
         }
         else if (address == 0x5080) {
             //dip switch
-            return
-                1 << 0 | //coins per game 0=free play, 1=1, 2=1 per 2 games, 3=2
-                3 << 2 | //lives per game 0=1, 1=2, 2=3, 3=5
-                0 << 4 | //bonus for extra life 0=10000, 1=15000, 2=20000, 3=none
-                1 << 6 | //difficulty 0=hard, 1=normal
-                1 << 7;  //ghost names 0=alternate, 1=normal
+            return 1 << 0 | //coins per game 0=free play, 1=1, 2=1 per 2 games, 3=2
+                   3 << 2 | //lives per game 0=1, 1=2, 2=3, 3=5
+                   0 << 4 | //bonus for extra life 0=10000, 1=15000, 2=20000, 3=none
+                   1 << 6 | //difficulty 0=hard, 1=normal
+                   1 << 7;  //ghost names 0=alternate, 1=normal
         }
     }
     return 0;
@@ -335,3 +326,4 @@ void c_pacman::disable_mixer()
 {
     pacman_psg->disable_mixer();
 }
+} //namespace pacman

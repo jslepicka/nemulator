@@ -1,13 +1,15 @@
 #include "mapper47.h"
 
 
+namespace nes {
+
 c_mapper47::c_mapper47()
 {
     //Super Spike V'Ball + Nintendo World Cup
     mapperName = "Mapper 47";
 }
 
-void c_mapper47::WriteByte(unsigned short address, unsigned char value)
+void c_mapper47::write_byte(unsigned short address, unsigned char value)
 {
     switch (address >> 12)
     {
@@ -22,7 +24,7 @@ void c_mapper47::WriteByte(unsigned short address, unsigned char value)
         }
         break;
     default:
-        c_mapper4::WriteByte(address, value);
+        c_mapper4::write_byte(address, value);
         break;
     }
 }
@@ -33,3 +35,5 @@ void c_mapper47::reset()
     last_prg_page = 15;
     Sync();
 }
+
+} //namespace nes

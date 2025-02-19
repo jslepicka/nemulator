@@ -10,9 +10,6 @@ extern ID3D10Device *d3dDev;
 extern D3DXMATRIX matrixView;
 extern D3DXMATRIX matrixProj;
 
-extern int clientHeight;
-extern int clientWidth;
-
 const float TexturePanel::c_item_container::selectDuration = 120.0f;
 const float TexturePanel::zoomDuration = 250.0f;
 const float TexturePanel::borderDuration = 750.0f;
@@ -95,8 +92,6 @@ TexturePanel::TexturePanel(int rows, int columns)
     this->columns = columns;
 
     dim = false;
-
-    camera_distance = 0.0;
 
     memset(valid_chars, 0, sizeof(valid_chars));
 
@@ -225,10 +220,6 @@ void TexturePanel::set_sharpness(float factor)
         factor = 1.0f;
 
     var_sharpness->SetFloat(factor);
-}
-
-void TexturePanel::OnResize()
-{
 }
 
 bool TexturePanel::Changed()
@@ -844,17 +835,6 @@ void TexturePanel::Zoom()
         zoom_dir = ZOOMING_OUT;
     prevState = state;
     state = STATE_ZOOMING;
-}
-
-void TexturePanel::Suspend()
-{
-    prevState = state;
-    state = STATE_SUSPENDED;
-}
-
-void TexturePanel::Resume()
-{
-    state = prevState;
 }
 
 TexturePanelItem* TexturePanel::GetSelected()

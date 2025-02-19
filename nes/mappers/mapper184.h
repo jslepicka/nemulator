@@ -1,11 +1,23 @@
 #pragma once
 #include "..\mapper.h"
 
-class c_mapper184 :
-    public c_mapper
+namespace nes {
+
+class c_mapper184 : public c_mapper, register_class<nes_mapper_registry, c_mapper184>
 {
 public:
     c_mapper184();
     ~c_mapper184();
-    void WriteByte(unsigned short address, unsigned char value);
+    void write_byte(unsigned short address, unsigned char value);
+    static std::vector<c_mapper::s_mapper_info> get_registry_info()
+    {
+        return {
+            {
+                .number = 184,
+                .constructor = []() { return std::make_unique<c_mapper184>(); },
+            },
+        };
+    }
 };
+
+} //namespace nes

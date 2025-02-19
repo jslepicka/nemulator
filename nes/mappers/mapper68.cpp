@@ -1,6 +1,8 @@
 #include "mapper68.h"
 
 
+namespace nes {
+
 c_mapper68::c_mapper68()
 {
     //After Burner
@@ -11,7 +13,7 @@ c_mapper68::~c_mapper68()
 {
 }
 
-void c_mapper68::WriteByte(unsigned short address, unsigned char value)
+void c_mapper68::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x8000)
     {
@@ -67,7 +69,7 @@ void c_mapper68::WriteByte(unsigned short address, unsigned char value)
         }
     }
     else
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
 }
 
 void c_mapper68::reset()
@@ -86,3 +88,5 @@ void c_mapper68::ppu_write(unsigned short address, unsigned char value)
     else
         c_mapper::ppu_write(address, value);
 }
+
+} //namespace nes

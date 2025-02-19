@@ -2,6 +2,8 @@
 
 #include "..\cpu.h"
 
+namespace nes {
+
 c_mapper19::c_mapper19()
 {
     chr_ram = new unsigned char[1024*32];
@@ -26,7 +28,7 @@ void c_mapper19::reset()
     SetPrgBank8k(PRG_E000, prgRomPageCount8k - 1);
 }
 
-void c_mapper19::WriteByte(unsigned short address, unsigned char value)
+void c_mapper19::write_byte(unsigned short address, unsigned char value)
 {
     if ((address >= 0x4800 && address < 0x6000) || (address >= 0x8000))
     {
@@ -83,10 +85,10 @@ void c_mapper19::WriteByte(unsigned short address, unsigned char value)
         }
     }
     else
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
 }
 
-unsigned char c_mapper19::ReadByte(unsigned short address)
+unsigned char c_mapper19::read_byte(unsigned short address)
 {
     if (address >= 0x4800 && address < 0x6000)
     {
@@ -110,7 +112,7 @@ unsigned char c_mapper19::ReadByte(unsigned short address)
         return 0;
     }
     else
-        return c_mapper::ReadByte(address);
+        return c_mapper::read_byte(address);
 }
 
 void c_mapper19::sync_chr()
@@ -171,3 +173,5 @@ void c_mapper19::clock(int cycles)
         ticks -= 3;
     }
 }
+
+} //namespace nes

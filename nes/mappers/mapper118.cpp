@@ -1,13 +1,15 @@
 #include "mapper118.h"
 
 
+namespace nes {
+
 c_mapper118::c_mapper118()
 {
     //Alien Syndrome
     mapperName = "Mapper 118";
 }
 
-void c_mapper118::WriteByte(unsigned short address, unsigned char value)
+void c_mapper118::write_byte(unsigned short address, unsigned char value)
 {
 
     switch (address & 0xE001)
@@ -15,7 +17,7 @@ void c_mapper118::WriteByte(unsigned short address, unsigned char value)
     case 0xA000:
         break;
     default:
-        c_mapper4::WriteByte(address, value);
+        c_mapper4::write_byte(address, value);
         break;
     }
 }
@@ -32,3 +34,5 @@ void c_mapper118::Sync()
 
     c_mapper4::Sync();
 }
+
+} //namespace nes

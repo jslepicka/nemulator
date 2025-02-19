@@ -5,6 +5,9 @@
 #include <string>
 #include <memory>
 
+namespace gb
+{
+
 class c_gbmapper
 {
   public:
@@ -23,3 +26,5 @@ class c_gbmapper
   protected:
     uint32_t ram_size;
 };
+
+} //namespace gb

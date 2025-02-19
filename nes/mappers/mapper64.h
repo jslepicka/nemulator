@@ -1,17 +1,28 @@
 #pragma once
 #include "..\mapper.h"
 
-class c_mapper64 :
-    public c_mapper
+namespace nes {
+
+class c_mapper64 : public c_mapper, register_class<nes_mapper_registry, c_mapper64>
 {
 public:
     c_mapper64();
     ~c_mapper64();
-    void WriteByte(unsigned short address, unsigned char value);
+    void write_byte(unsigned short address, unsigned char value);
     unsigned char ppu_read(unsigned short address);
     void ppu_write(unsigned short address, unsigned char value);
     void reset();
     virtual void clock(int cycles);
+    static std::vector<c_mapper::s_mapper_info> get_registry_info()
+    {
+        return {
+            {
+                .number = 64,
+                .name = "RAMBO-1",
+                .constructor = []() { return std::make_unique<c_mapper64>(); },
+            }
+        };
+    }
 protected:
     virtual void fire_irq();
     void check_a12(int address);
@@ -54,3 +65,5 @@ protected:
     int cycles_since_irq;
     int latched_value;
 };
+
+} //namespace nes

@@ -1,6 +1,8 @@
 #include "mapper92.h"
 
 
+namespace nes {
+
 c_mapper92::c_mapper92()
 {
     //Moero!! Pro Soccer (J)
@@ -8,7 +10,7 @@ c_mapper92::c_mapper92()
     mapperName = "Mapper 92";
 }
 
-void c_mapper92::WriteByte(unsigned short address, unsigned char value)
+void c_mapper92::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x8000)
     {
@@ -33,7 +35,7 @@ void c_mapper92::WriteByte(unsigned short address, unsigned char value)
         }
     }
     else
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
 }
 
 void c_mapper92::reset()
@@ -41,3 +43,5 @@ void c_mapper92::reset()
     latch = 0;
     SetPrgBank16k(PRG_8000, 0);
 }
+
+} //namespace nes

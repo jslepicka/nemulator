@@ -1,28 +1,17 @@
 #pragma once
-#include "nes\nes.h"
-#include "sms\sms.h"
-#include "gb\gb.h"
-#include "game.h"
+#include "system_container.h"
 #include <vector>
 #include <memory>
-#include <list>
-#include <stack>
-#include <fstream>
-#include <io.h>
 #include "constants.h"
 #include "TexturePanel.h"
 #include "TexturePanelItem.h"
 #include "sound.h"
-#include "nes_input_handler.h"
 #include "config.h"
 #include "task.h"
-#include <deque>
-#include "task1.h"
 #include "d3d10app.h"
 #include "stats.h"
 #include "status.h"
 #include "audio_info.h"
-#include "bmp_writer.h"
 #include "qam.h"
 #include "nsf_stats.h"
 #include <numbers>
@@ -53,11 +42,6 @@ private:
     int init_threads();
     void kill_threads();
     void show_qam();
-    static const int input_buffer_size = 60*60*240;
-    char input_buffer[input_buffer_size];
-    int input_buffer_index;
-    int input_buffer_playback;
-    int input_buffer_end;
     void do_turbo_press(int button, std::string button_name);
     int splash_done;
     int splash_stage;
@@ -72,12 +56,9 @@ private:
     };
     
     void handle_button_reset(s_button_handler_params *params);
-    void handle_button_input_save(s_button_handler_params* params);
-    void handle_button_input_replay(s_button_handler_params* params);
     void handle_button_audio_info(s_button_handler_params* params);
     void handle_button_stats(s_button_handler_params* params);
     void handle_button_mask_sides(s_button_handler_params* params);
-    void handle_button_screenshot(s_button_handler_params* params);
     void handle_button_sprite_limit(s_button_handler_params* params);
     void handle_button_dec_sharpness(s_button_handler_params* params);
     void handle_button_inc_sharpness(s_button_handler_params* params);
@@ -121,8 +102,6 @@ private:
     void start_game();
     void leave_game();
     int menu;
-    //c_nes_input_handler *ih;
-    char romPath[MAX_PATH];
     bool fastscroll;
     double scroll_fade_timer;
     void LoadFonts();
@@ -133,15 +112,12 @@ private:
     void RunGames();
     void ProcessInput(double dt);
     int selectedPanel;
-    std::vector<c_game*> gameList;
+    std::vector<c_system_container*> gameList;
     double menu_delay;
 
     bool inGame;
     std::unique_ptr<c_sound> sound;
 
-    unsigned char *joy1, *joy2;
-
-    //TexturePanel *mainPanel2;
     std::unique_ptr<TexturePanel> mainPanel2;
     static const int num_texture_panels = 1;
     TexturePanel *texturePanels[num_texture_panels];
@@ -149,8 +125,7 @@ private:
     HRESULT hr;
 
     D3DXMATRIX matrixWorld;
-    c_nes *nes;
-
+    
     ID3D10EffectShaderResourceVariable *varTex;
     ID3D10ShaderResourceView *texRv;
 
@@ -164,7 +139,6 @@ private:
     LARGE_INTEGER liCurrent;
     LARGE_INTEGER liLast;
 
-    int runnableCount;
 
     double max_fps;
     static const int fps_records = 4;
@@ -182,12 +156,10 @@ private:
         HANDLE start_event;
         HANDLE done_event;
         int kill;
-        std::vector<c_game*> game_list;
+        std::vector<c_system_container*> game_list;
     };
-    //std::vector<s_game_thread*> game_threads;
     std::vector<std::unique_ptr<s_game_thread>> game_threads;
     int num_threads;
-    //HANDLE *done_events;
     std::unique_ptr<HANDLE[]> done_events;
 
     bool show_suspend;

@@ -2,8 +2,10 @@
 #include "pacman_vid.h"
 #include "pacman_psg.h"
 
-c_mspacman::c_mspacman(PACMAN_MODEL model) :
-    c_pacman(model)
+namespace pacman
+{
+
+c_mspacman::c_mspacman(PACMAN_MODEL model) : c_pacman(model)
 {
     prg_rom_overlay = std::make_unique<uint8_t[]>(64 * 1024);
     use_overlay = 0;
@@ -182,3 +184,5 @@ void c_mspacman::write_byte(uint16_t address, uint8_t data)
     check_mspacman_trap(address);
     c_pacman::write_byte(address, data);
 }
+
+} //namespace pacman

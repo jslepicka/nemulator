@@ -1,20 +1,22 @@
 #include "mapper95.h"
 
 
+namespace nes {
+
 c_mapper95::c_mapper95()
 {
     //Dragon Buster (J)
     mapperName = "Mapper 95";
 }
 
-void c_mapper95::WriteByte(unsigned short address, unsigned char value)
+void c_mapper95::write_byte(unsigned short address, unsigned char value)
 {
     switch (address & 0xE001)
     {
     case 0xA000:
         break;
     default:
-        c_mapper4::WriteByte(address, value);
+        c_mapper4::write_byte(address, value);
     }
 }
 
@@ -29,3 +31,5 @@ void c_mapper95::Sync()
     name_table[3] = &vram[0x400 * ((chr[(1 << _or) + add] & 0x20) >> 5)];
     c_mapper4::Sync();
 }
+
+} //namespace nes

@@ -2,6 +2,8 @@
 
 #include "..\cpu.h"
 
+namespace nes {
+
 c_mapper65::c_mapper65()
 {
     //Daiku no Gen San 2
@@ -45,7 +47,7 @@ void c_mapper65::clock(int cycles)
     }
 }
 
-void c_mapper65::WriteByte(unsigned short address, unsigned char value)
+void c_mapper65::write_byte(unsigned short address, unsigned char value)
 {
     if (address >= 0x8000)
     {
@@ -99,5 +101,7 @@ void c_mapper65::WriteByte(unsigned short address, unsigned char value)
         }
     }
     else
-        c_mapper::WriteByte(address, value);
+        c_mapper::write_byte(address, value);
 }
+
+} //namespace nes

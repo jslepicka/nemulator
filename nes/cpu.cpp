@@ -5,11 +5,8 @@
 
 #define INLINE __forceinline
 //#define INLINE
-#define PUSH(x) nes->write_byte(SP-- | 0x100, x)
-#define POP nes->read_byte(++SP | 0x100)
-#define SETN(x) SR.N = (x & 0x80) == 0x80 ? true : false
-#define SETZ(x) SR.Z = x == 0 ? true : false
-#define CHECK_PAGE_CROSS2(a, b) required_cycles += (((a^b)&0xFF00) != 0) * 3
+
+namespace nes {
 
 //replaced all zeros with 3 so that invalid opcodes don't cause cpu loop to spin
 const int c_cpu::cycle_table[] = {
@@ -65,7 +62,7 @@ int c_cpu::reset()
     required_cycles = 0;
     irq_pending = false;
     nmi_pending = false;
-    PC = MAKEWORD(nes->read_byte(0xFFFC), nes->read_byte(0xFFFD));
+    PC = makeword(nes->read_byte(0xFFFC), nes->read_byte(0xFFFD));
     SP = 0xFF;
     dma_dst = 0;
     dma_src = 0;
@@ -397,20 +394,20 @@ void c_cpu::execute_opcode()
     //    sprintf(x, "NMI at scanline %d, cycle %d\n", sl, c);
     //    OutputDebugString(x);
     //}
-        PUSH(HIBYTE(PC));
-        PUSH(LOBYTE(PC));
+        push(hibyte(PC));
+        push(lobyte(PC));
         SR.B = false;
-        PUSH(*S);
+        push(*S);
         SR.I = true;
-        PC = MAKEWORD(nes->read_byte(0xFFFA), nes->read_byte(0xFFFB));
+        PC = makeword(nes->read_byte(0xFFFA), nes->read_byte(0xFFFB));
         break;
     case 0x101: //IRQ
-        PUSH(HIBYTE(PC));
-        PUSH(LOBYTE(PC));
+        push(hibyte(PC));
+        push(lobyte(PC));
         SR.B = false;
-        PUSH(*S);
+        push(*S);
         SR.I = true;
-        PC = MAKEWORD(nes->read_byte(0xFFFE), nes->read_byte(0xFFFF));
+        PC = makeword(nes->read_byte(0xFFFE), nes->read_byte(0xFFFF));
         break;
     case 0x102: //Sprite DMA
         *(dma_dst++) = nes->read_byte(dma_src++);
@@ -429,6 +426,41 @@ void c_cpu::execute_opcode()
     default:
         __assume(0);
     }
+}
+
+INLINE void c_cpu::push(uint8_t value)
+{
+    nes->write_byte(SP-- | 0x100, value);
+}
+
+INLINE uint8_t c_cpu::pop()
+{
+    return nes->read_byte(++SP | 0x100);
+}
+
+INLINE void c_cpu::setn(uint8_t value)
+{
+    SR.N = value & 0x80;
+}
+
+INLINE void c_cpu::setz(uint8_t value)
+{
+    SR.Z = !value;
+}
+
+INLINE uint16_t c_cpu::makeword(uint8_t lo, uint8_t hi)
+{
+    return (hi << 8) | lo;
+}
+
+INLINE uint8_t c_cpu::hibyte(uint16_t value)
+{
+    return value >> 8;
+}
+
+INLINE uint8_t c_cpu::lobyte(uint16_t value)
+{
+    return value & 0xFF;
 }
 
 void c_cpu::execute_apu_dma()
@@ -531,7 +563,7 @@ INLINE void c_cpu::absolute()
 {
     unsigned char lo = nes->read_byte(PC++);
     unsigned char hi = nes->read_byte(PC++);
-    address = MAKEWORD(lo, hi);
+    address = makeword(lo, hi);
     M = nes->read_byte(address);
 }
 
@@ -539,14 +571,14 @@ INLINE void c_cpu::absolute_ea()
 {
     unsigned char lo = nes->read_byte(PC++);
     unsigned char hi = nes->read_byte(PC++);
-    address = MAKEWORD(lo, hi);
+    address = makeword(lo, hi);
 }
 
 INLINE void c_cpu::absolute_x()
 {
     unsigned char lo = nes->read_byte(PC++);
     unsigned char hi = nes->read_byte(PC++);
-    address = MAKEWORD(lo, hi);
+    address = makeword(lo, hi);
 
     unsigned short intermediate = (address & 0xFF00) | ((address + X) & 0xFF);
     M = nes->read_byte(intermediate);
@@ -561,7 +593,7 @@ INLINE void c_cpu::absolute_x_rmw()
 {
     unsigned char lo = nes->read_byte(PC++);
     unsigned char hi = nes->read_byte(PC++);
-    address = MAKEWORD(lo, hi);
+    address = makeword(lo, hi);
 
     unsigned short intermediate = (address & 0xFF00) | ((address + X) & 0xFF);
     M = nes->read_byte(intermediate);
@@ -573,7 +605,7 @@ INLINE void c_cpu::absolute_x_pc()
 {
     unsigned char lo = nes->read_byte(PC++);
     unsigned char hi = nes->read_byte(PC++);
-    address = MAKEWORD(lo, hi);
+    address = makeword(lo, hi);
     if (address == 0x2000) {
         int x = 1;
     }
@@ -591,7 +623,7 @@ INLINE void c_cpu::absolute_x_ea()
 {
     unsigned char lo = nes->read_byte(PC++);
     unsigned char hi = nes->read_byte(PC++);
-    address = MAKEWORD(lo, hi);
+    address = makeword(lo, hi);
 
     unsigned short intermediate = (address & 0xFF00) | ((address + X) & 0xFF);
     nes->read_byte(intermediate);
@@ -602,7 +634,7 @@ INLINE void c_cpu::absolute_y()
 {
     unsigned char lo = nes->read_byte(PC++);
     unsigned char hi = nes->read_byte(PC++);
-    address = MAKEWORD(lo, hi);
+    address = makeword(lo, hi);
 
     unsigned short intermediate = (address & 0xFF00) | ((address + Y) & 0xFF);
     M = nes->read_byte(intermediate);
@@ -617,7 +649,7 @@ INLINE void c_cpu::absolute_y_pc()
 {
     unsigned char lo = nes->read_byte(PC++);
     unsigned char hi = nes->read_byte(PC++);
-    address = MAKEWORD(lo, hi);
+    address = makeword(lo, hi);
 
     unsigned short intermediate = (address & 0xFF00) | ((address + Y) & 0xFF);
     M = nes->read_byte(intermediate);
@@ -633,7 +665,7 @@ INLINE void c_cpu::absolute_y_ea()
 {
     unsigned char lo = nes->read_byte(PC++);
     unsigned char hi = nes->read_byte(PC++);
-    address = MAKEWORD(lo, hi);
+    address = makeword(lo, hi);
 
     unsigned short intermediate = (address & 0xFF00) | ((address + Y) & 0xFF);
     nes->read_byte(intermediate);
@@ -644,12 +676,12 @@ INLINE void c_cpu::indirect()    //For indirect jmp
 {
     unsigned char lo = nes->read_byte(PC++);
     unsigned char hi = nes->read_byte(PC++);
-    unsigned short tempaddress = MAKEWORD(lo, hi);
+    unsigned short tempaddress = makeword(lo, hi);
     unsigned char pcl = nes->read_byte(tempaddress);
     lo++;
-    tempaddress = MAKEWORD(lo, hi);
+    tempaddress = makeword(lo, hi);
     unsigned char pch = nes->read_byte(tempaddress);
-    address = MAKEWORD(pcl, pch);
+    address = makeword(pcl, pch);
 }
 
 INLINE void c_cpu::indirect_x()    //Pre-indexed indirect
@@ -657,7 +689,7 @@ INLINE void c_cpu::indirect_x()    //Pre-indexed indirect
     //TODO: I think this is ok, but need to verify
     unsigned char hi = nes->read_byte(PC++);
     hi += X;
-    address = MAKEWORD(nes->read_byte(hi), nes->read_byte((hi + 1) & 0xFF));
+    address = makeword(nes->read_byte(hi), nes->read_byte((hi + 1) & 0xFF));
     M = nes->read_byte(address);
 }
 
@@ -666,13 +698,13 @@ INLINE void c_cpu::indirect_x_ea()    //Pre-indexed indirect
     //TODO: I think this is ok, but need to verify
     unsigned char hi = nes->read_byte(PC++);
     hi += X;
-    address = MAKEWORD(nes->read_byte(hi), nes->read_byte((hi + 1) & 0xFF));
+    address = makeword(nes->read_byte(hi), nes->read_byte((hi + 1) & 0xFF));
 }
 
 INLINE void c_cpu::indirect_y()    //Post-indexed indirect
 {
     unsigned char temp = nes->read_byte(PC++);
-    address = MAKEWORD(nes->read_byte(temp), nes->read_byte((temp + 1) & 0xFF));
+    address = makeword(nes->read_byte(temp), nes->read_byte((temp + 1) & 0xFF));
 
     unsigned short intermediate = (address & 0xFF00) | ((address + Y) & 0xFF);
     M = nes->read_byte(intermediate);
@@ -686,7 +718,7 @@ INLINE void c_cpu::indirect_y()    //Post-indexed indirect
 INLINE void c_cpu::indirect_y_pc()    //Post-indexed indirect
 {
     unsigned char temp = nes->read_byte(PC++);
-    address = MAKEWORD(nes->read_byte(temp), nes->read_byte((temp + 1) & 0xFF));
+    address = makeword(nes->read_byte(temp), nes->read_byte((temp + 1) & 0xFF));
 
     unsigned short intermediate = (address & 0xFF00) | ((address + Y) & 0xFF);
     M = nes->read_byte(intermediate);
@@ -701,7 +733,7 @@ INLINE void c_cpu::indirect_y_pc()    //Post-indexed indirect
 INLINE void c_cpu::indirect_y_ea()    //Post-indexed indirect
 {
     unsigned char temp = nes->read_byte(PC++);
-    address = MAKEWORD(nes->read_byte(temp), nes->read_byte((temp + 1) & 0xFF));
+    address = makeword(nes->read_byte(temp), nes->read_byte((temp + 1) & 0xFF));
 
     unsigned short intermediate = (address & 0xFF00) | ((address + Y) & 0xFF);
     nes->read_byte(intermediate);
@@ -729,21 +761,21 @@ INLINE void c_cpu::ADC()
     //127 + -128
     SR.V = (A ^ temp) & (M ^ temp) & 0x80 ? true : false;
     A = temp & 0xFF;
-    SETN(A);
-    SETZ(A);
+    setn(A);
+    setz(A);
 }
 INLINE void c_cpu::ANC()
 {
     A = A & M;
-    SETN(A);
-    SETZ(A);
+    setn(A);
+    setz(A);
     SR.C = SR.N;
 }
 INLINE void c_cpu::AND()
 {
     A = A & M;
-    SETN(A);
-    SETZ(A);
+    setn(A);
+    setz(A);
 }
 INLINE void c_cpu::ALR()
 {
@@ -751,7 +783,7 @@ INLINE void c_cpu::ALR()
     SR.C = A & 0x1;
     SR.N = 0;
     A >>= 1;
-    SETZ(A);
+    setz(A);
 }
 INLINE void c_cpu::ARR()
 {
@@ -763,8 +795,8 @@ INLINE void c_cpu::ARR()
     {
         A |= 0x80;
     }
-    SETN(A);
-    SETZ(A);
+    setn(A);
+    setz(A);
     SR.C = (A & 0x40) == 0x40;
     SR.V = ((A & 0x40) ^ ((A & 0x20) << 1)) == 0x40;
 }
@@ -773,15 +805,15 @@ INLINE void c_cpu::ASL()
     SR.C = M & 0x80 ? true : false;
     M <<= 1;
     nes->write_byte(address, M);
-    SETN(M);
-    SETZ(M);
+    setn(M);
+    setz(M);
 }
 INLINE void c_cpu::ASL_R(unsigned char& reg)
 {
     SR.C = reg & 0x80 ? true : false;
     reg <<= 1;
-    SETN(reg);
-    SETZ(reg);
+    setn(reg);
+    setz(reg);
 }
 INLINE void c_cpu::AXS()
 {
@@ -789,8 +821,8 @@ INLINE void c_cpu::AXS()
     int temp = x - M;
     SR.C = x >= M;
     X = temp & 0xFF;
-    SETN(X);
-    SETZ(X);
+    setn(X);
+    setz(X);
 }
 INLINE void c_cpu::BCC()
 {
@@ -807,9 +839,9 @@ INLINE void c_cpu::BEQ()
 INLINE void c_cpu::BIT()
 {
     unsigned char result = A & M;
-    SETZ(result);
+    setz(result);
     SR.V = M & 0x40 ? true : false;
-    SETN(M);
+    setn(M);
 }
 INLINE void c_cpu::BMI()
 {
@@ -825,12 +857,12 @@ INLINE void c_cpu::BPL()
 }
 INLINE void c_cpu::BRK()
 {
-    PUSH(HIBYTE(PC + 1));
-    PUSH(LOBYTE(PC + 1));
-    PUSH(*S | 0x30);
+    push(hibyte(PC + 1));
+    push(lobyte(PC + 1));
+    push(*S | 0x30);
     SR.B = true;
     SR.I = true;
-    PC = MAKEWORD(nes->read_byte(0xFFFE), nes->read_byte(0xFFFF));
+    PC = makeword(nes->read_byte(0xFFFE), nes->read_byte(0xFFFF));
 }
 INLINE void c_cpu::BVC()
 {
@@ -861,22 +893,22 @@ INLINE void c_cpu::CLV()
 INLINE void c_cpu::CMP()
 {
     unsigned char temp = A - M;
-    SETZ(temp);
-    SETN(temp);
+    setz(temp);
+    setn(temp);
     SR.C = M <= A ? true : false;
 }
 INLINE void c_cpu::CPX()
 {
     unsigned char temp = X - M;
-    SETZ(temp);
-    SETN(temp);
+    setz(temp);
+    setn(temp);
     SR.C = M <= X ? true : false;
 }
 INLINE void c_cpu::CPY()
 {
     unsigned char temp = Y - M;
-    SETZ(temp);
-    SETN(temp);
+    setz(temp);
+    setn(temp);
     SR.C = M <= Y ? true : false;
 }
 INLINE void c_cpu::DCP()
@@ -888,46 +920,46 @@ INLINE void c_cpu::DEC()
 {
     M--;
     nes->write_byte(address, M);
-    SETN(M);
-    SETZ(M);
+    setn(M);
+    setz(M);
 }
 INLINE void c_cpu::DEX()
 {
     X--;
-    SETN(X);
-    SETZ(X);
+    setn(X);
+    setz(X);
 }
 INLINE void c_cpu::DEY()
 {
     Y--;
-    SETN(Y);
-    SETZ(Y);
+    setn(Y);
+    setz(Y);
 }
 INLINE void c_cpu::EOR()
 {
     A ^= M;
-    SETN(A);
-    SETZ(A);
+    setn(A);
+    setz(A);
 }
 INLINE void c_cpu::INC()
 {
     nes->write_byte(address, M);
     M++;
     nes->write_byte(address, M);
-    SETN(M);
-    SETZ(M);
+    setn(M);
+    setz(M);
 }
 INLINE void c_cpu::INX()
 {
     X++;
-    SETN(X);
-    SETZ(X);
+    setn(X);
+    setz(X);
 }
 INLINE void c_cpu::INY()
 {
     Y++;
-    SETN(Y);
-    SETZ(Y);
+    setn(Y);
+    setz(Y);
 }
 INLINE void c_cpu::ISC()
 {
@@ -941,16 +973,16 @@ INLINE void c_cpu::JMP()
 INLINE void c_cpu::JSR()
 {
     PC--;
-    PUSH(HIBYTE(PC));
-    PUSH(LOBYTE(PC));
+    push(hibyte(PC));
+    push(lobyte(PC));
     PC = address;
 }
 INLINE void c_cpu::LAS()
 {
     unsigned char temp = M & SP;
     A = X = SP = temp;
-    SETN(A);
-    SETZ(A);
+    setn(A);
+    setz(A);
 }
 INLINE void c_cpu::LAX()
 {
@@ -960,26 +992,26 @@ INLINE void c_cpu::LAX()
 INLINE void c_cpu::LDA()
 {
     A = M;
-    SETN(A);
-    SETZ(A);
+    setn(A);
+    setz(A);
 }
 INLINE void c_cpu::LDX()
 {
     X = M;
-    SETN(X);
-    SETZ(X);
+    setn(X);
+    setz(X);
 }
 INLINE void c_cpu::LDY()
 {
     Y = M;
-    SETN(Y);
-    SETZ(Y);
+    setn(Y);
+    setz(Y);
 }
 INLINE void c_cpu::LSR()
 {
     SR.C = M & 0x01 ? true : false;
     M >>= 1;
-    SETZ(M);
+    setz(M);
     SR.N = false;
     nes->write_byte(address, M);
 }
@@ -987,34 +1019,34 @@ INLINE void c_cpu::LSR_R(unsigned char& reg)
 {
     SR.C = reg & 0x01 ? true : false;
     reg >>= 1;
-    SETZ(reg);
+    setz(reg);
     SR.N = false;
 }
 INLINE void c_cpu::ORA()
 {
     A |= M;
-    SETZ(A);
-    SETN(A);
+    setz(A);
+    setn(A);
 }
 
 INLINE void c_cpu::PHA()
 {
-    PUSH(A);
+    push(A);
 }
 INLINE void c_cpu::PHP()
 {
-    PUSH(*S | 0x30);
+    push(*S | 0x30);
 }
 INLINE void c_cpu::PLA()
 {
-    A = POP;
-    SETN(A);
-    SETZ(A);
+    A = pop();
+    setn(A);
+    setz(A);
 }
 INLINE void c_cpu::PLP()
 {
     bool prev_i = SR.I;
-    *S = POP;
+    *S = pop();
     SR.B = false;
     SR.Unused = true;
     if (do_irq && SR.I == false && SR.I != prev_i)
@@ -1035,8 +1067,8 @@ INLINE void c_cpu::ROL()
     {
         M |= 0x01;
     }
-    SETN(M);
-    SETZ(M);
+    setn(M);
+    setz(M);
     nes->write_byte(address, M);
 }
 INLINE void c_cpu::ROL_R(unsigned char& reg)
@@ -1048,8 +1080,8 @@ INLINE void c_cpu::ROL_R(unsigned char& reg)
     {
         reg |= 0x01;
     }
-    SETN(reg);
-    SETZ(reg);
+    setn(reg);
+    setz(reg);
 }
 INLINE void c_cpu::ROR()
 {
@@ -1060,8 +1092,8 @@ INLINE void c_cpu::ROR()
     {
         M |= 0x80;
     }
-    SETN(M);
-    SETZ(M);
+    setn(M);
+    setz(M);
     nes->write_byte(address, M);
 }
 INLINE void c_cpu::ROR_R(unsigned char& reg)
@@ -1073,8 +1105,8 @@ INLINE void c_cpu::ROR_R(unsigned char& reg)
     {
         reg |= 0x80;
     }
-    SETN(reg);
-    SETZ(reg);
+    setn(reg);
+    setz(reg);
 }
 INLINE void c_cpu::RRA()
 {
@@ -1084,19 +1116,19 @@ INLINE void c_cpu::RRA()
 INLINE void c_cpu::RTI()
 {
     bool prev_i = SR.I;
-    *S = POP;
+    *S = pop();
     SR.B = false;
-    unsigned char pcl = POP;
-    unsigned char pch = POP;
-    PC = MAKEWORD(pcl, pch);
+    unsigned char pcl = pop();
+    unsigned char pch = pop();
+    PC = makeword(pcl, pch);
     if (do_irq && SR.I == false && SR.I != prev_i)
         irq_delay = 1;
 }
 INLINE void c_cpu::RTS()
 {
-    unsigned char pcl = POP;
-    unsigned char pch = POP;
-    PC = MAKEWORD(pcl, pch);
+    unsigned char pcl = pop();
+    unsigned char pch = pop();
+    PC = makeword(pcl, pch);
     PC++;
 }
 INLINE void c_cpu::SAX()
@@ -1186,32 +1218,32 @@ INLINE void c_cpu::TAS()
 INLINE void c_cpu::TAX()
 {
     X = A;
-    SETN(X);
-    SETZ(X);
+    setn(X);
+    setz(X);
 }
 INLINE void c_cpu::TAY()
 {
     Y = A;
-    SETN(Y);
-    SETZ(Y);
+    setn(Y);
+    setz(Y);
 }
 INLINE void c_cpu::TXA()
 {
     A = X;
-    SETN(A);
-    SETZ(A);
+    setn(A);
+    setz(A);
 }
 INLINE void c_cpu::TYA()
 {
     A = Y;
-    SETN(A);
-    SETZ(A);
+    setn(A);
+    setz(A);
 }
 INLINE void c_cpu::TSX()
 {
     X = SP;
-    SETN(X);
-    SETZ(X);
+    setn(X);
+    setz(X);
 }
 INLINE void c_cpu::TXS()
 {
@@ -1221,3 +1253,5 @@ INLINE void c_cpu::XAA()
 {
     //unpredictable behavior
 }
+
+} //namespace nes
