@@ -244,6 +244,8 @@
     <ClCompile Include="config.cpp" />
     <ClCompile Include="D3d10App.cpp" />
     <ClCompile Include="nes\mappers\mapper0.cpp" />
+    <ClCompile Include="nes\mappers\mapper202.ixx" />
+    <ClCompile Include="nes\mappers\mapper212.ixx" />
     <ClCompile Include="system_container.cpp" />
     <ClCompile Include="gb\gb.cpp" />
     <ClCompile Include="gb\gbmapper.cpp" />

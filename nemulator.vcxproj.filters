@@ -63,9 +63,6 @@
     <ClCompile Include="D3d10App.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Game.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="input_handler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -82,12 +79,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="task.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="task1.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="tasklist.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="TexturePanel.cpp">
@@ -112,9 +103,6 @@
       <Filter>Source Files\nes</Filter>
     </ClCompile>
     <ClCompile Include="audio_info.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="bmp_writer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="nes\mappers\mapper_mmc6.cpp">
@@ -324,9 +312,6 @@
     <ClCompile Include="nes\mappers\mapper115.cpp">
       <Filter>Source Files\nes\mappers</Filter>
     </ClCompile>
-    <ClCompile Include="nes\apu2.cpp">
-      <Filter>Source Files\nes</Filter>
-    </ClCompile>
     <ClCompile Include="nes\mappers\mapper_mc_acc.cpp">
       <Filter>Source Files\nes\mappers</Filter>
     </ClCompile>
@@ -344,9 +329,6 @@
     </ClCompile>
     <ClCompile Include="sms\vdp.cpp">
       <Filter>Source Files\sms</Filter>
-    </ClCompile>
-    <ClCompile Include="console.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="nemulator.cpp">
       <Filter>Source Files</Filter>
@@ -447,6 +429,21 @@
     <ClCompile Include="invaders\sample_channel.cpp">
       <Filter>Source Files\invaders</Filter>
     </ClCompile>
+    <ClCompile Include="nes\mappers\mapper0.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="system_container.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\apu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper212.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper202.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="config.h">
@@ -456,9 +453,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="D3d10App.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Game.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="input_handler.h">
@@ -479,12 +473,6 @@
     <ClInclude Include="task.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="task1.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="tasklist.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="TexturePanel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -495,9 +483,6 @@
       <Filter>Header Files\nes</Filter>
     </ClInclude>
     <ClInclude Include="audio_info.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="bmp_writer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="nes\cpu.h">
@@ -692,9 +677,6 @@
     <ClInclude Include="nes\mappers\mapper_mmc6.h">
       <Filter>Header Files\nes\mappers</Filter>
     </ClInclude>
-    <ClInclude Include="nes\mappers\mappers.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
     <ClInclude Include="nes\mapper.h">
       <Filter>Header Files\nes</Filter>
     </ClInclude>
@@ -725,9 +707,6 @@
     <ClInclude Include="nes\mappers\mapper115.h">
       <Filter>Header Files\nes\mappers</Filter>
     </ClInclude>
-    <ClInclude Include="nes\apu2.h">
-      <Filter>Header Files\nes</Filter>
-    </ClInclude>
     <ClInclude Include="nes\mappers\mapper_mc_acc.h">
       <Filter>Header Files\nes\mappers</Filter>
     </ClInclude>
@@ -745,9 +724,6 @@
     </ClInclude>
     <ClInclude Include="sms\vdp.h">
       <Filter>Header Files\sms</Filter>
-    </ClInclude>
-    <ClInclude Include="console.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="nemulator.h">
       <Filter>Header Files</Filter>
@@ -833,11 +809,26 @@
     <ClInclude Include="buttons.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="game_types.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="invaders\sample_channel.h">
       <Filter>Header Files\invaders</Filter>
+    </ClInclude>
+    <ClInclude Include="nes\mappers\mapper0.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="nes\mappers\mapper190.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="class_registry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="system.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="system_container.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="nes\apu.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
