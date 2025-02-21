@@ -25,16 +25,11 @@ public:
     float mix_audio(float sample);
 
 private:
-    class c_mmc5_square : public c_apu::c_square
-    {
-    public:
-        int get_output();
-    } squares[2];
     int frame_seq_counter;
     static const int CLOCKS_PER_FRAME_SEQ = 89489;
     
     int ticks;
-    //c_apu::c_square squares[2];
+    c_apu::c_square squares[2];
     enum {
         PCM_IRQ_MODE_WRITE,
         PCM_IRQ_MODE_READ

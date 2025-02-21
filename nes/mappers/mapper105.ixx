@@ -1,6 +1,5 @@
 module;
 #include "..\mapper.h"
-#include "..\cpu.h"
 export module nes_mapper.mapper105;
 
 import nes_mapper.mapper1;
@@ -38,13 +37,13 @@ class c_mapper105 : public c_mapper1, register_class<nes_mapper_registry, c_mapp
                 irq_counter = 0;
                 if (irq_asserted) {
                     irq_asserted = 0;
-                    cpu->clear_irq();
+                    clear_irq();
                 }
             }
             else {
                 irq_counter++;
                 if (irq_counter == irq_trigger && !irq_asserted) {
-                    cpu->execute_irq();
+                    execute_irq();
                     irq_asserted = 1;
                 }
             }

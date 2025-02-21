@@ -1,6 +1,5 @@
 module;
 #include "..\mapper.h"
-#include "..\cpu.h"
 export module nes_mapper.vrc4;
 
 namespace nes
@@ -108,10 +107,10 @@ class c_mapper_vrc4 : public c_mapper, register_class<nes_mapper_registry, c_map
                             irq_scaler = 0;
                             irq_counter = irq_reload;
                         }
-                        cpu->clear_irq();
+                        clear_irq();
                         break;
                     case 3:
-                        cpu->clear_irq();
+                        clear_irq();
                         if (irq_control & 0x01)
                             irq_control |= 0x02;
                         else
@@ -150,7 +149,7 @@ class c_mapper_vrc4 : public c_mapper, register_class<nes_mapper_registry, c_map
             }
             if (irq_counter == 0xFF) {
                 irq_counter = irq_reload;
-                cpu->execute_irq();
+                execute_irq();
             }
             else
                 irq_counter++;

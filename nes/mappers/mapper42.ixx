@@ -1,6 +1,5 @@
 module;
 #include "..\mapper.h"
-#include "..\cpu.h"
 export module nes_mapper.mapper42;
 
 namespace nes
@@ -39,7 +38,7 @@ class c_mapper42 : public c_mapper, register_class<nes_mapper_registry, c_mapper
                     if (!irq_enabled) {
                         irq_counter = 0;
                         if (irq_asserted) {
-                            cpu->clear_irq();
+                            clear_irq();
                             irq_asserted = 0;
                         }
                     }
@@ -67,7 +66,7 @@ class c_mapper42 : public c_mapper, register_class<nes_mapper_registry, c_mapper
             while (ticks > 2) {
                 ticks -= 3;
                 if (++irq_counter == 0x6000 && !irq_asserted) {
-                    cpu->execute_irq();
+                    execute_irq();
                     irq_asserted = 1;
                 }
             }

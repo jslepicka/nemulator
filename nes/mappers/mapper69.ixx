@@ -1,6 +1,5 @@
 module;
 #include "..\mapper.h"
-#include "..\cpu.h"
 export module nes_mapper.mapper69;
 
 namespace nes
@@ -79,7 +78,7 @@ class c_mapper69 : public c_mapper, register_class<nes_mapper_registry, c_mapper
                         irq_control = value & 0x81;
                         //if ((irq_control & 0x01) == 0)
                         //All writes should ACK IRQ: https://forums.nesdev.com/viewtopic.php?f=2&t=12436
-                        cpu->clear_irq();
+                        clear_irq();
                         break;
                     case 0x0E:
                         irq_counter = (irq_counter & 0xFF00) | value;
@@ -182,7 +181,7 @@ class c_mapper69 : public c_mapper, register_class<nes_mapper_registry, c_mapper
             if (irq_control & 0x80) {
                 irq_counter--;
                 if ((irq_counter > prev_counter) && (irq_control & 0x01))
-                    cpu->execute_irq();
+                    execute_irq();
             }
             tick -= 3;
         }

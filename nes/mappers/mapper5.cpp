@@ -1,6 +1,5 @@
 module;
-#include "..\cpu.h"
-#include "..\ppu.h"
+#include <memory>
 module nes_mapper.mapper5;
 
 namespace nes {
@@ -173,12 +172,12 @@ void c_mapper5::write_byte(unsigned short address, unsigned char value)
         case 0x5204:
             irqEnable = value & 0x80;
             if (!irqEnable && irq_asserted) {
-                cpu->clear_irq();
+                clear_irq();
                 irq_asserted = 0;
             }
             else if (irqEnable && irqPending && !irq_asserted)
             {
-                cpu->execute_irq();
+                execute_irq();
                 irq_asserted = 1;
             }
             break;
@@ -271,7 +270,7 @@ unsigned char c_mapper5::ppu_read(unsigned short address)
 
     if (irqPending) {
         if (irqEnable && !irq_asserted) {
-            cpu->execute_irq();
+            execute_irq();
             irq_asserted = 1;
         }
     }
@@ -290,7 +289,7 @@ unsigned char c_mapper5::ppu_read(unsigned short address)
                     scanline = 0;
                     irqPending = 0;
                     if (irq_asserted) {
-                        cpu->clear_irq();
+                        clear_irq();
                         irq_asserted = 0;
                     }
                 }
@@ -318,7 +317,7 @@ unsigned char c_mapper5::ppu_read(unsigned short address)
     //this needs to be changed (to 42) once sprite evaluation is done properly.
     int tt = (htile + 2) % 34;
 
-    if ((address & 0x23FF) >= 0x23C0 && exram_mode == 1 && ppu->drawing_bg)
+    if ((address & 0x23FF) >= 0x23C0 && exram_mode == 1 && ppu_get_drawing_bg())
     {
         int attr = (exram[last_tile] >> 6) & 0x03;
         attr |= attr << 2;
@@ -398,9 +397,9 @@ unsigned char c_mapper5::read_chr(unsigned short address)
         return *(bank8 + (address & 0x3FF));
     }
 
-    if (ppu->get_sprite_size())
+    if (ppu_get_sprite_size())
     {
-        if (ppu->drawing_bg)
+        if (ppu_get_drawing_bg())
         {
             if (exram_mode == 1)
             {
@@ -418,7 +417,7 @@ unsigned char c_mapper5::read_chr(unsigned short address)
     }
     else
     {
-        if (ppu->drawing_bg)
+        if (ppu_get_drawing_bg())
         {
             if (exram_mode == 1)
             {
@@ -515,7 +514,7 @@ unsigned char c_mapper5::read_byte(unsigned short address)
         last_address = 0;
         irqPending = 0;
         if (irq_asserted) {
-            cpu->clear_irq();
+            clear_irq();
             irq_asserted = 0;
         }
     }
@@ -539,7 +538,7 @@ unsigned char c_mapper5::read_byte(unsigned short address)
                 retval = 0x80;
                 pcm_irq_asserted = 0;
                 if (!irq_asserted)
-                    cpu->clear_irq();
+                    clear_irq();
             }
             return retval;
         }
@@ -555,7 +554,7 @@ unsigned char c_mapper5::read_byte(unsigned short address)
                 {
                     irq_asserted = 0;
                     if (!pcm_irq_asserted)
-                        cpu->clear_irq();
+                        clear_irq();
                     else {
                         int x = 1;
                     }
@@ -585,7 +584,7 @@ unsigned char c_mapper5::read_byte(unsigned short address)
                     if (!irq_asserted && !pcm_irq_asserted)
                     {
                         pcm_irq_asserted = 1;
-                        cpu->execute_irq();
+                        execute_irq();
                     }
                 }
                 else

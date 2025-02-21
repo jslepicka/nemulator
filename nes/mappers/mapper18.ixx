@@ -1,6 +1,5 @@
 module;
 #include "..\mapper.h"
-#include "..\cpu.h"
 export module nes_mapper.mapper18;
 
 namespace nes
@@ -167,7 +166,7 @@ class c_mapper18 : public c_mapper, register_class<nes_mapper_registry, c_mapper
                 temp--;
                 if ((temp & irq_mask) == irq_mask && !irq_asserted) {
                     irq_asserted = 1;
-                    cpu->execute_irq();
+                    execute_irq();
                 }
 
                 irq_counter = (irq_counter & ~irq_mask) | (temp & irq_mask);
@@ -189,7 +188,7 @@ class c_mapper18 : public c_mapper, register_class<nes_mapper_registry, c_mapper
     void ack_irq()
     {
         if (irq_asserted) {
-            cpu->clear_irq();
+            clear_irq();
             irq_asserted = 0;
         }
     }

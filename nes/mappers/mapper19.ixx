@@ -1,6 +1,5 @@
 module;
 #include "..\mapper.h"
-#include "..\cpu.h"
 export module nes_mapper.mapper19;
 
 namespace nes
@@ -41,7 +40,7 @@ class c_mapper19 : public c_mapper, register_class<nes_mapper_registry, c_mapper
                     //is this wrong?  docs don't say anything about setting this, but final lap is otherwise broken.
                     //irq_counter |= 0x80;
                     if (irq_asserted) {
-                        cpu->clear_irq();
+                        clear_irq();
                         irq_asserted = 0;
                     }
                     break;
@@ -49,7 +48,7 @@ class c_mapper19 : public c_mapper, register_class<nes_mapper_registry, c_mapper
                     irq_counter = (irq_counter & 0x00FF) | ((value & 0x7F) << 8);
                     irq_enabled = value & 0x80;
                     if (irq_asserted) {
-                        cpu->clear_irq();
+                        clear_irq();
                         irq_asserted = 0;
                     }
                     break;
@@ -127,13 +126,13 @@ class c_mapper19 : public c_mapper, register_class<nes_mapper_registry, c_mapper
             switch (address & 0xF800) {
                 case 0x5000:
                     if (irq_asserted) {
-                        cpu->clear_irq();
+                        clear_irq();
                         irq_asserted = 0;
                     }
                     return irq_counter & 0xFF;
                 case 0x5800:
                     if (irq_asserted) {
-                        cpu->clear_irq();
+                        clear_irq();
                         irq_asserted = 0;
                     }
                     return (irq_counter & 0x7F00) >> 8;
@@ -174,7 +173,7 @@ class c_mapper19 : public c_mapper, register_class<nes_mapper_registry, c_mapper
                 if (irq_counter == 0x7FFF) {
                     if (irq_enabled && !irq_asserted) {
                         //irq_enabled = 0;
-                        cpu->execute_irq();
+                        execute_irq();
                         irq_asserted = 1;
                     }
                 }

@@ -264,9 +264,10 @@ int c_nes::reset()
 
     ppu->apu = apu.get();
     ppu->set_sprite_limit(limit_sprites);
-    mapper->ppu = ppu.get();
-    mapper->cpu = cpu.get();
-    mapper->nes = this;
+    mapper->execute_irq = [&]() { cpu.get()->execute_irq(); };
+    mapper->clear_irq = [&]() { cpu.get()->clear_irq(); };
+    mapper->ppu_get_drawing_bg = [&]() { return ppu.get()->drawing_bg; };
+    mapper->ppu_get_sprite_size = [&]() { return ppu.get()->get_sprite_size(); };
     mapper->header = header;
     mapper->image = image.get();
     if (mapper->load_image() == -1) {

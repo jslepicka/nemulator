@@ -1,6 +1,5 @@
 module;
 #include "..\mapper.h"
-#include "..\cpu.h"
 export module nes_mapper.mapper73;
 
 namespace nes
@@ -81,7 +80,7 @@ class c_mapper73 : public c_mapper, register_class<nes_mapper_registry, c_mapper
                     irq_counter = (irq_counter & 0xFF00) | temp;
                     if (temp == 0) {
                         if (!irq_asserted) {
-                            cpu->execute_irq();
+                            execute_irq();
                             irq_asserted = 1;
                         }
                     }
@@ -91,7 +90,7 @@ class c_mapper73 : public c_mapper, register_class<nes_mapper_registry, c_mapper
                     irq_counter = ((irq_counter + 1) & 0xFFFF);
                     if (irq_counter == 0) {
                         if (!irq_asserted) {
-                            cpu->execute_irq();
+                            execute_irq();
                             irq_asserted = 1;
                         }
                     }
@@ -112,7 +111,7 @@ class c_mapper73 : public c_mapper, register_class<nes_mapper_registry, c_mapper
     void ack_irq()
     {
         if (irq_asserted) {
-            cpu->clear_irq();
+            clear_irq();
             irq_asserted = 0;
         }
     }

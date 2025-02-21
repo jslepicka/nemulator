@@ -10,10 +10,6 @@
 namespace nes
 {
 
-class c_ppu;
-class c_cpu;
-class c_nes;
-
 class c_mapper
 {
   public:
@@ -25,8 +21,6 @@ class c_mapper
     virtual void reset();
     virtual int load_image();
     virtual float mix_audio(float sample);
-    c_ppu *ppu;
-    c_cpu *cpu;
     int renderingBg;
     void set_submapper(int submapper);
     iNesHeader *header;
@@ -42,7 +36,7 @@ class c_mapper
         return 0;
     }
     int in_sprite_eval;
-    c_nes *nes;
+    //c_nes *nes;
     int get_mirroring();
     int file_length;
 
@@ -52,6 +46,11 @@ class c_mapper
         std::string name;
         std::function<std::unique_ptr<c_mapper>()> constructor;
     };
+
+    std::function<void()> execute_irq = nullptr;
+    std::function<void()> clear_irq = nullptr;
+    std::function<int()> ppu_get_drawing_bg = nullptr;
+    std::function<int()> ppu_get_sprite_size = nullptr;
 
   protected:
     static const int CHR_0000 = 0;

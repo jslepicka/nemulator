@@ -1,6 +1,5 @@
 module;
 #include "..\mapper.h"
-#include "..\cpu.h"
 #include <math.h>
 #include "vrc7_audio.h"
 #include <cstdint>
@@ -104,7 +103,7 @@ class c_mapper85 : public c_mapper, register_class<nes_mapper_registry, c_mapper
                 case 0xF:
                     if (address & 0x18) {
                         if (irq_asserted) {
-                            cpu->clear_irq();
+                            clear_irq();
                             irq_asserted = 0;
                         }
                         if (irq_control & 0x1)
@@ -119,7 +118,7 @@ class c_mapper85 : public c_mapper, register_class<nes_mapper_registry, c_mapper
                             irq_counter = irq_reload;
                         }
                         if (irq_asserted) {
-                            cpu->clear_irq();
+                            clear_irq();
                             irq_asserted = 0;
                         }
                     }
@@ -142,7 +141,7 @@ class c_mapper85 : public c_mapper, register_class<nes_mapper_registry, c_mapper
                 if (irq_counter == 0xFF) {
                     irq_counter = irq_reload;
                     if (!irq_asserted) {
-                        cpu->execute_irq();
+                        execute_irq();
                         irq_asserted = 1;
                     }
                 }

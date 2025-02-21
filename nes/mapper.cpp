@@ -12,8 +12,6 @@ namespace nes
 
 c_mapper::c_mapper()
 {
-    ppu = 0;
-    cpu = 0;
     writeProtectSram = false;
     sram_enabled = 1;
     hasSram = false;
