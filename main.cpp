@@ -67,18 +67,3 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdPlin
     int retval = app->Run();
     return retval;
 }
-
-void strip_extension(char *path)
-{
-    char *p = path + strlen(path) - 1;
-    do
-    {
-        *p = 0;
-    } while (*--p != '.');
-    *p = 0;
-}
-
-//std::string strip_extension(std::string path)
-//{
-//    return path.substr(0, path.find_last_of("."));
-//}

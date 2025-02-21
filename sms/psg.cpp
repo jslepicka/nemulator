@@ -143,8 +143,10 @@ void c_psg::clock(int cycles)
 
         //resample(out / 4.0f);
         if (mixer_enabled) {
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < 4; i++) {
+                float sample = out / 4.0f;
                 resampler->process(out / 4.0f);
+            }
         }
     }
 }

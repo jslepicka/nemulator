@@ -240,7 +240,7 @@ int c_nsf_stats::update(double dt, int child_result, void* params)
 
 float c_nsf_stats::aweight_filter(float sample)
 {
-    return biquad3->process(biquad2->process(biquad1->process(sample))) * 1.189276456832886;
+    return (float)biquad3->process(biquad2->process(biquad1->process(sample))) * 1.189276456832886f;
 }
 
 
@@ -295,8 +295,8 @@ void c_nsf_stats::draw()
             double band_min = band_mins[bucket];
             double band_max = band_maxs[bucket];
             double f = 24000.0 / (double)(fft_length / 2.0);
-            int start = band_min / f;
-            int end = band_max / f;
+            int start = (int)(band_min / f);
+            int end = (int)(band_max / f);
             double avg = 0.0;
             int count = 0;
             double max = 0.0;
@@ -324,7 +324,7 @@ void c_nsf_stats::draw()
             double v = max / db_max;
             if (v > max_fft_level)
             {
-                max_fft_level = v;
+                max_fft_level = (float)v;
             }
 
             if (v > bucket_vals[bucket]) {
@@ -343,9 +343,9 @@ void c_nsf_stats::draw()
 
         for (int i = 0; i < tex_size; i++)
         {
-            int bucket = i / (double)tex_size * (double)NUM_BANDS;
+            int bucket = (int)(i / (double)tex_size * (double)NUM_BANDS);
             double lower = .5;
-            int py = ((bucket_vals[bucket] - lower) * (1.0 / (1.0 - lower))) * (tex_size - 1);
+            int py = (int)(((bucket_vals[bucket] - lower) * (1.0 / (1.0 - lower))) * (tex_size - 1));
             py = tex_size - 1 - py;
             if (py < 0) {
                 py = 0;
@@ -359,9 +359,9 @@ void c_nsf_stats::draw()
             for (int y = py; y < tex_size; y++)
             {
                 double mu = (tex_size - y) / (double)tex_size;
-                int r = lerp(0x10, 0xFF, mu * 1.25);
-                int g = lerp(0x28, 0xFF, mu * 1.25);
-                int b = lerp(0x80, 0xFF, mu);
+                int r = (int)lerp(0x10, 0xFF, mu * 1.25);
+                int g = (int)lerp(0x28, 0xFF, mu * 1.25);
+                int b = (int)lerp(0x80, 0xFF, mu);
                 colors[0] = 0xFF000000 | ((b & 0xFF) << 16) | ((g & 0xFF) << 8) | (r & 0xFF);
 
                 int color_select = (y == py || bucket != last_bucket || last_pixel_in_bucket);
@@ -382,8 +382,8 @@ void c_nsf_stats::draw()
             int vol = sb[(sb_index + (i * steps)) & 8191];
             vol *= scale;
             vol += 32768; //move sample level to 0 -> 65535
-            float yy = vol / 65535.0;
-            float new_level = abs(yy * 2.0 - 1.0);
+            float yy = vol / 65535.0f;
+            float new_level = abs(yy * 2.0f - 1.0f);
             yy = std::clamp(yy, 0.0f, 1.0f);
 
 
@@ -398,7 +398,7 @@ void c_nsf_stats::draw()
                 float dx = (float)cur_x - prev_x;
                 float dy = yy - prev_y;
 
-                for (int j = prev_x; j < cur_x; j++) {
+                for (int j = (int)prev_x; j < cur_x; j++) {
                     float yyy = prev_y + dy * (float)(j - prev_x) / dx;
                     int px = j;
                     int py = (int)round((yyy * (float)(tex_size - 1)));
@@ -417,7 +417,7 @@ void c_nsf_stats::draw()
                 }
             }
 
-            prev_x = cur_x;
+            prev_x = (float)cur_x;
             prev_y = yy;
         }
     }

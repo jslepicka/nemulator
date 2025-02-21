@@ -1,5 +1,4 @@
 #pragma once
-#include "mapper_nsf.h"
 /*
     .bank 0
     .org $54F0

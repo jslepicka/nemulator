@@ -10,6 +10,7 @@
 #include "benchmark.h"
 #include <string_view>
 #include <ranges>
+#include "nes\nes.h"
 
 extern ID3D10Device *d3dDev;
 extern D3DXMATRIX matrixView;
@@ -260,46 +261,46 @@ void c_nemulator::configure_input()
         unsigned int default_key;
         int repeat_mode;
     };
-    static const unsigned int button_mask = 0x80000000;
+    static const unsigned int BUTTON = 0x80000000;
     s_button_map button_map[] =
     {
-        { BUTTON_1LEFT,         "joy1",     "left",    VK_LEFT,                     1 },
-        { BUTTON_1RIGHT,        "joy1",     "right",   VK_RIGHT,                    1 },
-        { BUTTON_1UP,           "joy1",     "up",      VK_UP,                       1 },
-        { BUTTON_1DOWN,         "joy1",     "down",    VK_DOWN,                     1 },
-        { BUTTON_1A,            "joy1",     "a",       88,                          0 },
-        { BUTTON_1A_TURBO,      "joy1",     "a_turbo", 0x53,                        0 },
-        { BUTTON_1B,            "joy1",     "b",       90,                          0 },
-        { BUTTON_1B_TURBO,      "joy1",     "b_turbo", 0x41,                        0 },
-        { BUTTON_1SELECT,       "joy1",     "select",  VK_OEM_4,                    0 },
-        { BUTTON_1START,        "joy1",     "start",   VK_OEM_6,                    0 },
-        { BUTTON_SMS_PAUSE,     "joy1.sms", "pause",   BUTTON_1START | button_mask, 0 },
+        { BUTTON_1LEFT,         "joy1",     "left",    VK_LEFT,                1 },
+        { BUTTON_1RIGHT,        "joy1",     "right",   VK_RIGHT,               1 },
+        { BUTTON_1UP,           "joy1",     "up",      VK_UP,                  1 },
+        { BUTTON_1DOWN,         "joy1",     "down",    VK_DOWN,                1 },
+        { BUTTON_1A,            "joy1",     "a",       88,                     0 },
+        { BUTTON_1A_TURBO,      "joy1",     "a_turbo", 0x53,                   0 },
+        { BUTTON_1B,            "joy1",     "b",       90,                     0 },
+        { BUTTON_1B_TURBO,      "joy1",     "b_turbo", 0x41,                   0 },
+        { BUTTON_1SELECT,       "joy1",     "select",  VK_OEM_4,               0 },
+        { BUTTON_1START,        "joy1",     "start",   VK_OEM_6,               0 },
+        { BUTTON_SMS_PAUSE,     "joy1.sms", "pause",   BUTTON | BUTTON_1START, 0 },
 
-        { BUTTON_2LEFT,         "joy2",     "left",    0,                           1 },
-        { BUTTON_2RIGHT,        "joy2",     "right",   0,                           1 },
-        { BUTTON_2UP,           "joy2",     "up",      0,                           1 },
-        { BUTTON_2DOWN,         "joy2",     "down",    0,                           1 },
-        { BUTTON_2A,            "joy2",     "a",       0,                           0 },
-        { BUTTON_2A_TURBO,      "joy2",     "a_turbo", 0,                           0 },
-        { BUTTON_2B,            "joy2",     "b",       0,                           0 },
-        { BUTTON_2B_TURBO,      "joy2",     "b_turbo", 0,                           0 },
-        { BUTTON_2SELECT,       "joy2",     "select",  0,                           0 },
-        { BUTTON_2START,        "joy2",     "start",   0,                           0 },
+        { BUTTON_2LEFT,         "joy2",     "left",    0,                      1 },
+        { BUTTON_2RIGHT,        "joy2",     "right",   0,                      1 },
+        { BUTTON_2UP,           "joy2",     "up",      0,                      1 },
+        { BUTTON_2DOWN,         "joy2",     "down",    0,                      1 },
+        { BUTTON_2A,            "joy2",     "a",       0,                      0 },
+        { BUTTON_2A_TURBO,      "joy2",     "a_turbo", 0,                      0 },
+        { BUTTON_2B,            "joy2",     "b",       0,                      0 },
+        { BUTTON_2B_TURBO,      "joy2",     "b_turbo", 0,                      0 },
+        { BUTTON_2SELECT,       "joy2",     "select",  0,                      0 },
+        { BUTTON_2START,        "joy2",     "start",   0,                      0 },
 
 
-        { BUTTON_STATS,          "",        "",        VK_F9,                       0 },
-        { BUTTON_MASK_SIDES,     "",        "",        VK_F8,                       0 },
-        { BUTTON_SPRITE_LIMIT,   "",        "",        VK_F7,                       0 },
-        { BUTTON_AUDIO_INFO,     "",        "",        VK_F4,                       0 },
-        { BUTTON_RESET,          "",        "",        VK_F2,                       0 },
-        { BUTTON_LEFT_SHIFT,     "",        "",        VK_LSHIFT,                   0 },
-        { BUTTON_RIGHT_SHIFT,    "",        "",        VK_RSHIFT,                   0 },
-        { BUTTON_ESCAPE,         "",        "",        VK_ESCAPE,                   0 },
-        { BUTTON_RETURN,         "",        "",        VK_RETURN,                   0 },
-        { BUTTON_DEC_SHARPNESS,  "",        "",        0x39,                        1 },
-        { BUTTON_INC_SHARPNESS,  "",        "",        0x30,                        1 },
+        { BUTTON_STATS,          "",        "",        VK_F9,                  0 },
+        { BUTTON_MASK_SIDES,     "",        "",        VK_F8,                  0 },
+        { BUTTON_SPRITE_LIMIT,   "",        "",        VK_F7,                  0 },
+        { BUTTON_AUDIO_INFO,     "",        "",        VK_F4,                  0 },
+        { BUTTON_RESET,          "",        "",        VK_F2,                  0 },
+        { BUTTON_LEFT_SHIFT,     "",        "",        VK_LSHIFT,              0 },
+        { BUTTON_RIGHT_SHIFT,    "",        "",        VK_RSHIFT,              0 },
+        { BUTTON_ESCAPE,         "",        "",        VK_ESCAPE,              0 },
+        { BUTTON_RETURN,         "",        "",        VK_RETURN,              0 },
+        { BUTTON_DEC_SHARPNESS,  "",        "",        0x39,                   1 },
+        { BUTTON_INC_SHARPNESS,  "",        "",        0x30,                   1 },
 
-        { BUTTON_1COIN,          "",        "",        0x31,                        0 }
+        { BUTTON_1COIN,          "",        "",        0x31,                   0 }
     };
 
     int num_buttons = sizeof(button_map) / sizeof(s_button_map);
@@ -315,9 +316,9 @@ void c_nemulator::configure_input()
         int default_key = button_map[i].default_key;
         int button = button_map[i].button;
         std::string key = button_map[i].config_base + "." + button_map[i].config_name;
-        if (default_key & button_mask)
+        if (default_key & BUTTON)
         {
-            default_key &= button_mask - 1;
+            default_key &= BUTTON - 1;
             for (int k = 0; k < num_buttons; k++)
             {
                 if (button_map[k].button == default_key)
@@ -1268,7 +1269,8 @@ void c_nemulator::LoadGames()
             }
         }
     }
-
+    const int buf_size = 1024 * 64;
+    auto buf = std::make_unique_for_overwrite<char[]>(buf_size);
     for (auto &li : loadinfo)
     {
         for (auto &fn : li.file_list)
@@ -1278,12 +1280,11 @@ void c_nemulator::LoadGames()
 
             if (preload)
             {
-                auto buf = std::make_unique_for_overwrite<char[]>(65536);
                 std::ifstream file;
                 file.open(filename, std::ios_base::in | std::ios_base::binary);
                 if (file.is_open())
                 {
-                    while (file.read(buf.get(), 65536));
+                    while (file.read(buf.get(), buf_size));
                     file.close();
                 }
             }
@@ -1291,8 +1292,10 @@ void c_nemulator::LoadGames()
             if (li.system_info.name == "Nintendo NES") {
                 g->is_nes = true;
             }
+
             if (li.system_info.title != "") {
-                strcpy(g->title, li.system_info.title.c_str());
+                //strcpy(g->title, li.system_info.title.c_str());
+                g->title = li.system_info.title;
                 g->set_description(g->title);
             }
             else {

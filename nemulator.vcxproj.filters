@@ -63,9 +63,6 @@
     <ClCompile Include="D3d10App.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Game.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="input_handler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -82,12 +79,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="task.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="task1.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="tasklist.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="TexturePanel.cpp">
@@ -114,224 +105,8 @@
     <ClCompile Include="audio_info.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="bmp_writer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper_mmc6.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper1.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper2.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper3.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper4.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper5.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper7.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper8.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper9.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper10.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper11.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper15.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper18.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper19.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper32.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper33.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper34.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper40.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper41.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper42.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper47.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper65.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper66.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper67.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper68.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper69.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper70.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper71.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper72.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper73.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper75.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper76.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper78.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper79.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper80.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper82.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper87.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper88.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper93.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper94.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper95.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper97.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper103.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper112.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper113.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper118.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper119.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper140.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper152.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper184.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper185.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper228.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper232.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper_vrc4.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper92.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper89.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper86.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper77.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper16.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper243.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper146.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
     <ClCompile Include="qam.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper44.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper105.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper24.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper85.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper180.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper193.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper115.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\apu2.cpp">
-      <Filter>Source Files\nes</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper_mc_acc.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper64.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
     </ClCompile>
     <ClCompile Include="nes\mappers\vrc7_audio.cpp">
       <Filter>Source Files\nes\mappers</Filter>
@@ -345,20 +120,8 @@
     <ClCompile Include="sms\vdp.cpp">
       <Filter>Source Files\sms</Filter>
     </ClCompile>
-    <ClCompile Include="console.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="nemulator.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper190.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper189.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper13.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
     </ClCompile>
     <ClCompile Include="gb\gb.cpp">
       <Filter>Source Files\gb</Filter>
@@ -386,9 +149,6 @@
     </ClCompile>
     <ClCompile Include="gb\mbc2.cpp">
       <Filter>Source Files\gb</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper_nsf.cpp">
-      <Filter>Source Files\nes\mappers</Filter>
     </ClCompile>
     <ClCompile Include="nsf_stats.cpp">
       <Filter>Source Files</Filter>
@@ -447,6 +207,243 @@
     <ClCompile Include="invaders\sample_channel.cpp">
       <Filter>Source Files\invaders</Filter>
     </ClCompile>
+    <ClCompile Include="system_container.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\apu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper212.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper202.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper1.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper0.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper2.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper3.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper4.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper7.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper95.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper9.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper8.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper10.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper5.cpp">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper11.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper13.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper15.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper16.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper18.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper19.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper24.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper32.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper33.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper34.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper40.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper41.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper42.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper44.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper47.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper64.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper65.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper66.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper67.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper68.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper69.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper70.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper71.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper72.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper73.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper75.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper76.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper77.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper78.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper79.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper80.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper82.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper85.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper86.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper87.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper88.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper89.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper92.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper93.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper94.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper97.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper103.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper105.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper112.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper113.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper115.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper118.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper119.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper140.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper146.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper152.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper180.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper184.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper185.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper189.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper190.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper193.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper228.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper232.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper243.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper_mc_acc.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper_mmc6.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper_nsf.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper_vrc4.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="config.h">
@@ -456,9 +453,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="D3d10App.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Game.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="input_handler.h">
@@ -479,12 +473,6 @@
     <ClInclude Include="task.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="task1.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="tasklist.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="TexturePanel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -497,9 +485,6 @@
     <ClInclude Include="audio_info.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="bmp_writer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="nes\cpu.h">
       <Filter>Header Files\nes</Filter>
     </ClInclude>
@@ -509,192 +494,6 @@
     <ClInclude Include="nes\ppu.h">
       <Filter>Header Files\nes</Filter>
     </ClInclude>
-    <ClInclude Include="nes\mappers\mapper1.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper2.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper3.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper4.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper5.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper7.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper8.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper9.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper10.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper11.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper15.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper16.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper18.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper19.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper_vrc4.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper32.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper33.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper34.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper40.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper41.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper42.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper47.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper65.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper66.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper67.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper68.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper69.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper70.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper71.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper72.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper73.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper75.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper76.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper77.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper78.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper79.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper80.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper82.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper86.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper87.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper88.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper89.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper92.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper93.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper94.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper95.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper97.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper103.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper112.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper113.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper118.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper119.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper140.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper146.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper152.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper184.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper185.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper228.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper232.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper243.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper_mmc6.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mappers.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
     <ClInclude Include="nes\mapper.h">
       <Filter>Header Files\nes</Filter>
     </ClInclude>
@@ -703,36 +502,6 @@
     </ClInclude>
     <ClInclude Include="qam.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper44.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper105.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper24.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper85.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper180.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper193.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper115.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\apu2.h">
-      <Filter>Header Files\nes</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper_mc_acc.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper64.h">
-      <Filter>Header Files\nes\mappers</Filter>
     </ClInclude>
     <ClInclude Include="nes\mappers\vrc7_audio.h">
       <Filter>Header Files\nes\mappers</Filter>
@@ -746,20 +515,11 @@
     <ClInclude Include="sms\vdp.h">
       <Filter>Header Files\sms</Filter>
     </ClInclude>
-    <ClInclude Include="console.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="nemulator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="sms\crc.h">
       <Filter>Header Files\sms</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper189.h">
-      <Filter>Header Files\nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper13.h">
-      <Filter>Header Files\nes\mappers</Filter>
     </ClInclude>
     <ClInclude Include="gb\gb.h">
       <Filter>Header Files\gb</Filter>
@@ -787,9 +547,6 @@
     </ClInclude>
     <ClInclude Include="gb\mbc2.h">
       <Filter>Header Files\gb</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper_nsf.h">
-      <Filter>Header Files\nes\mappers</Filter>
     </ClInclude>
     <ClInclude Include="nes\mappers\mapper_nsf_rom.h">
       <Filter>Header Files\nes\mappers</Filter>
@@ -833,11 +590,23 @@
     <ClInclude Include="buttons.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="game_types.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="invaders\sample_channel.h">
       <Filter>Header Files\invaders</Filter>
+    </ClInclude>
+    <ClInclude Include="class_registry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="system.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="system_container.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="nes\apu.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="nes\mappers\mapper5.h">
+      <Filter>Header Files\nes\mappers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
