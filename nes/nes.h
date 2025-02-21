@@ -5,9 +5,10 @@
 #include <functional>
 #include "..\system.h"
 #include "game_genie.h"
-#include "mapper.h"
 #include <memory>
 #include <string>
+
+import nes_mapper;
 
 namespace nes
 {

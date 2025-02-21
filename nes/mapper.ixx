@@ -1,16 +1,19 @@
-#pragma once
+module;
 #include "ines.h"
 #include "mirroring_types.h"
 #include <memory>
 #include <functional>
 #include <map>
 #include <string>
-#include "..\class_registry.h"
+#include <vector>
+
+export module nes_mapper;
+import class_registry;
 
 namespace nes
 {
 
-class c_mapper
+export class c_mapper
 {
   public:
     c_mapper();
@@ -112,7 +115,7 @@ class c_mapper
     alignas(64) unsigned char vram[4096];
 };
 
-class nes_mapper_registry : public c_class_registry<std::map<int, c_mapper::s_mapper_info>>
+export class nes_mapper_registry : public c_class_registry<std::map<int, c_mapper::s_mapper_info>>
 {
   public:
     static void _register(std::vector<c_mapper::s_mapper_info> mapper_info)

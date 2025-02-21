@@ -3,7 +3,6 @@
 #include "ppu.h"
 #include "apu.h"
 #include "joypad.h"
-#include "mapper.h"
 #include "ines.h"
 #include "cartdb.h"
 

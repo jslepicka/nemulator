@@ -1,7 +1,7 @@
-module;
-#include "..\mapper.h"
-
 export module nes_mapper.mapper0;
+import nes_mapper;
+import class_registry;
+import std;
 
 namespace nes
 {

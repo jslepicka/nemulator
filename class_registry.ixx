@@ -1,6 +1,6 @@
-#pragma once
+export module class_registry;
 
-template <typename T> class c_class_registry
+export template <typename T> class c_class_registry
 {
   public:
     static T &get_registry()
@@ -10,7 +10,7 @@ template <typename T> class c_class_registry
     }
 };
 
-template <typename registry, typename class_name> class register_class
+export template <typename registry, typename class_name> class register_class
 {
     static void _register()
     {

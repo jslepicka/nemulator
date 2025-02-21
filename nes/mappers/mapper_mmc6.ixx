@@ -1,6 +1,6 @@
-module;
-#include "..\mapper.h"
 export module nes_mapper.mmc6;
+import nes_mapper;
+import class_registry;
 
 import nes_mapper.mapper4;
 

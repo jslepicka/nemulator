@@ -1,6 +1,9 @@
 module;
-#include "..\mapper.h"
+#include <memory>
 export module nes_mapper.mapper19;
+import nes_mapper;
+import class_registry;
+import std;
 
 namespace nes
 {

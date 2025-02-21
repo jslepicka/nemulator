@@ -8,8 +8,12 @@ export namespace interpolate
 {
 template <typename T> T lerp(T start, T end, double mu)
 {
+    #pragma warning(push)
+    #pragma warning(disable : 4244)
     mu = std::clamp(mu, 0.0, 1.0);
-    return (T)(start * (1.0 - mu) + end * mu);
+    T ret = start * (1.0 - mu) + end * mu;
+    #pragma warning(pop)
+    return ret;
 }
 
 template <typename T> T interpolate_cosine(T start, T end, double mu)

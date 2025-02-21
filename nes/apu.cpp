@@ -2,7 +2,6 @@
 #include <memory>
 #include <assert.h>
 #include "nes.h"
-#include "mapper.h"
 #include "cpu.h"
 #include <array>
 //#include <xmmintrin.h>

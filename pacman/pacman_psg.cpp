@@ -54,7 +54,7 @@ c_pacman_psg::~c_pacman_psg()
 void c_pacman_psg::set_audio_rate(double freq)
 {
     double x = audio_rate / freq;
-    resampler->set_m(x);
+    resampler->set_m((float)x);
 }
 
 int c_pacman_psg::get_buffer(const short **buf)

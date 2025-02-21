@@ -140,12 +140,15 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <DisableSpecificWarnings>4334</DisableSpecificWarnings>
       <CCppSupport>
       </CCppSupport>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
+      <EnableModules>
+      </EnableModules>
+      <BuildStlModules>true</BuildStlModules>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>C:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -208,13 +211,16 @@
       <AssemblerOutput>AssemblyAndSourceCode</AssemblerOutput>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
       <ControlFlowGuard>
       </ControlFlowGuard>
       <DisableSpecificWarnings>4334</DisableSpecificWarnings>
       <CallingConvention>Cdecl</CallingConvention>
       <CCppSupport>
       </CCppSupport>
+      <EnableModules>
+      </EnableModules>
+      <BuildStlModules>true</BuildStlModules>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -226,6 +232,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="class_registry.ixx" />
     <ClCompile Include="crc32.ixx" />
     <ClCompile Include="dsp\audio_filter.ixx" />
     <ClCompile Include="dsp\biquad.ixx" />
@@ -285,7 +292,7 @@
     <ClCompile Include="nes\mappers\mapper42.ixx" />
     <ClCompile Include="nes\mappers\mapper44.ixx" />
     <ClCompile Include="nes\mappers\mapper47.ixx" />
-    <ClCompile Include="nes\mappers\mapper5.cpp" />
+    <ClCompile Include="nes\mappers\mapper5.ixx" />
     <ClCompile Include="nes\mappers\mapper64.ixx" />
     <ClCompile Include="nes\mappers\mapper65.ixx" />
     <ClCompile Include="nes\mappers\mapper66.ixx" />
@@ -361,10 +368,6 @@
     <ClInclude Include="benchmark.h" />
     <ClInclude Include="buttons.h" />
     <ClInclude Include="config.h" />
-    <ClInclude Include="class_registry.h" />
-    <ClCompile Include="nes\mappers\mapper5.ixx">
-      <FileType>Document</FileType>
-    </ClCompile>
     <ClInclude Include="system.h" />
     <ClInclude Include="constants.h" />
     <ClInclude Include="D3d10App.h" />
@@ -390,7 +393,9 @@
     <ClInclude Include="nes\game_genie.h" />
     <ClInclude Include="nes\ines.h" />
     <ClInclude Include="nes\joypad.h" />
-    <ClInclude Include="nes\mapper.h" />
+    <ClCompile Include="nes\mapper.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
     <ClInclude Include="nes\mappers\mapper_nsf_rom.h" />
     <ClInclude Include="nes\mappers\vrc7_audio.h" />
     <ClInclude Include="nes\mirroring_types.h" />

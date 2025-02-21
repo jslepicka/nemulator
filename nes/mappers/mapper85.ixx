@@ -1,9 +1,13 @@
 module;
-#include "..\mapper.h"
 #include <math.h>
 #include "vrc7_audio.h"
 #include <cstdint>
+#include "..\mirroring_types.h"
+#include <memory>
 export module nes_mapper.mapper85;
+import nes_mapper;
+import class_registry;
+import std;
 
 namespace nes
 {

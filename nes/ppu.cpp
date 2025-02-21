@@ -1,7 +1,6 @@
 #include "cpu.h"
 #include "ppu.h"
 #include "memory.h"
-#include "mapper.h"
 #include "apu.h"
 #define _USE_MATH_DEFINES
 #include <math.h>

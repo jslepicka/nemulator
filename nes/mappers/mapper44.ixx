@@ -1,6 +1,5 @@
-module;
-#include "..\mapper.h"
 export module nes_mapper.mapper44;
+import nes_mapper;
 
 import nes_mapper.mapper4;
 

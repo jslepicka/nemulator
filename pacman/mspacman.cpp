@@ -83,7 +83,7 @@ void c_mspacman::decrypt_rom(int src, int dst, int len, std::array<uint8_t, 16> 
 {
     for (int i = 0; i < len; i++) {
         uint8_t encrypted_val = prg_rom[src + bitswap(i, addr_bits)];
-        uint8_t val = bitswap(encrypted_val, {15, 14, 13, 12, 11, 10, 9, 8, 0, 4, 5, 7, 6, 3, 2, 1});
+        uint8_t val = (uint8_t)bitswap(encrypted_val, {15, 14, 13, 12, 11, 10, 9, 8, 0, 4, 5, 7, 6, 3, 2, 1});
         prg_rom_overlay[dst + i] = val;
     }
 }

@@ -1,6 +1,10 @@
 module;
-#include "..\mapper.h"
+#include "..\mirroring_types.h"
+#include <memory>
 export module nes_mapper.vrc4;
+import nes_mapper;
+import class_registry;
+import std;
 
 namespace nes
 {

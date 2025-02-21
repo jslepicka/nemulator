@@ -1,5 +1,4 @@
 #include "cpu.h"
-#include "mapper.h"
 #include "nes.h"
 #include "ppu.h"
 

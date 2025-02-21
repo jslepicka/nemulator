@@ -80,14 +80,14 @@ int c_invaders::load_samples(std::vector<s_sample_load_info> &sample_load_info)
         file.open(fn, std::ios_base::in | std::ios_base::binary);
         if (file.is_open()) {
             file.seekg(0, std::ios::end);
-            int file_len = file.tellg();
+            std::streamoff file_len = file.tellg();
             file.seekg(0, std::ios::beg);
 
             file_buf = new char[file_len];
             file.read(file_buf, file_len);
             file.close();
 
-            uint32_t crc = get_crc32((unsigned char *)file_buf, file_len);
+            uint32_t crc = get_crc32((unsigned char *)file_buf, (unsigned int)file_len);
             if (crc != li.crc32) {
                 continue;
             }
@@ -385,7 +385,7 @@ int c_invaders::get_sound_bufs(const short **buf_l, const short **buf_r)
 void c_invaders::set_audio_freq(double freq)
 {
     double x = (double)audio_freq / freq;
-    resampler->set_m(x);
+    resampler->set_m((float)x);
 }
 
 void c_invaders::enable_mixer()

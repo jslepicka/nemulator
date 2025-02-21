@@ -4,7 +4,8 @@
 #include "buttons.h"
 #include <vector>
 #include <functional>
-#include "class_registry.h"
+
+import class_registry;
 
 // An emulated system (game console, arcade machine, etc.)
 class c_system

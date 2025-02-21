@@ -204,7 +204,7 @@ void c_sms::write_word(unsigned short address, unsigned short value)
 
 void c_sms::catchup_psg()
 {
-    int num_cycles = z80->retired_cycles - last_psg_run;
+    int num_cycles = (int)(z80->retired_cycles - last_psg_run);
     last_psg_run = z80->retired_cycles;
     psg->clock(num_cycles);
 }

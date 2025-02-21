@@ -12,7 +12,7 @@ c_psg::c_psg()
 {
     float db2 = powf(10.0f, -(2.0f / 20.f));
     for (int i = 0; i < 15; i++) {
-        vol_table[i] = 1.0f * powf(db2, i);
+        vol_table[i] = 1.0f * powf(db2, (float)i);
     }
     vol_table[15] = 0.0f;
     int jdghkdjf = 1;
@@ -80,7 +80,7 @@ void c_psg::reset()
 void c_psg::set_audio_rate(double freq)
 {
     double x = ((228.0 * 262.0 * 60.0) / 4.0) / freq;
-    resampler->set_m(x);
+    resampler->set_m((float)x);
     //printf("%f %f\n", freq, x);
 }
 
