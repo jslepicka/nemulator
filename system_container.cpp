@@ -1,14 +1,14 @@
 #include "system_container.h"
 #include <crtdbg.h>
 #include <immintrin.h>
-#include <filesystem>
-#include "nes\nes.h"
 
 import random;
 
 extern HANDLE g_start_event;
 
 extern ID3D10Device *d3dDev;
+
+void strip_extension(char *path);
 
 std::string c_system_container::get_filename()
 {
@@ -25,7 +25,8 @@ c_system_container::c_system_container(c_system::s_system_info &si, std::string 
     ref = 0;
     system = 0;
     mask_sides = false;
-    title = filename.substr(0, filename.find_last_of("."));
+    strcpy_s(title, filename.c_str());
+    strip_extension(title);
 
     bd.Usage = D3D10_USAGE_DEFAULT;
     bd.ByteWidth = sizeof(SimpleVertex) * 4;
@@ -63,12 +64,9 @@ void c_system_container::OnActivate(bool load)
             system = system_info.constructor();
             if (system)
             {
-                system->filename = filename;
-                system->path = path;
-                system->path_file = path + "\\" + filename;
-                system->sram_path = sram_path;
-                system->sram_filename = filename.substr(0, filename.find_last_of(".")) + ".ram";
-                system->sram_path_file = sram_path + "\\" + system->sram_filename;
+                strcpy_s(system->filename, MAX_PATH, filename.c_str());
+                strcpy_s(system->path, MAX_PATH, path.c_str());
+                strcpy_s(system->sram_path, MAX_PATH, sram_path.c_str());
                 if (load)
                     system->load();
                 if (system->is_loaded()) {

@@ -1,5 +1,11 @@
 #pragma once
 #include "system.h"
+#include "nes\nes.h"
+#include "sms\sms.h"
+#include "gb\gb.h"
+#include "pacman\pacman.h"
+#include "pacman\mspacman.h"
+#include "invaders\invaders.h"
 #include <string>
 #include "TexturePanelItem.h"
 #include "d3dx10.h"
@@ -19,7 +25,7 @@ public:
     bool mask_sides;
     bool limit_sprites;
     std::string get_filename();
-    std::string title;
+    char title[MAX_PATH];
     std::string filename;
     double get_height();
     double get_width();

@@ -106,7 +106,6 @@ class c_sms : public c_system, register_class<system_registry, c_sms>
     int loaded = 0;
     int ram_select;
     int nationalism;
-    uint8_t data_bus = 0xFF;
     std::unique_ptr<c_z80> z80;
     std::unique_ptr<c_vdp> vdp;
     std::unique_ptr<c_psg> psg;
@@ -117,6 +116,8 @@ class c_sms : public c_system, register_class<system_registry, c_sms>
     unsigned char cart_ram[16384];
     int load_sram();
     int save_sram();
+    void get_sram_path(char *path);
+    char sram_file_name[MAX_PATH];
     void catchup_psg();
     uint64_t last_psg_run;
 };
