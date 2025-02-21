@@ -362,7 +362,9 @@
     <ClInclude Include="buttons.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="class_registry.h" />
-    <ClInclude Include="nes\mappers\mapper5.h" />
+    <ClCompile Include="nes\mappers\mapper5.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
     <ClInclude Include="system.h" />
     <ClInclude Include="constants.h" />
     <ClInclude Include="D3d10App.h" />

@@ -1,7 +1,7 @@
-#include "mapper5.h"
-
+module;
 #include "..\cpu.h"
 #include "..\ppu.h"
+module nes_mapper.mapper5;
 
 namespace nes {
 

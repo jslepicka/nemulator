@@ -1,12 +1,21 @@
-#pragma once
+module;
 #include "..\mapper.h"
 #include "..\apu.h"
+export module nes_mapper.mapper5;
 
 namespace nes {
 
 class c_mapper5 : public c_mapper, register_class<nes_mapper_registry, c_mapper5>
 {
 public:
+    static std::vector<c_mapper::s_mapper_info> get_registry_info()
+    {
+        return {{
+            .number = 5,
+            .name = "MMC5",
+            .constructor = []() { return std::make_unique<c_mapper5>(); },
+        }};
+    }
     c_mapper5();
     ~c_mapper5();
     void write_byte(unsigned short address, unsigned char value);
@@ -14,16 +23,7 @@ public:
     void reset();
     void clock(int cycles);
     float mix_audio(float sample);
-    static std::vector<c_mapper::s_mapper_info> get_registry_info()
-    {
-        return {
-            {
-                .number = 5,
-                .name = "MMC5",
-                .constructor = []() { return std::make_unique<c_mapper5>(); },
-            }
-        };
-    }
+
 private:
     class c_mmc5_square : public c_apu::c_square
     {
@@ -32,7 +32,7 @@ private:
     } squares[2];
     int frame_seq_counter;
     static const int CLOCKS_PER_FRAME_SEQ = 89489;
-    void clock_frame();
+    
     int ticks;
     //c_apu::c_square squares[2];
     enum {
@@ -52,22 +52,12 @@ private:
     int inFrame;
     int irqEnable;
     int irqTarget;
-    void Sync();
     int banks[12];
     int lastBank;
     unsigned char *bankA[8];
     unsigned char *bankB[8];
-    void SetChrBank1k(unsigned char *b[8], int bank, int value);
-    void SetChrBank2k(unsigned char *b[8], int bank, int value);
-    void SetChrBank4k(unsigned char *b[8], int bank, int value);
-    void SetChrBank8k(unsigned char *b[8], int value);
-    unsigned char read_chr(unsigned short address);
-    unsigned char ppu_read(unsigned short address);
-    void ppu_write(unsigned short address, unsigned char value);
     int last_tile;
-
     int prg_reg[4];
-
     unsigned char *prg_ram;
     unsigned char *exram;
     unsigned char *prg_6000;
@@ -76,10 +66,6 @@ private:
     int exram_mode;
     int multiplicand;
     int multiplier;
-
-    void SetPrgBank8k(int bank, int value);
-    void SetPrgBank16k(int bank, int value);
-    void SetPrgBank32k(int value);
     int irq_asserted;
     int using_fill_table;
     int drawing_enabled;
@@ -103,7 +89,19 @@ private:
     int idle_count;
     int ppu_is_reading;
     int tile_fetch_count;
-    //int in_split_region();
+
+    void Sync();
+    void SetPrgBank8k(int bank, int value);
+    void SetPrgBank16k(int bank, int value);
+    void SetPrgBank32k(int value);
+    void SetChrBank1k(unsigned char *b[8], int bank, int value);
+    void SetChrBank2k(unsigned char *b[8], int bank, int value);
+    void SetChrBank4k(unsigned char *b[8], int bank, int value);
+    void SetChrBank8k(unsigned char *b[8], int value);
+    unsigned char read_chr(unsigned short address);
+    unsigned char ppu_read(unsigned short address);
+    void ppu_write(unsigned short address, unsigned char value);
+    void clock_frame();
 };
 
 } //namespace nes
