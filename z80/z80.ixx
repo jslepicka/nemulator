@@ -15,7 +15,7 @@ export class c_z80
 
   public:
     c_z80(read_byte_t read_byte, write_byte_t write_byte, read_port_t read_port, write_port_t write_port, int_ack_t int_ack, int *nmi,
-          int *irq, uint8_t *data_bus)
+          int *irq, uint8_t *data_bus = 0)
     {
         int count = 0;
         this->read_byte = read_byte;
@@ -29,6 +29,12 @@ export class c_z80
     }
     ~c_z80()
     {
+    }
+    int emulate_frame()
+    {
+        const int cycles_per_frame = 3579545 / 60; //3.58Mhz/60fps
+        execute(cycles_per_frame);
+        return 1;
     }
     int reset()
     {
@@ -1266,7 +1272,15 @@ export class c_z80
                         PC = 0x66;
                         break;
                     case 5: //IM0
-                        opcode = *data_bus;
+                        if (data_bus == NULL) {
+                            //SMS games that use IM0 (Alien 3, Bubble Bobble) expect
+                            //0xFF on data bus.  Should this be a null check here or
+                            //should SMS default to 0xFF on data bus?
+                            opcode = 0xFF;
+                        }
+                        else {
+                            opcode = *data_bus;
+                        }
                         prefix = 0;
                         required_cycles += cycle_table[opcode];
                         fetch_opcode = 0;

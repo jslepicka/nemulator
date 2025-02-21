@@ -1,4 +1,5 @@
 #pragma once
+#define MAX_PATH 260
 #include <cstdint>
 #include <string>
 #include "buttons.h"
@@ -23,12 +24,11 @@ public:
     virtual void enable_mixer() {}
     virtual void disable_mixer() {}
     virtual int *get_video() = 0;
-    std::string path;
-    std::string filename;
-    std::string path_file;
-    std::string sram_filename;
-    std::string sram_path;
-    std::string sram_path_file;
+    char path[MAX_PATH];
+    char sram_path[MAX_PATH];
+    char filename[MAX_PATH];
+    char title[MAX_PATH];
+    char pathFile[MAX_PATH];
 
     struct s_system_info
     {

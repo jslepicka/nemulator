@@ -359,7 +359,7 @@ void c_vdp::generate_palette()
 {
     int expected = 0;
     if (pal_built.compare_exchange_strong(expected, 1)) {
-        double gamma = 1.0;
+        double gamma = 2.2;
         for (int i = 0; i < 256; i++) {
             int num_bits = 3;
             int r_bits = i & num_bits;

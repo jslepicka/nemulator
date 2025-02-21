@@ -142,6 +142,8 @@ class c_gb : public c_system, register_class<system_registry, c_gb>
     const static std::map<int, s_pak> pak_factory;
     s_pak *pak;
     int loaded;
+    char sramPath[MAX_PATH];
+
     int serial_transfer_count;
     int last_serial_clock;
 

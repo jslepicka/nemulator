@@ -104,7 +104,7 @@ class c_nes : public c_system, register_class<system_registry, c_nes>
     }
 
   private:
-    int LoadImage(std::string &pathFile);
+    int LoadImage(char *pathFile);
     std::unique_ptr<c_apu> apu;
     std::unique_ptr<c_joypad> joypad;
     std::unique_ptr<c_game_genie> game_genie;
@@ -114,6 +114,7 @@ class c_nes : public c_system, register_class<system_registry, c_nes>
     int mapperNumber;
     c_mapper::s_mapper_info *mapper_info;
     int file_length;
+    char sramFilename[MAX_PATH];
     bool limit_sprites;
 };
 
