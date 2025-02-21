@@ -4,13 +4,14 @@
 #include "time.h"
 #include <sstream>
 #include <xmmintrin.h>
-#include "system.h"
 #include <algorithm>
 #include <pmmintrin.h>
 #include "benchmark.h"
 #include <string_view>
 #include <ranges>
 #include "nes\nes.h"
+
+import system;
 
 extern ID3D10Device *d3dDev;
 extern D3DXMATRIX matrixView;

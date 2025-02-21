@@ -1,4 +1,8 @@
 #include "menu.h"
+#include <memory>
+#include "buttons.h"
+
+import input_handler;
 
 extern int clientHeight;
 extern int clientWidth;

@@ -1,9 +1,13 @@
 #pragma once
-#include "..\system.h"
 #include "sample_channel.h"
 #include <memory>
 #include <array>
 #include <vector>
+#include <string>
+#include "..\buttons.h"
+
+import system;
+import class_registry;
 
 class c_z80;
 

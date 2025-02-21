@@ -1,8 +1,9 @@
 #pragma once
 #include "stats.h"
-#include "system.h"
 #include "meow_fft.h"
 #include <memory>
+
+import system;
 
 namespace dsp
 {

@@ -1,6 +1,11 @@
 #pragma once
-#include "..\system.h"
 #include <memory>
+#include <string>
+#include <vector>
+#include "..\buttons.h"
+
+import system;
+import class_registry;
 
 class c_z80;
 

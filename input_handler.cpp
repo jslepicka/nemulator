@@ -1,5 +1,8 @@
-#include "input_handler.h"
+module;
 #include "windows.h"
+#include <memory>
+module input_handler;
+import std;
 
 c_input_handler::c_input_handler(int buttons)
 {

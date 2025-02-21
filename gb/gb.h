@@ -1,10 +1,13 @@
 #pragma once
-#include "..\system.h"
 #include <cstdint>
 #include <functional>
 #include <map>
 #include <memory>
 #include <string>
+#include "..\buttons.h"
+
+import system;
+import class_registry;
 
 namespace gb
 {

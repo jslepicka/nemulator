@@ -368,7 +368,9 @@
     <ClInclude Include="benchmark.h" />
     <ClInclude Include="buttons.h" />
     <ClInclude Include="config.h" />
-    <ClInclude Include="system.h" />
+    <ClCompile Include="system.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
     <ClInclude Include="constants.h" />
     <ClInclude Include="D3d10App.h" />
     <ClInclude Include="system_container.h" />
@@ -381,7 +383,9 @@
     <ClInclude Include="gb\mbc2.h" />
     <ClInclude Include="gb\mbc3.h" />
     <ClInclude Include="gb\mbc5.h" />
-    <ClInclude Include="input_handler.h" />
+    <ClCompile Include="input_handler.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
     <ClInclude Include="invaders\invaders.h" />
     <ClInclude Include="invaders\sample_channel.h" />
     <ClInclude Include="menu.h" />

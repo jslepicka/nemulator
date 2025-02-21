@@ -1,3 +1,4 @@
+module;
 #pragma once
 #pragma comment (lib, "winmm.lib")
 #include "windows.h"
@@ -7,7 +8,9 @@
 #include "buttons.h"
 #include <vector>
 
-class c_input_handler
+export module input_handler;
+
+export class c_input_handler
 {
 public:
     c_input_handler(int buttons);

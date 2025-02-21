@@ -5,6 +5,7 @@
 #include "nemulator.h"
 #include "resource.h"
 #include <algorithm>
+#include <timeapi.h>
 
 #pragma comment(lib, "PowrProf.lib")
 #pragma comment(lib, "avrt.lib")

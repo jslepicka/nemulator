@@ -1,10 +1,11 @@
 #pragma once
-#include "system.h"
 #include <string>
 #include "TexturePanelItem.h"
 #include "d3dx10.h"
 #include <memory>
 #include <functional>
+
+import system;
 
 // A container that decouples nemulator-specific code from emulation code
 class c_system_container : public TexturePanelItem

@@ -2,7 +2,8 @@
 #include <deque>
 #include <vector>
 #include <list>
-#include "input_handler.h"
+
+import input_handler;
 
 class c_task
 {

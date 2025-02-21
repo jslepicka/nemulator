@@ -3,11 +3,13 @@
 #include <map>
 #include <vector>
 #include <functional>
-#include "..\system.h"
 #include "game_genie.h"
 #include <memory>
 #include <string>
+#include "..\buttons.h"
 
+import system;
+import class_registry;
 import nes_mapper;
 
 namespace nes

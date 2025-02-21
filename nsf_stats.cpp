@@ -5,6 +5,7 @@
 #define MEOW_FFT_IMPLEMENTATION
 #include "meow_fft.h"
 #include "nemulator.h"
+#include "buttons.h"
 
 extern ID3D10Device* d3dDev;
 extern D3DXMATRIX matrixView;

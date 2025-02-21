@@ -27,13 +27,14 @@
 #include <d3dx10.h>
 #include <windows.h>
 #include <string>
-#include "input_handler.h"
 #include "config.h"
 #include <stack>
 #include "task.h"
 #include <deque>
 #include <vector>
 #include <string>
+
+import input_handler;
 
 class D3d10App
 {

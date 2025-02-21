@@ -1,14 +1,15 @@
-#pragma once
+module;
 #include <cstdint>
 #include <string>
 #include "buttons.h"
 #include <vector>
 #include <functional>
+export module system;
 
 import class_registry;
 
 // An emulated system (game console, arcade machine, etc.)
-class c_system
+export class c_system
 {
 public:
     c_system() {};
@@ -58,7 +59,7 @@ public:
     int crc32 = 0;
 };
 
-class system_registry : public c_class_registry<std::vector<c_system::s_system_info>>
+export class system_registry : public c_class_registry<std::vector<c_system::s_system_info>>
 {
   public:
     static void _register(std::vector<c_system::s_system_info> system_info)
