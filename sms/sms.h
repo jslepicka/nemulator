@@ -106,6 +106,7 @@ class c_sms : public c_system, register_class<system_registry, c_sms>
     int loaded = 0;
     int ram_select;
     int nationalism;
+    uint8_t data_bus = 0xFF;
     std::unique_ptr<c_z80> z80;
     std::unique_ptr<c_vdp> vdp;
     std::unique_ptr<c_psg> psg;

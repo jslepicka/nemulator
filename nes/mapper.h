@@ -74,7 +74,7 @@ class c_mapper
     void set_mirroring(int mode);
     int mirroring_mode;
 
-    alignas(64) unsigned char vram[4096];
+    
     unsigned char *name_table[8];
 
     std::unique_ptr<unsigned char[]> sram;
@@ -110,6 +110,7 @@ class c_mapper
     int open_sram();
 
     int submapper;
+    alignas(64) unsigned char vram[4096];
 };
 
 class nes_mapper_registry : public c_class_registry<std::map<int, c_mapper::s_mapper_info>>

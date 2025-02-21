@@ -26,7 +26,7 @@ c_sms::c_sms(SMS_MODEL model)
         [this](uint8_t port) { return this->read_port(port); }, //read_port
         [this](uint8_t port, uint8_t data) { this->write_port(port, data); }, //write_port
         nullptr, //int_ack callback
-        &nmi, &irq);
+        &nmi, &irq, &data_bus);
     vdp = std::make_unique<c_vdp>(this);
     psg = std::make_unique<c_psg>();
     ram = std::make_unique<unsigned char[]>(8192);

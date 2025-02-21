@@ -1,6 +1,6 @@
 module;
 #include "..\mapper.h"
-export module mapper202;
+export module nes_mapper.mapper202;
 
 namespace nes
 {
@@ -18,17 +18,13 @@ class c_mapper202 : public c_mapper, register_class<nes_mapper_registry, c_mappe
             .constructor = []() { return std::make_unique<c_mapper202>(); },
         }};
     }
-    c_mapper202()
-    {
-    }
-    ~c_mapper202()
-    {
-    }
-    void reset()
+
+    void reset() override
     {
         set_mirroring(MIRRORING_VERTICAL);
     }
-    void write_byte(unsigned short address, unsigned char value)
+
+    void write_byte(unsigned short address, unsigned char value) override
     {
         if (address >= 0x8000) {
             if ((address & 0x9) == 0x9) {

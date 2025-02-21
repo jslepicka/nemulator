@@ -1,6 +1,6 @@
 module;
 #include "..\mapper.h"
-export module mapper212;
+export module nes_mapper.mapper212;
 
 namespace nes
 {
@@ -19,17 +19,13 @@ class c_mapper212 : public c_mapper, register_class<nes_mapper_registry, c_mappe
             .constructor = []() { return std::make_unique<c_mapper212>(); },
         }};
     }
-    c_mapper212()
-    {
-    }
-    ~c_mapper212()
-    {
-    }
-    void reset()
+
+    void reset() override
     {
         set_mirroring(MIRRORING_VERTICAL);
     }
-    void write_byte(unsigned short address, unsigned char value)
+
+    void write_byte(unsigned short address, unsigned char value) override
     {
         if (address >= 0x8000) {
             if (address & 0x4000) {
@@ -43,7 +39,8 @@ class c_mapper212 : public c_mapper, register_class<nes_mapper_registry, c_mappe
             set_mirroring(address & 0x8 ? MIRRORING_HORIZONTAL : MIRRORING_VERTICAL);
         }
     }
-    unsigned char read_byte(unsigned short address)
+
+    unsigned char read_byte(unsigned short address) override
     {
         if (address < 0x8000) {
             if ((address & 0xE010) == 0x6000) {
