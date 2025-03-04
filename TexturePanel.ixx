@@ -1,14 +1,13 @@
-#pragma once
-#include "TexturePanelItem.h"
+module;
 #include <vector>
 #include <list>
 #include "d3d10.h"
 #include "d3dx10.h"
-//#include "d3d10app.h"
 
-#define ReleaseCOM(x) { if(x) {x->Release(); x = 0; } }
+export module TexturePanel;
+import TexturePanelItem;
 
-class TexturePanel
+export class TexturePanel
 {
 public:
     TexturePanel(int rows, int columns);

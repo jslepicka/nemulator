@@ -1,10 +1,10 @@
-#include "task.h"
+module nemulator.task;
 
-std::list<c_task *> *c_task::task_list = NULL;
+std::list<c_task *> *c_task::task_list = nullptr;
 
 c_task::c_task()
 {
-    if (task_list == NULL)
+    if (task_list == nullptr)
         task_list = new std::list<c_task*>;
     dead = false;
 }

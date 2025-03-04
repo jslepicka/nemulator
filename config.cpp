@@ -1,6 +1,7 @@
-#include "config.h"
+module;
 #include <iostream>
-using namespace std;
+
+module nemulator.config;
 
 c_config::c_config()
 {
@@ -35,16 +36,16 @@ bool c_config::read_config_file(std::string filename)
     while (!file.eof())
     {
         file.getline(temp, 256);
-        if (!(file.rdstate() & ios::badbit))
+        if (!(file.rdstate() & std::ios::badbit))
         {
             line = trim(temp);
             if (line.length() == 0 || line[0] == ';')
                 continue;
 
-            basic_string <char>::size_type i;
+            std::basic_string <char>::size_type i;
             
             i = line.find("=");
-            if (i != string::npos)
+            if (i != std::string::npos)
             {
                 int start = 0;
                 std::string key = trim(line.substr(0, i));

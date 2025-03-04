@@ -1,7 +1,15 @@
-#include "qam.h"
-#include "Nemulator.h"
+module;
+#include "d3d10.h"
+#include "D3DX10.h"
+#include <memory>
+
+#define ReleaseCOM(x) { if(x) {x->Release(); x = 0; } }
+
+
+module nemulator.qam;
 
 import nemulator.buttons;
+import input_handler;
 
 extern ID3D10Device *d3dDev;
 extern int clientHeight;

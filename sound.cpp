@@ -1,10 +1,14 @@
-#include "sound.h"
+module;
 #include <math.h>
 #include <assert.h>
-#include "config.h"
 #include <algorithm>
+#include <Audioclient.h>
+#include <mmdeviceapi.h>
+#include <memory>
+module nemulator.sound;
 
 import interpolate;
+import nemulator.config;
 
 extern c_config *config;
 

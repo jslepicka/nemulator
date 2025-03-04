@@ -210,9 +210,6 @@
     <ClCompile Include="system_container.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="nes\apu.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="nes\mappers\mapper212.ixx">
       <Filter>Source Files\nes\mappers</Filter>
     </ClCompile>
@@ -247,9 +244,6 @@
       <Filter>Source Files\nes\mappers</Filter>
     </ClCompile>
     <ClCompile Include="nes\mappers\mapper10.ixx">
-      <Filter>Source Files\nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\mappers\mapper5.cpp">
       <Filter>Source Files\nes\mappers</Filter>
     </ClCompile>
     <ClCompile Include="nes\mappers\mapper11.ixx">
@@ -444,46 +438,76 @@
     <ClCompile Include="nes\mappers\mapper_vrc4.ixx">
       <Filter>Source Files\nes\mappers</Filter>
     </ClCompile>
+    <ClCompile Include="stats.ixx">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="nsf_stats.ixx">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sound.ixx">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="menu.ixx">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="audio_info.ixx">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="status.ixx">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mapper.ixx">
+      <Filter>Header Files\nes</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper5.ixx">
+      <Filter>Source Files\nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="buttons.ixx">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="constants.ixx">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="class_registry.ixx">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="input_handler.ixx">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="config.ixx">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="qam.ixx">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="system.ixx">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="task.ixx">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="system_container.ixx">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TexturePanel.ixx">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TexturePanelItem.ixx">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D3d10App.ixx">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="nemulator.ixx">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\apu.cpp">
+      <Filter>Source Files\nes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="config.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="constants.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="D3d10App.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="input_handler.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="menu.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="sound.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="stats.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="status.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="task.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="TexturePanel.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="TexturePanelItem.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="nes\nes.h">
       <Filter>Header Files\nes</Filter>
-    </ClInclude>
-    <ClInclude Include="audio_info.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="nes\cpu.h">
       <Filter>Header Files\nes</Filter>
@@ -494,14 +518,8 @@
     <ClInclude Include="nes\ppu.h">
       <Filter>Header Files\nes</Filter>
     </ClInclude>
-    <ClInclude Include="nes\mapper.h">
-      <Filter>Header Files\nes</Filter>
-    </ClInclude>
     <ClInclude Include="nes\ines.h">
       <Filter>Header Files\nes</Filter>
-    </ClInclude>
-    <ClInclude Include="qam.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="nes\mappers\vrc7_audio.h">
       <Filter>Header Files\nes\mappers</Filter>
@@ -514,9 +532,6 @@
     </ClInclude>
     <ClInclude Include="sms\vdp.h">
       <Filter>Header Files\sms</Filter>
-    </ClInclude>
-    <ClInclude Include="nemulator.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="sms\crc.h">
       <Filter>Header Files\sms</Filter>
@@ -551,9 +566,6 @@
     <ClInclude Include="nes\mappers\mapper_nsf_rom.h">
       <Filter>Header Files\nes\mappers</Filter>
     </ClInclude>
-    <ClInclude Include="nsf_stats.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="benchmark.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -587,26 +599,11 @@
     <ClInclude Include="invaders\invaders.h">
       <Filter>Header Files\invaders</Filter>
     </ClInclude>
-    <ClInclude Include="buttons.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="invaders\sample_channel.h">
       <Filter>Header Files\invaders</Filter>
     </ClInclude>
-    <ClInclude Include="class_registry.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="system.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="system_container.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="nes\apu.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\mappers\mapper5.h">
-      <Filter>Header Files\nes\mappers</Filter>
+      <Filter>Header Files\nes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

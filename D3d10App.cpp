@@ -1,17 +1,35 @@
-#include "D3d10App.h"
+module;
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT _WIN32_WINNT_WIN10
+#endif
+
+#ifndef _WIN64
+#error This application requires x64 compilation
+#endif
+
+#define WIN32_LEAN_AND_MEAN
+#include "Windows.h"
 #include "avrt.h"
 #include "benchmark.h"
 #include "dwmapi.h"
-#include "nemulator.h"
 #include "resource.h"
 #include <algorithm>
 #include <timeapi.h>
+#include "d3d10.h"
+#include "D3DX10.h"
+#include <memory>
 
+#pragma comment(lib, "d3d10.lib")
+#pragma comment(lib, "d3dx10.lib")
+#pragma comment(lib, "dxerr.lib")
+#pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "PowrProf.lib")
 #pragma comment(lib, "avrt.lib")
 #pragma comment(lib, "dwmapi.lib")
 
 #define ReleaseCOM(x) { if(x) { x->Release(); x = 0; } }
+
+module D3d10App;
 
 ID3D10Device *d3dDev;
 D3DXMATRIX matrixView;
@@ -23,7 +41,6 @@ bool aspectLock;
 double aspectRatio;
 HWND hWnd;
 c_config *config = NULL;
-//c_input_handler *g_ih = NULL;
 std::unique_ptr<c_input_handler> g_ih;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)

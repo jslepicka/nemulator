@@ -1,4 +1,9 @@
-#include "status.h"
+module;
+#include "d3d10.h"
+#include "D3DX10.h"
+#include <deque>
+#include <string>
+module nemulator.status;
 
 extern int clientHeight;
 extern int clientWidth;

@@ -1,9 +1,11 @@
-#pragma once
+module;
 #include <string>
 #include <fstream>
 #include <map>
 
-class c_config
+export module nemulator.config;
+
+export class c_config
 {
 public:
     c_config();

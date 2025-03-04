@@ -1,11 +1,12 @@
-#pragma once
-#include "task.h"
+module;
 #include "d3d10.h"
 #include "d3dx10.h"
 #include <string>
 #include <deque>
+export module nemulator.status;
+import nemulator.task;
 
-class c_status:
+export class c_status:
     public c_task
 {
 public:

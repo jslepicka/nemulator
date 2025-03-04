@@ -1,12 +1,13 @@
-#pragma once
-#include "task.h"
+module;
 #include "d3d10.h"
 #include "d3dx10.h"
 #include <string>
 #include <map>
-#include <fstream>
 
-class c_stats:
+export module nemulator.stats;
+import nemulator.task;
+
+export class c_stats:
     public c_task
 {
 public:

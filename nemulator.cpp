@@ -1,5 +1,5 @@
-#include "Nemulator.h"
-#include "menu.h"
+module;
+#include "Windows.h"
 #include "PowrProf.h"
 #include "time.h"
 #include <sstream>
@@ -10,8 +10,17 @@
 #include <string_view>
 #include <ranges>
 #include "nes\nes.h"
+#include "d3d10.h"
+#include "D3DX10.h"
+#include <filesystem>
+
+#define ReleaseCOM(x) { if(x) {x->Release(); x = 0; } }
+
+module nemulator;
 
 import system;
+import nemulator.menu;
+import TexturePanelItem;
 
 extern ID3D10Device *d3dDev;
 extern D3DXMATRIX matrixView;

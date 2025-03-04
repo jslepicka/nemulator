@@ -1,10 +1,10 @@
-#pragma once
+module;
 #include "d3d10.h"
 #include <d3dx10.h>
 #include <string>
-//#include "d3d10app.h"
+export module TexturePanelItem;
 
-class TexturePanelItem
+export class TexturePanelItem
 {
 public:
     TexturePanelItem();

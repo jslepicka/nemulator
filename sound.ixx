@@ -1,11 +1,11 @@
-#pragma once
+module;
 #include <Audioclient.h>
-#include <cstdint>
 #include <mmdeviceapi.h>
-#include <string>
 #include <memory>
+#include <string>
+export module nemulator.sound;
 
-class c_sound
+export class c_sound
 {
   public:
     c_sound();

@@ -3,10 +3,10 @@
 #include <array>
 #include <vector>
 #include <string>
-#include "..\buttons.h"
 
 import system;
 import class_registry;
+import nemulator.buttons;
 
 class c_z80;
 

@@ -1,12 +1,12 @@
-#pragma once
+module;
 
-#include "task.h"
 #include <d3d10.h>
 #include <dxgi.h>
 #include <D3DX10.h>
+export module nemulator.audio_info;
+import nemulator.task;
 
-
-class c_audio_info :
+export class c_audio_info :
     public c_task
 {
 public:

@@ -1,4 +1,4 @@
-#include "TexturePanelItem.h"
+module TexturePanelItem;
 
 TexturePanelItem::TexturePanelItem()
 {

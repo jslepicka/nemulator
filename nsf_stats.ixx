@@ -1,16 +1,15 @@
-#pragma once
-#include "stats.h"
+module;
 #include "meow_fft.h"
 #include <memory>
+#include "d3d10.h"
+#include "d3dx10.h"
+export module nemulator.nsf_stats;
 
 import system;
+import nemulator.stats;
+import dsp;
 
-namespace dsp
-{
-class c_biquad;
-}
-
-class c_nsf_stats :
+export class c_nsf_stats :
     public c_stats
 {
 public:

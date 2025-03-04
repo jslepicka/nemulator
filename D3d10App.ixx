@@ -1,9 +1,4 @@
-#pragma once
-
-#pragma comment (lib, "d3d10.lib")
-#pragma comment (lib, "d3dx10.lib")
-#pragma comment (lib, "dxerr.lib")
-#pragma comment (lib, "dxgi.lib")
+module;
 
 #ifndef _WIN32_WINNT
 #define _WIN32_WINNT _WIN32_WINNT_WIN10
@@ -27,16 +22,17 @@
 #include <d3dx10.h>
 #include <windows.h>
 #include <string>
-#include "config.h"
 #include <stack>
-#include "task.h"
 #include <deque>
 #include <vector>
-#include <string>
+
+export module D3d10App;
 
 import input_handler;
+import nemulator.config;
+import nemulator.task;
 
-class D3d10App
+export class D3d10App
 {
 public:
 	D3d10App(HINSTANCE hInstance);

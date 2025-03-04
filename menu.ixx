@@ -1,10 +1,12 @@
-#pragma once
-#include "task.h"
+module;
 #include "d3d10.h"
 #include "d3dx10.h"
 #include <string>
 
-class c_menu :
+export module nemulator.menu;
+import nemulator.task;
+
+export class c_menu :
     public c_task
 {
 public:

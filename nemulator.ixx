@@ -1,23 +1,29 @@
-#pragma once
-#include "system_container.h"
+module;
+#include "Windows.h"
+#include "d3d10.h"
+#include "d3dx10.h"
+#include "dxgi.h"
+
 #include <vector>
-#include <memory>
-#include "constants.h"
-#include "TexturePanel.h"
-#include "TexturePanelItem.h"
-#include "sound.h"
-#include "config.h"
-#include "task.h"
-#include "d3d10app.h"
-#include "stats.h"
-#include "status.h"
-#include "audio_info.h"
-#include "qam.h"
-#include "nsf_stats.h"
+#include <list>
 #include <numbers>
 #include <filesystem>
+export module nemulator;
+import D3d10App;
+import nemulator.constants;
+import nemulator.config;
+import nemulator.qam;
+import nemulator.task;
+import nemulator.stats;
+import nemulator.nsf_stats;
+import nemulator.sound;
+import nemulator.audio_info;
+import nemulator.status;
+import nemulator.system_container;
+import TexturePanel;
+import input_handler;
 
-class c_nemulator :
+export class c_nemulator :
     public c_task
 {
 public:

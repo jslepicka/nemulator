@@ -1,7 +1,8 @@
-#include "D3d10App.h"
-#include "nemulator.h"
-#include "benchmark.h"
+#include "Windows.h"
 #include <memory>
+
+import D3d10App;
+import nemulator;
 
 const char *app_title = "nemulator 4.6";
 

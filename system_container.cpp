@@ -1,9 +1,11 @@
-#include "system_container.h"
+module;
+#include "d3d10.h"
+#include "d3dx10.h"
 #include <crtdbg.h>
 #include <immintrin.h>
 #include <filesystem>
 #include "nes\nes.h"
-
+module nemulator.system_container;
 import random;
 
 extern HANDLE g_start_event;

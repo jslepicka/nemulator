@@ -1,10 +1,16 @@
-#include "nsf_stats.h"
-#include "effect2.fxo.h"
+module;
 #include <algorithm>
 #include <array>
 #define MEOW_FFT_IMPLEMENTATION
 #include "meow_fft.h"
-#include "nemulator.h"
+#include <memory>
+#include "d3d10.h"
+#include "D3DX10.h"
+#include "effect2.fxo.h"
+
+module nemulator.nsf_stats;
+
+import input_handler;
 
 extern ID3D10Device* d3dDev;
 extern D3DXMATRIX matrixView;
@@ -12,7 +18,6 @@ extern D3DXMATRIX matrixProj;
 extern std::unique_ptr<c_input_handler> g_ih;
 
 import nemulator.buttons;
-import dsp;
 
 c_nsf_stats::c_nsf_stats()
 {

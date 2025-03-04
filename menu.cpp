@@ -1,6 +1,8 @@
-#include "menu.h"
+module;
 #include <memory>
-
+#include "d3d10.h"
+#include "D3DX10.h"
+module nemulator.menu;
 import nemulator.buttons;
 import input_handler;
 

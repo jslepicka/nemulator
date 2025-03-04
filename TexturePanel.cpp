@@ -1,9 +1,14 @@
+module;
+#include <string>
+#include "d3d10.h"
+#include "D3DX10.h"
+#include "effect.fxo.h"
+#define ReleaseCOM(x) { if(x) {x->Release(); x = 0; } }
+
+
+module TexturePanel;
 import interpolate;
 using namespace interpolate;
-
-#include "TexturePanel.h"
-#include "effect.fxo.h"
-#include <string>
 
 
 extern ID3D10Device *d3dDev;

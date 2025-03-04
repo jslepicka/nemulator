@@ -364,18 +364,28 @@
     <ClCompile Include="z80\z80.ixx" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="audio_info.h" />
+    <ClCompile Include="audio_info.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
     <ClInclude Include="benchmark.h" />
     <ClCompile Include="buttons.ixx">
       <FileType>Document</FileType>
     </ClCompile>
-    <ClInclude Include="config.h" />
+    <ClCompile Include="config.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
     <ClCompile Include="system.ixx">
       <FileType>Document</FileType>
     </ClCompile>
-    <ClInclude Include="constants.h" />
-    <ClInclude Include="D3d10App.h" />
-    <ClInclude Include="system_container.h" />
+    <ClCompile Include="constants.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
+    <ClCompile Include="D3d10App.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
+    <ClCompile Include="system_container.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
     <ClInclude Include="gb\gb.h" />
     <ClInclude Include="gb\gbapu.h" />
     <ClInclude Include="gb\gbmapper.h" />
@@ -390,9 +400,13 @@
     </ClCompile>
     <ClInclude Include="invaders\invaders.h" />
     <ClInclude Include="invaders\sample_channel.h" />
-    <ClInclude Include="menu.h" />
+    <ClCompile Include="menu.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
     <ClInclude Include="meow_fft.h" />
-    <ClInclude Include="nemulator.h" />
+    <ClCompile Include="nemulator.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
     <ClInclude Include="nes\apu.h" />
     <ClInclude Include="nes\cartdb.h" />
     <ClInclude Include="nes\cpu.h" />
@@ -406,12 +420,16 @@
     <ClInclude Include="nes\mappers\vrc7_audio.h" />
     <ClInclude Include="nes\mirroring_types.h" />
     <ClInclude Include="nes\ppu.h" />
-    <ClInclude Include="nsf_stats.h" />
+    <ClCompile Include="nsf_stats.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
     <ClInclude Include="pacman\mspacman.h" />
     <ClInclude Include="pacman\pacman.h" />
     <ClInclude Include="pacman\pacman_psg.h" />
     <ClInclude Include="pacman\pacman_vid.h" />
-    <ClInclude Include="qam.h" />
+    <ClCompile Include="qam.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
     <ClInclude Include="resource.h" />
     <ClInclude Include="sms\crc.h" />
     <ClInclude Include="sms\psg.h" />
@@ -419,12 +437,24 @@
       <FileType>Document</FileType>
     </ClInclude>
     <ClInclude Include="sms\vdp.h" />
-    <ClInclude Include="sound.h" />
-    <ClInclude Include="stats.h" />
-    <ClInclude Include="status.h" />
-    <ClInclude Include="task.h" />
-    <ClInclude Include="TexturePanel.h" />
-    <ClInclude Include="TexturePanelItem.h" />
+    <ClCompile Include="sound.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
+    <ClCompile Include="stats.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
+    <ClCompile Include="status.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
+    <ClCompile Include="task.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
+    <ClCompile Include="TexturePanel.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
+    <ClCompile Include="TexturePanelItem.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
     <ClInclude Include="nes\nes.h" />
   </ItemGroup>
   <ItemGroup>

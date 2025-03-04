@@ -1,10 +1,12 @@
-#pragma once
-#include "task.h"
+module;
 #include <string>
 #include "d3d10.h"
 #include <d3dx10.h>
 
-class c_qam :
+export module nemulator.qam;
+import nemulator.task;
+
+export class c_qam :
     public c_task
 {
 public:

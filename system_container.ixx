@@ -1,16 +1,16 @@
-#pragma once
-#include <string>
-#include "TexturePanelItem.h"
+module;
 #include "d3dx10.h"
 #include <memory>
 #include <functional>
 #include <vector>
-
+#include <string>
+export module nemulator.system_container;
 import nemulator.buttons;
 import system;
+import TexturePanelItem;
 
 // A container that decouples nemulator-specific code from emulation code
-class c_system_container : public TexturePanelItem
+export class c_system_container : public TexturePanelItem
 {
 public:
     c_system_container(c_system::s_system_info &system_info, std::string &path, std::string &filename, std::string &sram_path);

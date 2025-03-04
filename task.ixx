@@ -1,11 +1,9 @@
-#pragma once
-#include <deque>
-#include <vector>
+module;
 #include <list>
+export module nemulator.task;
+//import <list>;
 
-import input_handler;
-
-class c_task
+export class c_task
 {
 public:
     c_task();

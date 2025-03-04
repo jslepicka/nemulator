@@ -1,8 +1,5 @@
 #pragma once
-//TODO: Remove this.  Only need it for a few defines and macros
-#include <map>
 #include <vector>
-#include <functional>
 #include "game_genie.h"
 #include <memory>
 #include <string>
