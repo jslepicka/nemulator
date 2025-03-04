@@ -1,5 +1,8 @@
-#pragma once
-enum BUTTONS
+module;
+#include <cstdint>
+export module nemulator.buttons;
+
+export enum BUTTONS
 {
     BUTTON_1A,
     BUTTON_1B,
@@ -42,7 +45,7 @@ enum BUTTONS
 };
 
 
-struct s_button_map
+export struct s_button_map
 {
     uint32_t button;
     uint32_t mask;

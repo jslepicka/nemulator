@@ -5,10 +5,10 @@ module;
 #include "mmsystem.h"
 #include <stdint.h>
 #include <memory>
-#include "buttons.h"
 #include <vector>
 
 export module input_handler;
+import nemulator.buttons;
 
 export class c_input_handler
 {

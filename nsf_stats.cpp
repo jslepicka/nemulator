@@ -5,13 +5,13 @@
 #define MEOW_FFT_IMPLEMENTATION
 #include "meow_fft.h"
 #include "nemulator.h"
-#include "buttons.h"
 
 extern ID3D10Device* d3dDev;
 extern D3DXMATRIX matrixView;
 extern D3DXMATRIX matrixProj;
 extern std::unique_ptr<c_input_handler> g_ih;
 
+import nemulator.buttons;
 import dsp;
 
 c_nsf_stats::c_nsf_stats()

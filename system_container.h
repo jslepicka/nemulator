@@ -4,7 +4,9 @@
 #include "d3dx10.h"
 #include <memory>
 #include <functional>
+#include <vector>
 
+import nemulator.buttons;
 import system;
 
 // A container that decouples nemulator-specific code from emulation code

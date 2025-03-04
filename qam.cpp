@@ -1,6 +1,7 @@
 #include "qam.h"
 #include "Nemulator.h"
-#include "buttons.h"
+
+import nemulator.buttons;
 
 extern ID3D10Device *d3dDev;
 extern int clientHeight;

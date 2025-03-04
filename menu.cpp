@@ -1,7 +1,7 @@
 #include "menu.h"
 #include <memory>
-#include "buttons.h"
 
+import nemulator.buttons;
 import input_handler;
 
 extern int clientHeight;

@@ -1,12 +1,12 @@
 module;
 #include <cstdint>
 #include <string>
-#include "buttons.h"
 #include <vector>
 #include <functional>
 export module system;
 
 import class_registry;
+import nemulator.buttons;
 
 // An emulated system (game console, arcade machine, etc.)
 export class c_system

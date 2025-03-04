@@ -366,7 +366,9 @@
   <ItemGroup>
     <ClInclude Include="audio_info.h" />
     <ClInclude Include="benchmark.h" />
-    <ClInclude Include="buttons.h" />
+    <ClCompile Include="buttons.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
     <ClInclude Include="config.h" />
     <ClCompile Include="system.ixx">
       <FileType>Document</FileType>
@@ -413,7 +415,9 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="sms\crc.h" />
     <ClInclude Include="sms\psg.h" />
-    <ClInclude Include="sms\sms.h" />
+    <ClInclude Include="sms\sms.h">
+      <FileType>Document</FileType>
+    </ClInclude>
     <ClInclude Include="sms\vdp.h" />
     <ClInclude Include="sound.h" />
     <ClInclude Include="stats.h" />

@@ -2,8 +2,8 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "..\buttons.h"
 
+import nemulator.buttons;
 import system;
 import class_registry;
 

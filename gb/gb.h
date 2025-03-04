@@ -4,8 +4,8 @@
 #include <map>
 #include <memory>
 #include <string>
-#include "..\buttons.h"
 
+import nemulator.buttons;
 import system;
 import class_registry;
 
