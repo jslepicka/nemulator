@@ -1,21 +1,74 @@
-#include "sms.h"
+module;
 #include <fstream>
 #include "vdp.h"
 #include "psg.h"
 #include <stdio.h>
 #include "crc.h"
+#include <memory>
 
 #include <crtdbg.h>
 #if defined(DEBUG) | defined(_DEBUG)
 #define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
 #define new DEBUG_NEW
 #endif
-
+module sms;
 import z80;
 import crc32;
 
 namespace sms
 {
+
+std::vector<c_system::s_system_info> c_sms::get_registry_info()
+{
+        // clang-format off
+        static const std::vector<s_button_map> button_map = {
+            {BUTTON_1UP,             0x01},
+            {BUTTON_1DOWN,           0x02},
+            {BUTTON_1LEFT,           0x04},
+            {BUTTON_1RIGHT,          0x08},
+            {BUTTON_1B,              0x10}, //button 1
+            {BUTTON_1A,              0x20}, //button 2
+            {BUTTON_2UP,             0x40},
+            {BUTTON_2DOWN,           0x80},
+            {BUTTON_2LEFT,          0x100},
+            {BUTTON_2RIGHT,         0x200},
+            {BUTTON_2B,             0x400}, //button 1
+            {BUTTON_2A,             0x800}, //button 2
+            {BUTTON_SMS_PAUSE, 0x80000000},
+        };
+        // clang-format on
+
+    return {
+        {
+            .name = "Sega Master System",
+            .identifier = "sms",
+            .display_info =
+                {
+                    .fb_width = 256,
+                    .fb_height = 192,
+                    .crop_top = -14,
+                    .crop_bottom = -14,
+                },
+            .button_map = button_map,
+            .constructor = []() { return new c_sms(SMS_MODEL::SMS); },
+        },
+        {
+            .name = "Sega Game Gear",
+            .identifier = "gg",
+            .display_info =
+                {
+                    .fb_width = 256,
+                    .fb_height = 192,
+                    .crop_left = 48,
+                    .crop_right = 48,
+                    .crop_top = 24,
+                    .crop_bottom = 24,
+                },
+            .button_map = button_map,
+            .constructor = []() { return new c_sms(SMS_MODEL::GAMEGEAR); },
+        },
+    };
+}
 
 c_sms::c_sms(SMS_MODEL model)
 {

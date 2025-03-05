@@ -1,9 +1,10 @@
-#pragma once
+module;
 #include <memory>
+export module invaders.sample_channel;
 
 namespace invaders
 {
-class c_sample_channel
+export class c_sample_channel
 {
   public:
     c_sample_channel();

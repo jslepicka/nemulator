@@ -1,24 +1,55 @@
-#include "invaders.h"
+module;
 #include <fstream>
 #include <string.h>
 #include <algorithm>
 
+module invaders;
 import z80;
 import crc32;
 import dsp;
 import interpolate;
 
-using namespace invaders;
+namespace invaders
+{
+
+std::vector<c_invaders::s_system_info> c_invaders::get_registry_info()
+{
+    return {
+        {
+            .is_arcade = 1,
+            .name = "Arcade",
+            .identifier = "invaders",
+            .title = "Space Invaders",
+            .display_info =
+                {
+                    .fb_width = FB_WIDTH,
+                    .fb_height = FB_HEIGHT,
+                    .rotation = 270,
+                    .aspect_ratio = 3.0 / 4.0,
+                },
+            .button_map =
+                {
+                    {BUTTON_1SELECT, 0x01},
+                    {BUTTON_1START, 0x04},
+                    {BUTTON_1A, 0x10},
+                    {BUTTON_1LEFT, 0x20},
+                    {BUTTON_1RIGHT, 0x40},
+                },
+            .constructor = []() { return new c_invaders(); },
+        },
+    };
+}
 
 c_invaders::c_invaders()
 {
     //real hardware uses an i8080, but z80, being (mostly) compatible, seems to work just fine
-    z80 = std::make_unique<c_z80>([this](uint16_t address) { return this->read_byte(address); }, //read_byte
-                [this](uint16_t address, uint8_t data) { this->write_byte(address, data); }, //write_byte
-                [this](uint8_t port) { return this->read_port(port); }, //read_port
-                [this](uint8_t port, uint8_t data) { this->write_port(port, data); }, //write_port
-                [this]() { this->int_ack(); }, //int_ack callback
-                &nmi, &irq, &data_bus);
+    z80 = std::make_unique<c_z80>(
+        [this](uint16_t address) { return this->read_byte(address); }, //read_byte
+        [this](uint16_t address, uint8_t data) { this->write_byte(address, data); }, //write_byte
+        [this](uint8_t port) { return this->read_port(port); }, //read_port
+        [this](uint8_t port, uint8_t data) { this->write_port(port, data); }, //write_port
+        [this]() { this->int_ack(); }, //int_ack callback
+        &nmi, &irq, &data_bus);
     loaded = 0;
     sample_channels[0].loop = 1;
 
@@ -31,15 +62,13 @@ c_invaders::c_invaders()
     // a = regexprep(num2str(Hd.sosMatrix(4 : 6), '%.16ff '), '\s+', ',')
 
     post_filter =
-        new dsp::c_biquad(0.9972270727157593f,
-            {1.0000000000000000f,-2.0000000000000000f,1.0000000000000000f},
-            {1.0000000000000000f,-1.9944463968276978f,0.9944617748260498f});
+        new dsp::c_biquad(0.9972270727157593f, {1.0000000000000000f, -2.0000000000000000f, 1.0000000000000000f},
+                          {1.0000000000000000f, -1.9944463968276978f, 0.9944617748260498f});
 
     //no need for low pass filter since we're playing back samples
     null_filter = new dsp::c_null_filter();
     resampler = new dsp::c_resampler((double)audio_freq / 48000.0, null_filter, post_filter);
     mixer_enabled = 0;
-
 }
 
 c_invaders::~c_invaders()
@@ -332,7 +361,6 @@ void c_invaders::write_port(uint8_t port, uint8_t data)
         8, //ufo hit
     };
 
-
     // clang-format on
     int x = 0;
     switch (port) {
@@ -397,3 +425,4 @@ void c_invaders::disable_mixer()
 {
     mixer_enabled = 0;
 }
+} //namespace invaders

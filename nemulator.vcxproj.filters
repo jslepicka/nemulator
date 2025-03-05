@@ -402,6 +402,15 @@
     <ClCompile Include="task.ixx" />
     <ClCompile Include="TexturePanel.ixx" />
     <ClCompile Include="TexturePanelItem.ixx" />
+    <ClCompile Include="invaders\invaders.ixx">
+      <Filter>invaders</Filter>
+    </ClCompile>
+    <ClCompile Include="invaders\sample_channel.ixx">
+      <Filter>invaders</Filter>
+    </ClCompile>
+    <ClCompile Include="sms\sms.ixx">
+      <Filter>sms</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gb\gb.h">
@@ -479,21 +488,12 @@
     <ClInclude Include="sms\psg.h">
       <Filter>sms</Filter>
     </ClInclude>
-    <ClInclude Include="sms\sms.h">
-      <Filter>sms</Filter>
-    </ClInclude>
     <ClInclude Include="sms\vdp.h">
       <Filter>sms</Filter>
     </ClInclude>
     <ClInclude Include="benchmark.h" />
     <ClInclude Include="meow_fft.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="invaders\invaders.h">
-      <Filter>invaders</Filter>
-    </ClInclude>
-    <ClInclude Include="invaders\sample_channel.h">
-      <Filter>invaders</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="effect.fx" />

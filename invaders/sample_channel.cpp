@@ -1,6 +1,8 @@
-#include "sample_channel.h"
+module;
 #include <cmath>
+#include <memory>
 
+module invaders.sample_channel;
 import interpolate;
 
 namespace invaders

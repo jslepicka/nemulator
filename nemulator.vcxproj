@@ -401,8 +401,12 @@
     <ClCompile Include="menu.ixx">
       <FileType>Document</FileType>
     </ClCompile>
-    <ClInclude Include="invaders\invaders.h" />
-    <ClInclude Include="invaders\sample_channel.h" />
+    <ClCompile Include="invaders\invaders.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
+    <ClCompile Include="invaders\sample_channel.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
     <ClInclude Include="meow_fft.h" />
     <ClCompile Include="nemulator.ixx">
       <FileType>Document</FileType>
@@ -432,9 +436,9 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="sms\crc.h" />
     <ClInclude Include="sms\psg.h" />
-    <ClInclude Include="sms\sms.h">
+    <ClCompile Include="sms\sms.ixx">
       <FileType>Document</FileType>
-    </ClInclude>
+    </ClCompile>
     <ClInclude Include="sms\vdp.h" />
     <ClCompile Include="sound.ixx">
       <FileType>Document</FileType>

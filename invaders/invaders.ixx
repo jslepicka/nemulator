@@ -1,13 +1,14 @@
-#pragma once
-#include "sample_channel.h"
+module;
 #include <memory>
 #include <array>
 #include <vector>
 #include <string>
 
+export module invaders;
 import system;
 import class_registry;
 import nemulator.buttons;
+import invaders.sample_channel;
 
 class c_z80;
 
@@ -20,7 +21,7 @@ class c_null_filter;
 
 namespace invaders
 {
-class c_invaders : public c_system, register_class<system_registry, c_invaders>
+export class c_invaders : public c_system, register_class<system_registry, c_invaders>
 {
   public:
     c_invaders();
@@ -37,31 +38,7 @@ class c_invaders : public c_system, register_class<system_registry, c_invaders>
     void enable_mixer();
     void disable_mixer();
 
-    static std::vector<s_system_info> get_registry_info()
-    {
-        return {
-            {
-                .is_arcade = 1,
-                .name = "Arcade",
-                .identifier = "invaders",
-                .title = "Space Invaders",
-                .display_info = {
-                    .fb_width = FB_WIDTH,
-                    .fb_height = FB_HEIGHT,
-                    .rotation = 270,
-                    .aspect_ratio = 3.0 / 4.0,
-                },
-                .button_map = {
-                    {BUTTON_1SELECT, 0x01},
-                    {BUTTON_1START,  0x04},
-                    {BUTTON_1A,      0x10},
-                    {BUTTON_1LEFT,   0x20},
-                    {BUTTON_1RIGHT,  0x40},
-                },
-                .constructor = []() { return new c_invaders(); },
-            },
-        };
-    }
+    static std::vector<s_system_info> get_registry_info();
 
   private:
     
