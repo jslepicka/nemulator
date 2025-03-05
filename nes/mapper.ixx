@@ -1,6 +1,5 @@
 module;
 #include "ines.h"
-#include "mirroring_types.h"
 #include <memory>
 #include <functional>
 #include <map>
@@ -12,6 +11,15 @@ import class_registry;
 
 namespace nes
 {
+
+export enum MIRRORING
+{
+    MIRRORING_HORIZONTAL = 0,
+    MIRRORING_VERTICAL = 1,
+    MIRRORING_ONESCREEN_LOW = 2,
+    MIRRORING_ONESCREEN_HIGH = 3,
+    MIRRORING_FOURSCREEN = 4
+};
 
 export class c_mapper
 {

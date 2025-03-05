@@ -449,9 +449,6 @@
     <ClInclude Include="nes\joypad.h">
       <Filter>nes</Filter>
     </ClInclude>
-    <ClInclude Include="nes\mirroring_types.h">
-      <Filter>nes</Filter>
-    </ClInclude>
     <ClInclude Include="nes\nes.h">
       <Filter>nes</Filter>
     </ClInclude>
@@ -463,12 +460,6 @@
     </ClInclude>
     <ClInclude Include="nes\mappers\vrc7_audio.h">
       <Filter>nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="invaders\invaders.h">
-      <Filter>invaders</Filter>
-    </ClInclude>
-    <ClInclude Include="invaders\sample_channel.h">
-      <Filter>invaders</Filter>
     </ClInclude>
     <ClInclude Include="pacman\mspacman.h">
       <Filter>pacman</Filter>
@@ -497,6 +488,12 @@
     <ClInclude Include="benchmark.h" />
     <ClInclude Include="meow_fft.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="invaders\invaders.h">
+      <Filter>invaders</Filter>
+    </ClInclude>
+    <ClInclude Include="invaders\sample_channel.h">
+      <Filter>invaders</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="effect.fx" />

@@ -1,5 +1,5 @@
 module;
-#include "..\mirroring_types.h"
+
 export module nex_mapper.mapper72;
 import nes_mapper;
 import class_registry;

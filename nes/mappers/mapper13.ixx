@@ -1,5 +1,5 @@
 module;
-#include "..\mirroring_types.h"
+
 #include <memory>
 export module nes_mapper.mapper13;
 import nes_mapper;

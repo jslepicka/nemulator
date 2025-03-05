@@ -2,7 +2,6 @@ module;
 #include "memory.h"
 //#include "mapper.h"
 #include <fstream>
-#include "mirroring_types.h"
 
 #if defined(DEBUG) | defined(_DEBUG)
     #define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)

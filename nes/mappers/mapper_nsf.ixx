@@ -1,6 +1,6 @@
 module;
 #include <fstream>
-#include "..\mirroring_types.h"
+
 export module nes_mapper.nsf;
 import nes_mapper;
 import class_registry;

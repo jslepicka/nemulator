@@ -1,7 +1,6 @@
 #pragma once
 #include <map>
-#include "mirroring_types.h"
-
+import nes_mapper;
 namespace nes
 {
 

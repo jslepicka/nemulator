@@ -398,11 +398,11 @@
     <ClCompile Include="input_handler.ixx">
       <FileType>Document</FileType>
     </ClCompile>
-    <ClInclude Include="invaders\invaders.h" />
-    <ClInclude Include="invaders\sample_channel.h" />
     <ClCompile Include="menu.ixx">
       <FileType>Document</FileType>
     </ClCompile>
+    <ClInclude Include="invaders\invaders.h" />
+    <ClInclude Include="invaders\sample_channel.h" />
     <ClInclude Include="meow_fft.h" />
     <ClCompile Include="nemulator.ixx">
       <FileType>Document</FileType>
@@ -418,7 +418,6 @@
     </ClCompile>
     <ClInclude Include="nes\mappers\mapper_nsf_rom.h" />
     <ClInclude Include="nes\mappers\vrc7_audio.h" />
-    <ClInclude Include="nes\mirroring_types.h" />
     <ClInclude Include="nes\ppu.h" />
     <ClCompile Include="nsf_stats.ixx">
       <FileType>Document</FileType>
