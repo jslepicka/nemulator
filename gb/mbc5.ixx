@@ -1,5 +1,8 @@
-#pragma once
-#include "gbmapper.h"
+module;
+#include <cstdint>
+export module gb:mapper.mbc5;
+
+import :mapper;
 
 namespace gb
 {

@@ -9,15 +9,8 @@ import :sample_channel;
 import system;
 import class_registry;
 import nemulator.buttons;
-
-class c_z80;
-
-namespace dsp
-{
-class c_resampler;
-class c_biquad;
-class c_null_filter;
-}
+import dsp;
+import z80;
 
 namespace invaders
 {

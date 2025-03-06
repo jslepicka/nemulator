@@ -1,4 +1,4 @@
-#include "mbc1.h"
+module gb:mapper.mbc1;
 
 namespace gb
 {

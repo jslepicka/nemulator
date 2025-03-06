@@ -4,9 +4,7 @@ module;
 #include <algorithm>
 
 module invaders;
-import z80;
 import crc32;
-import dsp;
 import interpolate;
 
 namespace invaders

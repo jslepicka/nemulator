@@ -1,7 +1,9 @@
-#include "gbapu.h"
-#include "gb.h"
+module;
 #include <array>
+#include <memory>
 
+module gb:apu;
+import gb;
 import dsp;
 
 namespace gb

@@ -1,12 +1,13 @@
-#pragma once
+module;
 #include <cstdint>
 #include <atomic>
 #include <memory>
 
+export module gb:ppu;
+
 namespace gb
 {
-
-class c_gb;
+export class c_gb;
 
 class c_gbppu
 {

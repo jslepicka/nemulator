@@ -1,11 +1,12 @@
-#pragma once
+module;
 #include <cstdint>
 #include <functional>
+export module gb:sm83;
 
 namespace gb
 {
 
-class c_gb;
+export class c_gb;
 
 class c_sm83
 {

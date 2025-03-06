@@ -6,8 +6,6 @@ module;
 
 module sms:psg;
 
-import dsp;
-
 namespace sms
 {
 

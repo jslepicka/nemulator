@@ -1,12 +1,7 @@
 module;
 #include <cstdint>
 export module pacman:psg;
-namespace dsp
-{
-class c_biquad;
-class c_biquad4;
-class c_resampler;
-} //namespace dsp
+import dsp;
 
 namespace pacman
 {

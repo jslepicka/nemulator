@@ -1,4 +1,6 @@
-#include "mbc2.h"
+module;
+#include <cstdint>
+module gb:mapper.mbc2;
 
 namespace gb
 {

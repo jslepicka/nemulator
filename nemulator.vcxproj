@@ -386,15 +386,33 @@
     <ClCompile Include="system_container.ixx">
       <FileType>Document</FileType>
     </ClCompile>
-    <ClInclude Include="gb\gb.h" />
-    <ClInclude Include="gb\gbapu.h" />
-    <ClInclude Include="gb\gbmapper.h" />
-    <ClInclude Include="gb\gbppu.h" />
-    <ClInclude Include="gb\sm83.h" />
-    <ClInclude Include="gb\mbc1.h" />
-    <ClInclude Include="gb\mbc2.h" />
-    <ClInclude Include="gb\mbc3.h" />
-    <ClInclude Include="gb\mbc5.h" />
+    <ClCompile Include="gb\gb.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
+    <ClCompile Include="gb\gbapu.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
+    <ClCompile Include="gb\gbmapper.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
+    <ClCompile Include="gb\gbppu.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
+    <ClCompile Include="gb\sm83.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
+    <ClCompile Include="gb\mbc1.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
+    <ClCompile Include="gb\mbc2.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
+    <ClCompile Include="gb\mbc3.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
+    <ClCompile Include="gb\mbc5.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
     <ClCompile Include="input_handler.ixx">
       <FileType>Document</FileType>
     </ClCompile>

@@ -2,13 +2,7 @@ module;
 #include <memory>
 
 export module sms:psg;
-
-namespace dsp
-{
-class c_biquad;
-class c_biquad4;
-class c_resampler;
-} //namespace dsp
+import dsp;
 
 namespace sms
 {

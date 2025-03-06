@@ -1,5 +1,6 @@
-#include "mbc3.h"
+module;
 #include <cstdio>
+module gb:mapper.mbc3;
 
 namespace gb
 {

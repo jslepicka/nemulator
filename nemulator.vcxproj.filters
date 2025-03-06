@@ -432,35 +432,35 @@
     <ClCompile Include="pacman\mspacman.ixx">
       <Filter>pacman</Filter>
     </ClCompile>
+    <ClCompile Include="gb\sm83.ixx">
+      <Filter>gb</Filter>
+    </ClCompile>
+    <ClCompile Include="gb\gb.ixx">
+      <Filter>gb</Filter>
+    </ClCompile>
+    <ClCompile Include="gb\gbppu.ixx">
+      <Filter>gb</Filter>
+    </ClCompile>
+    <ClCompile Include="gb\gbapu.ixx">
+      <Filter>gb</Filter>
+    </ClCompile>
+    <ClCompile Include="gb\gbmapper.ixx">
+      <Filter>gb</Filter>
+    </ClCompile>
+    <ClCompile Include="gb\mbc5.ixx">
+      <Filter>gb</Filter>
+    </ClCompile>
+    <ClCompile Include="gb\mbc3.ixx">
+      <Filter>gb</Filter>
+    </ClCompile>
+    <ClCompile Include="gb\mbc1.ixx">
+      <Filter>gb</Filter>
+    </ClCompile>
+    <ClCompile Include="gb\mbc2.ixx">
+      <Filter>gb</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="gb\gb.h">
-      <Filter>gb</Filter>
-    </ClInclude>
-    <ClInclude Include="gb\gbapu.h">
-      <Filter>gb</Filter>
-    </ClInclude>
-    <ClInclude Include="gb\gbmapper.h">
-      <Filter>gb</Filter>
-    </ClInclude>
-    <ClInclude Include="gb\gbppu.h">
-      <Filter>gb</Filter>
-    </ClInclude>
-    <ClInclude Include="gb\mbc1.h">
-      <Filter>gb</Filter>
-    </ClInclude>
-    <ClInclude Include="gb\mbc2.h">
-      <Filter>gb</Filter>
-    </ClInclude>
-    <ClInclude Include="gb\mbc3.h">
-      <Filter>gb</Filter>
-    </ClInclude>
-    <ClInclude Include="gb\mbc5.h">
-      <Filter>gb</Filter>
-    </ClInclude>
-    <ClInclude Include="gb\sm83.h">
-      <Filter>gb</Filter>
-    </ClInclude>
     <ClInclude Include="nes\apu.h">
       <Filter>nes</Filter>
     </ClInclude>

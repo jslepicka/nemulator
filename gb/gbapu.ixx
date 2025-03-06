@@ -1,7 +1,8 @@
-#pragma once
+module;
 #include <cstdint>
 #include <memory>
 
+export module gb:apu;
 
 namespace dsp
 {
@@ -12,8 +13,7 @@ class c_resampler;
 
 namespace gb
 {
-
-class c_gb;
+export class c_gb;
 
 class c_gbapu
 {

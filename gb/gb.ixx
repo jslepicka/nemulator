@@ -1,9 +1,15 @@
-#pragma once
+module;
 #include <cstdint>
 #include <functional>
 #include <map>
 #include <memory>
 #include <string>
+
+export module gb;
+import :sm83;
+import :ppu;
+import :mapper;
+import :apu;
 
 import nemulator.buttons;
 import system;
@@ -12,18 +18,13 @@ import class_registry;
 namespace gb
 {
 
-class c_sm83;
-class c_gbmapper;
-class c_gbppu;
-class c_gbapu;
-
-enum GB_MODEL
+export enum GB_MODEL
 {
     DMG,
     CGB
 };
 
-class c_gb : public c_system, register_class<system_registry, c_gb>
+export class c_gb : public c_system, register_class<system_registry, c_gb>
 {
   public:
     c_gb(GB_MODEL model);

@@ -1,11 +1,14 @@
-#include "gbppu.h"
-#include "gb.h"
-#include "gbapu.h"
-#include "sm83.h"
+module;
 #include <assert.h>
 #include <iostream>
 #include <utility>
 #include <algorithm>
+#include <cstdint>
+#include <memory>
+
+module gb:ppu;
+import gb;
+import :apu;
 
 namespace gb {
 

@@ -1,6 +1,7 @@
-#include "sm83.h"
-#include "gb.h"
-#include "gbppu.h"
+module;
+#include <cstdio>
+#include <memory>
+
 #define DEBUG 0
 
 #define dprintf(fmt, ...)                                                                                              \
@@ -8,6 +9,10 @@
         if (DEBUG)                                                                                                     \
             printf(fmt, __VA_ARGS__);                                                                                  \
     } while (0)
+
+module gb:sm83;
+import gb;
+
 
 namespace gb
 {

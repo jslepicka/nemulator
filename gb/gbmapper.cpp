@@ -1,4 +1,8 @@
-#include "gbmapper.h"
+module;
+#include <memory>
+#include <cstdint>
+
+module gb:mapper;
 
 namespace gb
 {
