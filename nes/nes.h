@@ -91,14 +91,14 @@ class c_nes : public c_system, register_class<system_registry, c_nes>
                 .identifier = "nes",
                 .display_info = display_info,
                 .button_map = button_map,
-                .constructor = []() { return new c_nes(); },
+                .constructor = []() { return std::make_unique<c_nes>(); },
             },
             {
                 .name = "Nintendo NES",
                 .identifier = "nsf",
                 .display_info = display_info,
                 .button_map = button_map,
-                .constructor = []() { return new c_nes(); },
+                .constructor = []() { return std::make_unique<c_nes>(); },
             },
         };
     }

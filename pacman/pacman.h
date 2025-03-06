@@ -77,7 +77,7 @@ class c_pacman : public c_system, register_class<system_registry, c_pacman>
                 .title = "Pac-Man",
                 .display_info = get_display_info(),
                 .button_map = get_button_map(),
-                .constructor = []() { return new c_pacman(); },
+                .constructor = []() { return std::make_unique<c_pacman>(); },
             },
             {
                 .is_arcade = 1,
@@ -86,7 +86,7 @@ class c_pacman : public c_system, register_class<system_registry, c_pacman>
                 .title = "Ms. Pac-Man (Bootleg)",
                 .display_info = get_display_info(),
                 .button_map = get_button_map(),
-                .constructor = []() { return new c_pacman(PACMAN_MODEL::MSPACMAB); },
+                .constructor = []() { return std::make_unique<c_pacman>(PACMAN_MODEL::MSPACMAB); },
             },
         };
     }

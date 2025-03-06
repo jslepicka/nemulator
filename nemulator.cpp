@@ -453,7 +453,7 @@ void c_nemulator::handle_button_sprite_limit(s_button_handler_params *params)
     c_system_container* g = (c_system_container*)texturePanels[selectedPanel]->GetSelected();
     if (g->is_nes)
     {
-        nes::c_nes *n = ((nes::c_nes *)g->system);
+        nes::c_nes *n = ((nes::c_nes *)g->system.get());
         n->set_sprite_limit(!n->get_sprite_limit());
         if (n->get_sprite_limit())
             status->add_message("sprites limited");
@@ -729,7 +729,7 @@ void c_nemulator::do_turbo_press(int button, std::string button_name)
 void c_nemulator::leave_game()
 {
     sound->stop();
-    c_system *n = ((c_system_container *)texturePanels[selectedPanel]->GetSelected())->system;
+    c_system *n = ((c_system_container *)texturePanels[selectedPanel]->GetSelected())->system.get();
     n->disable_mixer();
     inGame = false;
     for (int i = 0; i < num_texture_panels; i++)
@@ -741,7 +741,7 @@ void c_nemulator::leave_game()
     c_system_container* g = (c_system_container*)texturePanels[selectedPanel]->GetSelected();
     if (g->is_nes)
     {
-        nes::c_nes *n = (nes::c_nes *)g->system;
+        nes::c_nes *n = (nes::c_nes *)g->system.get();
         if (n->get_mapper_number() == 258) { //NFS
             nsf_stats->dead = true;
             nsf_stats = NULL;
@@ -754,7 +754,7 @@ void c_nemulator::start_game()
 {
     //todo: come back and fix has played logic
     c_system_container *g = (c_system_container*)texturePanels[selectedPanel]->GetSelected();
-    c_system *n = g->system;
+    c_system *n = g->system.get();
     if (n && n->is_loaded())
     {
         sound->play();
@@ -769,13 +769,13 @@ void c_nemulator::start_game()
 
         if (g->is_nes)
         {
-            nes::c_nes *n = (nes::c_nes *)g->system;
+            nes::c_nes *n = (nes::c_nes *)g->system.get();
             if (n->get_mapper_number() == 258) { //NFS
                 nsf_stats = new c_nsf_stats();
                 nsf_stats->x = eye_x;
                 nsf_stats->y = eye_y;
                 nsf_stats->z = (float)(eye_z + (1.0 / tan(fov_h / 2)));
-                add_task(nsf_stats, g->system);
+                add_task(nsf_stats, g->system.get());
             }
         }
         
@@ -878,7 +878,7 @@ int c_nemulator::update(double dt, int child_result, void *params)
                     break;
                 case 1: //reset
                     {
-                    c_system *n = ((c_system_container *)texturePanels[selectedPanel]->GetSelected())->system;
+                    c_system *n = ((c_system_container *)texturePanels[selectedPanel]->GetSelected())->system.get();
                         n->reset();
                         status->add_message("reset");
                     }
@@ -987,7 +987,7 @@ void c_nemulator::UpdateScene(double dt)
     {
         if (inGame)
         {
-            c_system *system = ((c_system_container *)texturePanels[selectedPanel]->GetSelected())->system;
+            c_system *system = ((c_system_container *)texturePanels[selectedPanel]->GetSelected())->system.get();
 
             const short* buf_l;
             const short* buf_r;
@@ -1036,7 +1036,7 @@ void c_nemulator::UpdateScene(double dt)
         {
             stats->clear();
             c_system_container* game = (c_system_container*)texturePanels[selectedPanel]->GetSelected();
-            c_system *system = game->system;
+            c_system *system = game->system.get();
             stats->report_stat("fps", fps);
             stats->report_stat("freq", sound->get_freq());
             stats->report_stat("audio position", s);
@@ -1081,7 +1081,7 @@ void c_nemulator::UpdateScene(double dt)
         }
         if (nsf_stats) { //NSF
             c_system_container* game = (c_system_container*)texturePanels[selectedPanel]->GetSelected();
-            nes::c_nes *n = (nes::c_nes *)game->system;
+            nes::c_nes *n = (nes::c_nes *)game->system.get();
             nsf_stats->report_stat("Song #", n->read_byte(0x54F7) + 1);
         }
         framesDrawn = 0;

@@ -38,8 +38,6 @@ c_system_container::c_system_container(c_system::s_system_info &si, std::string 
 
 c_system_container::~c_system_container()
 {
-    if (system)
-        delete system;
     if (vertex_buffer)
     {
         vertex_buffer->Release();
@@ -76,7 +74,7 @@ void c_system_container::OnActivate(bool load)
                 if (system->is_loaded()) {
                     system->disable_mixer();
                     if (is_nes) {
-                        ((nes::c_nes *)system)->set_sprite_limit(limit_sprites);
+                        ((nes::c_nes *)system.get())->set_sprite_limit(limit_sprites);
                     }
                 }
                 create_vertex_buffer();
@@ -96,8 +94,7 @@ void c_system_container::OnDeactivate()
     {
         if (system)
         {
-            delete system;
-            system = 0;
+            system.reset();
         }
         if (vertex_buffer)
         {

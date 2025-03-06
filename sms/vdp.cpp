@@ -1,5 +1,4 @@
 #include "vdp.h"
-#include "sms.h"
 #include <memory>
 #include <algorithm>
 
@@ -7,6 +6,8 @@
 #ifdef USE_BMI
 #include <immintrin.h>
 #endif
+
+import sms;
 
 namespace sms
 {

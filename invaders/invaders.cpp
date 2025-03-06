@@ -35,7 +35,7 @@ std::vector<c_invaders::s_system_info> c_invaders::get_registry_info()
                     {BUTTON_1LEFT, 0x20},
                     {BUTTON_1RIGHT, 0x40},
                 },
-            .constructor = []() { return new c_invaders(); },
+            .constructor = []() { return std::make_unique<c_invaders>(); },
         },
     };
 }

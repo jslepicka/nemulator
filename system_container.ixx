@@ -15,7 +15,8 @@ export class c_system_container : public TexturePanelItem
 public:
     c_system_container(c_system::s_system_info &system_info, std::string &path, std::string &filename, std::string &sram_path);
     ~c_system_container();
-    c_system* system;
+    //c_system* system;
+    std::unique_ptr<c_system> system;
     void DrawToTexture(ID3D10Texture2D *tex);
     ID3D10Buffer *get_vertex_buffer(int stretched);
     bool Selectable();

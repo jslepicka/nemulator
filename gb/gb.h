@@ -89,14 +89,14 @@ class c_gb : public c_system, register_class<system_registry, c_gb>
                 .identifier = "gb",
                 .display_info = display_info,
                 .button_map = button_map,
-                .constructor = []() { return new c_gb(GB_MODEL::DMG); },
+                .constructor = []() { return std::make_unique<c_gb>(GB_MODEL::DMG); },
             },
             {
                 .name = "Nintendo Game Boy Color",
                 .identifier = "gbc",
                 .display_info = display_info,
                 .button_map = button_map,
-                .constructor = []() { return new c_gb(GB_MODEL::CGB); },
+                .constructor = []() { return std::make_unique<c_gb>(GB_MODEL::CGB); },
             },
         };
     }

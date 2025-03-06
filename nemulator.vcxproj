@@ -427,12 +427,12 @@
       <FileType>Document</FileType>
     </ClCompile>
     <ClInclude Include="pacman\mspacman.h" />
-    <ClInclude Include="pacman\pacman.h" />
-    <ClInclude Include="pacman\pacman_psg.h" />
-    <ClInclude Include="pacman\pacman_vid.h" />
     <ClCompile Include="qam.ixx">
       <FileType>Document</FileType>
     </ClCompile>
+    <ClInclude Include="pacman\pacman.h" />
+    <ClInclude Include="pacman\pacman_psg.h" />
+    <ClInclude Include="pacman\pacman_vid.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="sms\crc.h" />
     <ClInclude Include="sms\psg.h" />

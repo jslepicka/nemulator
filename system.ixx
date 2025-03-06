@@ -3,6 +3,7 @@ module;
 #include <string>
 #include <vector>
 #include <functional>
+#include <memory>
 export module system;
 
 import class_registry;
@@ -52,7 +53,8 @@ public:
             double aspect_ratio = 4.0 / 3.0;
         } display_info;
         std::vector<s_button_map> button_map;
-        std::function<c_system *()> constructor;
+        //std::function<c_system *()> constructor;
+        std::function <std::unique_ptr<c_system>()> constructor;
     };
 
   protected:
