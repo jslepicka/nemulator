@@ -1,24 +1,28 @@
 module;
 
 module gb;
+import :mapper.mbc1;
+import :mapper.mbc2;
+import :mapper.mbc3;
+import :mapper.mbc5;
 
 namespace gb
 {
 
 // clang-format off
 const std::map<int, c_gb::s_pak> c_gb::pak_factory = {
-    //{0,    {[]() { return std::make_unique<c_gbmapper>(); }, PAK_FEATURES::NONE}},
-    //{1,    {[]() { return std::make_unique<c_mbc1>(); },     PAK_FEATURES::NONE}},
-    //{2,    {[]() { return std::make_unique<c_mbc1>(); },     PAK_FEATURES::RAM}},
-    //{3,    {[]() { return std::make_unique<c_mbc1>(); },     PAK_FEATURES::RAM | PAK_FEATURES::BATTERY}},
-    //{5,    {[]() { return std::make_unique<c_mbc2>(); },     PAK_FEATURES::NONE}},
-    //{6,    {[]() { return std::make_unique<c_mbc2>(); },     PAK_FEATURES::BATTERY}},
-    //{0x19, {[]() { return std::make_unique<c_mbc5>(); },     PAK_FEATURES::NONE}},
-    //{0x1A, {[]() { return std::make_unique<c_mbc5>(); },     PAK_FEATURES::RAM}},
-    //{0x1B, {[]() { return std::make_unique<c_mbc5>(); },     PAK_FEATURES::RAM | PAK_FEATURES::BATTERY}},
-    //{0x1C, {[]() { return std::make_unique<c_mbc5>(); },     PAK_FEATURES::RUMBLE}},
-    //{0x1D, {[]() { return std::make_unique<c_mbc5>(); },     PAK_FEATURES::RAM | PAK_FEATURES::RUMBLE}},
-    //{0x1E, {[]() { return std::make_unique<c_mbc5>(); },     PAK_FEATURES::RAM | PAK_FEATURES::BATTERY | PAK_FEATURES::RUMBLE}},
+    {0,    {[]() { return std::make_unique<c_gbmapper>(); }, PAK_FEATURES::NONE}},
+    {1,    {[]() { return std::make_unique<c_mbc1>(); },     PAK_FEATURES::NONE}},
+    {2,    {[]() { return std::make_unique<c_mbc1>(); },     PAK_FEATURES::RAM}},
+    {3,    {[]() { return std::make_unique<c_mbc1>(); },     PAK_FEATURES::RAM | PAK_FEATURES::BATTERY}},
+    {5,    {[]() { return std::make_unique<c_mbc2>(); },     PAK_FEATURES::NONE}},
+    {6,    {[]() { return std::make_unique<c_mbc2>(); },     PAK_FEATURES::BATTERY}},
+    {0x19, {[]() { return std::make_unique<c_mbc5>(); },     PAK_FEATURES::NONE}},
+    {0x1A, {[]() { return std::make_unique<c_mbc5>(); },     PAK_FEATURES::RAM}},
+    {0x1B, {[]() { return std::make_unique<c_mbc5>(); },     PAK_FEATURES::RAM | PAK_FEATURES::BATTERY}},
+    {0x1C, {[]() { return std::make_unique<c_mbc5>(); },     PAK_FEATURES::RUMBLE}},
+    {0x1D, {[]() { return std::make_unique<c_mbc5>(); },     PAK_FEATURES::RAM | PAK_FEATURES::RUMBLE}},
+    {0x1E, {[]() { return std::make_unique<c_mbc5>(); },     PAK_FEATURES::RAM | PAK_FEATURES::BATTERY | PAK_FEATURES::RUMBLE}},
 };
 // clang-format on
 
