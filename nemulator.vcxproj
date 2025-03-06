@@ -426,20 +426,34 @@
     <ClCompile Include="nsf_stats.ixx">
       <FileType>Document</FileType>
     </ClCompile>
-    <ClInclude Include="pacman\mspacman.h" />
+    <ClCompile Include="pacman\mspacman.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
     <ClCompile Include="qam.ixx">
       <FileType>Document</FileType>
     </ClCompile>
-    <ClInclude Include="pacman\pacman.h" />
-    <ClInclude Include="pacman\pacman_psg.h" />
-    <ClInclude Include="pacman\pacman_vid.h" />
+    <ClCompile Include="pacman\pacman.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
+    <ClCompile Include="pacman\pacman_psg.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
+    <ClCompile Include="pacman\pacman_vid.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
     <ClInclude Include="resource.h" />
-    <ClInclude Include="sms\crc.h" />
-    <ClInclude Include="sms\psg.h" />
+    <ClCompile Include="sms\crc.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
+    <ClCompile Include="sms\psg.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
     <ClCompile Include="sms\sms.ixx">
       <FileType>Document</FileType>
     </ClCompile>
-    <ClInclude Include="sms\vdp.h" />
+    <ClCompile Include="sms\vdp.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
     <ClCompile Include="sound.ixx">
       <FileType>Document</FileType>
     </ClCompile>

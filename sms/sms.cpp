@@ -1,9 +1,6 @@
 module;
 #include <fstream>
-#include "vdp.h"
-#include "psg.h"
 #include <stdio.h>
-#include "crc.h"
 #include <memory>
 
 #include <crtdbg.h>

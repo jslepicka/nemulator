@@ -1,5 +1,6 @@
-#pragma once
-#include <stdint.h>
+module;
+#include <cstdint>
+export module sms:crc;
 
 namespace sms
 {

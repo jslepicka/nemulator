@@ -1,6 +1,8 @@
-#pragma once
+module;
 #include <cstdint>
 #include <memory>
+
+export module pacman:vid;
 
 namespace pacman
 {

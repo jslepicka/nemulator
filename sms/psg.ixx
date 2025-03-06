@@ -1,5 +1,7 @@
-#pragma once
+module;
 #include <memory>
+
+export module sms:psg;
 
 namespace dsp
 {

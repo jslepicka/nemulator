@@ -2,7 +2,7 @@ module;
 #include <cmath>
 #include <memory>
 
-module invaders.sample_channel;
+module invaders:sample_channel;
 import interpolate;
 
 namespace invaders

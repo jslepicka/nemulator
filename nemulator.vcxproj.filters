@@ -411,6 +411,27 @@
     <ClCompile Include="sms\sms.ixx">
       <Filter>sms</Filter>
     </ClCompile>
+    <ClCompile Include="pacman\pacman.ixx">
+      <Filter>pacman</Filter>
+    </ClCompile>
+    <ClCompile Include="pacman\pacman_psg.ixx">
+      <Filter>pacman</Filter>
+    </ClCompile>
+    <ClCompile Include="pacman\pacman_vid.ixx">
+      <Filter>pacman</Filter>
+    </ClCompile>
+    <ClCompile Include="sms\vdp.ixx">
+      <Filter>sms</Filter>
+    </ClCompile>
+    <ClCompile Include="sms\psg.ixx">
+      <Filter>sms</Filter>
+    </ClCompile>
+    <ClCompile Include="sms\crc.ixx">
+      <Filter>sms</Filter>
+    </ClCompile>
+    <ClCompile Include="pacman\mspacman.ixx">
+      <Filter>pacman</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gb\gb.h">
@@ -469,27 +490,6 @@
     </ClInclude>
     <ClInclude Include="nes\mappers\vrc7_audio.h">
       <Filter>nes\mappers</Filter>
-    </ClInclude>
-    <ClInclude Include="pacman\mspacman.h">
-      <Filter>pacman</Filter>
-    </ClInclude>
-    <ClInclude Include="pacman\pacman.h">
-      <Filter>pacman</Filter>
-    </ClInclude>
-    <ClInclude Include="pacman\pacman_psg.h">
-      <Filter>pacman</Filter>
-    </ClInclude>
-    <ClInclude Include="pacman\pacman_vid.h">
-      <Filter>pacman</Filter>
-    </ClInclude>
-    <ClInclude Include="sms\crc.h">
-      <Filter>sms</Filter>
-    </ClInclude>
-    <ClInclude Include="sms\psg.h">
-      <Filter>sms</Filter>
-    </ClInclude>
-    <ClInclude Include="sms\vdp.h">
-      <Filter>sms</Filter>
     </ClInclude>
     <ClInclude Include="benchmark.h" />
     <ClInclude Include="meow_fft.h" />

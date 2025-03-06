@@ -1,11 +1,14 @@
-#include "pacman_vid.h"
-#include "pacman.h"
+module;
+#include <memory>
 
 #define USE_BMI
 
 #ifdef USE_BMI
 #include <immintrin.h>
 #endif
+
+module pacman:vid;
+import pacman;
 
 namespace pacman
 {

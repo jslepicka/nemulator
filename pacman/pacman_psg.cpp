@@ -1,7 +1,7 @@
-#include "pacman_psg.h"
+module;
 #include <cstring>
 #include <array>
-
+module pacman:psg;
 import dsp;
 
 namespace pacman

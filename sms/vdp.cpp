@@ -1,4 +1,4 @@
-#include "vdp.h"
+module;
 #include <memory>
 #include <algorithm>
 
@@ -7,6 +7,7 @@
 #include <immintrin.h>
 #endif
 
+module sms:vdp;
 import sms;
 
 namespace sms

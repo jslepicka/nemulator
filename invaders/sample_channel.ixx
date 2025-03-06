@@ -1,6 +1,6 @@
 module;
 #include <memory>
-export module invaders.sample_channel;
+export module invaders:sample_channel;
 
 namespace invaders
 {

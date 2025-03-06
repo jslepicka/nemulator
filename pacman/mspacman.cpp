@@ -1,6 +1,10 @@
-#include "mspacman.h"
-#include "pacman_vid.h"
-#include "pacman_psg.h"
+module;
+#include <memory>
+module pacman:mspacman;
+
+import pacman;
+import :vid;
+import :psg;
 
 namespace pacman
 {

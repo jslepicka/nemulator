@@ -1,12 +1,13 @@
-#include "pacman.h"
-#include "pacman_vid.h"
-#include "pacman_psg.h"
+module;
 #include <fstream>
 #include <vector>
 #include <string.h>
 
+module pacman;
 import z80;
 import crc32;
+import :vid;
+import :psg;
 
 namespace pacman
 {

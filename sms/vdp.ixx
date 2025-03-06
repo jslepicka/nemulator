@@ -1,7 +1,8 @@
-#pragma once
+module;
 #include <stdint.h>
 #include <atomic>
 #include <memory>
+export module sms:vdp;
 
 namespace sms
 {

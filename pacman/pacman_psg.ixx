@@ -1,6 +1,6 @@
-#pragma once
+module;
 #include <cstdint>
-
+export module pacman:psg;
 namespace dsp
 {
 class c_biquad;

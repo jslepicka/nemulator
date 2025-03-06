@@ -1,9 +1,12 @@
-#pragma once
+module;
 #include <memory>
 #include <array>
 #include <vector>
 #include <string>
 
+export module pacman;
+import :vid;
+import :psg;
 import system;
 import class_registry;
 import nemulator.buttons;
@@ -12,10 +15,8 @@ class c_z80;
 
 namespace pacman
 {
-class c_pacman_vid;
-class c_pacman_psg;
 
-enum class PACMAN_MODEL
+export enum class PACMAN_MODEL
 {
     PACMAN,
     MSPACMAN,
@@ -23,7 +24,7 @@ enum class PACMAN_MODEL
     MSPACMAB
 };
 
-class c_pacman : public c_system, register_class<system_registry, c_pacman>
+export class c_pacman : public c_system, register_class<system_registry, c_pacman>
 {
   public:
     c_pacman(PACMAN_MODEL model = PACMAN_MODEL::PACMAN);

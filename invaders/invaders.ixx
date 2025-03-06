@@ -5,10 +5,10 @@ module;
 #include <string>
 
 export module invaders;
+import :sample_channel;
 import system;
 import class_registry;
 import nemulator.buttons;
-import invaders.sample_channel;
 
 class c_z80;
 

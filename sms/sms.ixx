@@ -2,10 +2,11 @@ module;
 #include <memory>
 #include <string>
 #include <vector>
-#include "vdp.h"
-#include "psg.h"
 
 export module sms;
+import :vdp;
+import :psg;
+import :crc;
 import nemulator.buttons;
 import system;
 import class_registry;

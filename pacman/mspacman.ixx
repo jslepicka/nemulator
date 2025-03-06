@@ -1,5 +1,8 @@
-#pragma once
-#include "pacman.h"
+module;
+#include <array>
+#include <memory>
+export module pacman:mspacman;
+import pacman;
 
 namespace pacman
 {
