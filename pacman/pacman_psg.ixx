@@ -1,6 +1,7 @@
 module;
-#include <cstdint>
+
 export module pacman:psg;
+import std.compat;
 import dsp;
 
 namespace pacman

@@ -1,7 +1,4 @@
 module;
-#include <fstream>
-#include <string.h>
-#include <algorithm>
 
 module invaders;
 import crc32;
@@ -404,7 +401,7 @@ void c_invaders::write_port(uint8_t port, uint8_t data)
 int c_invaders::get_sound_bufs(const short **buf_l, const short **buf_r)
 {
     int num_samples = resampler->get_output_buf(buf_l);
-    *buf_r = NULL;
+    *buf_r = nullptr;
     return num_samples;
 }
 

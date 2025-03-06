@@ -1,13 +1,7 @@
 module;
-#include "memory.h"
-//#include "mapper.h"
-#include <fstream>
 
-#if defined(DEBUG) | defined(_DEBUG)
-    #define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
-    #define new DEBUG_NEW
-#endif
-module nes_mapper;
+module nes:mapper;
+
 namespace nes
 {
 
@@ -20,8 +14,8 @@ c_mapper::c_mapper()
     sram = 0;
     mapperName = "NROM";
     submapper = 0;
-    chrRom = NULL;
-    memset(vram, 0, 4096);
+    chrRom = nullptr;
+    std::memset(vram, 0, 4096);
 
     for (int i = 0; i < 4; i++)
         name_table[i] = vram;
@@ -133,10 +127,10 @@ int c_mapper::load_image()
     }
     else {
         chrRam = true;
-        if (chrRom != NULL)
+        if (chrRom != nullptr)
             delete[] chrRom;
         chrRom = new chrRomBank[1];
-        memset(chrRom, 0, 8192);
+        std::memset(chrRom, 0, 8192);
     }
     pChrRom = (unsigned char *)chrRom;
     pPrgRom = (unsigned char *)prgRom;

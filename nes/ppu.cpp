@@ -1,16 +1,20 @@
-#include "cpu.h"
-#include "ppu.h"
-#include "memory.h"
-#include "apu.h"
-#define _USE_MATH_DEFINES
-#include <math.h>
-#undef min
+module;
+
 #include <algorithm>
 #include <immintrin.h>
+#include <numbers>
 
 #define INLINE __forceinline
 
-#include <crtdbg.h>
+#define NES_PPU_USE_SSE2
+#define NES_PPU_USE_BMI2
+#define NES_PPU_USE_AVX2
+
+module nes:ppu;
+import nes;
+import :mapper;
+import :cpu;
+import :apu;
 
 namespace nes
 {
@@ -67,8 +71,8 @@ void c_ppu::generate_palette()
             v *= brightness / 12.0;
 
             y += v;
-            i += v * cos((M_PI / 6.0) * (p + hue_tweak));
-            q += v * sin((M_PI / 6.0) * (p + hue_tweak));
+            i += v * cos((std::numbers::pi / 6.0) * (p + hue_tweak));
+            q += v * sin((std::numbers::pi / 6.0) * (p + hue_tweak));
         }
 
         i *= saturation;

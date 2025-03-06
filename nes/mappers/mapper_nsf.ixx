@@ -1,8 +1,8 @@
 module;
 #include <fstream>
 
-export module nes_mapper.nsf;
-import nes_mapper;
+export module nes:mapper.nsf;
+import :mapper;
 import class_registry;
 import std;
 

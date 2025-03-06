@@ -1,10 +1,7 @@
 module;
-#include <memory>
-#include <array>
-#include <vector>
-#include <string>
 
 export module pacman;
+import std.compat;
 import :vid;
 import :psg;
 import system;

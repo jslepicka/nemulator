@@ -1,9 +1,7 @@
 module;
-#include <memory>
-#include <string>
-#include <vector>
 
 export module sms;
+import std.compat;
 import :vdp;
 import :psg;
 import :crc;

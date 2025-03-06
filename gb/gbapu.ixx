@@ -1,15 +1,8 @@
 module;
-#include <cstdint>
-#include <memory>
 
 export module gb:apu;
-
-namespace dsp
-{
-class c_biquad;
-class c_biquad4;
-class c_resampler;
-} //namespace dsp
+import std.compat;
+import dsp;
 
 namespace gb
 {

@@ -1,6 +1,7 @@
-#pragma once
-#include <vector>
-#include <string>
+module;
+
+export module nes:game_genie;
+import std.compat;
 
 namespace nes
 {

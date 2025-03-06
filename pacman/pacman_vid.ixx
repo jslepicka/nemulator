@@ -1,8 +1,7 @@
 module;
-#include <cstdint>
-#include <memory>
 
 export module pacman:vid;
+import std.compat;
 
 namespace pacman
 {

@@ -1,19 +1,15 @@
-#pragma once
-#include "nes.h"
-#include <atomic>
-#include <memory>
-#include <immintrin.h>
-#include <bitset>
-#include <array>
+module;
 
-#define NES_PPU_USE_SSE2
-#define NES_PPU_USE_BMI2
-#define NES_PPU_USE_AVX2
+export module nes:ppu;
+import std.compat;
 
 namespace nes
 {
+export class c_mapper;
+export class c_cpu;
+export class c_apu;
 
-class c_ppu
+export class c_ppu
 {
   public:
     c_ppu();

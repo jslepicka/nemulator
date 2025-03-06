@@ -1,7 +1,8 @@
 module;
-#include "..\apu.h"
-export module nes_mapper.mapper5;
-import nes_mapper;
+#include <memory>
+export module nes:mapper.mapper5;
+import :apu;
+import :mapper;
 import class_registry;
 import std;
 

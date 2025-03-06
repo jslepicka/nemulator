@@ -1,7 +1,7 @@
 module;
 
-export module nes_mapper.mapper24;
-import nes_mapper;
+export module nes:mapper.mapper24;
+import :mapper;
 import class_registry;
 import std;
 

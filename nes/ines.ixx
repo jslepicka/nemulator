@@ -1,9 +1,9 @@
-#pragma once
+export module nes:ines;
 
 namespace nes
 {
 
-struct iNesHeader
+export struct iNesHeader
 {
     unsigned char Signature[4];  //'N' 'E' 'S' $1A
     unsigned char PrgRomPageCount;

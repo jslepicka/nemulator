@@ -1,8 +1,7 @@
 module;
-#include <numbers>
-#include <algorithm>
 
 export module interpolate;
+import std.compat;
 
 export namespace interpolate
 {

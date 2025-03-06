@@ -1,10 +1,7 @@
 module;
-#include <memory>
-#include <array>
-#include <vector>
-#include <string>
 
 export module invaders;
+import std.compat;
 import :sample_channel;
 import system;
 import class_registry;

@@ -1,13 +1,9 @@
 module;
-#include "ines.h"
-#include <memory>
-#include <functional>
-#include <map>
-#include <string>
-#include <vector>
 
-export module nes_mapper;
+export module nes:mapper;
 import class_registry;
+import :ines;
+import std;
 
 namespace nes
 {

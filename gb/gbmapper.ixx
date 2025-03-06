@@ -1,11 +1,7 @@
 module;
-#include <cstdint>
-#include <cstdio>
-#include <fstream>
-#include <string>
-#include <memory>
 
 export module gb:mapper;
+import std.compat;
 
 namespace gb
 {

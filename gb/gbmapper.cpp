@@ -1,6 +1,4 @@
 module;
-#include <memory>
-#include <cstdint>
 
 module gb:mapper;
 
@@ -9,7 +7,7 @@ namespace gb
 
 c_gbmapper::c_gbmapper()
 {
-    ram = NULL;
+    ram = nullptr;
     rumble = false;
 }
 

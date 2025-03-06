@@ -1,10 +1,6 @@
 module;
-#include <math.h>
-#include <assert.h>
-#include <algorithm>
 #include <Audioclient.h>
 #include <mmdeviceapi.h>
-#include <memory>
 module nemulator.sound;
 
 import interpolate;

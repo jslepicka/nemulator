@@ -1,13 +1,8 @@
-#include "nes.h"
-#include "cpu.h"
-#include "ppu.h"
-#include "apu.h"
-#include "joypad.h"
-#include "ines.h"
-#include "cartdb.h"
+module;
 
-#include <fstream>
-
+module nes;
+import :cartdb;
+import :ines;
 import crc32;
 
 namespace nes
@@ -321,7 +316,7 @@ void c_nes::set_audio_freq(double freq)
 int c_nes::get_sound_bufs(const short **buf_l, const short **buf_r)
 {
     int num_samples = apu->get_buffer(buf_l);
-    *buf_r = NULL;
+    *buf_r = nullptr;
     return num_samples;
 }
 

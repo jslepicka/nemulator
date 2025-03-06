@@ -1,7 +1,7 @@
 module;
-#include <memory>
 
 export module sms:psg;
+import std.compat;
 import dsp;
 
 namespace sms

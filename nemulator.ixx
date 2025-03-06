@@ -2,7 +2,6 @@ module;
 #include "Windows.h"
 #include "d3d10.h"
 #include "d3dx10.h"
-#include "dxgi.h"
 
 #include <vector>
 #include <list>

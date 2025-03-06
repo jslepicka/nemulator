@@ -1,6 +1,7 @@
 module;
-#include <functional>
+
 export module z80;
+import std.compat;
 import random;
 
 export class c_z80

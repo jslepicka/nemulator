@@ -1,13 +1,14 @@
-#pragma once
+module;
 
-#include <cstdint>
+export module nes:cpu;
+import std.compat;
 
 namespace nes
 {
 
-class c_nes;
+export class c_nes;
 
-class c_cpu
+export class c_cpu
 {
   public:
     c_cpu();

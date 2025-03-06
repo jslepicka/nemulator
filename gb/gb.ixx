@@ -1,11 +1,7 @@
 module;
-#include <cstdint>
-#include <functional>
-#include <map>
-#include <memory>
-#include <string>
 
 export module gb;
+import std.compat;
 import :sm83;
 import :ppu;
 import :mapper;

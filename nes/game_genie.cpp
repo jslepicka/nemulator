@@ -1,4 +1,4 @@
-#include "game_genie.h"
+module nes:game_genie;
 
 namespace nes
 {

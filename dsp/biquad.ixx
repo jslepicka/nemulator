@@ -1,6 +1,7 @@
 module;
-#include <array>
+
 export module dsp:biquad;
+import std.compat;
 import :audio_filter;
 
 namespace dsp

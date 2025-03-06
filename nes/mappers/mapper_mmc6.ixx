@@ -1,8 +1,8 @@
-export module nes_mapper.mmc6;
-import nes_mapper;
+export module nes:mapper.mmc6;
+import :mapper;
 import class_registry;
 
-import nes_mapper.mapper4;
+import :mapper.mapper4;
 
 namespace nes
 {

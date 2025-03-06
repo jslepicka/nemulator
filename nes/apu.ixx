@@ -1,8 +1,7 @@
-#pragma once
+module;
 
-#include <fstream>
-#include <atomic>
-#include <memory>
+export module nes:apu;
+import std.compat;
 
 namespace dsp
 {
@@ -14,10 +13,10 @@ class c_resampler;
 namespace nes
 {
 
-class c_nes;
-class c_mapper;
+export class c_nes;
+export class c_mapper;
 
-class c_apu
+export class c_apu
 {
   public:
     c_apu();

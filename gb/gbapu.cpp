@@ -1,10 +1,7 @@
 module;
-#include <array>
-#include <memory>
 
 module gb:apu;
 import gb;
-import dsp;
 
 namespace gb
 {

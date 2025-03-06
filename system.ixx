@@ -1,10 +1,7 @@
 module;
-#include <cstdint>
-#include <string>
-#include <vector>
-#include <functional>
-#include <memory>
+
 export module system;
+import std.compat;
 
 import class_registry;
 import nemulator.buttons;

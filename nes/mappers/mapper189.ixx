@@ -1,7 +1,7 @@
-export module nes_mapper.mapper189;
-import nes_mapper;
+export module nes:mapper.mapper189;
+import :mapper;
 
-import nes_mapper.mapper4;
+import :mapper.mapper4;
 
 namespace nes
 {

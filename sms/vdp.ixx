@@ -1,8 +1,7 @@
 module;
-#include <stdint.h>
-#include <atomic>
-#include <memory>
+
 export module sms:vdp;
+import std.compat;
 
 namespace sms
 {

@@ -23,11 +23,10 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 module;
-#include <array>
-#include <span>
 #include <xmmintrin.h>
 
 export module dsp:biquad4;
+import std.compat;
 import :audio_filter;
 
 namespace dsp

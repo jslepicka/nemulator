@@ -459,32 +459,32 @@
     <ClCompile Include="gb\mbc2.ixx">
       <Filter>gb</Filter>
     </ClCompile>
+    <ClCompile Include="nes\nes.ixx">
+      <Filter>nes</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\ppu.ixx">
+      <Filter>nes</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\cpu.ixx">
+      <Filter>nes</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\apu.ixx">
+      <Filter>nes</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\joypad.ixx">
+      <Filter>nes</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\cartdb.ixx">
+      <Filter>nes</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\ines.ixx">
+      <Filter>nes</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\game_genie.ixx">
+      <Filter>nes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="nes\apu.h">
-      <Filter>nes</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\cartdb.h">
-      <Filter>nes</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\cpu.h">
-      <Filter>nes</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\game_genie.h">
-      <Filter>nes</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\ines.h">
-      <Filter>nes</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\joypad.h">
-      <Filter>nes</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\nes.h">
-      <Filter>nes</Filter>
-    </ClInclude>
-    <ClInclude Include="nes\ppu.h">
-      <Filter>nes</Filter>
-    </ClInclude>
     <ClInclude Include="nes\mappers\mapper_nsf_rom.h">
       <Filter>nes\mappers</Filter>
     </ClInclude>

@@ -1,7 +1,7 @@
 module;
-#include <cstdint>
-#include <functional>
+
 export module gb:sm83;
+import std.compat;
 
 namespace gb
 {

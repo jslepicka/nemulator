@@ -1,8 +1,4 @@
 module;
-#include <math.h>
-#include <stdio.h>
-#include <array>
-#include <memory>
 
 module sms:psg;
 

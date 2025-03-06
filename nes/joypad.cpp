@@ -1,4 +1,6 @@
-#include "joypad.h"
+module;
+
+module nes:joypad;
 
 namespace nes
 {

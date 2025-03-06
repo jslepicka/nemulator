@@ -1,5 +1,5 @@
 module;
-#include <cstdint>
+
 export module gb:mapper.mbc3;
 import :mapper;
 

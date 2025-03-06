@@ -1,7 +1,7 @@
 module;
-#include <atomic>
 
 export module crc32;
+import std.compat;
 
 export unsigned int get_crc32(const unsigned char *buf, unsigned int len)
 {

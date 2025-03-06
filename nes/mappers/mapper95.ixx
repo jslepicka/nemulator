@@ -1,8 +1,8 @@
-export module nes_mapper.mapper95;
-import nes_mapper;
+export module nes:mapper.mapper95;
+import :mapper;
 import class_registry;
 
-import nes_mapper.mapper4;
+import :mapper.mapper4;
 
 namespace nes
 {

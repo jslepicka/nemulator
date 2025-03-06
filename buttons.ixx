@@ -1,6 +1,7 @@
 module;
-#include <cstdint>
+
 export module nemulator.buttons;
+import std.compat;
 
 export enum BUTTONS
 {

@@ -1,9 +1,7 @@
 module;
-#include <cstdint>
-#include <atomic>
-#include <memory>
 
 export module gb:ppu;
+import std.compat;
 
 namespace gb
 {

@@ -1,6 +1,7 @@
 module;
-#include <cstdint>
+
 export module sms:crc;
+import std.compat;
 
 namespace sms
 {

@@ -1,6 +1,4 @@
 module;
-#include <cmath>
-#include <memory>
 
 module invaders:sample_channel;
 import interpolate;

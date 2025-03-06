@@ -1,6 +1,6 @@
-export module nes_mapper.mapper10;
-import nes_mapper;
-import nes_mapper.mapper9;
+export module nes:mapper.mapper10;
+import :mapper;
+import :mapper.mapper9;
 
 //Fire Emblem
 

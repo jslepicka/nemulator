@@ -1,5 +1,5 @@
 module;
-#include <memory>
+
 module pacman:mspacman;
 
 import pacman;

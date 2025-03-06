@@ -1,6 +1,4 @@
 module;
-#include <memory>
-#include <algorithm>
 
 #define USE_BMI
 #ifdef USE_BMI

@@ -1,6 +1,5 @@
 module;
-#include <array>
-#include <memory>
+
 export module pacman:mspacman;
 import pacman;
 

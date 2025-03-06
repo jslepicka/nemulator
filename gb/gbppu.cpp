@@ -1,10 +1,5 @@
 module;
 #include <assert.h>
-#include <iostream>
-#include <utility>
-#include <algorithm>
-#include <cstdint>
-#include <memory>
 
 module gb:ppu;
 import gb;

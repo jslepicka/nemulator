@@ -3,11 +3,9 @@ module;
 #pragma comment (lib, "winmm.lib")
 #include "windows.h"
 #include "mmsystem.h"
-#include <stdint.h>
-#include <memory>
-#include <vector>
 
 export module input_handler;
+import std.compat;
 import nemulator.buttons;
 
 export class c_input_handler

@@ -1,8 +1,8 @@
 module;
 
 #include <memory>
-export module nes_mapper.vrc4;
-import nes_mapper;
+export module nes:mapper.vrc4;
+import :mapper;
 import class_registry;
 import std;
 

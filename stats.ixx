@@ -1,10 +1,9 @@
 module;
 #include "d3d10.h"
 #include "d3dx10.h"
-#include <string>
-#include <map>
 
 export module nemulator.stats;
+import std.compat;
 import nemulator.task;
 
 export class c_stats:

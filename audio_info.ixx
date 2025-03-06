@@ -1,7 +1,6 @@
 module;
 
 #include <d3d10.h>
-#include <dxgi.h>
 #include <D3DX10.h>
 export module nemulator.audio_info;
 import nemulator.task;

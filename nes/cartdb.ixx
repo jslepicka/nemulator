@@ -1,6 +1,8 @@
-#pragma once
-#include <map>
-import nes_mapper;
+module;
+
+export module nes:cartdb;
+import std;
+import :mapper;
 namespace nes
 {
 

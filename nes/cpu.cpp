@@ -1,9 +1,10 @@
-#include "cpu.h"
-#include "nes.h"
-#include "ppu.h"
+module;
 
 #define INLINE __forceinline
 //#define INLINE
+
+module nes:cpu;
+import nes;
 
 namespace nes {
 

@@ -1,9 +1,6 @@
 module;
-#include <algorithm>
-#include <array>
 #define MEOW_FFT_IMPLEMENTATION
 #include "meow_fft.h"
-#include <memory>
 #include "d3d10.h"
 #include "D3DX10.h"
 #include "effect2.fxo.h"

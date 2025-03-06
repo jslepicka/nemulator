@@ -1,9 +1,9 @@
 module;
-#include <string>
 #include "d3d10.h"
 #include <d3dx10.h>
 
 export module nemulator.qam;
+import std.compat;
 import nemulator.task;
 
 export class c_qam :

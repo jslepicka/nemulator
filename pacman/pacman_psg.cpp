@@ -1,6 +1,5 @@
 module;
-#include <cstring>
-#include <array>
+
 module pacman:psg;
 
 namespace pacman

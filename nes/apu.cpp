@@ -1,17 +1,14 @@
-#include "apu.h"
-#include <memory>
-#include <assert.h>
-#include "nes.h"
-#include "cpu.h"
-#include <array>
-//#include <xmmintrin.h>
+module;
 
 //#define AUDIO_LOG 1
 #ifdef AUDIO_LOG
 std::ofstream file;
 #endif
 
+module nes:apu;
+import nes;
 import dsp;
+import :mapper;
 
 namespace nes {
 

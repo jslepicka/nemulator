@@ -1,13 +1,5 @@
 module;
-#include <fstream>
-#include <stdio.h>
-#include <memory>
 
-#include <crtdbg.h>
-#if defined(DEBUG) | defined(_DEBUG)
-#define DEBUG_NEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
-#define new DEBUG_NEW
-#endif
 module sms;
 import z80;
 import crc32;
@@ -308,7 +300,7 @@ int *c_sms::get_video()
 int c_sms::get_sound_bufs(const short **buf_l, const short **buf_r)
 {
     int num_samples = psg->get_buffer(buf_l);
-    *buf_r = NULL;
+    *buf_r = nullptr;
     return num_samples;
 }
 void c_sms::set_audio_freq(double freq)

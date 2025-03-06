@@ -1,26 +1,22 @@
-#pragma once
-#include <vector>
-#include "game_genie.h"
-#include <memory>
-#include <string>
+module;
 
+export module nes;
+import std.compat;
+import :ppu;
+import :apu;
+import :cpu;
+import :joypad;
 import nemulator.buttons;
 import system;
 import class_registry;
-import nes_mapper;
+import :mapper;
+import :ines;
+import :game_genie;
 
 namespace nes
 {
 
-class c_cpu;
-class c_ppu;
-class c_mapper;
-class c_joypad;
-class c_apu;
-class c_apu;
-struct iNesHeader;
-
-class c_nes : public c_system, register_class<system_registry, c_nes>
+export class c_nes : public c_system, register_class<system_registry, c_nes>
 {
   public:
     c_nes();

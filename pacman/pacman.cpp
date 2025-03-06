@@ -1,7 +1,4 @@
 module;
-#include <fstream>
-#include <vector>
-#include <string.h>
 
 module pacman;
 import z80;
@@ -299,7 +296,7 @@ void c_pacman::write_port(uint8_t port, uint8_t data)
 int c_pacman::get_sound_bufs(const short **buf_l, const short **buf_r)
 {
     int num_samples = pacman_psg->get_buffer(buf_l);
-    *buf_r = NULL;
+    *buf_r = nullptr;
     return num_samples;
 }
 void c_pacman::set_audio_freq(double freq)

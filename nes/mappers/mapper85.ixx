@@ -4,8 +4,8 @@ module;
 #include <cstdint>
 
 #include <memory>
-export module nes_mapper.mapper85;
-import nes_mapper;
+export module nes:mapper.mapper85;
+import :mapper;
 import class_registry;
 import std;
 

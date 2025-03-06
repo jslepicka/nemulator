@@ -1,6 +1,7 @@
 module;
-#include <memory>
+
 export module invaders:sample_channel;
+import std.compat;
 
 namespace invaders
 {
