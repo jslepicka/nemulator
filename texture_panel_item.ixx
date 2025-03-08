@@ -2,13 +2,13 @@ module;
 #include "d3d10.h"
 #include <d3dx10.h>
 #include <string>
-export module TexturePanelItem;
+export module texture_panel:item;
 
-export class TexturePanelItem
+export class c_texture_panel_item
 {
 public:
-    TexturePanelItem();
-    virtual ~TexturePanelItem();
+    c_texture_panel_item();
+    virtual ~c_texture_panel_item();
     void Activate(bool load);
     void Deactivate();
     void Load();

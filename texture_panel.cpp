@@ -6,7 +6,7 @@ module;
 #define ReleaseCOM(x) { if(x) {x->Release(); x = 0; } }
 
 
-module TexturePanel;
+module texture_panel;
 import interpolate;
 using namespace interpolate;
 
@@ -15,12 +15,12 @@ extern ID3D10Device *d3dDev;
 extern D3DXMATRIX matrixView;
 extern D3DXMATRIX matrixProj;
 
-const float TexturePanel::c_item_container::selectDuration = 120.0f;
-const float TexturePanel::zoomDuration = 250.0f;
-const float TexturePanel::borderDuration = 750.0f;
+const float c_texture_panel::c_item_container::selectDuration = 120.0f;
+const float c_texture_panel::zoomDuration = 250.0f;
+const float c_texture_panel::borderDuration = 750.0f;
 
 
-TexturePanel::c_item_container::c_item_container(TexturePanelItem *item)
+c_texture_panel::c_item_container::c_item_container(c_texture_panel_item *item)
 {
     pos = { 0.0f, 0.0f, 0.0f };
     ratio = 1.333f;
@@ -31,18 +31,18 @@ TexturePanel::c_item_container::c_item_container(TexturePanelItem *item)
     select_dir = DIR_SELECTING;
 }
 
-TexturePanel::c_item_container::~c_item_container()
+c_texture_panel::c_item_container::~c_item_container()
 {
 }
 
-void TexturePanel::c_item_container::Select()
+void c_texture_panel::c_item_container::Select()
 {
     selecting = true;
     selectTimer = 0.0f;
     select_dir = DIR_SELECTING;
 }
 
-void TexturePanel::c_item_container::Unselect()
+void c_texture_panel::c_item_container::Unselect()
 {
     if (selected || (selecting && select_dir == DIR_SELECTING))
     {
@@ -52,7 +52,7 @@ void TexturePanel::c_item_container::Unselect()
     }
 }
 
-TexturePanel::TexturePanel(int rows, int columns)
+c_texture_panel::c_texture_panel(int rows, int columns)
 {
     changed = false;
     prev_in_focus = false;
@@ -105,7 +105,7 @@ TexturePanel::TexturePanel(int rows, int columns)
     scrollOffset = 0.0f;
 }
 
-TexturePanel::~TexturePanel()
+c_texture_panel::~c_texture_panel()
 {
     for (auto &item : item_containers)
     {
@@ -114,12 +114,12 @@ TexturePanel::~TexturePanel()
 }
 
 
-int TexturePanel::get_num_items()
+int c_texture_panel::get_num_items()
 {
     return (int)item_containers.size();
 }
 
-void TexturePanel::Init()
+void c_texture_panel::Init()
 {
     D3D10_INPUT_ELEMENT_DESC elementDesc[] =
     {
@@ -217,7 +217,7 @@ void TexturePanel::Init()
     set_sharpness(0.0f);
 }
 
-void TexturePanel::set_sharpness(float factor)
+void c_texture_panel::set_sharpness(float factor)
 {
     if (factor < 0.0f)
         factor = 0.0f;
@@ -227,7 +227,7 @@ void TexturePanel::set_sharpness(float factor)
     var_sharpness->SetFloat(factor);
 }
 
-bool TexturePanel::Changed()
+bool c_texture_panel::Changed()
 {
     if (changed) {
         changed = false;
@@ -238,7 +238,7 @@ bool TexturePanel::Changed()
     }
 }
 
-void TexturePanel::AddItem(TexturePanelItem *item)
+void c_texture_panel::AddItem(c_texture_panel_item *item)
 {
     item_containers.push_back(new c_item_container(item));
 
@@ -262,12 +262,12 @@ void TexturePanel::AddItem(TexturePanelItem *item)
     valid_chars[c == '0' ? 0 : c - 64] = 1;
 }
 
-int *TexturePanel::get_valid_chars()
+int *c_texture_panel::get_valid_chars()
 {
     return valid_chars;
 }
 
-void TexturePanel::GetActive(std::list<TexturePanelItem*> *itemList)
+void c_texture_panel::GetActive(std::list<c_texture_panel_item*> *itemList)
 {
     if (state == STATE_ZOOMED) {
         if (in_focus)
@@ -279,14 +279,14 @@ void TexturePanel::GetActive(std::list<TexturePanelItem*> *itemList)
     }
 }
 
-void TexturePanel::load_items()
+void c_texture_panel::load_items()
 {
     for (int i = first_item; i < last_item; i++)
         item_containers[i]->item->Load();
     changed = true;
 }
 
-void TexturePanel::update_scroll(double dt)
+void c_texture_panel::update_scroll(double dt)
 {
     scrollOffset = 0.0f;
     scrollTimer += dt;
@@ -324,7 +324,7 @@ void TexturePanel::update_scroll(double dt)
         scrollOffset -= tile_width;
 }
 
-void TexturePanel::update_menu(double dt)
+void c_texture_panel::update_menu(double dt)
 {
     if (state != prevState) {
         changed = true;
@@ -375,7 +375,7 @@ void TexturePanel::update_menu(double dt)
     }
 }
 
-void TexturePanel::update_zoom(double dt)
+void c_texture_panel::update_zoom(double dt)
 {
     float non_selected_pos[2] = { 0.0f, 10.0f };
     float non_selected_z = 0.0f;
@@ -412,7 +412,7 @@ void TexturePanel::update_zoom(double dt)
     }
 }
 
-void TexturePanel::update_border_color(double dt)
+void c_texture_panel::update_border_color(double dt)
 {
     borderTimer += dt;
     double mu = borderTimer / borderDuration;
@@ -424,7 +424,7 @@ void TexturePanel::update_border_color(double dt)
     }
 }
 
-void TexturePanel::Update(double dt)
+void c_texture_panel::Update(double dt)
 {
     if (item_containers.size() == 0)
         return;
@@ -462,7 +462,7 @@ void TexturePanel::Update(double dt)
     }
 }
 
-void TexturePanel::Draw()
+void c_texture_panel::Draw()
 {
     varProj->SetMatrix((float*)&matrixProj);
     varView->SetMatrix((float*)&matrixView);
@@ -493,7 +493,7 @@ void TexturePanel::Draw()
 
 }
 
-void TexturePanel::DrawItem(c_item_container *item, int draw_border, float x, float y, float z, float c)
+void c_texture_panel::DrawItem(c_item_container *item, int draw_border, float x, float y, float z, float c)
 {
     UINT stride = sizeof(SimpleVertex);
     UINT offset = 0;
@@ -541,7 +541,7 @@ void TexturePanel::DrawItem(c_item_container *item, int draw_border, float x, fl
     }
 }
 
-int TexturePanel::NextRow(bool adjusting)
+int c_texture_panel::NextRow(bool adjusting)
 {
     if (!adjusting && state != STATE_MENU)
         return 0;
@@ -568,17 +568,17 @@ int TexturePanel::NextRow(bool adjusting)
 
 }
 
-bool TexturePanel::is_first_col()
+bool c_texture_panel::is_first_col()
 {
     return selected_item < rows;
 }
 
-bool TexturePanel::is_last_col()
+bool c_texture_panel::is_last_col()
 {
     return (selected_item / rows == (numItems - 1) / rows);
 }
 
-int TexturePanel::PrevRow(bool adjusting)
+int c_texture_panel::PrevRow(bool adjusting)
 {
     if (!adjusting && state != STATE_MENU)
         return 0;
@@ -602,7 +602,7 @@ int TexturePanel::PrevRow(bool adjusting)
     }
 }
 
-void TexturePanel::move_to_char(char c)
+void c_texture_panel::move_to_char(char c)
 {
     c = toupper(c);
     int current_column = selected_item / rows;
@@ -690,7 +690,7 @@ void TexturePanel::move_to_char(char c)
 
 }
 
-void TexturePanel::move_to_column(int column)
+void c_texture_panel::move_to_column(int column)
 {
     int current_column = GetSelectedColumn();
     while (current_column != column)
@@ -708,7 +708,7 @@ void TexturePanel::move_to_column(int column)
     }
 }
 
-void TexturePanel::NextColumn(bool load, bool adjusting)
+void c_texture_panel::NextColumn(bool load, bool adjusting)
 {
     if (scroll_dir == SCROLL_LEFT)
     {
@@ -767,7 +767,7 @@ void TexturePanel::NextColumn(bool load, bool adjusting)
     }
 }
 
-void TexturePanel::PrevColumn(bool load, bool adjusting)
+void c_texture_panel::PrevColumn(bool load, bool adjusting)
 {
     if (scroll_dir == SCROLL_RIGHT)
     {
@@ -824,7 +824,7 @@ void TexturePanel::PrevColumn(bool load, bool adjusting)
     }
 }
 
-int TexturePanel::GetSelectedColumn()
+int c_texture_panel::GetSelectedColumn()
 {
     int c = (selected_item - first_item) / rows;
     if (on_first_page)
@@ -832,7 +832,7 @@ int TexturePanel::GetSelectedColumn()
     return c;
 }
 
-void TexturePanel::Zoom()
+void c_texture_panel::Zoom()
 {
     if (state == STATE_ZOOMED)
         zoom_dir = ZOOMING_IN;
@@ -842,7 +842,7 @@ void TexturePanel::Zoom()
     state = STATE_ZOOMING;
 }
 
-TexturePanelItem* TexturePanel::GetSelected()
+c_texture_panel_item* c_texture_panel::GetSelected()
 {
     return item_containers[selected_item]->item;
 }

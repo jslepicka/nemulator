@@ -2,11 +2,11 @@ module;
 #include "meow_fft.h"
 #include "d3d10.h"
 #include "d3dx10.h"
-export module nemulator.nsf_stats;
+export module nemulator:nsf_stats;
 import std.compat;
 
 import system;
-import nemulator.stats;
+import :stats;
 import dsp;
 
 export class c_nsf_stats :

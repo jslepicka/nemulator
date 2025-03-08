@@ -2,13 +2,7 @@ module;
 
 export module nes:apu;
 import std.compat;
-
-namespace dsp
-{
-class c_biquad;
-class c_biquad4;
-class c_resampler;
-} //namespace dsp
+import dsp;
 
 namespace nes
 {

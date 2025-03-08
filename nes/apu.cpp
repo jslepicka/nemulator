@@ -7,7 +7,6 @@ std::ofstream file;
 
 module nes:apu;
 import nes;
-import dsp;
 import :mapper;
 
 namespace nes {

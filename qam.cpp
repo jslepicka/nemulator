@@ -5,7 +5,7 @@ module;
 #define ReleaseCOM(x) { if(x) {x->Release(); x = 0; } }
 
 
-module nemulator.qam;
+module nemulator:qam;
 
 import nemulator.buttons;
 import input_handler;

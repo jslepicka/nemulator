@@ -1,7 +1,7 @@
 module;
 #include <iostream>
 
-module nemulator.config;
+module config;
 
 c_config::c_config()
 {

@@ -19,7 +19,6 @@ module nemulator;
 
 import system;
 import nemulator.menu;
-import TexturePanelItem;
 import nes;
 
 extern ID3D10Device *d3dDev;
@@ -207,9 +206,9 @@ void c_nemulator::Init()
     int panel_columns = config->get_int("menu_columns", 8);
     if (panel_columns < 3)
         panel_columns = 3;
-    int panel_rows = (int)((panel_columns-1) * TexturePanel::tile_width / ((double)clientWidth/clientHeight) * .82 / TexturePanel::tile_height); //not sure where .82 comes from...
+    int panel_rows = (int)((panel_columns-1) * c_texture_panel::tile_width / ((double)clientWidth/clientHeight) * .82 / c_texture_panel::tile_height); //not sure where .82 comes from...
 
-    mainPanel2 = std::make_unique<TexturePanel>(panel_rows, panel_columns);
+    mainPanel2 = std::make_unique<c_texture_panel>(panel_rows, panel_columns);
     mainPanel2->x = 0.0f;
     mainPanel2->y = 0.0f;
     mainPanel2->z = 0.0f;
@@ -222,8 +221,8 @@ void c_nemulator::Init()
     QueryPerformanceFrequency(&liFreq);
 
     //center x, y on panel center
-    eye_x = (float)(((panel_columns - 1) * TexturePanel::tile_width) / 2);
-    eye_y = (float)((((panel_rows - 1) * TexturePanel::tile_height) / 2) * -1.2);  //y is offset -20% to shift panel up on display
+    eye_x = (float)(((panel_columns - 1) * c_texture_panel::tile_width) / 2);
+    eye_y = (float)((((panel_rows - 1) * c_texture_panel::tile_height) / 2) * -1.2);  //y is offset -20% to shift panel up on display
 
 
     //given a vertical field of view of 45 degrees, and clientWidth/clientHeight aspect ratio,
@@ -1135,7 +1134,7 @@ void c_nemulator::DrawScene()
         for (int i = 0; i < num_texture_panels; i++)
             texturePanels[i]->Draw();
 
-        if (texturePanels[selectedPanel]->state == TexturePanel::STATE_MENU || texturePanels[selectedPanel]->state == TexturePanel::STATE_SCROLLING)
+        if (texturePanels[selectedPanel]->state == c_texture_panel::STATE_MENU || texturePanels[selectedPanel]->state == c_texture_panel::STATE_SCROLLING)
         {
             double dim = mainPanel2->dim ? .25 : 1.0;
             DrawText(font1, .05f, .85f, g->title, D3DXCOLOR((float)(1.0f * dim), 0.0f, 0.0f, 1.0f));
@@ -1195,7 +1194,7 @@ void c_nemulator::GetEvents()
         done_events.reset();
     }
 
-    std::list<TexturePanelItem*> panelItems;
+    std::list<c_texture_panel_item*> panelItems;
     for (int i = 0; i < num_texture_panels; i++)
         texturePanels[i]->GetActive(&panelItems);
     panelItems.sort();
@@ -1316,11 +1315,11 @@ void c_nemulator::LoadGames()
     }
 
     std::sort(gameList.begin(), gameList.end(), [](const c_system_container* a, const c_system_container* b) {
-
         std::string a_title = a->title;
         std::string b_title = b->title;
-        std::transform(a_title.begin(), a_title.end(), a_title.begin(), toupper);
-        std::transform(b_title.begin(), b_title.end(), b_title.begin(), toupper);
+        auto fn = [](char c) { return toupper(c); };
+        std::transform(a_title.begin(), a_title.end(), a_title.begin(), fn);
+        std::transform(b_title.begin(), b_title.end(), b_title.begin(), fn);
         return a_title < b_title;
     });
     for (auto &game : gameList)

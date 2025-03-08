@@ -4,7 +4,7 @@ module;
 
 export module nemulator.menu;
 import std.compat;
-import nemulator.task;
+import task;
 
 export class c_menu :
     public c_task

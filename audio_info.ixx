@@ -2,8 +2,8 @@ module;
 
 #include <d3d10.h>
 #include <D3DX10.h>
-export module nemulator.audio_info;
-import nemulator.task;
+export module nemulator:audio_info;
+import task;
 
 export class c_audio_info :
     public c_task

@@ -3,7 +3,7 @@ module;
 #include <fstream>
 #include <map>
 
-export module nemulator.config;
+export module config;
 
 export class c_config
 {

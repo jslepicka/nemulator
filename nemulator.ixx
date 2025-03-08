@@ -8,19 +8,19 @@ module;
 #include <numbers>
 #include <filesystem>
 export module nemulator;
+import :qam;
+import :stats;
+import :nsf_stats;
+import :audio_info;
+import :status;
+import :system_container;
+
 import D3d10App;
-import nemulator.constants;
-import nemulator.config;
-import nemulator.qam;
-import nemulator.task;
-import nemulator.stats;
-import nemulator.nsf_stats;
-import nemulator.sound;
-import nemulator.audio_info;
-import nemulator.status;
-import nemulator.system_container;
-import TexturePanel;
+import task;
+import config;
+import texture_panel;
 import input_handler;
+import sound;
 
 export class c_nemulator :
     public c_task
@@ -123,9 +123,9 @@ private:
     bool inGame;
     std::unique_ptr<c_sound> sound;
 
-    std::unique_ptr<TexturePanel> mainPanel2;
+    std::unique_ptr<c_texture_panel> mainPanel2;
     static const int num_texture_panels = 1;
-    TexturePanel *texturePanels[num_texture_panels];
+    c_texture_panel *texturePanels[num_texture_panels];
 
     HRESULT hr;
 

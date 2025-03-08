@@ -1,12 +1,9 @@
 module;
 #include <Audioclient.h>
 #include <mmdeviceapi.h>
-module nemulator.sound;
+module sound;
 
 import interpolate;
-import nemulator.config;
-
-extern c_config *config;
 
 #define ReleaseCOM(x) { if(x) { x->Release(); x = 0; } }
 

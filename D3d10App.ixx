@@ -21,16 +21,12 @@ module;
 #include <dxerr.h>
 #include <d3dx10.h>
 #include <windows.h>
-#include <string>
-#include <stack>
-#include <deque>
-#include <vector>
 
 export module D3d10App;
-
+import std.compat;
 import input_handler;
-import nemulator.config;
-import nemulator.task;
+import config;
+import task;
 
 export class D3d10App
 {

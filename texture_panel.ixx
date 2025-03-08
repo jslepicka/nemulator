@@ -4,24 +4,24 @@ module;
 #include "d3d10.h"
 #include "d3dx10.h"
 
-export module TexturePanel;
-import TexturePanelItem;
+export module texture_panel;
+export import :item;
 
-export class TexturePanel
+export class c_texture_panel
 {
 public:
-    TexturePanel(int rows, int columns);
-    ~TexturePanel();
+    c_texture_panel(int rows, int columns);
+    ~c_texture_panel();
     void load_items();
     bool is_first_col();
     bool is_last_col();
     int get_num_items();
     void set_scroll_duration(float duration) { scrollDuration = duration; };
     void Init();
-    void AddItem(TexturePanelItem *item);
+    void AddItem(c_texture_panel_item *item);
     void Update(double dt);
     void Draw(/*float x, float y, float z*/);
-    void GetActive(std::list<TexturePanelItem*> *itemList);
+    void GetActive(std::list<c_texture_panel_item*> *itemList);
     int NextRow(bool adjusting = false);
     int PrevRow(bool adjusting = false);
     void NextColumn(bool load = true, bool adjusting = false);
@@ -31,9 +31,9 @@ public:
     void Zoom();
     bool Changed();
     int GetSelectedColumn();
-    TexturePanelItem* GetSelected();
-    TexturePanel *prev;
-    TexturePanel *next;
+    c_texture_panel_item* GetSelected();
+    c_texture_panel *prev;
+    c_texture_panel *next;
     float x;
     float y;
     float z;
@@ -69,7 +69,7 @@ private:
     class c_item_container
     {
     public:
-        c_item_container(TexturePanelItem *item);
+        c_item_container(c_texture_panel_item *item);
         ~c_item_container();
         D3DXVECTOR3 pos;
         float ratio;
@@ -84,7 +84,7 @@ private:
             DIR_UNSELECTING
         };
         int select_dir;
-        TexturePanelItem *item;
+        c_texture_panel_item *item;
     };
 
     int scrolls;

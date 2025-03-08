@@ -2,7 +2,7 @@ module;
 #include "d3d10.h"
 #include "D3DX10.h"
 #include <cstdio>
-module nemulator.stats;
+module nemulator:stats;
 
 extern int clientHeight;
 extern int clientWidth;

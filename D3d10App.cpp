@@ -13,15 +13,12 @@ module;
 #include "benchmark.h"
 #include "dwmapi.h"
 #include "resource.h"
-#include <algorithm>
 #include <timeapi.h>
 #include "d3d10.h"
 #include "D3DX10.h"
-#include <memory>
 
 #pragma comment(lib, "d3d10.lib")
 #pragma comment(lib, "d3dx10.lib")
-#pragma comment(lib, "dxerr.lib")
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "PowrProf.lib")
 #pragma comment(lib, "avrt.lib")

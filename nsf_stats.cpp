@@ -5,7 +5,7 @@ module;
 #include "D3DX10.h"
 #include "effect2.fxo.h"
 
-module nemulator.nsf_stats;
+module nemulator:nsf_stats;
 
 import input_handler;
 

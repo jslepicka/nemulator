@@ -2,7 +2,7 @@ module;
 #include "d3d10.h"
 #include "d3dx10.h"
 
-module nemulator.system_container;
+module nemulator:system_container;
 import random;
 import nes;
 

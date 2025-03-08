@@ -1,4 +1,4 @@
-module nemulator.task;
+module task;
 
 std::list<c_task *> *c_task::task_list = nullptr;
 

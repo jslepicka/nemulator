@@ -4,7 +4,7 @@ module;
 #include "D3DX10.h"
 #include "effect2.fxo.h"
 
-module nemulator.audio_info;
+module nemulator:audio_info;
 
 extern ID3D10Device *d3dDev;
 extern D3DXMATRIX matrixView;

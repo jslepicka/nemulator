@@ -354,8 +354,8 @@
     <ClCompile Include="stats.cpp" />
     <ClCompile Include="status.cpp" />
     <ClCompile Include="task.cpp" />
-    <ClCompile Include="TexturePanel.cpp" />
-    <ClCompile Include="TexturePanelItem.cpp" />
+    <ClCompile Include="texture_panel.cpp" />
+    <ClCompile Include="texture_panel_item.cpp" />
     <ClCompile Include="nes\cpu.cpp" />
     <ClCompile Include="nes\joypad.cpp" />
     <ClCompile Include="nes\mapper.cpp" />
@@ -375,9 +375,6 @@
       <FileType>Document</FileType>
     </ClCompile>
     <ClCompile Include="system.ixx">
-      <FileType>Document</FileType>
-    </ClCompile>
-    <ClCompile Include="constants.ixx">
       <FileType>Document</FileType>
     </ClCompile>
     <ClCompile Include="D3d10App.ixx">
@@ -498,10 +495,10 @@
     <ClCompile Include="task.ixx">
       <FileType>Document</FileType>
     </ClCompile>
-    <ClCompile Include="TexturePanel.ixx">
+    <ClCompile Include="texture_panel.ixx">
       <FileType>Document</FileType>
     </ClCompile>
-    <ClCompile Include="TexturePanelItem.ixx">
+    <ClCompile Include="texture_panel_item.ixx">
       <FileType>Document</FileType>
     </ClCompile>
     <ClCompile Include="nes\nes.ixx">

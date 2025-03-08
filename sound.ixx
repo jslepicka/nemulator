@@ -2,7 +2,7 @@ module;
 #include <Audioclient.h>
 #include <mmdeviceapi.h>
 
-export module nemulator.sound;
+export module sound;
 import std.compat;
 
 export class c_sound

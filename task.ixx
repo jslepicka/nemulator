@@ -1,6 +1,6 @@
 module;
 #include <list>
-export module nemulator.task;
+export module task;
 //import <list>;
 
 export class c_task
