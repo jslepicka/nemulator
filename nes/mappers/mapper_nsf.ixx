@@ -229,5 +229,3 @@ class c_mapper_nsf : public c_mapper, register_class<nes_mapper_registry, c_mapp
 };
 
 } //namespace nes
-
-#include "mapper_nsf_rom.h"

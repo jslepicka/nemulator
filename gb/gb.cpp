@@ -9,23 +9,6 @@ import :mapper.mbc5;
 namespace gb
 {
 
-// clang-format off
-const std::map<int, c_gb::s_pak> c_gb::pak_factory = {
-    {0,    {[]() { return std::make_unique<c_gbmapper>(); }, PAK_FEATURES::NONE}},
-    {1,    {[]() { return std::make_unique<c_mbc1>(); },     PAK_FEATURES::NONE}},
-    {2,    {[]() { return std::make_unique<c_mbc1>(); },     PAK_FEATURES::RAM}},
-    {3,    {[]() { return std::make_unique<c_mbc1>(); },     PAK_FEATURES::RAM | PAK_FEATURES::BATTERY}},
-    {5,    {[]() { return std::make_unique<c_mbc2>(); },     PAK_FEATURES::NONE}},
-    {6,    {[]() { return std::make_unique<c_mbc2>(); },     PAK_FEATURES::BATTERY}},
-    {0x19, {[]() { return std::make_unique<c_mbc5>(); },     PAK_FEATURES::NONE}},
-    {0x1A, {[]() { return std::make_unique<c_mbc5>(); },     PAK_FEATURES::RAM}},
-    {0x1B, {[]() { return std::make_unique<c_mbc5>(); },     PAK_FEATURES::RAM | PAK_FEATURES::BATTERY}},
-    {0x1C, {[]() { return std::make_unique<c_mbc5>(); },     PAK_FEATURES::RUMBLE}},
-    {0x1D, {[]() { return std::make_unique<c_mbc5>(); },     PAK_FEATURES::RAM | PAK_FEATURES::RUMBLE}},
-    {0x1E, {[]() { return std::make_unique<c_mbc5>(); },     PAK_FEATURES::RAM | PAK_FEATURES::BATTERY | PAK_FEATURES::RUMBLE}},
-};
-// clang-format on
-
 c_gb::c_gb(GB_MODEL model)
 {
     cpu = std::make_unique<c_sm83>(this);
@@ -42,7 +25,7 @@ c_gb::c_gb(GB_MODEL model)
 
 c_gb::~c_gb()
 {
-    if (loaded && pak->features & PAK_FEATURES::BATTERY) {
+    if (loaded && pak_features & PAK_FEATURES::BATTERY) {
         save_sram();
     }
 }
@@ -109,10 +92,10 @@ int c_gb::load()
     file.seekg(0, std::ios_base::end);
     int file_length = (int)file.tellg();
 
-   //printf("read %d bytes\n", file_length);
+    //printf("read %d bytes\n", file_length);
     file.seekg(0, std::ios_base::beg);
     rom = std::make_unique_for_overwrite<uint8_t[]>(std::max(32768, file_length));
-  //memcpy(rom + 0x104, logo, sizeof(logo));
+    //memcpy(rom + 0x104, logo, sizeof(logo));
 
     file.read((char *)rom.get(), file_length);
     file.close();
@@ -126,46 +109,37 @@ int c_gb::load()
         return 0;
     }
 
-    //printf("title: %s\n", title);
-  //printf("cart_type: %d\n", cart_type);
-  //printf("rom_size: %d\n", 32768 << rom_size);
-  //printf("ram_size: %d\n", ram_size);
-    auto i = pak_factory.find(cart_type);
-    if (i == pak_factory.end()) {
+    auto &r = mapper_registry::get_registry();
+    auto m = r.find(cart_type);
+    if (m == r.end()) {
         return false;
     }
-    pak = (s_pak *)&(i->second);
-    mapper = pak->mapper();
+    mapper = (m->second).constructor();
+    pak_features = (m->second).pak_features;
 
     mapper->rom = rom.get();
 
-    if (pak->features & PAK_FEATURES::RAM && header_ram_size && header_ram_size < 6) {
+    if (pak_features & PAK_FEATURES::RAM && header_ram_size && header_ram_size < 6) {
         const int size[] = {0, 2 * 1024, 8 * 1024, 32 * 1024, 128 * 1024, 64 * 1024};
         ram_size = size[header_ram_size];
         mapper->config_ram(ram_size);
-        if (pak->features & PAK_FEATURES::BATTERY) {
+        if (pak_features & PAK_FEATURES::BATTERY) {
             load_sram();
         }
     }
     else if (cart_type == 5 || cart_type == 6) {
-   //mbc2 has 512x4bits of RAM
+        //mbc2 has 512x4bits of RAM
         ram_size = 512;
         mapper->config_ram(ram_size);
         if (cart_type == 6)
             load_sram();
     }
     else {
-   //disable battery save if anything is invalid
-        pak->features &= ~PAK_FEATURES::BATTERY;
+        //disable battery save if anything is invalid
+        pak_features &= ~PAK_FEATURES::BATTERY;
     }
-    enum test
-    {
-        a = 0,
-        b = 1,
-        c = 2,
-    };
 
-    if (pak->features & PAK_FEATURES::RUMBLE) {
+    if (pak_features & PAK_FEATURES::RUMBLE) {
         mapper->rumble = true;
     }
 

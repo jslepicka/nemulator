@@ -123,24 +123,10 @@ export class c_gb : public c_system, register_class<system_registry, c_gb>
     int wram_bank;
     char title[17] = {0};
 
-    enum PAK_FEATURES
-    {
-        NONE = 1 << 0,
-        RAM = 1 << 1,
-        BATTERY = 1 << 2,
-        RUMBLE = 1 << 3
-    };
-    struct s_pak
-    {
-        std::function<std::unique_ptr<c_gbmapper>()> mapper;
-        int features;
-    };
-
     int load_sram();
     int save_sram();
 
-    const static std::map<int, s_pak> pak_factory;
-    s_pak *pak;
+    int pak_features;
     int loaded;
     int serial_transfer_count;
     int last_serial_clock;

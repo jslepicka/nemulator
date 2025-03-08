@@ -447,7 +447,9 @@
     <ClCompile Include="nes\mapper.ixx">
       <FileType>Document</FileType>
     </ClCompile>
-    <ClInclude Include="nes\mappers\mapper_nsf_rom.h" />
+    <ClCompile Include="nes\mappers\mapper_nsf_rom.cpp">
+      <FileType>Document</FileType>
+    </ClCompile>
     <ClInclude Include="nes\mappers\vrc7_audio.h" />
     <ClCompile Include="nes\ppu.ixx">
       <FileType>Document</FileType>

@@ -1,4 +1,4 @@
-#pragma once
+module nes:mapper.nsf;
 /*
     .bank 0
     .org $54F0
