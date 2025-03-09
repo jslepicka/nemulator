@@ -5,6 +5,7 @@ export module nes:mapper.nsf;
 import :mapper;
 import class_registry;
 import nemulator.std;
+import :mapper.mapper85;
 
 namespace nes
 {
@@ -41,6 +42,9 @@ class c_mapper_nsf : public c_mapper, register_class<nes_mapper_registry, c_mapp
 
     void write_byte(unsigned short address, unsigned char value) override
     {
+        if (vrc7 && (address == 0x9010 || address == 0x9030)) {
+            vrc7->write_byte(address, value);
+        }
         if (address == 0x54F2) {
             int x = 1;
         }
@@ -140,6 +144,9 @@ class c_mapper_nsf : public c_mapper, register_class<nes_mapper_registry, c_mapp
         write_byte(0x54F8, header->song_count);
 
         set_mirroring(MIRRORING_HORIZONTAL);
+        if (vrc7) {
+            vrc7->reset();
+        }
     }
 
     int load_image() override
@@ -165,10 +172,27 @@ class c_mapper_nsf : public c_mapper, register_class<nes_mapper_registry, c_mapp
             nsf_data = new unsigned char[total_length];
         }
         memcpy(nsf_data + padding, image + sizeof(NSF_HEADER), nsf_length);
+        if (header->expansion & 0x2) {
+            vrc7 = std::make_unique<c_mapper85>();
+        }
         return 0;
     }
 
+    void clock(int cycles) override
+    {
+        if (vrc7) {
+            vrc7->clock(cycles);
+        }
+    }
 
+    float mix_audio(float sample) override
+    {
+        float s = sample;
+        if (vrc7) {
+            s = vrc7->mix_audio(s);
+        }
+        return s;
+    }
 
   private:
     struct NSF_HEADER
@@ -197,6 +221,7 @@ class c_mapper_nsf : public c_mapper, register_class<nes_mapper_registry, c_mapp
     static unsigned char PLAYER_ROM[512];
     unsigned char player_rom[512];
     unsigned char chr_ram[8192];
+    std::unique_ptr<c_mapper85> vrc7;
 
     void load_player()
     {

@@ -30,8 +30,8 @@ export class c_mapper
     virtual float mix_audio(float sample);
     int renderingBg;
     void set_submapper(int submapper);
-    iNesHeader *header;
-    unsigned char *image;
+    iNesHeader *header = nullptr;
+    unsigned char *image = nullptr;
     std::string sramFilename;
     const char *mapperName;
     int close_sram();

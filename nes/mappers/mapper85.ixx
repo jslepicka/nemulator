@@ -170,7 +170,11 @@ class c_mapper85 : public c_mapper, register_class<nes_mapper_registry, c_mapper
 
     void reset() override
     {
-        SetPrgBank8k(PRG_E000, prgRomPageCount8k - 1);
+        //if this mapper is being used for NSF playback, image will be null
+        //don't attempt to set prg bank
+        if (image) {
+            SetPrgBank8k(PRG_E000, prgRomPageCount8k - 1);
+        }
         irq_counter = 0;
         irq_asserted = 0;
         irq_control = 0;
