@@ -1,10 +1,6 @@
 module;
 
 module gb;
-import :mapper.mbc1;
-import :mapper.mbc2;
-import :mapper.mbc3;
-import :mapper.mbc5;
 
 namespace gb
 {

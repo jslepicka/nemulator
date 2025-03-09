@@ -25,7 +25,7 @@ class c_gbmapper
     {
         int number;
         std::string name;
-        int pak_features;
+        int pak_features = 0;
         std::function<std::unique_ptr<c_gbmapper>()> constructor;
     };
 
@@ -35,11 +35,10 @@ class c_gbmapper
 
 enum PAK_FEATURES
 {
-    NONE = 1 << 0,
-    RAM = 1 << 1,
-    BATTERY = 1 << 2,
-    RUMBLE = 1 << 3,
-    TIMER = 1 << 4,
+    RAM = 1 << 0,
+    BATTERY = 1 << 1,
+    RUMBLE = 1 << 2,
+    TIMER = 1 << 3,
 };
 
 export class mapper_registry : public c_class_registry<std::map<int, c_gbmapper::s_mapper_info>>
@@ -64,8 +63,7 @@ class c_mapper_none : public c_gbmapper, register_class<mapper_registry, c_mappe
         return {
             {
                 .number = 0,
-                .name = "ROM Only",
-                .pak_features = PAK_FEATURES::NONE,
+                .name = "No mapper",
                 .constructor = []() { return std::make_unique<c_mapper_none>(); },
             },
         };

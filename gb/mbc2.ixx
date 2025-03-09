@@ -16,7 +16,6 @@ class c_mbc2 : public c_gbmapper, register_class<mapper_registry, c_mbc2>
             {
                 .number = 5,
                 .name = "MBC2",
-                .pak_features = PAK_FEATURES::NONE,
                 .constructor = []() { return std::make_unique<c_mbc2>(); },
             },
             {
