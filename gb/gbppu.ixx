@@ -1,7 +1,8 @@
 module;
 
 export module gb:ppu;
-import std.compat;
+import nemulator.std;
+
 
 namespace gb
 {

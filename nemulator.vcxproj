@@ -327,6 +327,7 @@
     <ClCompile Include="nes\mappers\mapper_mmc6.ixx" />
     <ClCompile Include="nes\mappers\mapper_nsf.ixx" />
     <ClCompile Include="nes\mappers\mapper_vrc4.ixx" />
+    <ClCompile Include="std.ixx" />
     <ClCompile Include="system_container.cpp" />
     <ClCompile Include="gb\gb.cpp" />
     <ClCompile Include="gb\gbmapper.cpp" />

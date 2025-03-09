@@ -1,7 +1,8 @@
 module;
 
 export module sms:vdp;
-import std.compat;
+import nemulator.std;
+
 
 namespace sms
 {

@@ -1,7 +1,8 @@
 module;
 
 export module nes:game_genie;
-import std.compat;
+import nemulator.std;
+
 
 namespace nes
 {

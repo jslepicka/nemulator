@@ -1,7 +1,8 @@
 module;
 
 export module nes:apu;
-import std.compat;
+import nemulator.std;
+
 import dsp;
 
 namespace nes

@@ -2,7 +2,7 @@ module;
 #include <immintrin.h>
 
 export module dsp:resampler;
-import std.compat;
+import nemulator.std;
 import :audio_filter;
 
 namespace dsp

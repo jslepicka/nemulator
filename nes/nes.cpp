@@ -161,7 +161,7 @@ int c_nes::LoadImage(std::string &pathFile)
     char fds_signature[] = "*NINTENDO-HVC*";
     char nsf_signature[] = {'N', 'E', 'S', 'M', 0x1A};
 
-    if (memcmp(header->Signature, ines_signature, 4) == 0) {
+    if (std::memcmp(header->Signature, ines_signature, 4) == 0) {
 
         //if expected file size doesn't match real file size, try to fix chr rom page count
         //fixes fire emblem
@@ -179,11 +179,11 @@ int c_nes::LoadImage(std::string &pathFile)
             *h = 0;
         m = (header->Rcb1.mapper_lo) | (header->Rcb2.mapper_hi << 4);
     }
-    else if (memcmp(image.get() + 1, fds_signature, 14) == 0) {
+    else if (std::memcmp(image.get() + 1, fds_signature, 14) == 0) {
         //m = 0x101;
         m = -1;
     }
-    else if (memcmp(image.get(), nsf_signature, 5) == 0) {
+    else if (std::memcmp(image.get(), nsf_signature, 5) == 0) {
         m = 0x102;
     }
 
@@ -247,7 +247,7 @@ int c_nes::reset()
     if (!ram) {
         ram = std::make_unique_for_overwrite<unsigned char[]>(2048);
     }
-    memset(ram.get(), 0xFF, 2048);
+    std::memset(ram.get(), 0xFF, 2048);
 
     mapper->close_sram();
     cpu->nes = this;

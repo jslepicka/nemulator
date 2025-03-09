@@ -216,9 +216,9 @@ void c_invaders::clock_sound(int cycles)
 
 int c_invaders::reset()
 {
-    memset(fb, 0, sizeof(fb));
-    memset(ram, 0, sizeof(ram));
-    memset(vram, 0, sizeof(vram));
+    std::memset(fb, 0, sizeof(fb));
+    std::memset(ram, 0, sizeof(ram));
+    std::memset(vram, 0, sizeof(vram));
     shift_register = 0;
     shift_amount = 0;
     INP1.value = 0x8;

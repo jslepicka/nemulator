@@ -61,7 +61,7 @@ int c_sms::load()
     }
 
     if (file_length == 0x2000) {
-        memcpy(rom.get() + 0x2000, rom.get(), 0x2000);
+        std::memcpy(rom.get() + 0x2000, rom.get(), 0x2000);
     }
     loaded = 1;
     reset();
@@ -104,7 +104,7 @@ int c_sms::reset()
     z80->reset();
     vdp->reset();
     psg->reset();
-    memset(ram.get(), 0x00, 8192);
+    std::memset(ram.get(), 0x00, 8192);
     irq = 0;
     nmi = 0;
     page[0] = rom.get();

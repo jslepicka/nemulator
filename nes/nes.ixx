@@ -1,7 +1,7 @@
 module;
 
 export module nes;
-import std.compat;
+import nemulator.std;
 import :ppu;
 import :apu;
 import :cpu;

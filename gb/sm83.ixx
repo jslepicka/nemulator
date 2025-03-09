@@ -1,7 +1,8 @@
 module;
 
 export module gb:sm83;
-import std.compat;
+import nemulator.std;
+
 
 namespace gb
 {

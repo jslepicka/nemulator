@@ -1,7 +1,8 @@
 module;
 
 export module invaders:sample_channel;
-import std.compat;
+import nemulator.std;
+
 
 namespace invaders
 {

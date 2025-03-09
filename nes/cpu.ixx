@@ -1,7 +1,8 @@
 module;
 
 export module nes:cpu;
-import std.compat;
+import nemulator.std;
+
 
 namespace nes
 {

@@ -1,7 +1,8 @@
 module;
 
 export module random;
-import std.compat;
+import nemulator.std;
+
 
 export namespace random
 {

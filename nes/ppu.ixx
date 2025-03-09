@@ -1,7 +1,8 @@
 module;
 
 export module nes:ppu;
-import std.compat;
+import nemulator.std;
+
 
 namespace nes
 {

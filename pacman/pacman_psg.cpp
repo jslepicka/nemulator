@@ -74,7 +74,7 @@ void c_pacman_psg::write_byte(uint16_t address, uint8_t data)
 
 void c_pacman_psg::reset()
 {
-    memset(accumulator, 0, sizeof(uint32_t) * 3);
+    std::memset(accumulator, 0, sizeof(uint32_t) * 3);
     muted = 1;
 }
 

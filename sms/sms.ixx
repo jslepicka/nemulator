@@ -1,7 +1,8 @@
 module;
 
 export module sms;
-import std.compat;
+import nemulator.std;
+
 import :vdp;
 import :psg;
 import :crc;

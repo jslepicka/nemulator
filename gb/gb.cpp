@@ -54,8 +54,8 @@ int c_gb::reset()
     last_serial_clock = 0;
     wram_bank = 1;
 
-    memset(ram.get(), 0, RAM_SIZE);
-    memset(hram.get(), 0, 128);
+    std::memset(ram.get(), 0, RAM_SIZE);
+    std::memset(hram.get(), 0, 128);
 
     return 0;
 }
@@ -100,7 +100,7 @@ int c_gb::load()
     file.read((char *)rom.get(), file_length);
     file.close();
 
-    memcpy(title, rom.get() + 0x134, 16);
+    std::memcpy(title, rom.get() + 0x134, 16);
     cart_type = *(rom.get() + 0x147);
     rom_size = *(rom.get() + 0x148);
     header_ram_size = *(rom.get() + 0x149);

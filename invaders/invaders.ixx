@@ -1,7 +1,8 @@
 module;
 
 export module invaders;
-import std.compat;
+import nemulator.std;
+import "stdint.h";
 import :sample_channel;
 import system;
 import class_registry;

@@ -1,7 +1,7 @@
 module;
 
 export module system;
-import std.compat;
+import nemulator.std;
 
 import class_registry;
 import nemulator.buttons;

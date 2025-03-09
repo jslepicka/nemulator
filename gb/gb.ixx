@@ -1,7 +1,7 @@
 module;
 
 export module gb;
-import std.compat;
+import nemulator.std;
 import :sm83;
 import :ppu;
 import :mapper;

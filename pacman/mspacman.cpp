@@ -95,14 +95,14 @@ void c_mspacman::decrypt_rom(int src, int dst, int len, std::array<uint8_t, 16> 
 void c_mspacman::decrypt_mspacman()
 {
     //copy pacman 6e, 6f, and 6h into decrypted rom
-    memcpy(prg_rom_overlay.get(), prg_rom.get(), 0x3000);
+    std::memcpy(prg_rom_overlay.get(), prg_rom.get(), 0x3000);
 
     //copy portion of 6f into decrypted rom
-    memcpy(prg_rom_overlay.get() + 0x9800, prg_rom.get() + 0x1800, 0x800);
+    std::memcpy(prg_rom_overlay.get() + 0x9800, prg_rom.get() + 0x1800, 0x800);
 
     //mirror 6h and 6j into high rom
-    memcpy(prg_rom_overlay.get() + 0xA000, prg_rom.get() + 0x2000, 0x1000);
-    memcpy(prg_rom_overlay.get() + 0xB000, prg_rom.get() + 0x3000, 0x1000);
+    std::memcpy(prg_rom_overlay.get() + 0xA000, prg_rom.get() + 0x2000, 0x1000);
+    std::memcpy(prg_rom_overlay.get() + 0xB000, prg_rom.get() + 0x3000, 0x1000);
 
     //decrypt source roms
 

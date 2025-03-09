@@ -3,7 +3,7 @@ module;
 export module nes:mapper.mapper228;
 import :mapper;
 import class_registry;
-import std;
+import nemulator.std;
 
 namespace nes
 {

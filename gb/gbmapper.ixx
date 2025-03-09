@@ -1,7 +1,8 @@
 module;
 
 export module gb:mapper;
-import std.compat;
+import nemulator.std;
+
 import class_registry;
 
 namespace gb

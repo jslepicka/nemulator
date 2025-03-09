@@ -1,7 +1,8 @@
 module;
 
 export module nemulator.buttons;
-import std.compat;
+import nemulator.std;
+
 
 export enum BUTTONS
 {

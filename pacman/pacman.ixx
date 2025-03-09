@@ -1,7 +1,8 @@
 module;
 
 export module pacman;
-import std.compat;
+import nemulator.std;
+
 import :vid;
 import :psg;
 import system;

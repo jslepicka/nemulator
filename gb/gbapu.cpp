@@ -48,8 +48,8 @@ void c_gbapu::reset()
     square2.reset();
     wave.reset();
     noise.reset();
-    memset(sound_buffer.get(), 0, sizeof(uint32_t) * 1024);
-    memset(registers, 0, sizeof(uint32_t) * 64);
+    std::memset(sound_buffer.get(), 0, sizeof(uint32_t) * 1024);
+    std::memset(registers, 0, sizeof(uint32_t) * 64);
 }
 
 void c_gbapu::set_audio_rate(double freq)

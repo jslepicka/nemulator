@@ -1,7 +1,8 @@
 module;
 
 export module sms:crc;
-import std.compat;
+import nemulator.std;
+
 
 namespace sms
 {

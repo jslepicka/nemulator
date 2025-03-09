@@ -1,7 +1,8 @@
 module;
 
 export module pacman:psg;
-import std.compat;
+import nemulator.std;
+
 import dsp;
 
 namespace pacman

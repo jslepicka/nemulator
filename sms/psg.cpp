@@ -7,9 +7,9 @@ namespace sms
 
 c_psg::c_psg()
 {
-    float db2 = powf(10.0f, -(2.0f / 20.f));
+    float db2 = std::powf(10.0f, -(2.0f / 20.f));
     for (int i = 0; i < 15; i++) {
-        vol_table[i] = 1.0f * powf(db2, (float)i);
+        vol_table[i] = 1.0f * std::powf(db2, (float)i);
     }
     vol_table[15] = 0.0f;
     int jdghkdjf = 1;
@@ -71,7 +71,7 @@ void c_psg::reset()
     lfsr_out = 0;
     channel = 0;
     type = 0;
-    memset(sound_buffer.get(), 0, sizeof(int32_t) * 1024);
+    std::memset(sound_buffer.get(), 0, sizeof(int32_t) * 1024);
 }
 
 void c_psg::set_audio_rate(double freq)

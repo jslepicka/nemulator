@@ -42,9 +42,9 @@ void c_vdp::reset()
     address_flip_flop = 0;
     read_buffer = 0;
     vram_write = 0;
-    memset(registers, 0, sizeof(registers));
-    memset(vram.get(), 0, 16384);
-    memset(cram, 0, sizeof(cram));
+    std::memset(registers, 0, sizeof(registers));
+    std::memset(vram.get(), 0, 16384);
+    std::memset(cram, 0, sizeof(cram));
     //memset(frame_buffer, 0, 256 * 256);
     status = 0;
 }

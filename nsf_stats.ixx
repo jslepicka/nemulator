@@ -3,7 +3,7 @@ module;
 #include "d3d10.h"
 #include "d3dx10.h"
 export module nemulator:nsf_stats;
-import std.compat;
+import nemulator.std;
 
 import system;
 import :stats;

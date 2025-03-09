@@ -1,7 +1,7 @@
 module;
 
 export module nes:cartdb;
-import std;
+import nemulator.std;
 import :mapper;
 namespace nes
 {

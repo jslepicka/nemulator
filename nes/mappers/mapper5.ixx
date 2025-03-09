@@ -4,7 +4,7 @@ export module nes:mapper.mapper5;
 import :apu;
 import :mapper;
 import class_registry;
-import std;
+import nemulator.std;
 
 namespace nes {
 

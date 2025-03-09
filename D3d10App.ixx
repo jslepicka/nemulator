@@ -23,7 +23,7 @@ module;
 #include <windows.h>
 
 export module D3d10App;
-import std.compat;
+import nemulator.std;
 import input_handler;
 import config;
 import task;

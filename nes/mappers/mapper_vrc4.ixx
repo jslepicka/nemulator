@@ -4,7 +4,7 @@ module;
 export module nes:mapper.vrc4;
 import :mapper;
 import class_registry;
-import std;
+import nemulator.std;
 
 namespace nes
 {

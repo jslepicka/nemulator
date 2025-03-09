@@ -82,17 +82,17 @@ void c_sample_channel::load_wav(char *buf)
 
     //skip over fact chunk if it exists
     char fact[4] = {'f', 'a', 'c', 't'};
-    if (memcmp(&buf[p], fact, 4) == 0) {
+    if (std::memcmp(&buf[p], fact, 4) == 0) {
         int chunk_size = *(int *)&buf[p + 4];
         p += 8 + chunk_size;
     }
 
     char data_id[4] = {'d', 'a', 't', 'a'};
-    if (memcmp(&buf[p], data_id, 4) == 0) {
+    if (std::memcmp(&buf[p], data_id, 4) == 0) {
         int chunk_size = *(int *)&buf[p + 4];
         int num_samples = chunk_size / 2;
         data = std::make_unique<int16_t[]>(num_samples);
-        memcpy(data.get(), &buf[p + 8], chunk_size);
+        std::memcpy(data.get(), &buf[p + 8], chunk_size);
         len = num_samples;
         freq = fmt->freq;
     }

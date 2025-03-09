@@ -1,7 +1,8 @@
 module;
 
 export module pacman:vid;
-import std.compat;
+import nemulator.std;
+
 
 namespace pacman
 {

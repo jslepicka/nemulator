@@ -1,7 +1,7 @@
 module;
 
 export module dsp:biquad;
-import std.compat;
+import nemulator.std;
 import :audio_filter;
 
 namespace dsp

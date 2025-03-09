@@ -26,7 +26,7 @@ module;
 #include <xmmintrin.h>
 
 export module dsp:biquad4;
-import std.compat;
+import nemulator.std;
 import :audio_filter;
 
 namespace dsp

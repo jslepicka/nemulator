@@ -5,7 +5,8 @@ module;
 #include "mmsystem.h"
 
 export module input_handler;
-import std.compat;
+import nemulator.std;
+
 import nemulator.buttons;
 
 export class c_input_handler

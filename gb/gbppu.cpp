@@ -252,15 +252,15 @@ void c_gbppu::reset()
     bg_fifo_index = 0;
     obj_fifo_index = 0;
 
-    memset(sprite_buffer, 0, sizeof(sprite_buffer));
-    memset(vram.get(), 0, 16384);
-    memset(vram1.get(), 0, 16384);
-    memset(fb.get(), 0, 160 * 144 * sizeof(uint32_t));
-    memset(fb_back.get(), 0, 160 * 144 * sizeof(uint32_t));
-    memset(bg_fifo, 0, sizeof(bg_fifo));
-    memset(obj_fifo, 0, sizeof(obj_fifo));
-    memset(oam.get(), 0, sizeof(uint8_t) * 160);
-    memset(cgb_bg_pal, 0xFF, sizeof(cgb_bg_pal));
+    std::memset(sprite_buffer, 0, sizeof(sprite_buffer));
+    std::memset(vram.get(), 0, 16384);
+    std::memset(vram1.get(), 0, 16384);
+    std::memset(fb.get(), 0, 160 * 144 * sizeof(uint32_t));
+    std::memset(fb_back.get(), 0, 160 * 144 * sizeof(uint32_t));
+    std::memset(bg_fifo, 0, sizeof(bg_fifo));
+    std::memset(obj_fifo, 0, sizeof(obj_fifo));
+    std::memset(oam.get(), 0, sizeof(uint8_t) * 160);
+    std::memset(cgb_bg_pal, 0xFF, sizeof(cgb_bg_pal));
 }
 
 void c_gbppu::eval_sprites(int y)
@@ -269,14 +269,14 @@ void c_gbppu::eval_sprites(int y)
     if (h == 16) {
         int x = 1;
     }
-    memset(sprite_buffer, 0, sizeof(sprite_buffer));
+    std::memset(sprite_buffer, 0, sizeof(sprite_buffer));
     s_sprite *s = (s_sprite *)oam.get();
     sprite_count = 0;
     for (int i = 0; i < 40; i++) {
         int sprite_y = s->y - 16;
         if (y >= sprite_y && y < (sprite_y + h)) {
             //sprite is in range, copy to sprite_buffer
-            memcpy(&sprite_buffer[sprite_count], s, sizeof(s_sprite));
+            std::memcpy(&sprite_buffer[sprite_count], s, sizeof(s_sprite));
             if (h == 16) {
                 sprite_buffer[sprite_count].tile &= ~0x1;
             }
