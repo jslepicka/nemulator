@@ -3,7 +3,7 @@ module;
 #include "d3dx10.h"
 
 export module nemulator:status;
-import std.compat;
+import nemulator.std;
 import task;
 
 export class c_status:

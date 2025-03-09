@@ -1,7 +1,7 @@
 module;
 
 export module z80;
-import std.compat;
+import nemulator.std;
 import random;
 
 export class c_z80

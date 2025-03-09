@@ -3,7 +3,7 @@ module;
 #include <mmdeviceapi.h>
 
 export module sound;
-import std.compat;
+import nemulator.std;
 
 export class c_sound
 {

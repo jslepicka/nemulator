@@ -2,7 +2,7 @@ module;
 #include "d3dx10.h"
 
 export module nemulator:system_container;
-import std.compat;
+import nemulator.std;
 import nemulator.buttons;
 import system;
 import texture_panel;
