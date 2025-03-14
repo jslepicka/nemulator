@@ -46,9 +46,6 @@ export class c_mapper52 : public c_mapper4, register_class<nes_mapper_registry, 
                     c_mapper4::write_byte(address, value);
                 }
             }
-            else {
-                int a = 1;
-            }
         }
         else {
             c_mapper4::write_byte(address, value);
