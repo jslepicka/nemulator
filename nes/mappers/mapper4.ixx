@@ -254,19 +254,19 @@ export class c_mapper4 : public c_mapper, register_class<nes_mapper_registry, c_
 
     virtual void Sync()
     {
-        SetPrgBank8k(PRG_8000 ^ prg_xor, (prg[0] & prg_mask) + prg_offset);
-        SetPrgBank8k(PRG_A000, (prg[1] & prg_mask) + prg_offset);
-        SetPrgBank8k(PRG_C000 ^ prg_xor, ((last_prg_page - 1) & prg_mask) + prg_offset);
-        SetPrgBank8k(PRG_E000, (last_prg_page & prg_mask) + prg_offset);
+        SetPrgBank8k(PRG_8000 ^ prg_xor, (prg[0] & prg_mask) | prg_offset);
+        SetPrgBank8k(PRG_A000, (prg[1] & prg_mask) | prg_offset);
+        SetPrgBank8k(PRG_C000 ^ prg_xor, ((last_prg_page - 1) & prg_mask) | prg_offset);
+        SetPrgBank8k(PRG_E000, (last_prg_page & prg_mask) | prg_offset);
 
-        SetChrBank1k(CHR_0000 ^ chr_xor, (chr[0] & chr_mask) + chr_offset);
-        SetChrBank1k(CHR_0400 ^ chr_xor, (chr[0] & chr_mask) + 1 + chr_offset);
-        SetChrBank1k(CHR_0800 ^ chr_xor, (chr[1] & chr_mask) + chr_offset);
-        SetChrBank1k(CHR_0C00 ^ chr_xor, (chr[1] & chr_mask) + 1 + chr_offset);
-        SetChrBank1k(CHR_1000 ^ chr_xor, (chr[2] & chr_mask) + chr_offset);
-        SetChrBank1k(CHR_1400 ^ chr_xor, (chr[3] & chr_mask) + chr_offset);
-        SetChrBank1k(CHR_1800 ^ chr_xor, (chr[4] & chr_mask) + chr_offset);
-        SetChrBank1k(CHR_1C00 ^ chr_xor, (chr[5] & chr_mask) + chr_offset);
+        SetChrBank1k(CHR_0000 ^ chr_xor, ((chr[0] & chr_mask) & 0xFE) | chr_offset);
+        SetChrBank1k(CHR_0400 ^ chr_xor, (chr[0] & chr_mask) | 0x01 | chr_offset);
+        SetChrBank1k(CHR_0800 ^ chr_xor, ((chr[1] & chr_mask) & 0xFE) | chr_offset);
+        SetChrBank1k(CHR_0C00 ^ chr_xor, (chr[1] & chr_mask) | 0x01 | chr_offset);
+        SetChrBank1k(CHR_1000 ^ chr_xor, (chr[2] & chr_mask) | chr_offset);
+        SetChrBank1k(CHR_1400 ^ chr_xor, (chr[3] & chr_mask) | chr_offset);
+        SetChrBank1k(CHR_1800 ^ chr_xor, (chr[4] & chr_mask) | chr_offset);
+        SetChrBank1k(CHR_1C00 ^ chr_xor, (chr[5] & chr_mask) | chr_offset);
     }
 };
 
