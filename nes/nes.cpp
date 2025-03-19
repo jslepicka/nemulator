@@ -161,7 +161,7 @@ int c_nes::LoadImage(std::string &pathFile)
     header = (iNesHeader *)image.get();
 
     char ines_signature[] = {'N', 'E', 'S', 0x1a};
-    char fds_signature[] = "*NINTENDO-HVC*";
+    char fds_signature[] = "\x01*NINTENDO-HVC*";
     char nsf_signature[] = {'N', 'E', 'S', 'M', 0x1A};
 
     if (std::memcmp(header->Signature, ines_signature, 4) == 0) {
@@ -182,7 +182,7 @@ int c_nes::LoadImage(std::string &pathFile)
             *h = 0;
         m = (header->Rcb1.mapper_lo) | (header->Rcb2.mapper_hi << 4);
     }
-    else if (std::memcmp(image.get() + 1, fds_signature, 14) == 0) {
+    else if (std::memcmp(image.get(), fds_signature, sizeof(fds_signature) - 1) == 0) {
         m = 0x103;
         //m = -1;
     }
