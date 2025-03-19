@@ -85,6 +85,9 @@ unsigned char c_nes::read_byte(unsigned short address)
             return ppu->read_byte(address & 0x2007);
             break;
         case 4:
+            if (address >= 0x4020) {
+                return mapper->read_byte(address);
+            }
             switch (address) {
                 case 0x4015:
                     return apu->read_byte(address);
@@ -180,8 +183,8 @@ int c_nes::LoadImage(std::string &pathFile)
         m = (header->Rcb1.mapper_lo) | (header->Rcb2.mapper_hi << 4);
     }
     else if (std::memcmp(image.get() + 1, fds_signature, 14) == 0) {
-        //m = 0x101;
-        m = -1;
+        m = 0x103;
+        //m = -1;
     }
     else if (std::memcmp(image.get(), nsf_signature, 5) == 0) {
         m = 0x102;

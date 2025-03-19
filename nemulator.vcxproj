@@ -324,6 +324,7 @@
     <ClCompile Include="nes\mappers\mapper94.ixx" />
     <ClCompile Include="nes\mappers\mapper95.ixx" />
     <ClCompile Include="nes\mappers\mapper97.ixx" />
+    <ClCompile Include="nes\mappers\mapper_fds.ixx" />
     <ClCompile Include="nes\mappers\mapper_mc_acc.ixx" />
     <ClCompile Include="nes\mappers\mapper_mmc6.ixx" />
     <ClCompile Include="nes\mappers\mapper_nsf.ixx" />
