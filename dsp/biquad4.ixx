@@ -45,7 +45,7 @@ export class c_biquad4 : public i_audio_filter
         this->a2 = _mm_loadu_ps(&a2[0]);
         this->a3 = _mm_loadu_ps(&a3[0]);
     }
-    ~c_biquad4(void){};
+
     __forceinline float process(float input)
     {
         d.m128_f32[0] = input;

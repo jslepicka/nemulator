@@ -615,9 +615,11 @@ void c_nemulator::handle_button_switch_disk(s_button_handler_params *params)
     if (g->get_system_name() == "Nintendo FDS") {
         nes::c_nes *n = ((nes::c_nes *)g->system.get());
         int side = n->mapper->switch_disk();
-        char buf[32];
-        sprintf_s(buf, "Set disk side %d", side);
-        status->add_message(buf);
+        if (side >= 0) {
+            status->add_message(
+                "Switch to disk " + std::to_string(side / 2 + 1) + " side " + (side % 2 ? 'B' : 'A')
+            );
+        }
     }
 }
 

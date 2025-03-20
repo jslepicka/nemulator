@@ -15,7 +15,7 @@ export class c_biquad : public i_audio_filter
         this->b = b;
         this->a = a;
     };
-    ~c_biquad(){};
+
     __forceinline float process(float in)
     {
         in *= g;

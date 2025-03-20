@@ -34,7 +34,10 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
 
     int switch_disk()
     {
-        switching_disk = 1790000 * 2;
+        if (num_sides == 1) {
+            return -1;
+        }
+        switching_disk = 1790000 * 2; //wait approximately 2 seconds
         disk_not_inserted = 1;
 
         side_number = (side_number + 1) % num_sides;
@@ -332,11 +335,14 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
         }
 
         if (!num_sides) {
+            const char fwnes_header[] = "FDS\x1A";
+            int header_adjustment = (memcmp(image, fwnes_header, sizeof(fwnes_header) - 1) == 0) * 16;
+            
             num_sides = file_length / 65500;
             for (int i = 0; i < num_sides; i++) {
                 disk_sides.emplace_back(disk_side_t());
 
-                int src_offset = i * 65500;
+                int src_offset = i * 65500 + header_adjustment;
 
                 auto &fds_image = disk_sides[i];
 
