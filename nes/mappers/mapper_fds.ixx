@@ -32,89 +32,111 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
     void reset()
     {
         ticks = 0;
+        disk_not_inserted = 0;
+        scanning = 0;
+        gap_covered = 0;
+        previous_crc_flag = 0;
+        do_irq = 0;
+        shift_register = 0;
+        crc_accumulator = 0;
+        disk_position = 0;
+        delay = 0;
+
+        dont_stop_motor = 0;
+        dont_scan_media = 0;
+        dont_write = 0;
+        mirroring = 0;
+        transmit_crc = 0;
+        in_data = 0;
+        disk_irq_enable = 0;
+        timer_irq = 0;
+        data_ready = 0;
+        crc = 0;
+        end_of_disk = 0;
+
+        enable_disk_io = 0;
+        enable_sound_io = 0;
+
         external_connector = 0;
-        timer_irq_reload_low = 0;
-        timer_irq_reload_hi = 0;
-        timer_irq_control = 0;
-        master_io_enable = 0;
-        write_data_register = 0;
-        read_data_register = 0;
-        fds_control.value = 0;
-        fds_control.drive_motor_control = 1;
-        transfer = 0;
-        transfer_delay = 0;
-        transfer_offset = 0;
-        drive_state = DRIVE_STATE::IDLE;
-        drive_status.value = 0;
-        drive_status.ready_flag = 1;
-        disk_status.value = 0;
-        disk_status.rw_enable = 1;
-        irq_asserted = 0;
-        in_gap = 1;
-        motor_on = 0;
-        scanning_disk = 0;
-        reset_transfer = 0;
-        end_of_head = 0;
+
+        timer_reload = 0;
+        timer_control = 0;
     }
 
     void clock(int cycles) override
     {
         if (++ticks == 3) {
             ticks = 0;
-            if (!motor_on) {
-                scanning_disk = 0;
-                end_of_head = 1;
-                return;
-            }
 
-            if (reset_transfer && !scanning_disk) {
-                return;
-            }
-
-            if (end_of_head) {
-                transfer_delay = 4000;
-                end_of_head = 0;
-                transfer_offset = 0;
-                in_gap = 1;
-                //drive_status.ready_flag = 0;
-                return;
-            }
-
-            if (transfer_delay) {
-                transfer_delay--;
-            }
-            else {
-                scanning_disk = 1;
-
-                if (fds_control.transfer_mode == TRANSFER_MODE::READ) {
-                    uint8_t d = fds_image[transfer_offset++];
-                    if (in_gap) {
-                        if (d == 0x80) {
-                            in_gap = 0;
-                        }
-                    }
-                    else {
-                        read_data_register = d;
-                        disk_status.byte_transfer_flag = 1;
-                        if (irq_asserted) {
-                            int x = 1;
-                        }
-                        if (fds_control.irq_enabled && !irq_asserted) {
-                            execute_irq();
-                            irq_asserted = 1;
-                        }
-                        //transfer_delay = 8 * 18;
-                        if (transfer_offset >= fds_image.size()) {
-                            motor_on = 0;
-                            disk_status.end_of_head = 1;
-                            drive_status.ready_flag = 1;
-                        }
-                    }
-                    transfer_delay = 150;
+            if (timer_control & 0x2) {
+                if (timer_counter) {
+                    timer_counter--;
                 }
                 else {
-                    int x = 1;
+                    timer_irq = 1;
+                    execute_irq();
+                    timer_counter = timer_reload;
+                    if (!(timer_control & 0x1)) {
+                        timer_control &= ~0x2;
+                    }
                 }
+            }
+
+            if (dont_stop_motor == 0 || disk_not_inserted == 1) {
+                scanning = 0;
+                end_of_disk = 1;
+                return;
+            }
+
+            if (dont_scan_media == 1 && scanning == 0) {
+                return;
+            }
+
+            if (end_of_disk == 1) {
+                delay = 50000;
+                end_of_disk = 0;
+                disk_position = 0;
+                gap_covered = 0;
+            }
+
+            if (delay) {
+                delay--;
+                return;
+            }
+
+            scanning = 1;
+
+            if (dont_write == 1) {
+                shift_register = fds_image[disk_position];
+                do_irq = disk_irq_enable;
+
+                if (in_data == 0) {
+                    gap_covered = 0;
+                }
+                else if (shift_register != 0x00) {
+                    if (!gap_covered) {
+                        do_irq = 0;
+                    }
+                    gap_covered = 1;
+                    //do_irq = 0;
+                }
+                if (gap_covered == 1) {
+                    data_ready = 1;
+                    read_data = shift_register;
+                    if (do_irq) {
+                        execute_irq();
+                    }
+                }
+            }
+            else {
+                //write
+            }
+            disk_position++;
+            if (disk_position >= fds_image.size()) {
+                dont_stop_motor = 0;
+            }
+            else {
+                delay = 149;
             }
         }
     }
@@ -123,116 +145,71 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
     int ticks;
     std::unique_ptr<uint8_t[]> ram;
     std::unique_ptr<uint8_t[]> chr_ram;
-    uint8_t external_connector;
-    uint8_t timer_irq_reload_low;
-    uint8_t timer_irq_reload_hi;
-    uint8_t timer_irq_control;
-    uint8_t master_io_enable;
-    uint8_t write_data_register;
-    uint8_t read_data_register;
-    int transfer;
-    int transfer_offset;
-    int transfer_delay;
-    int drive_state;
     std::vector<uint8_t> fds_image;
-    int irq_asserted;
-    int in_gap;
-    int motor_on;
-    int scanning_disk;
-    int reset_transfer;
-    int end_of_head;
 
-    union {
-        struct
-        {
-            uint8_t transfer_reset : 1;
-            uint8_t drive_motor_control : 1;
-            uint8_t transfer_mode : 1;
-            uint8_t mirroring : 1;
-            uint8_t crc_transfer_control : 1;
-            uint8_t : 1;
-            uint8_t crc_enabled : 1;
-            uint8_t irq_enabled : 1;
-        };
-        uint8_t value;
-    } fds_control;
+    int disk_not_inserted;
+    int scanning;
+    int gap_covered;
+    int previous_crc_flag;
+    int do_irq;
+    int shift_register;
+    int crc_accumulator;
+    int disk_position;
+    int delay;
 
-    union {
-        struct
-        {
-            uint8_t timer_interrupt : 1;
-            uint8_t byte_transfer_flag : 1;
-            uint8_t : 1;
-            uint8_t mirroring : 1;
-            uint8_t crc_control : 1;
-            uint8_t : 1;
-            uint8_t end_of_head : 1;
-            uint8_t rw_enable : 1;
-        };
-        uint8_t value;
-    } disk_status;
+    int dont_stop_motor;
+    int dont_scan_media;
+    int dont_write;
+    int mirroring;
+    int transmit_crc;
+    int in_data;
+    int disk_irq_enable;
+    int timer_irq;
+    int data_ready;
+    int crc;
+    int end_of_disk;
 
-    union {
-        struct
-        {
-            uint8_t disk_flag : 1;
-            uint8_t ready_flag : 1;
-            uint8_t protect_flag : 1;
-            uint8_t : 5;
-        };
-        uint8_t value;
-    } drive_status;
+    int enable_disk_io;
+    int enable_sound_io;
 
-    enum DRIVE_MOTOR
-    {
-        START = 0,
-        STOP = 1
-    };
+    uint8_t read_data;
+    uint8_t write_data;
+    uint8_t external_connector;
 
-    enum TRANSFER_MODE
-    {
-        WRITE = 0,
-        READ = 1,
-    };
-
-    enum DRIVE_STATE
-    {
-        IDLE,
-        SPIN_UP,
-        TRANSFER,
-
-    };
+    int timer_counter;
+    int timer_reload;
+    uint8_t timer_control;
 
     unsigned char read_byte(unsigned short address) override
     {
+        uint8_t out = 0;
         if (address < 0x6000) {
-            char buf[64];
-            sprintf(buf, "fds read: %04x\n", address);
-            OutputDebugString(buf);
-            int x = 1;
             switch (address) {
                 case 0x4030:
-                    disk_status.byte_transfer_flag = 0;
-                    irq_asserted = 0;
+                    out |= (timer_irq ? 1 : 0) << 0;
+                    out |= (data_ready ? 1 : 0) << 1;
+                    out |= 1 << 2;
+                    out |= (mirroring ? 1 : 0) << 3;
+                    out |= 0 << 4; //crc 0=good
+                    out |= 1 << 5; //unusued, unsure of value
+                    out |= (end_of_disk ? 1 : 0) << 6;
+                    out |= 1 << 7; //write protect disabled
                     clear_irq();
-                    return disk_status.value;
+                    timer_irq = 0;
+                    data_ready = 0;
+                    return out;
                 case 0x4031:
-                    disk_status.byte_transfer_flag = 0;
-                    irq_asserted = 0;
                     clear_irq();
-                    //{
-                    //    char buf[64];
-                    //    sprintf(buf, "disk read: %02x %c\n", read_data_register, read_data_register);
-                    //    OutputDebugString(buf);
-                    //}
-                    return read_data_register;
-                case 0x4032: //drive status
-                    irq_asserted = 0;
+                    data_ready = 0;
+                    return read_data;
+                case 0x4032:
+                    out |= (disk_not_inserted ? 1 : 0) << 0;
+                    out |= (disk_not_inserted || !scanning ? 1 : 0) << 1;
+                    out |= (disk_not_inserted ? 1 : 0) << 2;
                     clear_irq();
-                    drive_status.ready_flag = !scanning_disk;
-                    return drive_status.value | 0x40;
-                case 0x4033: //expansion
-                    return (!fds_control.drive_motor_control << 7) | (external_connector & 0x7F); //battery ok
+                    return out;
+                case 0x4033:
+                    return 0x80 | (external_connector & 0x7F);
                 default:
                     return 0;
             }
@@ -244,63 +221,56 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
     }
     void write_byte(unsigned short address, unsigned char value) override
     {
+        int x;
         if (address < 0x6000) {
-            char buf[64];
-            sprintf(buf, "fds write: %04x = %02x\n", address, value);
-            OutputDebugString(buf);
-            int x = 1;
             switch (address) {
                 case 0x4020:
-                    timer_irq_reload_low = value;
+                    x = 1;
+                    timer_reload = (timer_reload & 0xFF00) | value;
                     break;
                 case 0x4021:
-                    timer_irq_reload_hi = value;
+                    x = 1;
+                    timer_reload = (timer_reload & 0x00FF) | ((int)value << 8);
                     break;
                 case 0x4022:
-                    timer_irq_control = value;
+                    if (!enable_disk_io) {
+                        return;
+                    }
+                    x = 1;
+                    timer_control = value;
+                    if (timer_control & 0x2) {
+                        timer_counter = timer_reload;
+                        if (timer_reload == 0) {
+                            execute_irq();
+                        }
+                    }
+                    else {
+                        timer_irq = 0;
+                        clear_irq();
+                    }
                     break;
                 case 0x4023:
-                    master_io_enable = value;
+                    enable_disk_io = (value >> 0) & 0x01;
+                    enable_sound_io = (value >> 1) & 0x01;
                     break;
                 case 0x4024:
-                    write_data_register = value;
-                    disk_status.byte_transfer_flag = 0;
-                    break;
-                case 0x4025: {
-
-                    fds_control.value = value | 0x20;
-                    set_mirroring(fds_control.mirroring ? MIRRORING_HORIZONTAL : MIRRORING_VERTICAL);
-                    ////if (!fds_control.transfer_reset) {
-                    ////    if (start_transfer && !fds_control.drive_motor_control) {
-                    ////        transfer = 0;
-                    ////        transfer_delay = 14354 / 8;
-                    ////        transfer_offset = 0;
-                    ////        drive_state = DRIVE_STATE::SPIN_UP; //should this be start of disk instead?
-                    ////        drive_status.ready_flag = 0;
-                    ////        in_gap = 1;
-                    ////    }
-                    ////}
-                    ////else {
-                    ////    int x = 1;
-                    ////    drive_status.ready_flag = 1;
-                    ////    //transfer_delay = 18 * 28300;
-                    ////}
-
-                    //if (!fds_control.transfer_reset) {
-                    //    transfer_delay = 14354 / 8;
-                    //    transfer_offset = 0;
-                    //    in_gap = 1;
-                    //}
-
-
-
-                    ////if (
-                    motor_on = (value & 0x02);
-                    reset_transfer = (value & 0x01);
-                    disk_status.mirroring = fds_control.mirroring;
-                    irq_asserted = 0;
+                    write_data = value;
                     clear_irq();
-                }
+                    data_ready = 0;
+                    break;
+                case 0x4025:
+                    dont_stop_motor = (value >> 0) & 0x01;
+                    dont_scan_media = (value >> 1) & 0x01;
+                    dont_write = (value >> 2) & 0x01;
+                    transmit_crc = (value >> 4) & 0x01;
+                    in_data = (value >> 6) & 0x01;
+                    disk_irq_enable = (value >> 7) & 0x01;
+                    mirroring = (value >> 3) & 0x01;
+                    set_mirroring(mirroring ? MIRRORING_HORIZONTAL : MIRRORING_VERTICAL);
+                    clear_irq();
+                    if (dont_stop_motor == 0) {
+                        timer_irq = 0;
+                    }
                     break;
                 case 0x4026:
                     external_connector = value;
