@@ -137,12 +137,9 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
                 if (in_data == 0) {
                     gap_covered = 0;
                 }
-                else if (shift_register != 0x00) {
-                    if (!gap_covered) {
-                        do_irq = 0;
-                    }
+                else if (!gap_covered && shift_register != 0x00) {
+                    do_irq = 0;
                     gap_covered = 1;
-                    //do_irq = 0;
                 }
                 if (gap_covered == 1) {
                     data_ready = 1;
