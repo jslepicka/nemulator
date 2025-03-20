@@ -27,6 +27,19 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
     {
         ram = std::make_unique<uint8_t[]>(40 * 1024);
         chr_ram = std::make_unique<uint8_t[]>(8 * 1024);
+        num_sides = 0;
+        side_number = 0;
+        bios_loaded = 0;
+    }
+
+    int switch_disk()
+    {
+        switching_disk = 1790000 * 2;
+        disk_not_inserted = 1;
+
+        side_number = (side_number + 1) % num_sides;
+
+        return side_number;
     }
 
     void reset()
@@ -61,6 +74,8 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
 
         timer_reload = 0;
         timer_control = 0;
+
+        switching_disk = 0;
     }
 
     void clock(int cycles) override
@@ -79,6 +94,15 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
                     if (!(timer_control & 0x1)) {
                         timer_control &= ~0x2;
                     }
+                }
+            }
+
+            if (switching_disk) {
+                if (--switching_disk == 0) {
+                    disk_not_inserted = 0;
+                }
+                else {
+                    return;
                 }
             }
 
@@ -107,7 +131,7 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
             scanning = 1;
 
             if (dont_write == 1) {
-                shift_register = fds_image[disk_position];
+                shift_register = disk_sides[side_number][disk_position];
                 do_irq = disk_irq_enable;
 
                 if (in_data == 0) {
@@ -132,7 +156,7 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
                 //write
             }
             disk_position++;
-            if (disk_position >= fds_image.size()) {
+            if (disk_position >= disk_sides[side_number].size()) {
                 dont_stop_motor = 0;
             }
             else {
@@ -145,7 +169,8 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
     int ticks;
     std::unique_ptr<uint8_t[]> ram;
     std::unique_ptr<uint8_t[]> chr_ram;
-    std::vector<uint8_t> fds_image;
+    using disk_side_t = std::vector<uint8_t>;
+    std::vector<disk_side_t> disk_sides;
 
     int disk_not_inserted;
     int scanning;
@@ -179,6 +204,12 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
     int timer_counter;
     int timer_reload;
     uint8_t timer_control;
+
+    int bios_loaded;
+    int side_number;
+    int num_sides;
+
+    int switching_disk;
 
     unsigned char read_byte(unsigned short address) override
     {
@@ -293,60 +324,69 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
     }
     int load_image() override
     {
-        int x = 1;
-        std::ifstream rom;
-        rom.open("c:\\roms\\fds\\disksys.rom", std::ios_base::in | std::ios_base::binary);
-        if (rom.is_open()) {
-            rom.read((char *)ram.get() + 32768, 8192);
-            rom.close();
+        if (!bios_loaded) {
+            std::ifstream rom;
+            rom.open("c:\\roms\\fds\\disksys.rom", std::ios_base::in | std::ios_base::binary);
+            if (rom.is_open()) {
+                rom.read((char *)ram.get() + 32768, 8192);
+                rom.close();
+            }
+            bios_loaded = 1;
         }
-        if (fds_image.size() == 0) {
-            int src_offset = 0;
-            auto add_block = [&](int len) {
-                fds_image.push_back(0x80);
-                fds_image.insert(fds_image.end(), image + src_offset, image + src_offset + len);
-                src_offset += len;
-                return len;
-            };
-            auto add_gap = [&](int len) {
-                for (int i = 0; i < len; i++) {
-                    fds_image.push_back(0x00);
-                }
-            };
 
-            auto add_crc = [&]() {
-                for (int i = 0; i < 2; i++) {
-                    fds_image.push_back(0xCD);
-                }
-            };
+        if (!num_sides) {
+            num_sides = file_length / 65500;
+            for (int i = 0; i < num_sides; i++) {
+                disk_sides.emplace_back(disk_side_t());
 
-            add_gap(28300 / 8);
+                int src_offset = i * 65500;
 
-            add_block(56);
-            add_crc();
-            add_gap(976 / 8);
+                auto &fds_image = disk_sides[i];
 
-            //block 2
+                auto add_block = [&](int len) {
+                    fds_image.push_back(0x80);
+                    fds_image.insert(fds_image.end(), image + src_offset, image + src_offset + len);
+                    src_offset += len;
+                    return len;
+                };
+                auto add_gap = [&](int len) {
+                    for (int i = 0; i < len; i++) {
+                        fds_image.push_back(0x00);
+                    }
+                };
 
-            add_block(2);
-            add_crc();
-            add_gap(976 / 8);
+                auto add_crc = [&]() {
+                    for (int i = 0; i < 2; i++) {
+                        fds_image.push_back(0xCD);
+                    }
+                };
 
-            while (*(image + src_offset) == 0x3) {
-                unsigned char *f = image + src_offset + 13;
-                int file_size = *f | (*(f + 1) << 8);
-                file_size += 1;
-                add_block(16);
-                add_crc();
-                add_gap(976 / 8);
-                
-                add_block(file_size);
+                add_gap(28300 / 8);
+
+                add_block(56);
                 add_crc();
                 add_gap(976 / 8);
 
+                //block 2
+
+                add_block(2);
+                add_crc();
+                add_gap(976 / 8);
+
+                while (*(image + src_offset) == 0x3) {
+                    unsigned char *f = image + src_offset + 13;
+                    int file_size = *f | (*(f + 1) << 8);
+                    file_size += 1;
+                    add_block(16);
+                    add_crc();
+                    add_gap(976 / 8);
+
+                    add_block(file_size);
+                    add_crc();
+                    add_gap(976 / 8);
+                }
             }
         }
-
 
         return 1;
     }

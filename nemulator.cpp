@@ -309,7 +309,8 @@ void c_nemulator::configure_input()
         { BUTTON_DEC_SHARPNESS,  "",        "",        0x39,                   1 },
         { BUTTON_INC_SHARPNESS,  "",        "",        0x30,                   1 },
 
-        { BUTTON_1COIN,          "",        "",        0x31,                   0 }
+        { BUTTON_1COIN,          "",        "",        0x31,                   0 },
+        { BUTTON_SWITCH_DISK,    "",        "",        VK_F5,                  0 },
     };
 
     int num_buttons = sizeof(button_map) / sizeof(s_button_map);
@@ -608,6 +609,18 @@ void c_nemulator::handle_button_leave_game(s_button_handler_params* params)
     sound->stop();
 }
 
+void c_nemulator::handle_button_switch_disk(s_button_handler_params *params)
+{
+    c_system_container *g = (c_system_container *)texturePanels[selectedPanel]->GetSelected();
+    if (g->get_system_name() == "Nintendo FDS") {
+        nes::c_nes *n = ((nes::c_nes *)g->system.get());
+        int side = n->mapper->switch_disk();
+        char buf[32];
+        sprintf_s(buf, "Set disk side %d", side);
+        status->add_message(buf);
+    }
+}
+
 const c_nemulator::s_button_handler c_nemulator::button_handlers[] =
 {
     { SCOPE::GAMES_LOADED, {BUTTON_RESET}, true, RESULT_DOWN, &c_nemulator::handle_button_reset },
@@ -625,7 +638,8 @@ const c_nemulator::s_button_handler c_nemulator::button_handlers[] =
     { SCOPE::IN_MENU, {BUTTON_1A, BUTTON_1START, BUTTON_RETURN}, true, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_ok },
     { SCOPE::IN_MENU, {BUTTON_1SELECT}, true, RESULT_DOWN, &c_nemulator::handle_button_show_qam },
     { SCOPE::IN_GAME, {BUTTON_1A_TURBO, BUTTON_1B_TURBO, BUTTON_2A_TURBO, BUTTON_2B_TURBO}, false, RESULT_DOWN, &c_nemulator::handle_button_turbo },
-    { SCOPE::IN_GAME, {BUTTON_ESCAPE}, false, RESULT_DOWN, &c_nemulator::handle_button_leave_game }
+    { SCOPE::IN_GAME, {BUTTON_ESCAPE}, false, RESULT_DOWN, &c_nemulator::handle_button_leave_game },
+    { SCOPE::IN_GAME, {BUTTON_SWITCH_DISK}, true, RESULT_DOWN, &c_nemulator::handle_button_switch_disk },
 };
 
 

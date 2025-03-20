@@ -42,6 +42,7 @@ export class c_mapper
     {
         return 0;
     }
+    virtual int switch_disk() { return 0; };
     int in_sprite_eval;
     //c_nes *nes;
     int get_mirroring();
