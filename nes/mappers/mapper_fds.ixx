@@ -32,6 +32,11 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
         bios_loaded = 0;
     }
 
+    ~c_mapper_fds()
+    {
+        save_overlay();
+    }
+
     int switch_disk()
     {
         if (num_sides == 1) {
@@ -154,6 +159,33 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
             }
             else {
                 //write
+                if (transmit_crc == 0) {
+                    data_ready = 1;
+                    shift_register = write_data;
+                    do_irq = disk_irq_enable;
+                    if (do_irq) {
+                        execute_irq();
+                    }
+                }
+
+                if (in_data == 0) {
+                    shift_register = 0x00;
+                }
+                else {
+                    int x = 1;
+                }
+                if (transmit_crc == 0) {
+                    //crc accumulator
+                }
+                else {
+                    //if (last_crc_flag == 0) {
+                    //    //finish crc calculation
+                    //}
+                    shift_register = 0x00; //should be crc caluclation lower 8 bits
+                }
+                disk_sides[side_number][disk_position] = shift_register;
+                dirty_blocks[(side_number << 24) | disk_position] = shift_register;
+                gap_covered = 0;
             }
             disk_position++;
             if (disk_position >= disk_sides[side_number].size()) {
@@ -210,6 +242,8 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
     int num_sides;
 
     int switching_disk;
+
+    std::map<uint32_t, uint8_t> dirty_blocks;
 
     unsigned char read_byte(unsigned short address) override
     {
@@ -388,10 +422,47 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
                     add_crc();
                     add_gap(976 / 8);
                 }
+                if (fds_image.size() < 65500) {
+                    fds_image.resize(65500);
+                }
+            }
+            load_overlay();
+            for (auto &[k, v] : dirty_blocks) {
+                disk_sides[k >> 24][k & 0x00FFFFFF] = v;
             }
         }
-
         return 1;
+    }
+
+    void load_overlay()
+    {
+        std::ifstream f;
+        f.open(sramFilename, std::ios_base::in | std::ios_base::binary);
+        uint32_t k;
+        uint8_t v;
+        if (f.is_open()) {
+            while (f.peek() != EOF) {
+                f.read((char*)&k, sizeof(uint32_t));
+                f.read((char*)&v, sizeof(uint8_t));
+                dirty_blocks[k] = v;
+            }
+            f.close();
+        }
+    }
+
+    void save_overlay()
+    {
+        if (dirty_blocks.size() > 0) {
+            std::ofstream f;
+            f.open(sramFilename, std::ios_base::out | std::ios_base::binary);
+            if (f.is_open()) {
+                for (auto &[k, v] : dirty_blocks) {
+                    f.write((const char *)&k, sizeof(uint32_t));
+                    f.write((const char *)&v, sizeof(uint8_t));
+                }
+                f.close();
+            }
+        }
     }
 };
 } //namespace nes
