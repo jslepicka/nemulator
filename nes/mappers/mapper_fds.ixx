@@ -42,7 +42,7 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
         if (num_sides == 1) {
             return -1;
         }
-        switching_disk = 1790000 * 2; //wait approximately 2 seconds
+        switching_disk = 1790000 * 1; //wait approximately 1 second
         disk_not_inserted = 1;
 
         side_number = (side_number + 1) % num_sides;
@@ -181,7 +181,7 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
                     //if (last_crc_flag == 0) {
                     //    //finish crc calculation
                     //}
-                    shift_register = 0x00; //should be crc caluclation lower 8 bits
+                    shift_register = 0x00; //should be crc calculation lower 8 bits
                 }
                 disk_sides[side_number][disk_position] = shift_register;
                 dirty_blocks[(side_number << 24) | disk_position] = shift_register;
@@ -360,7 +360,7 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
     {
         if (!bios_loaded) {
             std::ifstream rom;
-            rom.open("c:\\roms\\fds\\disksys.rom", std::ios_base::in | std::ios_base::binary);
+            rom.open(image_path + "\\" + "disksys.rom", std::ios_base::in | std::ios_base::binary);
             if (rom.is_open()) {
                 rom.read((char *)ram.get() + 32768, 8192);
                 rom.close();
@@ -427,7 +427,7 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
                 }
             }
             load_overlay();
-            for (auto &[k, v] : dirty_blocks) {
+            for (auto [k, v] : dirty_blocks) {
                 disk_sides[k >> 24][k & 0x00FFFFFF] = v;
             }
         }
@@ -456,7 +456,7 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
             std::ofstream f;
             f.open(sramFilename, std::ios_base::out | std::ios_base::binary);
             if (f.is_open()) {
-                for (auto &[k, v] : dirty_blocks) {
+                for (auto [k, v] : dirty_blocks) {
                     f.write((const char *)&k, sizeof(uint32_t));
                     f.write((const char *)&v, sizeof(uint8_t));
                 }

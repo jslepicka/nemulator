@@ -240,7 +240,7 @@ int c_nes::load()
     if (submapper != -1) {
         mapper->set_submapper(submapper);
     }
-
+    mapper->image_path = path;
     mapper->sramFilename = sram_path_file;
     mapper->crc32 = crc32;
     mapper->file_length = file_length;

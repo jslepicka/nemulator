@@ -33,6 +33,7 @@ export class c_mapper
     iNesHeader *header = nullptr;
     unsigned char *image = nullptr;
     std::string sramFilename;
+    std::string image_path;
     const char *mapperName;
     int close_sram();
     int crc32;
