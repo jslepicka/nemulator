@@ -597,13 +597,22 @@ void c_nemulator::handle_button_leave_game(s_button_handler_params* params)
 {
     g_ih->ack_button(BUTTON_1START);
     g_ih->ack_button(BUTTON_1SELECT);
+    c_system_container *g = (c_system_container *)texturePanels[selectedPanel]->GetSelected();
     for (int i = 0; i < num_texture_panels; i++)
         texturePanels[i]->dim = true;
     c_menu::s_menu_items mi;
-    const char* m[] = { "resume", "reset", "return to menu" };
-    mi.num_items = 3;
-    mi.items = (char**)m;
-    add_task(new c_menu(), (int*)&mi);
+    if (g->get_system_name() == "Nintendo FDS") {
+        const char *m[] = {"resume", "switch disk", "reset", "return to menu"};
+        mi.num_items = 4;
+        mi.items = (char **)m;
+        add_task(new c_menu(), (int *)&mi);
+    }
+    else {
+        const char *m[] = {"resume", "reset", "return to menu"};
+        mi.num_items = 3;
+        mi.items = (char **)m;
+        add_task(new c_menu(), (int *)&mi);
+    }
     menu = MENU_INGAME;
     paused = true;
     sound->stop();
@@ -887,7 +896,18 @@ int c_nemulator::update(double dt, int child_result, void *params)
         case MENU_INGAME:
             if (child_result == c_task::TASK_RESULT_RETURN)
             {
-                switch (*(int*)params)
+                c_system_container *g = (c_system_container *)texturePanels[selectedPanel]->GetSelected();
+                bool fds = g->get_system_name() == "Nintendo FDS";
+                int p = *(int*)params;
+                if (fds) {
+                    if (p == 1) {
+                        p = 3;
+                    }
+                    else if (p > 1) {
+                        p -= 1;
+                    }
+                }
+                switch (p)
                 {
                 case 0: //resume
                     break;
@@ -901,12 +921,15 @@ int c_nemulator::update(double dt, int child_result, void *params)
                 case 2: //return to main menu
                     leave_game();
                     break;
+                case 3: //fds only, switch disk
+                    handle_button_switch_disk(nullptr);
+                    break;
                 }
                 for (int i = 0; i < num_texture_panels; i++)
                     texturePanels[i]->dim = false;
                 paused = false;
                 menu = 0;
-                if (*(int*)params != 2)
+                if (p != 2)
                     sound->play();
             }
             else if (child_result == c_task::TASK_RESULT_CANCEL)
