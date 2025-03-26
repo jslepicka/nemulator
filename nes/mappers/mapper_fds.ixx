@@ -446,36 +446,19 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
     {
         std::ifstream f;
         f.open(sramFilename, std::ios_base::in | std::ios_base::binary);
-        uint32_t k;
-        uint8_t v;
         if (f.is_open()) {
-            while (f.peek() != EOF) {
-                f.read((char*)&k, sizeof(k));
-                f.read((char*)&v, sizeof(v));
-                dirty_blocks[k] = v;
-            }
-            f.close();
-        }
-
-        f.open(sramFilename + ".new", std::ios_base::in | std::ios_base::binary);
-        if (f.is_open()) {
-            int start;
-            int count;
+            uint32_t start;
+            uint32_t count;
             uint8_t v = 0;
             while (f.peek() != EOF) {
                 f.read((char *)&start, sizeof(start));
                 f.read((char *)&count, sizeof(count));
                 for (int i = 0; i < count; i++) {
                     f.read((char *)&v, 1);
-                    dirty_blocks2[start + i] = v;
+                    dirty_blocks[start + i] = v;
                 }
             }
             f.close();
-        }
-        bool e = dirty_blocks.size() == dirty_blocks2.size() &&
-                 std::equal(dirty_blocks.begin(), dirty_blocks.end(), dirty_blocks2.begin());
-        if (!e) {
-            int x = 1;
         }
     }
 
@@ -485,22 +468,12 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
             std::ofstream f;
             f.open(sramFilename, std::ios_base::out | std::ios_base::binary);
             if (f.is_open()) {
-                for (auto [k, v] : dirty_blocks) {
-                    f.write((const char *)&k, sizeof(k));
-                    f.write((const char *)&v, sizeof(v));
-                }
-                f.close();
-            }
-
-            f.open(sramFilename + ".new", std::ios_base::out | std::ios_base::binary);
-
-            if (f.is_open()) {
                 uint32_t start = -1;
                 uint32_t last_k = -1;
                 std::vector<uint8_t> bytes;
 
                 auto write = [&]() {
-                    int count = bytes.size();
+                    uint32_t count = bytes.size();
                     if (count == 0) {
                         return;
                     }
