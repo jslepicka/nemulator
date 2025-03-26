@@ -244,6 +244,7 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
     int switching_disk;
 
     std::map<uint32_t, uint8_t> dirty_blocks;
+    std::map<uint32_t, uint8_t> dirty_blocks2;
 
     unsigned char read_byte(unsigned short address) override
     {
@@ -428,7 +429,14 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
             }
             load_overlay();
             for (auto [k, v] : dirty_blocks) {
-                disk_sides[k >> 24][k & 0x00FFFFFF] = v;
+                int side = k >> 24;
+                int offset = k & 0x00FFFFFF;
+                if (side < disk_sides.size() && offset < disk_sides[side].size()) {
+                    disk_sides[side][offset] = v;
+                }
+                else {
+                    int x = 1;
+                }
             }
         }
         return 1;
@@ -442,11 +450,32 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
         uint8_t v;
         if (f.is_open()) {
             while (f.peek() != EOF) {
-                f.read((char*)&k, sizeof(uint32_t));
-                f.read((char*)&v, sizeof(uint8_t));
+                f.read((char*)&k, sizeof(k));
+                f.read((char*)&v, sizeof(v));
                 dirty_blocks[k] = v;
             }
             f.close();
+        }
+
+        f.open(sramFilename + ".new", std::ios_base::in | std::ios_base::binary);
+        if (f.is_open()) {
+            int start;
+            int count;
+            uint8_t v = 0;
+            while (f.peek() != EOF) {
+                f.read((char *)&start, sizeof(start));
+                f.read((char *)&count, sizeof(count));
+                for (int i = 0; i < count; i++) {
+                    f.read((char *)&v, 1);
+                    dirty_blocks2[start + i] = v;
+                }
+            }
+            f.close();
+        }
+        bool e = dirty_blocks.size() == dirty_blocks2.size() &&
+                 std::equal(dirty_blocks.begin(), dirty_blocks.end(), dirty_blocks2.begin());
+        if (!e) {
+            int x = 1;
         }
     }
 
@@ -457,9 +486,42 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
             f.open(sramFilename, std::ios_base::out | std::ios_base::binary);
             if (f.is_open()) {
                 for (auto [k, v] : dirty_blocks) {
-                    f.write((const char *)&k, sizeof(uint32_t));
-                    f.write((const char *)&v, sizeof(uint8_t));
+                    f.write((const char *)&k, sizeof(k));
+                    f.write((const char *)&v, sizeof(v));
                 }
+                f.close();
+            }
+
+            f.open(sramFilename + ".new", std::ios_base::out | std::ios_base::binary);
+
+            if (f.is_open()) {
+                uint32_t start = -1;
+                uint32_t last_k = -1;
+                std::vector<uint8_t> bytes;
+
+                auto write = [&]() {
+                    int count = bytes.size();
+                    if (count == 0) {
+                        return;
+                    }
+                    f.write((const char *)&start, sizeof(start));
+                    f.write((const char *)&count, sizeof(count));
+                    f.write((const char *)bytes.data(), count);
+                    bytes.clear();
+                };
+
+                for (auto [k, v] : dirty_blocks) {
+                    if (start == -1) {
+                        start = k;
+                    }
+                    else if (k != last_k + 1) {
+                        write();
+                        start = k;
+                    }
+                    bytes.push_back(v);
+                    last_k = k;
+                }
+                write();
                 f.close();
             }
         }
