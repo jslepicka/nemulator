@@ -366,6 +366,9 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
                 rom.read((char *)ram.get() + 32768, 8192);
                 rom.close();
             }
+            else {
+                return -1;
+            }
             bios_loaded = 1;
         }
 
@@ -373,7 +376,7 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
             const char fwnes_header[] = "FDS\x1A";
             int header_adjustment = (memcmp(image, fwnes_header, sizeof(fwnes_header) - 1) == 0) * 16;
             
-            num_sides = file_length / 65500;
+            num_sides = (file_length - header_adjustment) / 65500;
             for (int i = 0; i < num_sides; i++) {
                 disk_sides.emplace_back(disk_side_t());
 
@@ -427,22 +430,14 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
                     fds_image.resize(65500);
                 }
             }
-            load_overlay();
-            for (auto [k, v] : dirty_blocks) {
-                int side = k >> 24;
-                int offset = k & 0x00FFFFFF;
-                if (side < disk_sides.size() && offset < disk_sides[side].size()) {
-                    disk_sides[side][offset] = v;
-                }
-                else {
-                    int x = 1;
-                }
+            if (load_overlay() == -1) {
+                return -1;
             }
         }
         return 1;
     }
 
-    void load_overlay()
+    int load_overlay()
     {
         std::ifstream f;
         f.open(sramFilename, std::ios_base::in | std::ios_base::binary);
@@ -455,11 +450,21 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
                 f.read((char *)&count, sizeof(count));
                 for (int i = 0; i < count; i++) {
                     f.read((char *)&v, 1);
-                    dirty_blocks[start + i] = v;
+                    uint32_t k = start + i;
+                    uint32_t side = k >> 24;
+                    uint32_t offset = k & 0x00FFFFFF;
+                    if (side < disk_sides.size() && offset < disk_sides[side].size()) {
+                        dirty_blocks[k] = v;
+                        disk_sides[side][offset] = v;
+                    }
+                    else {
+                        return -1;
+                    }
                 }
             }
             f.close();
         }
+        return 0;
     }
 
     void save_overlay()
