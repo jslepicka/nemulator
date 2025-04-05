@@ -30,9 +30,6 @@ export class c_resampler
         this->post_filter = post_filter;
     }
 
-    virtual ~c_resampler()
-    {
-    }
     void set_m(float m)
     {
         this->m = m;

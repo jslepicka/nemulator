@@ -85,6 +85,9 @@ unsigned char c_nes::read_byte(unsigned short address)
             return ppu->read_byte(address & 0x2007);
             break;
         case 4:
+            if (address >= 0x4020) {
+                return mapper->read_byte(address);
+            }
             switch (address) {
                 case 0x4015:
                     return apu->read_byte(address);
@@ -158,7 +161,8 @@ int c_nes::LoadImage(std::string &pathFile)
     header = (iNesHeader *)image.get();
 
     char ines_signature[] = {'N', 'E', 'S', 0x1a};
-    char fds_signature[] = "*NINTENDO-HVC*";
+    char fds_signature[] = "\x01*NINTENDO-HVC*";
+    char fds_fwnes_signature[] = "FDS\x1A";
     char nsf_signature[] = {'N', 'E', 'S', 'M', 0x1A};
 
     if (std::memcmp(header->Signature, ines_signature, 4) == 0) {
@@ -179,9 +183,11 @@ int c_nes::LoadImage(std::string &pathFile)
             *h = 0;
         m = (header->Rcb1.mapper_lo) | (header->Rcb2.mapper_hi << 4);
     }
-    else if (std::memcmp(image.get() + 1, fds_signature, 14) == 0) {
-        //m = 0x101;
-        m = -1;
+    else if (
+        std::memcmp(image.get(), fds_signature, sizeof(fds_signature) - 1) == 0 ||
+        std::memcmp(image.get(), fds_fwnes_signature, sizeof(fds_fwnes_signature) - 1) == 0) {
+        m = 0x103;
+        //m = -1;
     }
     else if (std::memcmp(image.get(), nsf_signature, 5) == 0) {
         m = 0x102;
@@ -234,7 +240,7 @@ int c_nes::load()
     if (submapper != -1) {
         mapper->set_submapper(submapper);
     }
-
+    mapper->image_path = path;
     mapper->sramFilename = sram_path_file;
     mapper->crc32 = crc32;
     mapper->file_length = file_length;

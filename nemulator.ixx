@@ -76,6 +76,7 @@ private:
     void handle_button_show_qam(s_button_handler_params* params);
     void handle_button_turbo(s_button_handler_params* params);
     void handle_button_leave_game(s_button_handler_params* params);
+    void handle_button_switch_disk(s_button_handler_params *params);
 
     float fov_h;
     float eye_x;

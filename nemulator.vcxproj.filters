@@ -485,6 +485,11 @@
     <ClCompile Include="nes\mappers\mapper_nsf_rom.cpp">
       <Filter>nes\mappers</Filter>
     </ClCompile>
+    <ClCompile Include="nes\mappers\mapper52.ixx" />
+    <ClCompile Include="std.ixx" />
+    <ClCompile Include="nes\mappers\mapper_fds.ixx">
+      <Filter>nes\mappers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="nes\mappers\vrc7_audio.h">

@@ -96,6 +96,13 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>
                 .button_map = button_map,
                 .constructor = []() { return std::make_unique<c_nes>(); },
             },
+            {
+                .name = "Nintendo FDS",
+                .identifier = "fds",
+                .display_info = display_info,
+                .button_map = button_map,
+                .constructor = []() { return std::make_unique<c_nes>(); },
+            },
         };
     }
 

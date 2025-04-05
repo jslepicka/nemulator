@@ -33,6 +33,7 @@ export class c_mapper
     iNesHeader *header = nullptr;
     unsigned char *image = nullptr;
     std::string sramFilename;
+    std::string image_path;
     const char *mapperName;
     int close_sram();
     int crc32;
@@ -42,6 +43,7 @@ export class c_mapper
     {
         return 0;
     }
+    virtual int switch_disk() { return 0; };
     int in_sprite_eval;
     //c_nes *nes;
     int get_mirroring();
