@@ -120,8 +120,8 @@ int c_genesis::reset()
     stalled = 0;
     th1 = 0;
     th2 = 0;
-    joy1 = 0;
-    joy2 = 0;
+    joy1 = -1;
+    joy2 = -1;
     return 0;
 }
 
@@ -172,12 +172,12 @@ uint8_t c_genesis::read_byte(uint32_t address)
                 return 0x00;
             case 0xA10005:
                 if (th2 & 0x40) {
-                    uint16_t ret = (th2 & 0x40) | (0xFF & 0x3F);
+                    uint16_t ret = 0x40 | (0xFF & 0x3F);
 
                     return ret;
                 }
                 else {
-                    uint16_t ret = (0xFF & 0x3) | ((0xFF >> 10) & 0xC);
+                    uint16_t ret = (0xFF & 0x3) | ((0xFFFF >> 8) & 0x30);
                     if (ret != 0) {
                         int x = 1;
                     }

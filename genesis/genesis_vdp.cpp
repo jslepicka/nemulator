@@ -261,10 +261,14 @@ void c_vdp::draw_scanline()
             uint32_t b_tile_number = b_tile & 0x7FF;
             uint32_t a_priority = a_tile >> 15;
             uint32_t b_priority = b_tile >> 15;
+            uint32_t a_h_flip = a_tile & 0x800 ? 7 : 0;
+            uint32_t b_h_flip = b_tile & 0x800 ? 7 : 0;
+            uint32_t a_v_flip = a_tile & 0x1000 ? 7 : 0;
+            uint32_t b_v_flip = b_tile & 0x1000 ? 7 : 0;
             uint32_t a_pal = (a_tile >> 13) & 0x7;
             uint32_t b_pal = (b_tile >> 13) & 0x7;
-            uint32_t a_pattern_address = a_tile_number * 32 + ((line & 7) * 4);
-            uint32_t b_pattern_address = b_tile_number * 32 + ((line & 7) * 4);
+            uint32_t a_pattern_address = a_tile_number * 32 + (((line & 7) ^ a_v_flip) * 4);
+            uint32_t b_pattern_address = b_tile_number * 32 + (((line & 7) ^ b_v_flip) * 4);
             uint32_t a_pattern = *((uint32_t *)&vram[a_pattern_address]);
             a_pattern = std::byteswap(a_pattern);
             uint32_t b_pattern = *((uint32_t *)&vram[b_pattern_address]);
@@ -273,8 +277,8 @@ void c_vdp::draw_scanline()
             
             
             for (int x = 0; x < 8; x++) {
-                uint8_t a_pixel = (a_pattern >> ((7-x) * 4)) & 0xF;
-                uint8_t b_pixel = (b_pattern >> ((7-x) * 4)) & 0xF;
+                uint8_t a_pixel = (a_pattern >> ((7-(x^a_h_flip)) * 4)) & 0xF;
+                uint8_t b_pixel = (b_pattern >> ((7-(x^b_h_flip)) * 4)) & 0xF;
                 uint8_t pixel = 0;
                 uint8_t palette = 0;
 
