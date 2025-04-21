@@ -17,7 +17,9 @@ c_genesis::c_genesis()
             [this](uint32_t address, uint8_t value) { this->write_byte(address, value); },
             &ipl
     );
-    vdp = std::make_unique<c_vdp>(&ipl);
+    vdp = std::make_unique<c_vdp>(&ipl,
+         [this](uint32_t address) { return this->read_word(address); }
+    );
 }
 
 c_genesis::~c_genesis()
@@ -156,7 +158,7 @@ uint8_t c_genesis::read_byte(uint32_t address)
         }
     }
     else {
-        return ram[address - 0xFF0000] << 8;
+        return ram[address - 0xFF0000];
     }
     return 0;
 }

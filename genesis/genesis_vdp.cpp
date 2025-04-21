@@ -6,9 +6,10 @@ module genesis:vdp;
 namespace genesis
 {
 
-c_vdp::c_vdp(uint8_t *ipl)
+c_vdp::c_vdp(uint8_t *ipl, read_word_t read_word_68k)
 {
     this->ipl = ipl;
+    this->read_word_68k = read_word_68k;
 }
 
 c_vdp::~c_vdp()
@@ -29,18 +30,24 @@ void c_vdp::reset()
     memset(vsram, 0, sizeof(vsram));
     memset(frame_buffer, 0, sizeof(frame_buffer));
     line = 0;
+    freeze_cpu = 0;
 }
 
 uint16_t c_vdp::read_word(uint32_t address)
 {
     uint16_t ret;
     switch (address) {
+        case 0x00C00000:
+        case 0x00C00002:
+            address_write = 0;
+            break;
         case 0x00C00004:
         case 0x00C00006:
             ret = status.value;
             status.vint = 0;
             status.dma = 0;
             *ipl &= ~0x6;
+            address_write = 0;
             return ret;
         default:
             return 0;
@@ -80,6 +87,7 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
                     break;
             }
             _address += reg[0x0F];
+            address_write = 0;
             break;
         case 0x0C00004:
         case 0x0C00006:
@@ -101,7 +109,12 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
                     dma_copy = address_reg & 0x80;
                     if (dma_copy) {
                         OutputDebugString("DMA requested\n");
-                        status.dma = 1;
+                        if (reg[0x01] & 0x10) {
+                            status.dma = 1;
+                            if (!(reg[0x17] & 0x80)) {
+                                do_68k_dma();
+                            }
+                        }
                     }
                     x = 1;
                 }
@@ -218,9 +231,8 @@ void c_vdp::draw_scanline()
 
             uint32_t a_tile_number = a_tile & 0x7FF;
             uint32_t b_tile_number = b_tile & 0x7FF;
-            if (a_tile_number) {
-                int x = 1;
-            }
+            uint32_t a_priority = a_tile >> 15;
+            uint32_t b_priority = b_tile >> 15;
             uint32_t a_pal = (a_tile >> 13) & 0x7;
             uint32_t b_pal = (b_tile >> 13) & 0x7;
             uint32_t a_pattern_address = a_tile_number * 32 + ((line & 7) * 4);
@@ -235,9 +247,31 @@ void c_vdp::draw_scanline()
             for (int x = 0; x < 8; x++) {
                 uint8_t a_pixel = (a_pattern >> ((7-x) * 4)) & 0xF;
                 uint8_t b_pixel = (b_pattern >> ((7-x) * 4)) & 0xF;
-                
+                uint8_t pixel = 0;
+                uint8_t palette = 0;
+
+                //to-do: background color
+
+                if (!b_priority && b_pixel) {
+                    pixel = b_pixel;
+                    palette = b_pal;
+                }
+                if (!a_priority && a_pixel) {
+                    pixel = a_pixel;
+                    palette = a_pal;
+                }
+                //to-do: sprites
+                if (b_priority && b_pixel) {
+                    pixel = b_pixel;
+                    palette = b_pal;
+                }
+                if (a_priority && a_pixel) {
+                    pixel = a_pixel;
+                    palette = a_pal;
+                }
+
                 //uint32_t a_color = cram[(a_pal * 32) + (pixel * 2)];
-                *fb = lookup_color(a_pal, a_pixel);
+                *fb = lookup_color(palette, pixel);
 
                 fb++;
             }
@@ -265,6 +299,26 @@ void c_vdp::draw_scanline()
     else {
         line++;
     }
+}
+
+void c_vdp::do_68k_dma()
+{
+    uint16_t len = reg[0x13] | (reg[0x14] << 8);
+    if (len == 0) {
+        len = 0xFFFF;
+    }
+    uint32_t src = reg[0x15] | (reg[0x16] << 8) | ((reg[0x17] & 0x7F) << 16);
+    src <<= 1;
+    src &= ~1;
+    do {
+        uint16_t data = read_word_68k(src);
+        src += 2;
+        if (src == 0x01000000) {
+            src = 0xFF0000;
+        }
+        write_word(0x0C00000, data);
+        len--;
+    } while (len != 0);
 }
 
 

@@ -7,8 +7,9 @@ namespace genesis
 {
 export class c_vdp
 {
+    typedef std::function<uint16_t(uint32_t)> read_word_t;
   public:
-    c_vdp(uint8_t *ipl);
+    c_vdp(uint8_t *ipl, read_word_t read_word_68k);
     ~c_vdp();
     void reset();
     uint16_t read_word(uint32_t address);
@@ -16,8 +17,10 @@ export class c_vdp
     void write_word(uint32_t address, uint16_t value);
     void write_byte(uint32_t address, uint8_t value);
     void draw_scanline();
+    int freeze_cpu;
 
   private:
+    read_word_t read_word_68k;
     uint8_t *ipl;
     uint16_t control;
     uint16_t hv_counter;
@@ -60,6 +63,7 @@ export class c_vdp
     uint8_t vram[64 * 1024];
 
     uint32_t lookup_color(uint32_t pal, uint32_t index);
+    void do_68k_dma();
 
   public:
     uint32_t frame_buffer[320 * 224];
