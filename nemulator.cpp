@@ -1296,6 +1296,7 @@ void c_nemulator::LoadGames()
 
     for (auto &li : loadinfo)
     {
+        std::string &extension = li.system_info.extension != "" ? li.system_info.extension : li.system_info.identifier;
         li.rom_path = config->get_string(li.rom_path_key, li.rom_path_default);
         li.save_path = config->get_string(li.save_path_key, li.rom_path_default);
         if (!std::filesystem::exists(li.save_path))
@@ -1310,7 +1311,7 @@ void c_nemulator::LoadGames()
         else {
             std::error_code ec;
             for (auto const &dir_entry : std::filesystem::directory_iterator(li.rom_path, ec)) {
-                if (dir_entry.is_regular_file() && dir_entry.path().extension() == "." + li.system_info.identifier) {
+                if (dir_entry.is_regular_file() && dir_entry.path().extension() == "." + extension) {
                     rom_count++;
                     li.file_list.push_back(dir_entry.path().filename().string());
                 }

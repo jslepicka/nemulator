@@ -243,9 +243,16 @@
     <ClCompile Include="gb\gbapu.cpp" />
     <ClCompile Include="gb\mbc2.cpp" />
     <ClCompile Include="gb\mbc5.cpp" />
+    <ClCompile Include="genesis\genesis.cpp" />
+    <ClCompile Include="genesis\genesis.ixx" />
+    <ClCompile Include="genesis\genesis_vdp.cpp" />
+    <ClCompile Include="genesis\genesis_vdp.ixx" />
     <ClCompile Include="interpolate.ixx" />
     <ClCompile Include="invaders\invaders.cpp" />
     <ClCompile Include="invaders\sample_channel.cpp" />
+    <ClCompile Include="m68k\m68k.cpp" />
+    <ClCompile Include="m68k\m68k.ixx" />
+    <ClCompile Include="m68k\m68k_decode.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="audio_info.cpp" />
     <ClCompile Include="config.cpp" />

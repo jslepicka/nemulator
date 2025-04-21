@@ -37,6 +37,7 @@ public:
         //for consoles, identifier is the file extension (e.g., nes)
         //for arcade games, it's the name of the rom set (e.g., pacman)
         std::string identifier;
+        std::string extension;
         std::string title;
         struct s_display_info
         {

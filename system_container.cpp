@@ -123,31 +123,33 @@ void c_system_container::DrawToTexture(ID3D10Texture2D *tex)
     if (system && system->is_loaded())
     {
         int *fb_base = system->get_video();
-        int y = 0;
-        for (; y < display_info.fb_height; y++) {
-            int *fb = fb_base + (display_info.fb_width * y);
-            p = (int*)map.pData + (y) * (map.RowPitch / 4);
-            int x = 0;
-            int x_end = display_info.fb_width;
-            if (mask_sides) {
-                for (int m = 0; m < 8; m++) {
-                    *p++ = 0xFF000000;
-                    fb++;
+        if (fb_base) {
+            int y = 0;
+            for (; y < display_info.fb_height; y++) {
+                int *fb = fb_base + (display_info.fb_width * y);
+                p = (int *)map.pData + (y) * (map.RowPitch / 4);
+                int x = 0;
+                int x_end = display_info.fb_width;
+                if (mask_sides) {
+                    for (int m = 0; m < 8; m++) {
+                        *p++ = 0xFF000000;
+                        fb++;
+                    }
+                    x += 8;
+                    x_end -= 8;
                 }
-                x += 8;
-                x_end -= 8;
+                for (; x < x_end; x++) {
+                    *p++ = *fb++;
+                }
+                for (; x < tex_width; x++) {
+                    *p++ = 0xFF000000;
+                }
             }
-            for (; x < x_end; x++) {
-                *p++ = *fb++;
-            }
-            for (; x < tex_width; x++) {
-                *p++ = 0xFF000000;
-            }
-        }
-        for (; y < tex_height; y++) {
-            p = (int*)map.pData + (y) * (map.RowPitch / 4);
-            for (int x = 0; x < tex_width; x++) {
-                *p++ = 0xff000000;
+            for (; y < tex_height; y++) {
+                p = (int *)map.pData + (y) * (map.RowPitch / 4);
+                for (int x = 0; x < tex_width; x++) {
+                    *p++ = 0xff000000;
+                }
             }
         }
 
