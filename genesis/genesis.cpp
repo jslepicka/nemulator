@@ -121,6 +121,17 @@ int c_genesis::reset()
 int c_genesis::emulate_frame()
 {
     for (int i = 0; i < 262; i++) {
+        int cycles = 488;
+        if (vdp->freeze_cpu) {
+            if (vdp->freeze_cpu >= 488) {
+                cycles = 0;
+                vdp->freeze_cpu -= 488;
+            }
+            else {
+                cycles -= vdp->freeze_cpu;
+                vdp->freeze_cpu = 0;
+            }
+        }
         m68k->execute(488);
 
         vdp->draw_scanline();

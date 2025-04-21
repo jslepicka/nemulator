@@ -115,6 +115,9 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
                                 do_68k_dma();
                             }
                         }
+                        else if ((reg[0x01] & 0xC0) == 0xC0) {
+                            OutputDebugString("VRAM to VRAM DMA\n");
+                        }
                     }
                     x = 1;
                 }
@@ -307,7 +310,11 @@ void c_vdp::do_68k_dma()
     if (len == 0) {
         len = 0xFFFF;
     }
+    freeze_cpu = len * 3;
     uint32_t src = reg[0x15] | (reg[0x16] << 8) | ((reg[0x17] & 0x7F) << 16);
+    if (src & 0x1) {
+        int x = 1;
+    }
     src <<= 1;
     src &= ~1;
     do {
