@@ -24,15 +24,10 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
             {BUTTON_1DOWN,           0x02},
             {BUTTON_1LEFT,           0x04},
             {BUTTON_1RIGHT,          0x08},
-            {BUTTON_1B,              0x10}, //button 1
-            {BUTTON_1A,              0x20}, //button 2
-            {BUTTON_2UP,             0x40},
-            {BUTTON_2DOWN,           0x80},
-            {BUTTON_2LEFT,          0x100},
-            {BUTTON_2RIGHT,         0x200},
-            {BUTTON_2B,             0x400}, //button 1
-            {BUTTON_2A,             0x800}, //button 2
-            {BUTTON_SMS_PAUSE, 0x80000000},
+            {BUTTON_1A,              0x10}, //B button 1
+            {BUTTON_1C,              0x20}, //C button 3
+            {BUTTON_1B,            0x1000}, //A button 2
+            {BUTTON_1START,        0x2000}
         };
         // clang-format on
 
@@ -82,6 +77,11 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     int file_length;
     uint8_t ipl;
     int last_bus_request;
+    uint32_t stalled;
+    uint32_t th1;
+    uint32_t th2;
+    uint32_t joy1;
+    uint32_t joy2;
 };
 
 } //namespace genesis

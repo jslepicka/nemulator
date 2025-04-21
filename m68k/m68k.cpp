@@ -9,9 +9,11 @@ c_m68k::c_m68k(
     write_word_t write_word,
     read_byte_t read_byte,
     write_byte_t write_byte,
-    uint8_t *ipl
+    uint8_t *ipl,
+    uint32_t *stalled
 )
 {
+    this->stalled = stalled;
     this->ipl = ipl;
     this->read_word_cb = read_word;
     this->write_word_cb = write_word;
@@ -82,6 +84,11 @@ void c_m68k::execute(int cycles)
 {
     available_cycles += cycles;
     while (true) {
+        if (*stalled) {
+            available_cycles--;
+            (*stalled)--;
+            continue;
+        }
         if (fetch_opcode) {
             if (pc == 0x488e) {
                 int x = 1;
@@ -100,7 +107,7 @@ void c_m68k::execute(int cycles)
                 pc += 2;
                 instruction = instructions[op_word];
                 decode();
-                assert(opcode_fn != nullptr);
+                //assert(opcode_fn != nullptr);
                 required_cycles = 5;
             }
             fetch_opcode = 0;
@@ -139,10 +146,15 @@ void c_m68k::execute(int cycles)
                 //    int x = 1;
                 //    pc = (pc - 2) + 6 + 2;
                 //}
-                //if (pc - 2 == 0x3A3e) {
-                //    int x = 1;
-                //}
-                opcode_fn(this);
+                if (pc - 2 == 0xb5a) {
+                    int x = 1;
+                }
+                if (opcode_fn == nullptr) {
+                    do_trap(4);
+                }
+                else {
+                    opcode_fn(this);
+                }
                 update_status();
             }
             int x = 1;

@@ -6,8 +6,9 @@ module genesis:vdp;
 namespace genesis
 {
 
-c_vdp::c_vdp(uint8_t *ipl, read_word_t read_word_68k)
+c_vdp::c_vdp(uint8_t *ipl, read_word_t read_word_68k, uint32_t *stalled)
 {
+    this->stalled = stalled;
     this->ipl = ipl;
     this->read_word_68k = read_word_68k;
 }
@@ -20,7 +21,6 @@ void c_vdp::reset()
 {
     //status.value = 0x3400;
     status.value = 0;
-    status.fifo_empty = 1;
     line = 0;
     std::memset(reg, 0, sizeof(reg));
     address_reg = 0;
@@ -31,6 +31,7 @@ void c_vdp::reset()
     memset(frame_buffer, 0, sizeof(frame_buffer));
     line = 0;
     freeze_cpu = 0;
+    pending_fill = 0;
 }
 
 uint16_t c_vdp::read_word(uint32_t address)
@@ -63,7 +64,17 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
         case 0x0C00000:
         case 0x0C00002:
             //data
-            x = 1;
+            if (pending_fill) {
+                pending_fill = 0;
+                uint16_t len = reg[0x13] | (reg[0x14] << 8);
+                vram[_address] = value & 0xFF;
+                do {
+                    vram[_address ^ 0x1] = (value >> 8) & 0xFF;
+                    //vram[_address] = (value >> 8) & 0xFF;
+                    _address += reg[0x0F];
+                } while (--len);
+                return;
+            }
             switch (address_type) {
                 case ADDRESS_TYPE::VRAM_WRITE:
                     assert(_address < 64 * 1024);
@@ -83,10 +94,14 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
                     }
                     break;
                 default:
+                    x = 1;
                     //assert(0);
                     break;
             }
             _address += reg[0x0F];
+            if (reg[0x0f] != 2) {
+                int x = 1;
+            }
             address_write = 0;
             break;
         case 0x0C00004:
@@ -102,9 +117,10 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
             else {
                 if (address_write) {
                     //second word
-                    address_reg |= value;
+                    //address_reg |= value;
+                    address_reg = (address_reg & 0xFFFF0000) | value;
                     address_type = (ADDRESS_TYPE)((((address_reg & 0xF0) | (address_reg >> 28)) >> 2) & 0xF);
-                    _address = (address_reg << 14) | ((address_reg >> 16) & 0x3FFF);
+                    _address = ((address_reg & 0x3) << 14) | ((address_reg >> 16) & 0x3FFF);
                     vram_to_vram_copy = address_reg & 0x40;
                     dma_copy = address_reg & 0x80;
                     if (dma_copy) {
@@ -114,17 +130,25 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
                             if (!(reg[0x17] & 0x80)) {
                                 do_68k_dma();
                             }
-                        }
-                        else if ((reg[0x01] & 0xC0) == 0xC0) {
-                            OutputDebugString("VRAM to VRAM DMA\n");
+                            else if ((reg[0x17] & 0xC0) == 0xC0) {
+                                OutputDebugString("VRAM to VRAM DMA\n");
+                            }
+                            else if ((reg[0x17] & 0xC0) == 0x80) {
+                                OutputDebugString("DMA Fill\n");
+                                pending_fill = 1;
+                            }
                         }
                     }
                     x = 1;
+                    address_write = 0;
                 }
                 else {
-                    address_reg = value << 16;
+                    //address_reg = value << 16;
+                    address_reg = (address_reg & 0x0000FFFF) | (value << 16);
+                    _address = ((address_reg & 0x3) << 14) | ((address_reg >> 16) & 0x3FFF);
+                    address_write = 1;
                 }
-                address_write ^= 1;
+                //address_write ^= 1;
             }
             break;
         default: {
@@ -166,6 +190,7 @@ void c_vdp::write_byte(uint32_t address, uint8_t value)
         case 0x0C00005:
         case 0x0C00006:
         case 0x0C00007:
+            //not sure if this is correct
             write_word(address & ~1, v);
             break;
         default: {
@@ -179,9 +204,9 @@ uint32_t c_vdp::lookup_color(uint32_t pal, uint32_t index)
 {
     int loc = pal * 32 + index * 2;
     uint16_t entry = (cram[loc] << 8) | cram[loc + 1];
-    uint32_t color = ((entry >> 0) & 0xF) * 16;
-    color |= (((entry >> 4) & 0xF) * 16) << 8;
-    color |= (((entry >> 8) & 0xF) * 16) << 16;
+    uint32_t color = ((entry >> 0) & 0xE) * 16;
+    color |= (((entry >> 4) & 0xE) * 16) << 8;
+    color |= (((entry >> 8) & 0xE) * 16) << 16;
     color |= 0xFF000000;
     return color;
 }
@@ -275,6 +300,7 @@ void c_vdp::draw_scanline()
 
                 //uint32_t a_color = cram[(a_pal * 32) + (pixel * 2)];
                 *fb = lookup_color(palette, pixel);
+                //*fb = lookup_color(a_pal, a_pixel);
 
                 fb++;
             }
@@ -310,13 +336,16 @@ void c_vdp::do_68k_dma()
     if (len == 0) {
         len = 0xFFFF;
     }
-    freeze_cpu = len * 3;
+    *stalled = len * 3;
     uint32_t src = reg[0x15] | (reg[0x16] << 8) | ((reg[0x17] & 0x7F) << 16);
     if (src & 0x1) {
         int x = 1;
     }
     src <<= 1;
     src &= ~1;
+    if (address_type == ADDRESS_TYPE::CRAM_WRITE) {
+        int x = 1;
+    }
     do {
         uint16_t data = read_word_68k(src);
         src += 2;
@@ -324,8 +353,10 @@ void c_vdp::do_68k_dma()
             src = 0xFF0000;
         }
         write_word(0x0C00000, data);
+
         len--;
     } while (len != 0);
+    int x = 1;
 }
 
 

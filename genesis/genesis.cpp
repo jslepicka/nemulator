@@ -15,10 +15,12 @@ c_genesis::c_genesis()
             [this](uint32_t address, uint16_t value) { this->write_word(address, value); },
             [this](uint32_t address) { return this->read_byte(address); },
             [this](uint32_t address, uint8_t value) { this->write_byte(address, value); },
-            &ipl
+            &ipl,
+            &stalled
     );
     vdp = std::make_unique<c_vdp>(&ipl,
-         [this](uint32_t address) { return this->read_word(address); }
+         [this](uint32_t address) { return this->read_word(address); },
+        &stalled
     );
 }
 
@@ -115,23 +117,17 @@ int c_genesis::reset()
     m68k->reset();
     vdp->reset();
     last_bus_request = 0;
+    stalled = 0;
+    th1 = 0;
+    th2 = 0;
+    joy1 = 0;
+    joy2 = 0;
     return 0;
 }
 
 int c_genesis::emulate_frame()
 {
     for (int i = 0; i < 262; i++) {
-        int cycles = 488;
-        if (vdp->freeze_cpu) {
-            if (vdp->freeze_cpu >= 488) {
-                cycles = 0;
-                vdp->freeze_cpu -= 488;
-            }
-            else {
-                cycles -= vdp->freeze_cpu;
-                vdp->freeze_cpu = 0;
-            }
-        }
         m68k->execute(488);
 
         vdp->draw_scanline();
@@ -158,14 +154,41 @@ uint8_t c_genesis::read_byte(uint32_t address)
             case 0xA10001:
                 return 0xA0;
             case 0xA10003:
+                if (joy1 != 0xffffffff) {
+                    int x = 1;
+                }
+                if (th1 & 0x40) {
+                    uint16_t ret = 0x40 | (joy1 & 0x3F);
+
+                    return ret;
+                }
+                else {
+                    uint16_t ret = (joy1 & 0x3) | ((joy1 >> 8) & 0x30);
+                    if (ret != 0) {
+                        int x = 1;
+                    }
+                    return ret;
+                }
                 return 0x00;
             case 0xA10005:
+                if (th2 & 0x40) {
+                    uint16_t ret = (th2 & 0x40) | (0xFF & 0x3F);
+
+                    return ret;
+                }
+                else {
+                    uint16_t ret = (0xFF & 0x3) | ((0xFF >> 10) & 0xC);
+                    if (ret != 0) {
+                        int x = 1;
+                    }
+                    return ret;
+                }
                 return 0x00;
             case 0xA11100:
                 //68k bus access? incomplete
                 return last_bus_request;
             default:
-                return 0x80;
+                return 0x00;
         }
     }
     else {
@@ -176,7 +199,7 @@ uint8_t c_genesis::read_byte(uint32_t address)
 
 uint16_t c_genesis::read_word(uint32_t address)
 {
-    assert(!(address & 1));
+    //assert(!(address & 1));
     if (address < 0x400000) {
         //testing
         //address &= 0xFFFF;
@@ -212,6 +235,19 @@ void c_genesis::write_byte(uint32_t address, uint8_t value)
     else if (address < 0xFF0000) {
         if (address == 0xa11100) {
             last_bus_request = value;
+        }
+        switch (address) {
+            case 0xA10003:
+                th1 = value;
+                break;
+            case 0xA10005:
+                th2 = value;
+                break;
+            case 0xA10009:
+                
+                break;
+            default:
+                break;
         }
         int x = 1;
     }
@@ -250,7 +286,12 @@ void c_genesis::write_word(uint32_t address, uint16_t value)
 
 void c_genesis::set_input(int input)
 {
-}
+    joy1 = input;
+    if (joy1) {
+        int x = 1;
+    }
+    joy1 = ~joy1;
+    }
 
 int *c_genesis::get_video()
 {

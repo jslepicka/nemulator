@@ -9,7 +9,7 @@ export class c_vdp
 {
     typedef std::function<uint16_t(uint32_t)> read_word_t;
   public:
-    c_vdp(uint8_t *ipl, read_word_t read_word_68k);
+    c_vdp(uint8_t *ipl, read_word_t read_word_68k, uint32_t *stalled);
     ~c_vdp();
     void reset();
     uint16_t read_word(uint32_t address);
@@ -20,6 +20,7 @@ export class c_vdp
     int freeze_cpu;
 
   private:
+    uint32_t *stalled;
     read_word_t read_word_68k;
     uint8_t *ipl;
     uint16_t control;
@@ -64,6 +65,7 @@ export class c_vdp
 
     uint32_t lookup_color(uint32_t pal, uint32_t index);
     void do_68k_dma();
+    uint32_t pending_fill;
 
   public:
     uint32_t frame_buffer[320 * 224];

@@ -281,6 +281,7 @@ void c_nemulator::configure_input()
         { BUTTON_1A_TURBO,      "joy1",     "a_turbo", 0x53,                   0 },
         { BUTTON_1B,            "joy1",     "b",       90,                     0 },
         { BUTTON_1B_TURBO,      "joy1",     "b_turbo", 0x41,                   0 },
+        { BUTTON_1C,            "joy1",     "c",       0x43,                   0 },
         { BUTTON_1SELECT,       "joy1",     "select",  VK_OEM_4,               0 },
         { BUTTON_1START,        "joy1",     "start",   VK_OEM_6,               0 },
         { BUTTON_SMS_PAUSE,     "joy1.sms", "pause",   BUTTON | BUTTON_1START, 0 },

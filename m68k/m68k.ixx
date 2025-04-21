@@ -27,7 +27,8 @@ public:
         write_word_t write_word,
         read_byte_t read_byte,
         write_byte_t write_byte,
-        uint8_t *ipl
+        uint8_t *ipl,
+        uint32_t *stalled
     );
     void reset();
     bool test();
@@ -38,6 +39,7 @@ public:
 
   private:
     uint8_t *ipl;
+    uint32_t *stalled;
     int available_cycles;
     int fetch_opcode;
     int required_cycles;
