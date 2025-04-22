@@ -246,14 +246,52 @@ void c_vdp::draw_scanline()
     uint32_t b_nt = (reg[0x04] & 0x7) << 13;
     
     int num_tiles = plane_width;
-    int y_address = ((y / 8) % plane_height) * num_tiles * 2;
     
-    if (line < 224) {
-        uint32_t *fb = &frame_buffer[y * 320];
+    uint32_t vscroll_mode = reg[0x0B] & 0x4;
+    uint32_t a_v_scroll = 0;
+    uint32_t b_v_scroll = 0;
+    if (vscroll_mode == 0) {
+        a_v_scroll = ((vsram[0] << 8) | vsram[1]) & 0x3FF;
+        b_v_scroll = ((vsram[1] << 8) | vsram[2]) & 0x3FF;
+    }
+    else {
+        int x = 1;
+    }
+    
+    if (y < 224) {
+        uint32_t *fb = &frame_buffer[line * 320];
+        uint32_t hscroll_loc = (reg[0x0D] & 0x3F) << 10;
+        uint32_t hscroll_offset = y * 4;
+        switch (reg[0x0B] & 0x03) {
+            case 0:
+                hscroll_offset = 0;
+                break;
+            case 2:
+                hscroll_offset &= ~7;
+                break;
+            default:
+                break;
+        }
+        hscroll_loc += hscroll_offset;
+        uint16_t a_h_scroll = (vram[hscroll_loc] << 8) | vram[hscroll_loc + 1];
+        uint16_t b_h_scroll = (vram[hscroll_loc + 2] << 8) | vram[hscroll_loc + 3];
+        int a_y_coarse = a_v_scroll / 8;
+        int a_y_fine = a_v_scroll & 7;
+        int b_y_coarse = b_v_scroll / 8;
+        int b_y_fine = b_v_scroll & 7;
+        int a_y_adjusted = y + (a_y_coarse * 8) + a_y_fine;
+        int b_y_adjusted = y + (b_y_coarse * 8) + b_y_fine;
+        int a_y_offset = a_y_adjusted % 8;
+        int b_y_offset = b_y_adjusted % 8;
+        int a_y_address = ((a_y_adjusted / 8) % plane_height) * num_tiles * 2;
+        int b_y_address = ((b_y_adjusted / 8) % plane_height) * num_tiles * 2;
+
         for (int column = 0; column < 40; column++) {
-            unsigned int nt_column = column % plane_width;
-            uint16_t a_nt_address = a_nt + y_address + (nt_column * 2);
-            uint16_t b_nt_address = b_nt + y_address + (nt_column * 2);
+            unsigned int a_nt_column = (column - (a_h_scroll / 8)) & (plane_width-1);
+            unsigned int b_nt_column = (column - (b_h_scroll / 8)) & (plane_width - 1);
+
+            uint16_t a_nt_address = a_nt + a_y_address + (a_nt_column * 2);
+            uint16_t b_nt_address = b_nt + b_y_address + (b_nt_column * 2);
             uint32_t a_tile = (vram[a_nt_address] << 8) | vram[a_nt_address + 1];
             uint32_t b_tile = (vram[b_nt_address] << 8) | vram[b_nt_address + 1];
 
@@ -265,10 +303,10 @@ void c_vdp::draw_scanline()
             uint32_t b_h_flip = b_tile & 0x800 ? 7 : 0;
             uint32_t a_v_flip = a_tile & 0x1000 ? 7 : 0;
             uint32_t b_v_flip = b_tile & 0x1000 ? 7 : 0;
-            uint32_t a_pal = (a_tile >> 13) & 0x7;
-            uint32_t b_pal = (b_tile >> 13) & 0x7;
-            uint32_t a_pattern_address = a_tile_number * 32 + (((line & 7) ^ a_v_flip) * 4);
-            uint32_t b_pattern_address = b_tile_number * 32 + (((line & 7) ^ b_v_flip) * 4);
+            uint32_t a_pal = (a_tile >> 13) & 0x3;
+            uint32_t b_pal = (b_tile >> 13) & 0x3;
+            uint32_t a_pattern_address = a_tile_number * 32 + (((a_y_offset & 7) ^ a_v_flip) * 4);
+            uint32_t b_pattern_address = b_tile_number * 32 + (((b_y_offset & 7) ^ b_v_flip) * 4);
             uint32_t a_pattern = *((uint32_t *)&vram[a_pattern_address]);
             a_pattern = std::byteswap(a_pattern);
             uint32_t b_pattern = *((uint32_t *)&vram[b_pattern_address]);
@@ -302,9 +340,7 @@ void c_vdp::draw_scanline()
                     palette = a_pal;
                 }
 
-                //uint32_t a_color = cram[(a_pal * 32) + (pixel * 2)];
                 *fb = lookup_color(palette, pixel);
-                //*fb = lookup_color(a_pal, a_pixel);
 
                 fb++;
             }
