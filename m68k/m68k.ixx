@@ -18,6 +18,7 @@ export class c_m68k
     typedef std::function<void(uint32_t, uint8_t)> write_byte_t;
     typedef std::function<uint16_t(uint32_t)> read_word_t;
     typedef std::function<void(uint32_t, uint16_t)> write_word_t;
+    typedef std::function<void()> ack_irq_t;
 
     typedef std::function<void(c_m68k*)> opcode_t;
 
@@ -27,6 +28,7 @@ public:
         write_word_t write_word,
         read_byte_t read_byte,
         write_byte_t write_byte,
+        ack_irq_t ack_irq,
         uint8_t *ipl,
         uint32_t *stalled
     );
@@ -47,6 +49,7 @@ public:
     write_word_t write_word_cb;
     read_byte_t read_byte_cb;
     write_byte_t write_byte_cb;
+    ack_irq_t ack_irq;
 
     uint16_t read_word(uint32_t address)
     {

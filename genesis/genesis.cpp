@@ -15,6 +15,7 @@ c_genesis::c_genesis()
             [this](uint32_t address, uint16_t value) { this->write_word(address, value); },
             [this](uint32_t address) { return this->read_byte(address); },
             [this](uint32_t address, uint8_t value) { this->write_byte(address, value); },
+            [this]() { this->vdp->ack_irq(); },
             &ipl,
             &stalled
     );
@@ -127,10 +128,12 @@ int c_genesis::reset()
 
 int c_genesis::emulate_frame()
 {
+    uint32_t hblank_len = 50;
     for (int i = 0; i < 262; i++) {
-        m68k->execute(488);
-
+        m68k->execute(488 - hblank_len);
         vdp->draw_scanline();
+        m68k->execute(hblank_len);
+        vdp->clear_hblank();
     }
     return 0;
 }
@@ -140,7 +143,7 @@ uint8_t c_genesis::read_byte(uint32_t address)
     if (address < 0x400000) {
         //probably not correct.  how is on-cart ram in this address space
         //handled?  is that even a thing?
-        //address %= file_length;
+        address %= file_length;
         //testing
         //address &= 0xFFFF;
         //assert(address < file_length);

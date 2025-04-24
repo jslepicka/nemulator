@@ -9,10 +9,12 @@ c_m68k::c_m68k(
     write_word_t write_word,
     read_byte_t read_byte,
     write_byte_t write_byte,
+    ack_irq_t ack_irq,
     uint8_t *ipl,
     uint32_t *stalled
 )
 {
+    this->ack_irq = ack_irq;
     this->stalled = stalled;
     this->ipl = ipl;
     this->read_word_cb = read_word;
@@ -121,6 +123,7 @@ void c_m68k::execute(int cycles)
                 sr &= 0xF8FF;
                 sr |= (interrupt << 8);
                 interrupt = 0;
+                ack_irq();
             }
             else {
                 //char buf[64];

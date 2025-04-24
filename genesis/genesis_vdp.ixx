@@ -18,6 +18,8 @@ export class c_vdp
     void write_byte(uint32_t address, uint8_t value);
     void draw_scanline();
     int freeze_cpu;
+    void ack_irq();
+    void clear_hblank();
 
   private:
     uint32_t *stalled;
@@ -66,6 +68,20 @@ export class c_vdp
     uint32_t lookup_color(uint32_t pal, uint32_t index);
     void do_68k_dma();
     uint32_t pending_fill;
+    uint32_t asserting_vblank;
+    uint32_t asserting_hblank;
+    uint8_t hint_counter;
+    void update_ipl();
+
+    uint8_t a_pixels[320] = {0};
+    uint8_t a_palette[320] = {0};
+    uint8_t a_priorities[320] = {0};
+    uint8_t b_pixels[320] = {0};
+    uint8_t b_palette[320] = {0};
+    uint8_t b_priorities[320] = {0};
+
+    void eval_sprites();
+    uint8_t sprite_buf[320];
 
   public:
     uint32_t frame_buffer[320 * 224];

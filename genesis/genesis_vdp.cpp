@@ -32,6 +32,10 @@ void c_vdp::reset()
     line = 0;
     freeze_cpu = 0;
     pending_fill = 0;
+    asserting_hblank = 0;
+    asserting_vblank = 0;
+    update_ipl();
+    hint_counter = 0;
 }
 
 uint16_t c_vdp::read_word(uint32_t address)
@@ -47,7 +51,10 @@ uint16_t c_vdp::read_word(uint32_t address)
             ret = status.value;
             status.vint = 0;
             status.dma = 0;
-            *ipl &= ~0x6;
+            //*ipl &= ~0x6;
+            asserting_vblank = 0;
+            asserting_hblank = 0;
+            update_ipl();
             address_write = 0;
             return ret;
         default:
@@ -167,7 +174,10 @@ uint8_t c_vdp::read_byte(uint32_t address)
             ret = status.value & 0xFF;
             status.vint = 0;
             status.dma = 0;
-            *ipl &= ~0x6;
+            //*ipl &= ~0x6;
+            asserting_vblank = 0;
+            asserting_hblank = 0;
+            update_ipl();
             return ret;
         default:
             return 0;
@@ -241,110 +251,166 @@ void c_vdp::draw_scanline()
             break;
     }
 
-
-    uint32_t a_nt = (reg[0x02] & 0x38) << 10;
-    uint32_t b_nt = (reg[0x04] & 0x7) << 13;
-    
-    int num_tiles = plane_width;
-    
     uint32_t vscroll_mode = reg[0x0B] & 0x4;
     uint32_t a_v_scroll = 0;
     uint32_t b_v_scroll = 0;
     if (vscroll_mode == 0) {
         a_v_scroll = ((vsram[0] << 8) | vsram[1]) & 0x3FF;
-        b_v_scroll = ((vsram[1] << 8) | vsram[2]) & 0x3FF;
+        b_v_scroll = ((vsram[2] << 8) | vsram[3]) & 0x3FF;
     }
     else {
         int x = 1;
     }
     
     if (y < 224) {
-        uint32_t *fb = &frame_buffer[line * 320];
-        uint32_t hscroll_loc = (reg[0x0D] & 0x3F) << 10;
+        eval_sprites();
+        uint16_t hscroll_loc = (reg[0x0D] & 0x3F) << 10;
         uint32_t hscroll_offset = y * 4;
         switch (reg[0x0B] & 0x03) {
             case 0:
                 hscroll_offset = 0;
                 break;
             case 2:
-                hscroll_offset &= ~7;
+                hscroll_offset = (y & ~7) * 4;
                 break;
-            default:
+            case 3:
+                hscroll_offset = y * 4;
                 break;
+            default: {
+                int x = 1;
+            } break;
         }
         hscroll_loc += hscroll_offset;
-        uint16_t a_h_scroll = (vram[hscroll_loc] << 8) | vram[hscroll_loc + 1];
+
+
+        uint32_t a_y_coarse = a_v_scroll >> 3;
+        uint32_t a_y_fine = a_v_scroll & 7;
+        uint32_t b_y_coarse = b_v_scroll >> 3;
+        uint32_t b_y_fine = b_v_scroll & 7;
+        uint32_t a_y_adjusted = y + (a_y_coarse << 3) + a_y_fine;
+        uint32_t b_y_adjusted = y + (b_y_coarse << 3) + b_y_fine;
+        uint32_t a_y_offset = a_y_adjusted & 7;
+        uint32_t b_y_offset = b_y_adjusted & 7;
+        uint32_t a_y_address = ((a_y_adjusted >> 3) & (plane_height - 1)) * plane_width * 2;
+        uint32_t b_y_address = ((b_y_adjusted >> 3) & (plane_height - 1)) * plane_width * 2;
+
+
+        uint16_t a_h_scroll = (vram[hscroll_loc + 0] << 8) | vram[hscroll_loc + 1];
+        a_h_scroll &= 0x3FF;
         uint16_t b_h_scroll = (vram[hscroll_loc + 2] << 8) | vram[hscroll_loc + 3];
-        int a_y_coarse = a_v_scroll / 8;
-        int a_y_fine = a_v_scroll & 7;
-        int b_y_coarse = b_v_scroll / 8;
-        int b_y_fine = b_v_scroll & 7;
-        int a_y_adjusted = y + (a_y_coarse * 8) + a_y_fine;
-        int b_y_adjusted = y + (b_y_coarse * 8) + b_y_fine;
-        int a_y_offset = a_y_adjusted % 8;
-        int b_y_offset = b_y_adjusted % 8;
-        int a_y_address = ((a_y_adjusted / 8) % plane_height) * num_tiles * 2;
-        int b_y_address = ((b_y_adjusted / 8) % plane_height) * num_tiles * 2;
+        b_h_scroll &= 0x3FF;
 
-        for (int column = 0; column < 40; column++) {
-            unsigned int a_nt_column = (column - (a_h_scroll / 8)) & (plane_width-1);
-            unsigned int b_nt_column = (column - (b_h_scroll / 8)) & (plane_width - 1);
+        uint32_t *fb = &frame_buffer[y * 320];
+        uint32_t a_x = -((8 - (a_h_scroll & 0x7)) & 7);
+        uint32_t b_x = -((8 - (b_h_scroll & 0x7)) & 7);
 
+        uint32_t a_nt = (reg[0x02] & 0x38) << 10;
+        uint32_t b_nt = (reg[0x04] & 0x7) << 13;
+
+        for (int column = 0; column < 41; column++) {
+            uint32_t a_nt_column = (((column * 8) - a_h_scroll) >> 3) & (plane_width - 1);
+            uint32_t b_nt_column = (((column * 8) - b_h_scroll) >> 3) & (plane_width - 1);
+            
             uint16_t a_nt_address = a_nt + a_y_address + (a_nt_column * 2);
             uint16_t b_nt_address = b_nt + b_y_address + (b_nt_column * 2);
+
             uint32_t a_tile = (vram[a_nt_address] << 8) | vram[a_nt_address + 1];
             uint32_t b_tile = (vram[b_nt_address] << 8) | vram[b_nt_address + 1];
 
             uint32_t a_tile_number = a_tile & 0x7FF;
             uint32_t b_tile_number = b_tile & 0x7FF;
-            uint32_t a_priority = a_tile >> 15;
-            uint32_t b_priority = b_tile >> 15;
+            uint8_t a_priority = a_tile >> 15;
+            uint8_t b_priority = b_tile >> 15;
             uint32_t a_h_flip = a_tile & 0x800 ? 7 : 0;
             uint32_t b_h_flip = b_tile & 0x800 ? 7 : 0;
             uint32_t a_v_flip = a_tile & 0x1000 ? 7 : 0;
             uint32_t b_v_flip = b_tile & 0x1000 ? 7 : 0;
-            uint32_t a_pal = (a_tile >> 13) & 0x3;
-            uint32_t b_pal = (b_tile >> 13) & 0x3;
-            uint32_t a_pattern_address = a_tile_number * 32 + (((a_y_offset & 7) ^ a_v_flip) * 4);
-            uint32_t b_pattern_address = b_tile_number * 32 + (((b_y_offset & 7) ^ b_v_flip) * 4);
+            uint8_t a_pal = (a_tile >> 13) & 0x3;
+            uint8_t b_pal = (b_tile >> 13) & 0x3;
+            const uint32_t bytes_per_tile = 32;
+            const uint32_t bytes_per_tile_row = bytes_per_tile / 8;
+            uint32_t a_pattern_address = a_tile_number * bytes_per_tile + (((a_y_offset & 7) ^ a_v_flip) * bytes_per_tile_row);
+            uint32_t b_pattern_address = b_tile_number * bytes_per_tile + (((b_y_offset & 7) ^ b_v_flip) * bytes_per_tile_row);
             uint32_t a_pattern = *((uint32_t *)&vram[a_pattern_address]);
             a_pattern = std::byteswap(a_pattern);
             uint32_t b_pattern = *((uint32_t *)&vram[b_pattern_address]);
             b_pattern = std::byteswap(b_pattern);
-            
-            
-            
-            for (int x = 0; x < 8; x++) {
-                uint8_t a_pixel = (a_pattern >> ((7-(x^a_h_flip)) * 4)) & 0xF;
-                uint8_t b_pixel = (b_pattern >> ((7-(x^b_h_flip)) * 4)) & 0xF;
-                uint8_t pixel = 0;
-                uint8_t palette = 0;
 
-                //to-do: background color
+            for (int p = 0; p < 8; p++) {
+                if (a_x < 320) {
 
-                if (!b_priority && b_pixel) {
-                    pixel = b_pixel;
-                    palette = b_pal;
+                    uint8_t a_pixel = (a_pattern >> ((7 - (p ^ a_h_flip)) * 4)) & 0xF;
+                    a_pixels[a_x] = a_pixel;
+                    a_palette[a_x] = a_pal;
+                    a_priorities[a_x] = a_priority;
                 }
-                if (!a_priority && a_pixel) {
-                    pixel = a_pixel;
-                    palette = a_pal;
-                }
-                //to-do: sprites
-                if (b_priority && b_pixel) {
-                    pixel = b_pixel;
-                    palette = b_pal;
-                }
-                if (a_priority && a_pixel) {
-                    pixel = a_pixel;
-                    palette = a_pal;
-                }
-
-                *fb = lookup_color(palette, pixel);
-
-                fb++;
+                a_x++;
             }
-            int x = 1;
+            for (int p = 0; p < 8; p++) {
+                if (b_x < 320) {
+                        
+                    uint8_t b_pixel = (b_pattern >> ((7 - (p ^ b_h_flip)) * 4)) & 0xF;
+                    b_pixels[b_x] = b_pixel;
+                    b_palette[b_x] = b_pal;
+                    b_priorities[b_x] = b_priority;
+                }
+                b_x++;
+            }
+        }
+        for (int i = 0; i < 320; i++) {
+            uint8_t pixel = reg[0x07] & 0xF;
+            uint8_t palette = (reg[0x07] >> 4) & 0x3;
+
+            uint8_t sprite = sprite_buf[i];
+            bool sprite_here = sprite != 0xFF;
+
+            if (!b_priorities[i] && b_pixels[i]) {
+                pixel = b_pixels[i];
+                palette = b_palette[i];
+            }
+            if (!a_priorities[i] && a_pixels[i]) {
+                pixel = a_pixels[i];
+                palette = a_palette[i];
+            }
+
+            if (sprite_here && !(sprite & 0x40) && (sprite & 0xF) != 0) {
+                pixel = sprite & 0xF;
+                palette = (sprite >> 4) & 3;
+            }
+
+            if (b_priorities[i] && b_pixels[i]) {
+                pixel = b_pixels[i];
+                palette = b_palette[i];
+            }
+            if (a_priorities[i] && a_pixels[i]) {
+                pixel = a_pixels[i];
+                palette = a_palette[i];
+            }
+
+            if (sprite_here && sprite & 0x40 && (sprite & 0xF) != 0) {
+                pixel = sprite & 0xF;
+                palette = (sprite >> 4) & 3;
+            }
+
+
+            if (reg[0x01] & 0x40) {
+                *fb = lookup_color(palette, pixel);
+            }
+            else {
+                *fb = 0xFF000000;
+            }
+
+            fb++;
+        }
+
+    }
+
+    if (--hint_counter == 0) {
+        if (reg[0x00] & 0x10) {
+            asserting_hblank = 1;
+            status.hblank = 1;
+            update_ipl();
+            hint_counter = reg[0x0A];
         }
     }
 
@@ -352,21 +418,135 @@ void c_vdp::draw_scanline()
         status.vblank = 1;
         if (reg[0x01] & 0x20) {
             status.vint = 1;
-            *ipl |= 0x6;
+            //*ipl |= 0x6;
+            asserting_vblank = 1;
+            status.vblank = 1;
+            update_ipl();
         }
     }
     else if (line == 255) {
         status.vblank = 0;
         //does interrupt get cleared automatically?
         status.vint = 0;
-        *ipl &= ~0x6;
     }
 
     if (line == 261) {
         line = 0;
+        hint_counter = reg[0x10];
     }
     else {
         line++;
+    }
+}
+
+void c_vdp::eval_sprites()
+{
+    //assumes 320 pixel mode; adjusting for 256 pixel tbd
+    //need to change 7e to 7f for 256
+    uint16_t sprite_table_base = (reg[0x05] & 0x7E) << 9;
+    
+    memset(sprite_buf, -1, sizeof(sprite_buf));
+    
+    const uint32_t sprites_per_frame = 80;
+    const uint32_t sprites_per_scanline = 20;
+    uint32_t sprite_number = 0;
+    uint32_t sprite_count = 0;
+    for (int i = 0; i < sprites_per_frame; i++) {
+        uint16_t attribute1 = std::byteswap(*(uint16_t *)&vram[sprite_table_base + sprite_number * 8 + 0]);
+        uint16_t attribute2 = std::byteswap(*(uint16_t *)&vram[sprite_table_base + sprite_number * 8 + 2]);
+        uint16_t attribute3 = std::byteswap(*(uint16_t *)&vram[sprite_table_base + sprite_number * 8 + 4]);
+        uint16_t attribute4 = std::byteswap(*(uint16_t *)&vram[sprite_table_base + sprite_number * 8 + 6]);
+        uint32_t vpos = attribute1 & 0x3FF;
+        uint32_t hpos = attribute4 & 0x1FF;
+        uint32_t next = attribute2 & 0x7F;
+        uint32_t vsize = ((attribute2 >> 8) & 0x3) + 1;
+        uint32_t hsize = ((attribute2 >> 10) & 0x3) + 1;
+        uint32_t base_tile = attribute3 & 0x7FF;
+        uint32_t h_flip = attribute3 & 0x800 ? 7 : 0;
+        uint32_t v_flip = attribute3 & 0x1000 ? 7 : 0;
+        uint32_t palette = ((attribute3 >> 13) & 3) << 4;
+        bool priority = attribute3 & 0x8000;
+
+        int32_t y = (int32_t)vpos - 128;
+        int32_t x = (int32_t)hpos - 128;
+        
+        uint32_t sprite_here = 0;
+
+        for (int v = 0; v < vsize; v++) {
+            int32_t y_base = y + v * 8;
+            if (line >= y_base && line < y_base + 8) {
+                sprite_here = 1;
+                if (x == 0) {
+                    int x = 1;
+                }
+                int32_t y_offset = line - y_base;
+                for (int h = 0; h < hsize; h++) {
+                    //load tile at this position
+                    uint32_t tile = base_tile + v + (h * vsize);
+                    uint32_t pattern_address = tile * 32 + ((y_offset ^ v_flip) * 4);
+                    uint32_t pattern = std::byteswap(*((uint32_t *)&vram[pattern_address]));
+                    int x_start = x + h * 8;
+                    for (int j = x_start, p = 0; j < x_start + 8; j++, p++) {
+                        if (j >= 0 && j < 320) {
+                            if (sprite_buf[j] != 0xFF) {
+                                //there is already a sprite here
+                                if ((sprite_buf[j] & 0xF) != 0) {
+                                    //and it's not transparent
+                                    continue;
+                                }
+                            }
+                            uint8_t color = (pattern >> ((7 - (p ^ h_flip)) * 4)) & 0xF;
+                            color |= palette;
+                            if (priority) {
+                                color |= 0x40;
+                            }
+                            sprite_buf[j] = color;
+                        }
+                    }
+                }
+                break;
+            }
+        }
+
+        sprite_count += sprite_here;
+
+        if (next == 0 || sprite_count == sprites_per_scanline) {
+            break;
+        }
+        sprite_number = next;
+
+    }
+
+}
+
+void c_vdp::clear_hblank()
+{
+    status.hblank = 0;
+    asserting_hblank = 0;
+    update_ipl();
+}
+
+void c_vdp::ack_irq()
+{
+    if (*ipl == 4) {
+        asserting_hblank = 0;
+    }
+    else if (*ipl == 6) {
+        asserting_vblank = 0;
+    }
+    update_ipl();
+}
+
+void c_vdp::update_ipl()
+{
+    if (asserting_hblank) {
+        *ipl = 4;
+    }
+    else if (asserting_vblank) {
+        *ipl = 6;
+    }
+    else {
+        *ipl = 0;
     }
 }
 
