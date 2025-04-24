@@ -9,7 +9,6 @@ namespace genesis
 
 c_genesis::c_genesis()
 {
-    ram = std::make_unique<unsigned char[]>(64 * 1024);
     m68k = std::make_unique<c_m68k>(
             [this](uint32_t address) { return this->read_word(address); },
             [this](uint32_t address, uint16_t value) { this->write_word(address, value); },
@@ -38,10 +37,6 @@ int c_genesis::load()
     file.seekg(0, std::ios_base::end);
     file_length = (int)file.tellg();
     file.seekg(0, std::ios_base::beg);
-    //if (file_length == 0 || (file_length & (file_length - 1)) || file_length < 0x2000) {
-    //    return 0;
-    //}
-    //int alloc_size = file_length < 0x4000 ? 0x4000 : file_length;
     
     rom = std::make_unique_for_overwrite<uint8_t[]>(file_length);
     
@@ -49,71 +44,13 @@ int c_genesis::load()
     file.close();
     crc32 = get_crc32(rom.get(), file_length);
 
-    //for (auto &c : crc_table) {
-    //    if (c.crc == crc32 && c.has_sram) {
-    //        has_sram = 1;
-    //        load_sram();
-    //    }
-    //}
-
-    //if (file_length == 0x2000) {
-    //    std::memcpy(rom.get() + 0x2000, rom.get(), 0x2000);
-    //}
-    //loaded = 1;
-    //reset();
-    //return file_length;
     reset();
     loaded = 1;
     return 1;
 }
 
-//int c_genesis::load_sram()
-//{
-//    //std::ifstream file;
-//    //file.open(sram_path_file, std::ios_base::in | std::ios_base::binary);
-//    //if (file.fail())
-//    //    return 1;
-//
-//    //file.seekg(0, std::ios_base::end);
-//    //int l = (int)file.tellg();
-//
-//    //if (l != 8192)
-//    //    return 1;
-//
-//    //file.seekg(0, std::ios_base::beg);
-//
-//    //file.read((char *)cart_ram, 8192);
-//    //file.close();
-//    return 1;
-//}
-//
-//int c_genesis::save_sram()
-//{
-//    //std::ofstream file;
-//    //file.open(sram_path_file, std::ios_base::out | std::ios_base::binary);
-//    //if (file.fail())
-//    //    return 1;
-//    //file.write((char *)cart_ram, 8192);
-//    //file.close();
-//    return 0;
-//}
-
 int c_genesis::reset()
 {
-    //z80->reset();
-    //vdp->reset();
-    //psg->reset();
-    //std::memset(ram.get(), 0x00, 8192);
-    //irq = 0;
-    //nmi = 0;
-    //page[0] = rom.get();
-    //page[1] = file_length > 0x4000 ? rom.get() + 0x4000 : rom.get();
-    //page[2] = file_length > 0x8000 ? rom.get() + 0x8000 : rom.get();
-    //nationalism = 0;
-    //ram_select = 0;
-    //joy = 0xFFFF;
-    //psg_cycles = 0;
-    //last_psg_run = 0;
     ipl = 0;
     m68k->reset();
     vdp->reset();
@@ -123,6 +60,8 @@ int c_genesis::reset()
     th2 = 0;
     joy1 = -1;
     joy2 = -1;
+    std::memset(ram, 0, sizeof(ram));
+    std::memset(z80_ram, 0, sizeof(z80_ram));
     return 0;
 }
 
@@ -151,6 +90,10 @@ uint8_t c_genesis::read_byte(uint32_t address)
     }
     else if (address >= 0x00C00000 && address <= 0xC0001E) {
         return vdp->read_byte(address);
+    }
+    else if (address >= 0xA00000 && address < 0xA10000) {
+        return 0;
+        return z80_ram[address & 0x1FFF];
     }
     else if (address < 0xFF0000) {
         switch (address) {
@@ -215,6 +158,10 @@ uint16_t c_genesis::read_word(uint32_t address)
     else if (address >= 0x00C00000 && address <= 0xC0001E) {
         return vdp->read_word(address);
     }
+    else if (address >= 0xA00000 && address < 0xA10000) {
+        return 0;
+        return (z80_ram[address & 0x1FFF] << 8) | (z80_ram[(address + 1) & 0x1FFF] & 0xFF);
+    }
     else if (address < 0xFF0000) {
         int x = 1;
     }
@@ -234,6 +181,9 @@ void c_genesis::write_byte(uint32_t address, uint8_t value)
     }
     else if (address >= 0x00C00000 && address <= 0xC0001E) {
         vdp->write_byte(address, value);
+    }
+    else if (address >= 0xA00000 && address < 0xA10000) {
+        z80_ram[address & 0x1FFF] = value;
     }
     else if (address < 0xFF0000) {
         if (address == 0xa11100) {
@@ -271,6 +221,10 @@ void c_genesis::write_word(uint32_t address, uint16_t value)
     }
     else if (address >= 0x00C00000 && address <= 0xC0001E) {
         vdp->write_word(address, value);
+    }
+    else if (address >= 0xA00000 && address < 0xA10000) {
+        z80_ram[address & 0x1FFF] = value >> 8;
+        z80_ram[(address + 1) & 0x1FFF] = value & 0xFF;
     }
     else if (address < 0xFF0000) {
         switch (address) {

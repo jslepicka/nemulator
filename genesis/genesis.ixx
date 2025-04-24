@@ -71,7 +71,7 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
   private:
     int loaded = 0;
     std::unique_ptr<c_m68k> m68k;
-    std::unique_ptr<uint8_t[]> ram;
+    //std::unique_ptr<uint8_t[]> ram;
     std::unique_ptr<uint8_t[]> rom;
     std::unique_ptr<c_vdp> vdp;
     int file_length;
@@ -82,6 +82,8 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     uint32_t th2;
     uint32_t joy1;
     uint32_t joy2;
+    uint8_t ram[64 * 1024];
+    uint8_t z80_ram[8 * 1024];
 };
 
 } //namespace genesis

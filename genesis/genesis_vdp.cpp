@@ -57,6 +57,8 @@ uint16_t c_vdp::read_word(uint32_t address)
             update_ipl();
             address_write = 0;
             return ret;
+        case 0x00C00008:
+            return (0 << 8) | ((line >> 1) & 0xFF);
         default:
             return 0;
     }
@@ -131,7 +133,6 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
                     vram_to_vram_copy = address_reg & 0x40;
                     dma_copy = address_reg & 0x80;
                     if (dma_copy) {
-                        OutputDebugString("DMA requested\n");
                         if (reg[0x01] & 0x10) {
                             status.dma = 1;
                             if (!(reg[0x17] & 0x80)) {
@@ -141,7 +142,6 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
                                 OutputDebugString("VRAM to VRAM DMA\n");
                             }
                             else if ((reg[0x17] & 0xC0) == 0x80) {
-                                OutputDebugString("DMA Fill\n");
                                 pending_fill = 1;
                             }
                         }
@@ -451,6 +451,8 @@ void c_vdp::eval_sprites()
     const uint32_t sprites_per_scanline = 20;
     uint32_t sprite_number = 0;
     uint32_t sprite_count = 0;
+    uint32_t mask_low_priority = 0;
+    uint32_t pixels_drawn = 0;
     for (int i = 0; i < sprites_per_frame; i++) {
         uint16_t attribute1 = std::byteswap(*(uint16_t *)&vram[sprite_table_base + sprite_number * 8 + 0]);
         uint16_t attribute2 = std::byteswap(*(uint16_t *)&vram[sprite_table_base + sprite_number * 8 + 2]);
@@ -459,30 +461,40 @@ void c_vdp::eval_sprites()
         uint32_t vpos = attribute1 & 0x3FF;
         uint32_t hpos = attribute4 & 0x1FF;
         uint32_t next = attribute2 & 0x7F;
-        uint32_t vsize = ((attribute2 >> 8) & 0x3) + 1;
-        uint32_t hsize = ((attribute2 >> 10) & 0x3) + 1;
+        uint32_t vsize = ((attribute2 >> 8) & 0x3);
+        uint32_t hsize = ((attribute2 >> 10) & 0x3);
         uint32_t base_tile = attribute3 & 0x7FF;
         uint32_t h_flip = attribute3 & 0x800 ? 7 : 0;
         uint32_t v_flip = attribute3 & 0x1000 ? 7 : 0;
+        uint32_t h_xor = (h_flip && hsize) ? hsize + 1 : 0;
         uint32_t palette = ((attribute3 >> 13) & 3) << 4;
         bool priority = attribute3 & 0x8000;
 
         int32_t y = (int32_t)vpos - 128;
         int32_t x = (int32_t)hpos - 128;
+
+        if (mask_low_priority/* && !priority*/) {
+            continue;
+        }
         
         uint32_t sprite_here = 0;
-
-        for (int v = 0; v < vsize; v++) {
+        
+        for (int v = 0; v < vsize + 1; v++) {
             int32_t y_base = y + v * 8;
             if (line >= y_base && line < y_base + 8) {
                 sprite_here = 1;
-                if (x == 0) {
-                    int x = 1;
+                if (i != 0 && hpos == 0) {
+                    mask_low_priority = 1;
                 }
                 int32_t y_offset = line - y_base;
-                for (int h = 0; h < hsize; h++) {
+                uint32_t vv = (v_flip && vsize) ? vsize - v : v;
+                for (int h = 0; h < hsize + 1; h++) {
                     //load tile at this position
-                    uint32_t tile = base_tile + v + (h * vsize);
+                    if (h_flip) {
+                        int x = 1;
+                    }
+                    uint32_t hh = (h_flip && hsize) ? hsize - h : h;
+                    uint32_t tile = base_tile + vv + (hh * (vsize + 1));
                     uint32_t pattern_address = tile * 32 + ((y_offset ^ v_flip) * 4);
                     uint32_t pattern = std::byteswap(*((uint32_t *)&vram[pattern_address]));
                     int x_start = x + h * 8;
@@ -501,6 +513,9 @@ void c_vdp::eval_sprites()
                                 color |= 0x40;
                             }
                             sprite_buf[j] = color;
+                        }
+                        if (++pixels_drawn >= 320) {
+                            return;
                         }
                     }
                 }
