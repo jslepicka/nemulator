@@ -79,6 +79,9 @@ export class c_vdp
     uint8_t b_pixels[320] = {0};
     uint8_t b_palette[320] = {0};
     uint8_t b_priorities[320] = {0};
+    uint8_t win_pixels[320] = {0};
+    uint8_t win_palette[320] = {0};
+    uint8_t win_priorities[320] = {0};
 
     void eval_sprites();
     uint8_t sprite_buf[320];

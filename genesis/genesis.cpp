@@ -4,6 +4,7 @@ module genesis;
 import m68k;
 import crc32;
 
+
 namespace genesis
 {
 
@@ -36,9 +37,17 @@ int c_genesis::load()
         return 0;
     file.seekg(0, std::ios_base::end);
     file_length = (int)file.tellg();
+    rom_size = file_length;
+    if ((file_length & (file_length - 1)) != 0) {
+        int v = 1;
+        while (v <= file_length) {
+            v <<= 1;
+        }
+        rom_size = v;
+    }
     file.seekg(0, std::ios_base::beg);
     
-    rom = std::make_unique_for_overwrite<uint8_t[]>(file_length);
+    rom = std::make_unique_for_overwrite<uint8_t[]>(rom_size);
     
     file.read((char *)rom.get(), file_length);
     file.close();
@@ -46,6 +55,7 @@ int c_genesis::load()
 
     reset();
     loaded = 1;
+    rom_mask = rom_size - 1;
     return 1;
 }
 
@@ -82,10 +92,7 @@ uint8_t c_genesis::read_byte(uint32_t address)
     if (address < 0x400000) {
         //probably not correct.  how is on-cart ram in this address space
         //handled?  is that even a thing?
-        address %= file_length;
-        //testing
-        //address &= 0xFFFF;
-        //assert(address < file_length);
+        //address &= rom_mask;
         return rom[address];
     }
     else if (address >= 0x00C00000 && address <= 0xC0001E) {
@@ -95,7 +102,7 @@ uint8_t c_genesis::read_byte(uint32_t address)
         return 0;
         return z80_ram[address & 0x1FFF];
     }
-    else if (address < 0xFF0000) {
+    else if (address < 0xE00000) {
         switch (address) {
             case 0xA10001:
                 return 0xA0;
@@ -138,22 +145,19 @@ uint8_t c_genesis::read_byte(uint32_t address)
         }
     }
     else {
-        return ram[address - 0xFF0000];
+        return ram[address & 0xFFFF];
     }
     return 0;
 }
 
 uint16_t c_genesis::read_word(uint32_t address)
 {
-    //assert(!(address & 1));
+    assert(!(address & 1));
     if (address < 0x400000) {
-        //testing
-        //address &= 0xFFFF;
+        //address &= rom_mask;
+        //assert(address < file_length);
         address %= file_length;
-        assert(address < file_length);
-        uint16_t a = (rom[address] << 8) | rom[address + 1];
-        //uint16_t b = std::byteswap(*((uint16_t *)rom.get() + (address >> 1)));
-        return a;
+        return std::byteswap(*((uint16_t *)(rom.get() + address)));
     }
     else if (address >= 0x00C00000 && address <= 0xC0001E) {
         return vdp->read_word(address);
@@ -162,11 +166,8 @@ uint16_t c_genesis::read_word(uint32_t address)
         return 0;
         return (z80_ram[address & 0x1FFF] << 8) | (z80_ram[(address + 1) & 0x1FFF] & 0xFF);
     }
-    else if (address < 0xFF0000) {
-        int x = 1;
-    }
-    else {
-        return (ram[address - 0xFF0000] << 8) | ram[address - 0xFF0000 + 1];
+    else if (address >= 0xE00000) {
+        return std::byteswap(*(uint16_t *)&ram[address & 0xFFFF]);
     }
     return 0;
 }
@@ -174,10 +175,10 @@ uint16_t c_genesis::read_word(uint32_t address)
 void c_genesis::write_byte(uint32_t address, uint8_t value)
 {
     if (address < 0x400000) {
-        //assert(0);
+        assert(0);
         //testing
         //address &= 0xFFFF;
-        rom[address] = value;
+        //rom[address] = value;
     }
     else if (address >= 0x00C00000 && address <= 0xC0001E) {
         vdp->write_byte(address, value);
@@ -185,7 +186,7 @@ void c_genesis::write_byte(uint32_t address, uint8_t value)
     else if (address >= 0xA00000 && address < 0xA10000) {
         z80_ram[address & 0x1FFF] = value;
     }
-    else if (address < 0xFF0000) {
+    else if (address < 0xE00000) {
         if (address == 0xa11100) {
             last_bus_request = value;
         }
@@ -205,7 +206,7 @@ void c_genesis::write_byte(uint32_t address, uint8_t value)
         int x = 1;
     }
     else {
-        ram[address - 0xFF0000] = value;
+        ram[address & 0xFFFF] = value;
     }
 }
 
@@ -213,11 +214,11 @@ void c_genesis::write_word(uint32_t address, uint16_t value)
 {
     assert(!(address & 1));
     if (address < 0x400000) {
+        assert(0);
         //testing
         //address &= 0xFFFF;
-        rom[address] = value >> 8;
-        rom[address + 1] = value & 0xFF;
-        //assert(0);
+        //rom[address] = value >> 8;
+        //rom[address + 1] = value & 0xFF;
     }
     else if (address >= 0x00C00000 && address <= 0xC0001E) {
         vdp->write_word(address, value);
@@ -226,7 +227,7 @@ void c_genesis::write_word(uint32_t address, uint16_t value)
         z80_ram[address & 0x1FFF] = value >> 8;
         z80_ram[(address + 1) & 0x1FFF] = value & 0xFF;
     }
-    else if (address < 0xFF0000) {
+    else if (address < 0xE00000) {
         switch (address) {
             case 0x00A11100:
                 last_bus_request = value;
@@ -235,8 +236,8 @@ void c_genesis::write_word(uint32_t address, uint16_t value)
         int x = 1;
     }
     else {
-        ram[address - 0xFF0000] = value >> 8;
-        ram[address - 0xFF0000 + 1] = value & 0xFF;
+        ram[address & 0xFFFF] = value >> 8;
+        ram[(address + 1) & 0xFFFF] = value & 0xFF;
     }
 }
 

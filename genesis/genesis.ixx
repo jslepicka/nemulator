@@ -84,6 +84,8 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     uint32_t joy2;
     uint8_t ram[64 * 1024];
     uint8_t z80_ram[8 * 1024];
+    uint32_t rom_size;
+    uint32_t rom_mask;
 };
 
 } //namespace genesis

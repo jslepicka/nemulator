@@ -73,6 +73,9 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
         case 0x0C00000:
         case 0x0C00002:
             //data
+            if (address & 0x1) {
+                int x = 1;
+            }
             if (pending_fill) {
                 pending_fill = 0;
                 uint16_t len = reg[0x13] | (reg[0x14] << 8);
@@ -179,6 +182,8 @@ uint8_t c_vdp::read_byte(uint32_t address)
             asserting_hblank = 0;
             update_ipl();
             return ret;
+        case 0x00C00008:
+            return 0; //what should this return?
         default:
             return 0;
     }
@@ -264,6 +269,28 @@ void c_vdp::draw_scanline()
     
     if (y < 224) {
         eval_sprites();
+
+        uint8_t vp = reg[0x12] & 0x1F;
+        uint8_t hp = reg[0x11] & 0x1F;
+        bool in_window = false;
+        if (vp) {
+            //vertical window set
+            int x = 1;
+            
+            if (reg[0x12] & 0x80) {
+                //draw from vp to bottom
+                if (line >= (vp * 8)) {
+                    in_window = true;
+                }
+            }
+            else {
+                //draw from top to vp
+                if (line < (vp * 8)) {
+                    in_window = true;
+                }
+            }
+        }
+
         uint16_t hscroll_loc = (reg[0x0D] & 0x3F) << 10;
         uint32_t hscroll_offset = y * 4;
         switch (reg[0x0B] & 0x03) {
@@ -303,6 +330,7 @@ void c_vdp::draw_scanline()
         uint32_t *fb = &frame_buffer[y * 320];
         uint32_t a_x = -((8 - (a_h_scroll & 0x7)) & 7);
         uint32_t b_x = -((8 - (b_h_scroll & 0x7)) & 7);
+        uint32_t win_x = 0;
 
         uint32_t a_nt = (reg[0x02] & 0x38) << 10;
         uint32_t b_nt = (reg[0x04] & 0x7) << 13;
@@ -356,7 +384,34 @@ void c_vdp::draw_scanline()
                 }
                 b_x++;
             }
+
+            uint32_t win_nt = (reg[0x03] & 0x3E) << 10;
+            //need diff dimensions for H32
+            uint32_t win_y_address = ((line >> 3) & (32 - 1)) * 64 * 2;
+            uint16_t win_nt_address = win_nt + win_y_address + (column * 2);
+            uint32_t win_tile = (vram[win_nt_address] << 8) | vram[win_nt_address + 1];
+            uint32_t win_tile_number = win_tile & 0x7FF;
+            uint8_t win_priority = win_tile >> 15;
+            uint32_t win_h_flip = win_tile & 0x800 ? 7 : 0;
+            uint32_t win_v_flip = win_tile & 0x1000 ? 7 : 0;
+            uint8_t win_pal = (win_tile >> 13) & 0x3;
+            uint32_t win_pattern_address = win_tile_number * bytes_per_tile + (((line & 7) ^ win_v_flip) * bytes_per_tile_row);
+            uint32_t win_pattern = std::byteswap(*((uint32_t *)&vram[win_pattern_address]));
+                
+            for (int p = 0; p < 8; p++) {
+                if (win_x < 320) {
+
+                    uint8_t win_pixel = (win_pattern >> ((7 - (p ^ win_h_flip)) * 4)) & 0xF;
+                    win_pixels[win_x] = win_pixel;
+                    win_palette[win_x] = win_pal;
+                    win_priorities[win_x] = win_priority;
+                }
+                win_x++;
+            }
+
         }
+        bool in_h_window = false;
+
         for (int i = 0; i < 320; i++) {
             uint8_t pixel = reg[0x07] & 0xF;
             uint8_t palette = (reg[0x07] >> 4) & 0x3;
@@ -364,13 +419,52 @@ void c_vdp::draw_scanline()
             uint8_t sprite = sprite_buf[i];
             bool sprite_here = sprite != 0xFF;
 
+            if (!in_window && hp) {
+                if (reg[0x11] & 0x80) {
+                    //from hp to right edge
+                    if (i >= (hp * 16)) {
+                        in_h_window = true;
+                    }
+                    else {
+                        in_h_window = false;
+                    }
+                }
+                else {
+                    //from left edge to hp
+                    if (i < (hp * 16)) {
+                        in_h_window = true;
+                    }
+                    else {
+                        if (in_h_window && (a_h_scroll & 0xF) && i <= 304) {
+                            //emulate window bug
+                            //pretty kludgey...
+                            for (int j = i; j < i + (a_h_scroll & 0xF); j++) {
+                                int src = (j + 16) % 320;
+                                a_priorities[j] = a_priorities[src];
+                                a_pixels[j] = a_pixels[src];
+                                a_palette[j] = a_palette[src];
+                            }
+                        }
+                        in_h_window = false;
+                    }
+                }
+            }
+
             if (!b_priorities[i] && b_pixels[i]) {
                 pixel = b_pixels[i];
                 palette = b_palette[i];
             }
-            if (!a_priorities[i] && a_pixels[i]) {
-                pixel = a_pixels[i];
-                palette = a_palette[i];
+            if (in_window || in_h_window) {
+                if (!win_priorities[i] && win_pixels[i]) {
+                    pixel = win_pixels[i];
+                    palette = win_palette[i];
+                }
+            }
+            else {
+                if (!a_priorities[i] && a_pixels[i]) {
+                    pixel = a_pixels[i];
+                    palette = a_palette[i];
+                }
             }
 
             if (sprite_here && !(sprite & 0x40) && (sprite & 0xF) != 0) {
@@ -382,9 +476,18 @@ void c_vdp::draw_scanline()
                 pixel = b_pixels[i];
                 palette = b_palette[i];
             }
-            if (a_priorities[i] && a_pixels[i]) {
-                pixel = a_pixels[i];
-                palette = a_palette[i];
+
+            if (in_window || in_h_window) {
+                if (win_priorities[i] && win_pixels[i]) {
+                    pixel = win_pixels[i];
+                    palette = win_palette[i];
+                }
+            }
+            else {
+                if (a_priorities[i] && a_pixels[i]) {
+                    pixel = a_pixels[i];
+                    palette = a_palette[i];
+                }
             }
 
             if (sprite_here && sprite & 0x40 && (sprite & 0xF) != 0) {
@@ -453,6 +556,7 @@ void c_vdp::eval_sprites()
     uint32_t sprite_count = 0;
     uint32_t mask_low_priority = 0;
     uint32_t pixels_drawn = 0;
+    uint32_t first_sprite = 1;
     for (int i = 0; i < sprites_per_frame; i++) {
         uint16_t attribute1 = std::byteswap(*(uint16_t *)&vram[sprite_table_base + sprite_number * 8 + 0]);
         uint16_t attribute2 = std::byteswap(*(uint16_t *)&vram[sprite_table_base + sprite_number * 8 + 2]);
@@ -473,7 +577,7 @@ void c_vdp::eval_sprites()
         int32_t y = (int32_t)vpos - 128;
         int32_t x = (int32_t)hpos - 128;
 
-        if (mask_low_priority/* && !priority*/) {
+        if (mask_low_priority) {
             continue;
         }
         
@@ -482,10 +586,18 @@ void c_vdp::eval_sprites()
         for (int v = 0; v < vsize + 1; v++) {
             int32_t y_base = y + v * 8;
             if (line >= y_base && line < y_base + 8) {
-                sprite_here = 1;
-                if (i != 0 && hpos == 0) {
-                    mask_low_priority = 1;
+
+                if (hpos == 0) {
+                    if (i != 0) {
+                        mask_low_priority = 1;
+                    }
                 }
+                
+                /*if (!first_sprite && hpos == 0) {
+                    mask_low_priority = 1;
+                }*/
+                sprite_here = 1;
+                first_sprite = 0;
                 int32_t y_offset = line - y_base;
                 uint32_t vv = (v_flip && vsize) ? vsize - v : v;
                 for (int h = 0; h < hsize + 1; h++) {
@@ -499,6 +611,9 @@ void c_vdp::eval_sprites()
                     uint32_t pattern = std::byteswap(*((uint32_t *)&vram[pattern_address]));
                     int x_start = x + h * 8;
                     for (int j = x_start, p = 0; j < x_start + 8; j++, p++) {
+                        if (++pixels_drawn > 320) {
+                            return;
+                        }
                         if (j >= 0 && j < 320) {
                             if (sprite_buf[j] != 0xFF) {
                                 //there is already a sprite here
@@ -513,9 +628,6 @@ void c_vdp::eval_sprites()
                                 color |= 0x40;
                             }
                             sprite_buf[j] = color;
-                        }
-                        if (++pixels_drawn >= 320) {
-                            return;
                         }
                     }
                 }
