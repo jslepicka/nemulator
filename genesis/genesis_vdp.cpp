@@ -1,7 +1,10 @@
 module;
 #include <cassert>
 #include <Windows.h>
+#include <immintrin.h>
 module genesis:vdp;
+
+#define USE_BMI2
 
 namespace genesis
 {
@@ -11,6 +14,14 @@ c_vdp::c_vdp(uint8_t *ipl, read_word_t read_word_68k, uint32_t *stalled)
     this->stalled = stalled;
     this->ipl = ipl;
     this->read_word_68k = read_word_68k;
+
+    for (int i = 0; i < 512; i++) {
+        uint32_t color = 0xFF000000;
+        color |= ((((i >> 0) & 7) * 32)) << 0;
+        color |= ((((i >> 3) & 7) * 32)) << 8;
+        color |= ((((i >> 6) & 7) * 32)) << 16;
+        rgb[i] = color;
+    }
 }
 
 c_vdp::~c_vdp()
@@ -218,12 +229,16 @@ void c_vdp::write_byte(uint32_t address, uint8_t value)
 uint32_t c_vdp::lookup_color(uint32_t pal, uint32_t index)
 {
     int loc = pal * 32 + index * 2;
-    uint16_t entry = (cram[loc] << 8) | cram[loc + 1];
+    uint16_t entry = std::byteswap(*(uint16_t*)&cram[loc]);
+    #ifdef USE_BMI2
+    return rgb[_pext_u32(entry, 0xEEE)];
+    #else
     uint32_t color = ((entry >> 0) & 0xE) * 16;
     color |= (((entry >> 4) & 0xE) * 16) << 8;
     color |= (((entry >> 8) & 0xE) * 16) << 16;
     color |= 0xFF000000;
     return color;
+    #endif
 }
 
 void c_vdp::draw_scanline()
@@ -316,8 +331,6 @@ void c_vdp::draw_scanline()
         uint32_t b_y_fine = b_v_scroll & 7;
         uint32_t a_y_adjusted = y + (a_y_coarse << 3) + a_y_fine;
         uint32_t b_y_adjusted = y + (b_y_coarse << 3) + b_y_fine;
-        uint32_t a_y_offset = a_y_adjusted & 7;
-        uint32_t b_y_offset = b_y_adjusted & 7;
         uint32_t a_y_address = ((a_y_adjusted >> 3) & (plane_height - 1)) * plane_width * 2;
         uint32_t b_y_address = ((b_y_adjusted >> 3) & (plane_height - 1)) * plane_width * 2;
 
@@ -357,8 +370,8 @@ void c_vdp::draw_scanline()
             uint8_t b_pal = (b_tile >> 13) & 0x3;
             const uint32_t bytes_per_tile = 32;
             const uint32_t bytes_per_tile_row = bytes_per_tile / 8;
-            uint32_t a_pattern_address = a_tile_number * bytes_per_tile + (((a_y_offset & 7) ^ a_v_flip) * bytes_per_tile_row);
-            uint32_t b_pattern_address = b_tile_number * bytes_per_tile + (((b_y_offset & 7) ^ b_v_flip) * bytes_per_tile_row);
+            uint32_t a_pattern_address = a_tile_number * bytes_per_tile + (((a_y_adjusted & 7) ^ a_v_flip) * bytes_per_tile_row);
+            uint32_t b_pattern_address = b_tile_number * bytes_per_tile + (((b_y_adjusted & 7) ^ b_v_flip) * bytes_per_tile_row);
             uint32_t a_pattern = *((uint32_t *)&vram[a_pattern_address]);
             a_pattern = std::byteswap(a_pattern);
             uint32_t b_pattern = *((uint32_t *)&vram[b_pattern_address]);
@@ -419,7 +432,7 @@ void c_vdp::draw_scanline()
             uint8_t sprite = sprite_buf[i];
             bool sprite_here = sprite != 0xFF;
 
-            if (!in_window && hp) {
+            if (hp && !in_window) {
                 if (reg[0x11] & 0x80) {
                     //from hp to right edge
                     if (i >= (hp * 16)) {

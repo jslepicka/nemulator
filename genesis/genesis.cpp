@@ -38,6 +38,8 @@ int c_genesis::load()
     file.seekg(0, std::ios_base::end);
     file_length = (int)file.tellg();
     rom_size = file_length;
+
+    //round up rom_size to nearest power of 2
     if ((file_length & (file_length - 1)) != 0) {
         int v = 1;
         while (v <= file_length) {
@@ -52,10 +54,9 @@ int c_genesis::load()
     file.read((char *)rom.get(), file_length);
     file.close();
     crc32 = get_crc32(rom.get(), file_length);
-
+    rom_mask = rom_size - 1;
     reset();
     loaded = 1;
-    rom_mask = rom_size - 1;
     return 1;
 }
 
@@ -92,7 +93,7 @@ uint8_t c_genesis::read_byte(uint32_t address)
     if (address < 0x400000) {
         //probably not correct.  how is on-cart ram in this address space
         //handled?  is that even a thing?
-        //address &= rom_mask;
+        address &= rom_mask;
         return rom[address];
     }
     else if (address >= 0x00C00000 && address <= 0xC0001E) {
@@ -154,9 +155,7 @@ uint16_t c_genesis::read_word(uint32_t address)
 {
     assert(!(address & 1));
     if (address < 0x400000) {
-        //address &= rom_mask;
-        //assert(address < file_length);
-        address %= file_length;
+        address &= rom_mask;
         return std::byteswap(*((uint16_t *)(rom.get() + address)));
     }
     else if (address >= 0x00C00000 && address <= 0xC0001E) {

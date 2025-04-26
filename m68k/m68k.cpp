@@ -92,9 +92,6 @@ void c_m68k::execute(int cycles)
             continue;
         }
         if (fetch_opcode) {
-            if (pc == 0x488e) {
-                int x = 1;
-            }
             uint8_t i = *ipl & 0x7;
             uint8_t mask = (sr >> 8) & 0x7;
             if (i) {
@@ -119,46 +116,21 @@ void c_m68k::execute(int cycles)
             fetch_opcode = 1;
             if (interrupt) {
                 do_trap(24 + interrupt);
-                update_status();
+                //do_trap already calls update_status, so no need to do that again
                 sr &= 0xF8FF;
                 sr |= (interrupt << 8);
                 interrupt = 0;
                 ack_irq();
             }
             else {
-                //char buf[64];
-                //sprintf(buf, "    PC: %08x\n", pc - 2);
-                //OutputDebugString(buf);
-                //if (pc - 2 == 0x430) {
-                //    //broken test
-                //    int x = 1;
-                //    pc = (pc - 2) + 6 + 2;
-                //}
-                //if (pc - 2 == 0x4A8) {
-                //    //abcd
-                //    int x = 1;
-                //    pc = (pc - 2) + 6 + 2;
-                //}
-                //if (pc - 2 == 0x4AE) {
-                //    //sbcd
-                //    int x = 1;
-                //    pc = (pc - 2) + 6 + 2;
-                //}
-                //if (pc - 2 == 0x4B4) {
-                //    //nbcd
-                //    int x = 1;
-                //    pc = (pc - 2) + 6 + 2;
-                //}
-                if (pc - 2 == 0xb5a) {
-                    int x = 1;
-                }
                 if (opcode_fn == nullptr) {
                     do_trap(4);
                 }
                 else {
                     opcode_fn(this);
                 }
-                update_status();
+                //shouldn't be required unless I've missed somewhere else
+                //update_status();
             }
             int x = 1;
         }
@@ -951,7 +923,6 @@ void c_m68k::RTE_()
     else {
         sr = read_word(*a[7]);// & 0xA71F;
         set_flags();
-        //update_status();
         *a[7] += 2;
         pc = read_word(*a[7]) << 16;
         pc |= read_word(*a[7] + 2);

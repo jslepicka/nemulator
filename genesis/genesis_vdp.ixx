@@ -84,6 +84,7 @@ export class c_vdp
     uint8_t win_priorities[320] = {0};
 
     void eval_sprites();
+    uint32_t rgb[512];
     uint8_t sprite_buf[320];
 
   public:
