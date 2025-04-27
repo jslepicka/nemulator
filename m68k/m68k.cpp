@@ -130,7 +130,7 @@ void c_m68k::execute(int cycles)
                     opcode_fn(this);
                 }
                 //shouldn't be required unless I've missed somewhere else
-                //update_status();
+                update_status();
             }
             int x = 1;
         }

@@ -21,12 +21,18 @@ c_genesis::c_genesis()
     );
     vdp = std::make_unique<c_vdp>(&ipl,
          [this](uint32_t address) { return this->read_word(address); },
+        [this](int x_res) { this->on_mode_switch(x_res); },
         &stalled
     );
 }
 
 c_genesis::~c_genesis()
 {
+}
+
+void c_genesis::on_mode_switch(int x_res)
+{
+    crop_right = 320 - x_res;
 }
 
 int c_genesis::load()
@@ -73,6 +79,7 @@ int c_genesis::reset()
     joy2 = -1;
     std::memset(ram, 0, sizeof(ram));
     std::memset(z80_ram, 0, sizeof(z80_ram));
+    crop_right = 0;
     return 0;
 }
 
@@ -155,6 +162,9 @@ uint16_t c_genesis::read_word(uint32_t address)
 {
     assert(!(address & 1));
     if (address < 0x400000) {
+        if (address > rom_mask) {
+            int x = 1;
+        }
         address &= rom_mask;
         return std::byteswap(*((uint16_t *)(rom.get() + address)));
     }

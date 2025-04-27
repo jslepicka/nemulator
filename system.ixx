@@ -54,6 +54,10 @@ public:
         //std::function<c_system *()> constructor;
         std::function <std::unique_ptr<c_system>()> constructor;
     };
+    int crop_left;
+    int crop_right;
+    int crop_top;
+    int crop_bottom;
 
   protected:
     int crc32 = 0;

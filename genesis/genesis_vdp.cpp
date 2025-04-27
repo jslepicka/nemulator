@@ -9,11 +9,12 @@ module genesis:vdp;
 namespace genesis
 {
 
-c_vdp::c_vdp(uint8_t *ipl, read_word_t read_word_68k, uint32_t *stalled)
+c_vdp::c_vdp(uint8_t *ipl, read_word_t read_word_68k, mode_switch_callback_t mode_switch_callback, uint32_t *stalled)
 {
     this->stalled = stalled;
     this->ipl = ipl;
     this->read_word_68k = read_word_68k;
+    this->mode_switch_callback = mode_switch_callback;
 
     for (int i = 0; i < 512; i++) {
         uint32_t color = 0xFF000000;
@@ -47,6 +48,7 @@ void c_vdp::reset()
     asserting_vblank = 0;
     update_ipl();
     hint_counter = 0;
+    x_res = 320;
 }
 
 uint16_t c_vdp::read_word(uint32_t address)
@@ -100,6 +102,9 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
             }
             switch (address_type) {
                 case ADDRESS_TYPE::VRAM_WRITE:
+                    if (_address == 0xaa80) {
+                        int x = 1;
+                    }
                     assert(_address < 64 * 1024);
                     vram[_address] = value >> 8;
                     vram[_address + 1] = value & 0xFF;
@@ -135,7 +140,13 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
                 uint8_t reg_number = (value >> 8) & 0x1F;
                 uint8_t reg_value = value & 0xFF;
                 reg[reg_number] = reg_value;
-                int x = 1;
+                switch (reg_number) {
+                    case 0x0C:
+                        update_x_res();
+                        break;
+                    default:
+                        break;
+                }
             }
             else {
                 if (address_write) {
@@ -201,6 +212,15 @@ uint8_t c_vdp::read_byte(uint32_t address)
     return 0;
 }
 
+void c_vdp::update_x_res()
+{
+    int current = x_res;
+    x_res = reg[0x0C] & 1 ? 320 : 256;
+    if (x_res != current) {
+        mode_switch_callback(x_res);
+    }
+}
+
 void c_vdp::write_byte(uint32_t address, uint8_t value)
 {
     if (value != 0) {
@@ -244,32 +264,9 @@ uint32_t c_vdp::lookup_color(uint32_t pal, uint32_t index)
 void c_vdp::draw_scanline()
 {
     int y = line;
-    //int plane_height = (reg[0x10] >> 4) & 0x3;
-    //int plane_width = reg[0x10] & 0x3;
 
-    int plane_width = 32;
-    int plane_height = 32;
-
-    switch ((reg[0x10] >> 4) & 0x3) {
-        case 1:
-            plane_height = 64;
-            break;
-        case 3:
-            plane_height = 128;
-            break;
-        default:
-            break;
-    }
-    switch (reg[0x10] & 0x3) {
-        case 1:
-            plane_width = 64;
-            break;
-        case 3:
-            plane_width = 128;
-            break;
-        default:
-            break;
-    }
+    int plane_width = 32 + (reg[0x10] & 0x3) * 32;
+    int plane_height = 32 + ((reg[0x10] >> 4) & 0x3) * 32;
 
     uint32_t vscroll_mode = reg[0x0B] & 0x4;
     uint32_t a_v_scroll = 0;
@@ -348,7 +345,9 @@ void c_vdp::draw_scanline()
         uint32_t a_nt = (reg[0x02] & 0x38) << 10;
         uint32_t b_nt = (reg[0x04] & 0x7) << 13;
 
-        for (int column = 0; column < 41; column++) {
+        int column_count = reg[0x0C] & 1 ? 41 : 33;
+
+        for (int column = 0; column < column_count; column++) {
             uint32_t a_nt_column = (((column * 8) - a_h_scroll) >> 3) & (plane_width - 1);
             uint32_t b_nt_column = (((column * 8) - b_h_scroll) >> 3) & (plane_width - 1);
             
@@ -378,7 +377,7 @@ void c_vdp::draw_scanline()
             b_pattern = std::byteswap(b_pattern);
 
             for (int p = 0; p < 8; p++) {
-                if (a_x < 320) {
+                if (a_x < x_res) {
 
                     uint8_t a_pixel = (a_pattern >> ((7 - (p ^ a_h_flip)) * 4)) & 0xF;
                     a_pixels[a_x] = a_pixel;
@@ -388,7 +387,7 @@ void c_vdp::draw_scanline()
                 a_x++;
             }
             for (int p = 0; p < 8; p++) {
-                if (b_x < 320) {
+                if (b_x < x_res) {
                         
                     uint8_t b_pixel = (b_pattern >> ((7 - (p ^ b_h_flip)) * 4)) & 0xF;
                     b_pixels[b_x] = b_pixel;
@@ -399,7 +398,6 @@ void c_vdp::draw_scanline()
             }
 
             uint32_t win_nt = (reg[0x03] & 0x3E) << 10;
-            //need diff dimensions for H32
             uint32_t win_y_address = ((line >> 3) & (32 - 1)) * 64 * 2;
             uint16_t win_nt_address = win_nt + win_y_address + (column * 2);
             uint32_t win_tile = (vram[win_nt_address] << 8) | vram[win_nt_address + 1];
@@ -412,7 +410,7 @@ void c_vdp::draw_scanline()
             uint32_t win_pattern = std::byteswap(*((uint32_t *)&vram[win_pattern_address]));
                 
             for (int p = 0; p < 8; p++) {
-                if (win_x < 320) {
+                if (win_x < x_res) {
 
                     uint8_t win_pixel = (win_pattern >> ((7 - (p ^ win_h_flip)) * 4)) & 0xF;
                     win_pixels[win_x] = win_pixel;
@@ -425,7 +423,7 @@ void c_vdp::draw_scanline()
         }
         bool in_h_window = false;
 
-        for (int i = 0; i < 320; i++) {
+        for (int i = 0; i < x_res; i++) {
             uint8_t pixel = reg[0x07] & 0xF;
             uint8_t palette = (reg[0x07] >> 4) & 0x3;
 
@@ -448,11 +446,11 @@ void c_vdp::draw_scanline()
                         in_h_window = true;
                     }
                     else {
-                        if (in_h_window && (a_h_scroll & 0xF) && i <= 304) {
+                        if (in_h_window && (a_h_scroll & 0xF)) {
                             //emulate window bug
                             //pretty kludgey...
                             for (int j = i; j < i + (a_h_scroll & 0xF); j++) {
-                                int src = (j + 16) % 320;
+                                int src = (j + 16) % x_res;
                                 a_priorities[j] = a_priorities[src];
                                 a_pixels[j] = a_pixels[src];
                                 a_palette[j] = a_palette[src];
@@ -557,14 +555,12 @@ void c_vdp::draw_scanline()
 
 void c_vdp::eval_sprites()
 {
-    //assumes 320 pixel mode; adjusting for 256 pixel tbd
-    //need to change 7e to 7f for 256
-    uint16_t sprite_table_base = (reg[0x05] & 0x7E) << 9;
+    uint16_t sprite_table_base = (reg[0x05] & (x_res == 320 ? 0x7E : 0x7F)) << 9;
     
     memset(sprite_buf, -1, sizeof(sprite_buf));
     
-    const uint32_t sprites_per_frame = 80;
-    const uint32_t sprites_per_scanline = 20;
+    const uint32_t sprites_per_frame = (x_res == 320 ? 80 : 64);
+    const uint32_t sprites_per_scanline = (x_res == 320 ? 20 : 16);
     uint32_t sprite_number = 0;
     uint32_t sprite_count = 0;
     uint32_t mask_low_priority = 0;
@@ -599,7 +595,9 @@ void c_vdp::eval_sprites()
         for (int v = 0; v < vsize + 1; v++) {
             int32_t y_base = y + v * 8;
             if (line >= y_base && line < y_base + 8) {
-
+                if (sprite_number == 9) {
+                    int x = 1;
+                }
                 if (hpos == 0) {
                     if (i != 0) {
                         mask_low_priority = 1;
@@ -613,21 +611,22 @@ void c_vdp::eval_sprites()
                 first_sprite = 0;
                 int32_t y_offset = line - y_base;
                 uint32_t vv = (v_flip && vsize) ? vsize - v : v;
+                vv = v;
                 for (int h = 0; h < hsize + 1; h++) {
                     //load tile at this position
-                    if (h_flip) {
-                        int x = 1;
-                    }
                     uint32_t hh = (h_flip && hsize) ? hsize - h : h;
                     uint32_t tile = base_tile + vv + (hh * (vsize + 1));
                     uint32_t pattern_address = tile * 32 + ((y_offset ^ v_flip) * 4);
+                    if (pattern_address == 0xaa80) {
+                        int x = 1;
+                    }
                     uint32_t pattern = std::byteswap(*((uint32_t *)&vram[pattern_address]));
                     int x_start = x + h * 8;
                     for (int j = x_start, p = 0; j < x_start + 8; j++, p++) {
-                        if (++pixels_drawn > 320) {
+                        if (++pixels_drawn > x_res) {
                             return;
                         }
-                        if (j >= 0 && j < 320) {
+                        if (j >= 0 && j < x_res) {
                             if (sprite_buf[j] != 0xFF) {
                                 //there is already a sprite here
                                 if ((sprite_buf[j] & 0xF) != 0) {

@@ -113,6 +113,18 @@ void c_system_container::OnDeactivate()
     }
 }
 
+bool c_system_container::crop_changed()
+{
+    auto &display_info = system_info.display_info;
+    if ((display_info.crop_left == -1 && crop_left != system->crop_left) ||
+        (display_info.crop_right == -1 && crop_right != system->crop_right) ||
+        (display_info.crop_top == -1 && crop_top != system->crop_top) ||
+        (display_info.crop_bottom == -1 && crop_bottom != system->crop_bottom)) {
+        return true;
+    }
+    return false;
+}
+
 void c_system_container::DrawToTexture(ID3D10Texture2D *tex)
 {
     D3D10_MAPPED_TEXTURE2D map;
@@ -122,6 +134,9 @@ void c_system_container::DrawToTexture(ID3D10Texture2D *tex)
     auto &display_info = system_info.display_info;
     if (system && system->is_loaded())
     {
+        if (crop_changed()) {
+            create_vertex_buffer();
+        }
         int *fb_base = system->get_video();
         if (fb_base) {
             int y = 0;
@@ -205,11 +220,16 @@ void c_system_container::create_vertex_buffer()
             h_adjust = ((4.0 / 3.0) / aspect_ratio * h - h) / 2.0;
         }
     }
+
+    crop_left = display_info.crop_left == -1 ? system->crop_left : display_info.crop_left;
+    crop_right = display_info.crop_right == -1 ? system->crop_right : display_info.crop_right;
+    crop_top = display_info.crop_top == -1 ? system->crop_top : display_info.crop_top;
+    crop_bottom = display_info.crop_bottom == -1 ? system->crop_bottom : display_info.crop_bottom;
     
-    double w_start = (display_info.crop_left - w_adjust);
-    double w_end = (w - display_info.crop_right + w_adjust);
-    double h_start = (display_info.crop_top - h_adjust);
-    double h_end = (h - display_info.crop_bottom + h_adjust);
+    double w_start = (crop_left - w_adjust);
+    double w_end = (w - crop_right + w_adjust);
+    double h_start = (crop_top - h_adjust);
+    double h_end = (h - crop_bottom + h_adjust);
     width = w_end - w_start;
     height = h_end - h_start;
 

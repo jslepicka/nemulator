@@ -59,5 +59,12 @@ public:
     static const int static_width = 256;
     static const int static_height = 256;
 
+    int crop_left;
+    int crop_right;
+    int crop_top;
+    int crop_bottom;
+
+    bool crop_changed();
+
     c_system::s_system_info &system_info;
 };

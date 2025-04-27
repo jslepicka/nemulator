@@ -40,6 +40,7 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
                     {
                         .fb_width = 320,
                         .fb_height = 224,
+                        .crop_right = -1,
                     },
                 .button_map = button_map,
                 .constructor = []() { return std::make_unique<c_genesis>(); },
@@ -86,6 +87,8 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     uint8_t z80_ram[8 * 1024];
     uint32_t rom_size;
     uint32_t rom_mask;
+
+    void on_mode_switch(int x_res);
 };
 
 } //namespace genesis

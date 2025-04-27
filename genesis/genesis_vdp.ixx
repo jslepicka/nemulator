@@ -8,8 +8,9 @@ namespace genesis
 export class c_vdp
 {
     typedef std::function<uint16_t(uint32_t)> read_word_t;
+    typedef std::function<void(int)> mode_switch_callback_t;
   public:
-    c_vdp(uint8_t *ipl, read_word_t read_word_68k, uint32_t *stalled);
+    c_vdp(uint8_t *ipl, read_word_t read_word_68k, mode_switch_callback_t mode_switch_callback, uint32_t *stalled);
     ~c_vdp();
     void reset();
     uint16_t read_word(uint32_t address);
@@ -22,8 +23,10 @@ export class c_vdp
     void clear_hblank();
 
   private:
+    uint32_t x_res;
     uint32_t *stalled;
     read_word_t read_word_68k;
+    mode_switch_callback_t mode_switch_callback;
     uint8_t *ipl;
     uint16_t control;
     uint16_t hv_counter;
@@ -64,6 +67,8 @@ export class c_vdp
     uint8_t cram[128];
     uint8_t vsram[80];
     uint8_t vram[64 * 1024];
+
+    void update_x_res();
 
     uint32_t lookup_color(uint32_t pal, uint32_t index);
     void do_68k_dma();
