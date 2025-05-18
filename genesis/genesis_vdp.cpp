@@ -37,7 +37,7 @@ void c_vdp::reset()
     std::memset(reg, 0, sizeof(reg));
     address_reg = 0;
     address_write = 0;
-    memset(vram, 0, sizeof(vram));
+    memset(vram, -1, sizeof(vram));
     memset(cram, 0, sizeof(cram));
     memset(vsram, 0, sizeof(vsram));
     memset(frame_buffer, 0, sizeof(frame_buffer));
@@ -86,6 +86,7 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
         case 0x0C00000:
         case 0x0C00002:
             //data
+            //OutputDebugString("DATA\n");
             if (address & 0x1) {
                 int x = 1;
             }
@@ -102,9 +103,6 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
             }
             switch (address_type) {
                 case ADDRESS_TYPE::VRAM_WRITE:
-                    if (_address == 0xaa80) {
-                        int x = 1;
-                    }
                     assert(_address < 64 * 1024);
                     vram[_address] = value >> 8;
                     vram[_address + 1] = value & 0xFF;
@@ -611,7 +609,6 @@ void c_vdp::eval_sprites()
                 first_sprite = 0;
                 int32_t y_offset = line - y_base;
                 uint32_t vv = (v_flip && vsize) ? vsize - v : v;
-                vv = v;
                 for (int h = 0; h < hsize + 1; h++) {
                     //load tile at this position
                     uint32_t hh = (h_flip && hsize) ? hsize - h : h;
@@ -682,6 +679,7 @@ void c_vdp::update_ipl()
         *ipl = 4;
     }
     else if (asserting_vblank) {
+
         *ipl = 6;
     }
     else {
