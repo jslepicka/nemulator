@@ -79,13 +79,10 @@ export class c_vdp
     uint32_t asserting_vblank;
     uint32_t asserting_hblank;
     uint8_t hint_counter;
-    bool in_window;
     void update_ipl();
 
-    void draw_plane(
+    void render_plane_line(
         uint8_t *pixels,
-        uint8_t *palette,
-        uint8_t *priorities,
         uint32_t nt,
         uint32_t v_scroll,
         uint32_t h_scroll
@@ -93,14 +90,14 @@ export class c_vdp
     uint16_t get_hscroll_loc();
 
     uint8_t a_pixels[320] = {0};
-    uint8_t a_palette[320] = {0};
-    uint8_t a_priorities[320] = {0};
+    //uint8_t a_palette[320] = {0};
+    //uint8_t a_priorities[320] = {0};
     uint8_t b_pixels[320] = {0};
-    uint8_t b_palette[320] = {0};
-    uint8_t b_priorities[320] = {0};
+    //uint8_t b_palette[320] = {0};
+    //uint8_t b_priorities[320] = {0};
     uint8_t win_pixels[320] = {0};
-    uint8_t win_palette[320] = {0};
-    uint8_t win_priorities[320] = {0};
+    //uint8_t win_palette[320] = {0};
+    //uint8_t win_priorities[320] = {0};
 
     void eval_sprites();
     uint32_t rgb[512];
