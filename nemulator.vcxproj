@@ -149,6 +149,7 @@
       <EnableModules>
       </EnableModules>
       <BuildStlModules>true</BuildStlModules>
+      <UseDynamicDebugging>false</UseDynamicDebugging>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>C:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -221,6 +222,7 @@
       <EnableModules>
       </EnableModules>
       <BuildStlModules>true</BuildStlModules>
+      <UseDynamicDebugging>false</UseDynamicDebugging>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>

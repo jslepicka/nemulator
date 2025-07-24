@@ -1,6 +1,6 @@
 module;
-#include <cassert>
 #include <Windows.h>
+#include <cassert>
 #include <immintrin.h>
 module genesis:vdp;
 
@@ -111,6 +111,7 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
                     a &= 0x7F;
                     cram[a] = value >> 8;
                     cram[a + 1] = value & 0xFF;
+                    cram_entry[a] = rgb[_pext_u32(value, 0xEEE)];
                     break;
                 case ADDRESS_TYPE::VSRAM_WRITE:
                     a &= 0x7F;
@@ -133,12 +134,15 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
         case 0x0C00004:
         case 0x0C00006:
             //control
-            if (value >> 14 == 0x02) 
-            {
+            if (value >> 14 == 0x02) {
                 uint8_t reg_number = (value >> 8) & 0x1F;
                 uint8_t reg_value = value & 0xFF;
                 reg[reg_number] = reg_value;
                 switch (reg_number) {
+                    case 0x10:
+                        plane_width = 32 + (reg_value & 0x3) * 32;
+                        plane_height = 32 + ((reg_value >> 4) & 0x3) * 32;
+                        break;
                     case 0x0C:
                         update_x_res();
                         break;
@@ -183,8 +187,7 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
             break;
         default: {
             int x = 1;
-        }
-            break;
+        } break;
     }
 }
 
@@ -239,45 +242,106 @@ void c_vdp::write_byte(uint32_t address, uint8_t value)
             break;
         default: {
             int x = 1;
-        }
-            break;
+        } break;
     }
 }
 
 uint32_t c_vdp::lookup_color(uint32_t pal, uint32_t index)
 {
     int loc = pal * 32 + index * 2;
-    uint16_t entry = std::byteswap(*(uint16_t*)&cram[loc]);
-    #ifdef USE_BMI2
+    return cram_entry[loc];
+    uint16_t entry = std::byteswap(*(uint16_t *)&cram[loc]);
+#ifdef USE_BMI2
     return rgb[_pext_u32(entry, 0xEEE)];
-    #else
+#else
     uint32_t color = ((entry >> 0) & 0xE) * 16;
     color |= (((entry >> 4) & 0xE) * 16) << 8;
     color |= (((entry >> 8) & 0xE) * 16) << 16;
     color |= 0xFF000000;
     return color;
-    #endif
+#endif
+}
+
+void c_vdp::draw_plane(uint8_t *pixels, uint8_t *palette, uint8_t *priorities, uint32_t nt, uint32_t v_scroll,
+                       uint32_t h_scroll)
+{
+    uint32_t vscroll_mode = reg[0x0B] & 0x4;
+   
+    uint32_t y_coarse = v_scroll >> 3;
+    uint32_t y_fine = v_scroll & 7;
+    uint32_t y = line + (y_coarse << 3) + y_fine;
+
+    uint32_t y_address = ((y >> 3) & (plane_height - 1)) * plane_width * 2;
+    
+    uint32_t x = -((8 - (h_scroll & 0x7)) & 7);
+
+    int column_count = reg[0x0C] & 1 ? 41 : 33;
+
+    for (int column = 0; column < column_count; column++) {
+        uint32_t nt_column = (((column * 8) - h_scroll) >> 3) & (plane_width - 1);
+        uint16_t nt_address = nt + y_address + (nt_column * 2);
+        uint16_t tile = std::byteswap(*((uint16_t *)&vram[nt_address]));
+        uint32_t tile_number = tile & 0x7FF;
+        uint8_t priority = tile >> 15;
+        uint32_t h_flip = tile & 0x800 ? 7 : 0;
+        uint32_t v_flip = tile & 0x1000 ? 7 : 0;
+        uint8_t pal = (tile >> 13) & 0x3;
+
+        const uint32_t bytes_per_tile = 32;
+        const uint32_t bytes_per_tile_row = bytes_per_tile / 8;
+        uint32_t pattern_address =
+            tile_number * bytes_per_tile + (((y & 7) ^ v_flip) * bytes_per_tile_row);
+
+        uint32_t pattern = std::byteswap(*((uint32_t *)&vram[pattern_address]));
+        
+        for (int p = 0; p < 8; p++) {
+            if (x < x_res) {
+
+                uint8_t pixel = (pattern >> ((7 - (p ^ h_flip)) * 4)) & 0xF;
+                pixels[x] = pixel;
+                palette[x] = pal;
+                priorities[x] = priority;
+            }
+            x++;
+        }
+    }
+}
+
+uint16_t c_vdp::get_hscroll_loc()
+{
+    uint32_t hscroll_loc = (reg[0x0D] & 0x3F) << 10;
+    uint32_t hscroll_offset = line * 4;
+    switch (reg[0x0B] & 0x03) {
+        case 0:
+            hscroll_offset = 0;
+            break;
+        case 2:
+            hscroll_offset = (line & ~7) * 4;
+            break;
+        case 3:
+            hscroll_offset = line * 4;
+            break;
+        default: {
+            int x = 1;
+        } break;
+    }
+    return hscroll_loc + hscroll_offset;
 }
 
 void c_vdp::draw_scanline()
 {
-    int y = line;
-
-    int plane_width = 32 + (reg[0x10] & 0x3) * 32;
-    int plane_height = 32 + ((reg[0x10] >> 4) & 0x3) * 32;
-
     uint32_t vscroll_mode = reg[0x0B] & 0x4;
     uint32_t a_v_scroll = 0;
     uint32_t b_v_scroll = 0;
     if (vscroll_mode == 0) {
-        a_v_scroll = ((vsram[0] << 8) | vsram[1]) & 0x3FF;
-        b_v_scroll = ((vsram[2] << 8) | vsram[3]) & 0x3FF;
+        a_v_scroll = std::byteswap(*(uint16_t *)&vsram[0]) & 0x3FF;
+        b_v_scroll = std::byteswap(*(uint16_t *)&vsram[2]) & 0x3FF;
     }
     else {
         int x = 1;
     }
-    
-    if (y < 224) {
+
+    if (line < 224) {
         eval_sprites();
 
         uint8_t vp = reg[0x12] & 0x1F;
@@ -286,7 +350,7 @@ void c_vdp::draw_scanline()
         if (vp) {
             //vertical window set
             int x = 1;
-            
+
             if (reg[0x12] & 0x80) {
                 //draw from vp to bottom
                 if (line >= (vp * 8)) {
@@ -301,125 +365,21 @@ void c_vdp::draw_scanline()
             }
         }
 
-        uint16_t hscroll_loc = (reg[0x0D] & 0x3F) << 10;
-        uint32_t hscroll_offset = y * 4;
-        switch (reg[0x0B] & 0x03) {
-            case 0:
-                hscroll_offset = 0;
-                break;
-            case 2:
-                hscroll_offset = (y & ~7) * 4;
-                break;
-            case 3:
-                hscroll_offset = y * 4;
-                break;
-            default: {
-                int x = 1;
-            } break;
-        }
-        hscroll_loc += hscroll_offset;
+        uint16_t hscroll_loc = get_hscroll_loc();
 
-
-        uint32_t a_y_coarse = a_v_scroll >> 3;
-        uint32_t a_y_fine = a_v_scroll & 7;
-        uint32_t b_y_coarse = b_v_scroll >> 3;
-        uint32_t b_y_fine = b_v_scroll & 7;
-        uint32_t a_y_adjusted = y + (a_y_coarse << 3) + a_y_fine;
-        uint32_t b_y_adjusted = y + (b_y_coarse << 3) + b_y_fine;
-        uint32_t a_y_address = ((a_y_adjusted >> 3) & (plane_height - 1)) * plane_width * 2;
-        uint32_t b_y_address = ((b_y_adjusted >> 3) & (plane_height - 1)) * plane_width * 2;
-
-
-        uint16_t a_h_scroll = (vram[hscroll_loc + 0] << 8) | vram[hscroll_loc + 1];
-        a_h_scroll &= 0x3FF;
-        uint16_t b_h_scroll = (vram[hscroll_loc + 2] << 8) | vram[hscroll_loc + 3];
-        b_h_scroll &= 0x3FF;
-
-        uint32_t *fb = &frame_buffer[y * 320];
-        uint32_t a_x = -((8 - (a_h_scroll & 0x7)) & 7);
-        uint32_t b_x = -((8 - (b_h_scroll & 0x7)) & 7);
-        uint32_t win_x = 0;
+        uint16_t a_h_scroll = std::byteswap(*(uint16_t *)&vram[hscroll_loc + 0]) & 0x3FF;
+        uint16_t b_h_scroll = std::byteswap(*(uint16_t *)&vram[hscroll_loc + 2]) & 0x3FF;
 
         uint32_t a_nt = (reg[0x02] & 0x38) << 10;
         uint32_t b_nt = (reg[0x04] & 0x7) << 13;
+        uint32_t win_nt = (reg[0x03] & 0x3E) << 10;
 
-        int column_count = reg[0x0C] & 1 ? 41 : 33;
+        draw_plane(a_pixels, a_palette, a_priorities, a_nt, a_v_scroll, a_h_scroll);
+        draw_plane(b_pixels, b_palette, b_priorities, b_nt, b_v_scroll, b_h_scroll);
+        draw_plane(win_pixels, win_palette, win_priorities, win_nt, 0, 0);
 
-        for (int column = 0; column < column_count; column++) {
-            uint32_t a_nt_column = (((column * 8) - a_h_scroll) >> 3) & (plane_width - 1);
-            uint32_t b_nt_column = (((column * 8) - b_h_scroll) >> 3) & (plane_width - 1);
-            
-            uint16_t a_nt_address = a_nt + a_y_address + (a_nt_column * 2);
-            uint16_t b_nt_address = b_nt + b_y_address + (b_nt_column * 2);
-
-            uint32_t a_tile = (vram[a_nt_address] << 8) | vram[a_nt_address + 1];
-            uint32_t b_tile = (vram[b_nt_address] << 8) | vram[b_nt_address + 1];
-
-            uint32_t a_tile_number = a_tile & 0x7FF;
-            uint32_t b_tile_number = b_tile & 0x7FF;
-            uint8_t a_priority = a_tile >> 15;
-            uint8_t b_priority = b_tile >> 15;
-            uint32_t a_h_flip = a_tile & 0x800 ? 7 : 0;
-            uint32_t b_h_flip = b_tile & 0x800 ? 7 : 0;
-            uint32_t a_v_flip = a_tile & 0x1000 ? 7 : 0;
-            uint32_t b_v_flip = b_tile & 0x1000 ? 7 : 0;
-            uint8_t a_pal = (a_tile >> 13) & 0x3;
-            uint8_t b_pal = (b_tile >> 13) & 0x3;
-            const uint32_t bytes_per_tile = 32;
-            const uint32_t bytes_per_tile_row = bytes_per_tile / 8;
-            uint32_t a_pattern_address = a_tile_number * bytes_per_tile + (((a_y_adjusted & 7) ^ a_v_flip) * bytes_per_tile_row);
-            uint32_t b_pattern_address = b_tile_number * bytes_per_tile + (((b_y_adjusted & 7) ^ b_v_flip) * bytes_per_tile_row);
-            uint32_t a_pattern = *((uint32_t *)&vram[a_pattern_address]);
-            a_pattern = std::byteswap(a_pattern);
-            uint32_t b_pattern = *((uint32_t *)&vram[b_pattern_address]);
-            b_pattern = std::byteswap(b_pattern);
-
-            for (int p = 0; p < 8; p++) {
-                if (a_x < x_res) {
-
-                    uint8_t a_pixel = (a_pattern >> ((7 - (p ^ a_h_flip)) * 4)) & 0xF;
-                    a_pixels[a_x] = a_pixel;
-                    a_palette[a_x] = a_pal;
-                    a_priorities[a_x] = a_priority;
-                }
-                a_x++;
-            }
-            for (int p = 0; p < 8; p++) {
-                if (b_x < x_res) {
-                        
-                    uint8_t b_pixel = (b_pattern >> ((7 - (p ^ b_h_flip)) * 4)) & 0xF;
-                    b_pixels[b_x] = b_pixel;
-                    b_palette[b_x] = b_pal;
-                    b_priorities[b_x] = b_priority;
-                }
-                b_x++;
-            }
-
-            uint32_t win_nt = (reg[0x03] & 0x3E) << 10;
-            uint32_t win_y_address = ((line >> 3) & (32 - 1)) * 64 * 2;
-            uint16_t win_nt_address = win_nt + win_y_address + (column * 2);
-            uint32_t win_tile = (vram[win_nt_address] << 8) | vram[win_nt_address + 1];
-            uint32_t win_tile_number = win_tile & 0x7FF;
-            uint8_t win_priority = win_tile >> 15;
-            uint32_t win_h_flip = win_tile & 0x800 ? 7 : 0;
-            uint32_t win_v_flip = win_tile & 0x1000 ? 7 : 0;
-            uint8_t win_pal = (win_tile >> 13) & 0x3;
-            uint32_t win_pattern_address = win_tile_number * bytes_per_tile + (((line & 7) ^ win_v_flip) * bytes_per_tile_row);
-            uint32_t win_pattern = std::byteswap(*((uint32_t *)&vram[win_pattern_address]));
-                
-            for (int p = 0; p < 8; p++) {
-                if (win_x < x_res) {
-
-                    uint8_t win_pixel = (win_pattern >> ((7 - (p ^ win_h_flip)) * 4)) & 0xF;
-                    win_pixels[win_x] = win_pixel;
-                    win_palette[win_x] = win_pal;
-                    win_priorities[win_x] = win_priority;
-                }
-                win_x++;
-            }
-
-        }
         bool in_h_window = false;
+        uint32_t *fb = &frame_buffer[line * 320];
 
         for (int i = 0; i < x_res; i++) {
             uint8_t pixel = reg[0x07] & 0xF;
@@ -459,11 +419,13 @@ void c_vdp::draw_scanline()
                 }
             }
 
+            bool in_win = in_window || in_h_window;
+            
             if (!b_priorities[i] && b_pixels[i]) {
                 pixel = b_pixels[i];
                 palette = b_palette[i];
             }
-            if (in_window || in_h_window) {
+            if (in_win) {
                 if (!win_priorities[i] && win_pixels[i]) {
                     pixel = win_pixels[i];
                     palette = win_palette[i];
@@ -486,7 +448,7 @@ void c_vdp::draw_scanline()
                 palette = b_palette[i];
             }
 
-            if (in_window || in_h_window) {
+            if (in_win) {
                 if (win_priorities[i] && win_pixels[i]) {
                     pixel = win_pixels[i];
                     palette = win_palette[i];
@@ -504,7 +466,6 @@ void c_vdp::draw_scanline()
                 palette = (sprite >> 4) & 3;
             }
 
-
             if (reg[0x01] & 0x40) {
                 *fb = lookup_color(palette, pixel);
             }
@@ -514,7 +475,6 @@ void c_vdp::draw_scanline()
 
             fb++;
         }
-
     }
 
     if (--hint_counter == 0) {
@@ -554,9 +514,9 @@ void c_vdp::draw_scanline()
 void c_vdp::eval_sprites()
 {
     uint16_t sprite_table_base = (reg[0x05] & (x_res == 320 ? 0x7E : 0x7F)) << 9;
-    
+
     memset(sprite_buf, -1, sizeof(sprite_buf));
-    
+
     const uint32_t sprites_per_frame = (x_res == 320 ? 80 : 64);
     const uint32_t sprites_per_scanline = (x_res == 320 ? 20 : 16);
     uint32_t sprite_number = 0;
@@ -587,9 +547,9 @@ void c_vdp::eval_sprites()
         if (mask_low_priority) {
             continue;
         }
-        
+
         uint32_t sprite_here = 0;
-        
+
         for (int v = 0; v < vsize + 1; v++) {
             int32_t y_base = y + v * 8;
             if (line >= y_base && line < y_base + 8) {
@@ -601,7 +561,7 @@ void c_vdp::eval_sprites()
                         mask_low_priority = 1;
                     }
                 }
-                
+
                 /*if (!first_sprite && hpos == 0) {
                     mask_low_priority = 1;
                 }*/
@@ -650,9 +610,7 @@ void c_vdp::eval_sprites()
             break;
         }
         sprite_number = next;
-
     }
-
 }
 
 void c_vdp::clear_hblank()
@@ -715,6 +673,5 @@ void c_vdp::do_68k_dma()
     } while (len != 0);
     int x = 1;
 }
-
 
 } //namespace genesis
