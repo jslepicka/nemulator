@@ -110,18 +110,8 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
                 case ADDRESS_TYPE::CRAM_WRITE:
                     a &= 0x7F;
                     cram[a] = value >> 8;
-                    cram[a + 1] = value & 0xFF;                    
-#ifdef USE_BMI2
-                    cram_entry[a/2] = rgb[_pext_u32(value, 0xEEE)];
-#else
-                    {
-                    uint32_t color = ((value >> 0) & 0xE) * 16;
-                    color |= (((value >> 4) & 0xE) * 16) << 8;
-                    color |= (((value >> 8) & 0xE) * 16) << 16;
-                    color |= 0xFF000000;
-                    cram_entry[a] = color;
-                    }
-#endif
+                    cram[a + 1] = value & 0xFF;
+                    cram_entry[a] = rgb[_pext_u32(value, 0xEEE)];
                     break;
                 case ADDRESS_TYPE::VSRAM_WRITE:
                     a &= 0x7F;
@@ -258,11 +248,21 @@ void c_vdp::write_byte(uint32_t address, uint8_t value)
 
 uint32_t c_vdp::lookup_color(uint32_t pal, uint32_t index)
 {
-    int loc = pal * 16 + index;
+    int loc = pal * 32 + index * 2;
     return cram_entry[loc];
+    uint16_t entry = std::byteswap(*(uint16_t *)&cram[loc]);
+#ifdef USE_BMI2
+    return rgb[_pext_u32(entry, 0xEEE)];
+#else
+    uint32_t color = ((entry >> 0) & 0xE) * 16;
+    color |= (((entry >> 4) & 0xE) * 16) << 8;
+    color |= (((entry >> 8) & 0xE) * 16) << 16;
+    color |= 0xFF000000;
+    return color;
+#endif
 }
 
-void c_vdp::render_plane_line(uint8_t *pixels, uint32_t nt, uint32_t v_scroll,
+void c_vdp::draw_plane(uint8_t *pixels, uint8_t *palette, uint8_t *priorities, uint32_t nt, uint32_t v_scroll,
                        uint32_t h_scroll)
 {
     uint32_t vscroll_mode = reg[0x0B] & 0x4;
@@ -298,7 +298,9 @@ void c_vdp::render_plane_line(uint8_t *pixels, uint32_t nt, uint32_t v_scroll,
             if (x < x_res) {
 
                 uint8_t pixel = (pattern >> ((7 - (p ^ h_flip)) * 4)) & 0xF;
-                pixels[x] = pixel | (pal << 4) | (priority << 6);
+                pixels[x] = pixel;
+                palette[x] = pal;
+                priorities[x] = priority;
             }
             x++;
         }
@@ -328,15 +330,20 @@ uint16_t c_vdp::get_hscroll_loc()
 
 void c_vdp::draw_scanline()
 {
+    uint32_t vscroll_mode = reg[0x0B] & 0x4;
+    uint32_t a_v_scroll = 0;
+    uint32_t b_v_scroll = 0;
+    if (vscroll_mode == 0) {
+        a_v_scroll = std::byteswap(*(uint16_t *)&vsram[0]) & 0x3FF;
+        b_v_scroll = std::byteswap(*(uint16_t *)&vsram[2]) & 0x3FF;
+    }
+    else {
+        int x = 1;
+    }
+
     if (line < 224) {
         eval_sprites();
-        uint32_t vscroll_mode = reg[0x0B] & 0x4;
-        uint32_t a_v_scroll = 0;
-        uint32_t b_v_scroll = 0;
-        if (vscroll_mode == 0) {
-            a_v_scroll = std::byteswap(*(uint16_t *)&vsram[0]) & 0x3FF;
-            b_v_scroll = std::byteswap(*(uint16_t *)&vsram[2]) & 0x3FF;
-        }
+
         uint8_t vp = reg[0x12] & 0x1F;
         uint8_t hp = reg[0x11] & 0x1F;
         bool in_window = false;
@@ -367,9 +374,9 @@ void c_vdp::draw_scanline()
         uint32_t b_nt = (reg[0x04] & 0x7) << 13;
         uint32_t win_nt = (reg[0x03] & 0x3E) << 10;
 
-        render_plane_line(a_pixels, a_nt, a_v_scroll, a_h_scroll);
-        render_plane_line(b_pixels, b_nt, b_v_scroll, b_h_scroll);
-        render_plane_line(win_pixels, win_nt, 0, 0);
+        draw_plane(a_pixels, a_palette, a_priorities, a_nt, a_v_scroll, a_h_scroll);
+        draw_plane(b_pixels, b_palette, b_priorities, b_nt, b_v_scroll, b_h_scroll);
+        draw_plane(win_pixels, win_palette, win_priorities, win_nt, 0, 0);
 
         bool in_h_window = false;
         uint32_t *fb = &frame_buffer[line * 320];
@@ -402,7 +409,9 @@ void c_vdp::draw_scanline()
                             //pretty kludgey...
                             for (int j = i; j < i + (a_h_scroll & 0xF); j++) {
                                 int src = (j + 16) % x_res;
+                                a_priorities[j] = a_priorities[src];
                                 a_pixels[j] = a_pixels[src];
+                                a_palette[j] = a_palette[src];
                             }
                         }
                         in_h_window = false;
@@ -411,29 +420,50 @@ void c_vdp::draw_scanline()
             }
 
             bool in_win = in_window || in_h_window;
+            
+            if (!b_priorities[i] && b_pixels[i]) {
+                pixel = b_pixels[i];
+                palette = b_palette[i];
+            }
+            if (in_win) {
+                if (!win_priorities[i] && win_pixels[i]) {
+                    pixel = win_pixels[i];
+                    palette = win_palette[i];
+                }
+            }
+            else {
+                if (!a_priorities[i] && a_pixels[i]) {
+                    pixel = a_pixels[i];
+                    palette = a_palette[i];
+                }
+            }
 
-            for (int priority = 0; priority <= 1; priority++) {
-                if ((b_pixels[i] & 0x40) == (priority * 0x40) && (b_pixels[i] & 0xF)) {
-                    pixel = b_pixels[i] & 0xF;
-                    palette = (b_pixels[i] >> 4) & 0x3;
-                }
-                if (in_win) {
-                    if ((win_pixels[i] & 0x40) == (priority * 0x40) && (win_pixels[i] & 0xF)) {
-                        pixel = win_pixels[i] & 0xF;
-                        palette = (win_pixels[i] >> 4) & 0x3;
-                    }
-                }
-                else {
-                    if ((a_pixels[i] & 0x40) == (priority * 0x40) && (a_pixels[i] & 0xF)) {
-                        pixel = a_pixels[i] & 0xF;
-                        palette = (a_pixels[i] >> 4) & 0x3;
-                    }
-                }
+            if (sprite_here && !(sprite & 0x40) && (sprite & 0xF) != 0) {
+                pixel = sprite & 0xF;
+                palette = (sprite >> 4) & 3;
+            }
 
-                if (sprite_here && (sprite & 0x40) == (priority * 0x40) && (sprite & 0xF) != 0) {
-                    pixel = sprite & 0xF;
-                    palette = (sprite >> 4) & 3;
+            if (b_priorities[i] && b_pixels[i]) {
+                pixel = b_pixels[i];
+                palette = b_palette[i];
+            }
+
+            if (in_win) {
+                if (win_priorities[i] && win_pixels[i]) {
+                    pixel = win_pixels[i];
+                    palette = win_palette[i];
                 }
+            }
+            else {
+                if (a_priorities[i] && a_pixels[i]) {
+                    pixel = a_pixels[i];
+                    palette = a_palette[i];
+                }
+            }
+
+            if (sprite_here && sprite & 0x40 && (sprite & 0xF) != 0) {
+                pixel = sprite & 0xF;
+                palette = (sprite >> 4) & 3;
             }
 
             if (reg[0x01] & 0x40) {
