@@ -111,7 +111,17 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
                     a &= 0x7F;
                     cram[a] = value >> 8;
                     cram[a + 1] = value & 0xFF;
-                    cram_entry[a] = rgb[_pext_u32(value, 0xEEE)];
+#ifdef USE_BMI2
+                    cram_entry[a >> 1] = rgb[_pext_u32(value, 0xEEE)];
+#else
+                    {
+                        uint32_t color = ((value >> 0) & 0xE) * 16;
+                        color |= (((value >> 4) & 0xE) * 16) << 8;
+                        color |= (((value >> 8) & 0xE) * 16) << 16;
+                        color |= 0xFF000000;
+                        cram_entry[a >> 1] = color;
+                    }
+#endif
                     break;
                 case ADDRESS_TYPE::VSRAM_WRITE:
                     a &= 0x7F;
@@ -248,18 +258,8 @@ void c_vdp::write_byte(uint32_t address, uint8_t value)
 
 uint32_t c_vdp::lookup_color(uint32_t pal, uint32_t index)
 {
-    int loc = pal * 32 + index * 2;
+    int loc = pal * 16 + index;
     return cram_entry[loc];
-    uint16_t entry = std::byteswap(*(uint16_t *)&cram[loc]);
-#ifdef USE_BMI2
-    return rgb[_pext_u32(entry, 0xEEE)];
-#else
-    uint32_t color = ((entry >> 0) & 0xE) * 16;
-    color |= (((entry >> 4) & 0xE) * 16) << 8;
-    color |= (((entry >> 8) & 0xE) * 16) << 16;
-    color |= 0xFF000000;
-    return color;
-#endif
 }
 
 void c_vdp::draw_plane(uint8_t *pixels, uint8_t *palette, uint8_t *priorities, uint32_t nt, uint32_t v_scroll,
@@ -346,7 +346,7 @@ void c_vdp::draw_scanline()
 
         uint8_t vp = reg[0x12] & 0x1F;
         uint8_t hp = reg[0x11] & 0x1F;
-        bool in_window = false;
+        bool in_v_window = false;
         if (vp) {
             //vertical window set
             int x = 1;
@@ -354,13 +354,13 @@ void c_vdp::draw_scanline()
             if (reg[0x12] & 0x80) {
                 //draw from vp to bottom
                 if (line >= (vp * 8)) {
-                    in_window = true;
+                    in_v_window = true;
                 }
             }
             else {
                 //draw from top to vp
                 if (line < (vp * 8)) {
-                    in_window = true;
+                    in_v_window = true;
                 }
             }
         }
@@ -388,7 +388,7 @@ void c_vdp::draw_scanline()
             uint8_t sprite = sprite_buf[i];
             bool sprite_here = sprite != 0xFF;
 
-            if (hp && !in_window) {
+            if (hp && !in_v_window) {
                 if (reg[0x11] & 0x80) {
                     //from hp to right edge
                     if (i >= (hp * 16)) {
@@ -419,7 +419,7 @@ void c_vdp::draw_scanline()
                 }
             }
 
-            bool in_win = in_window || in_h_window;
+            bool in_win = in_v_window || in_h_window;
             
             if (!b_priorities[i] && b_pixels[i]) {
                 pixel = b_pixels[i];

@@ -79,7 +79,6 @@ export class c_vdp
     uint32_t asserting_vblank;
     uint32_t asserting_hblank;
     uint8_t hint_counter;
-    bool in_window;
     void update_ipl();
 
     void draw_plane(

@@ -2367,10 +2367,10 @@ uint32_t c_m68k::compute_ea()
     uint32_t v;
     int16_t displacement;
     uint32_t index;
-    uint32_t i_size = immediate_size != -1 ? immediate_size : op_size;
+    //uint32_t i_size = immediate_size != -1 ? immediate_size : op_size;
     switch (address_mode) {
     case ADDRESS_MODE::IMMEDIATE:
-        switch (i_size) {
+            switch (immediate_size != -1 ? immediate_size : op_size) {
         case SIZE_BYTE:
             v = read_word(pc) & 0xFF;
             pc += 2;
