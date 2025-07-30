@@ -2,6 +2,7 @@ module;
 #include <Windows.h>
 #include <cassert>
 #include <immintrin.h>
+#include <intrin.h>
 module genesis:vdp;
 
 #define USE_BMI2
@@ -263,7 +264,7 @@ uint32_t c_vdp::lookup_color(uint32_t pal, uint32_t index)
 }
 
 void c_vdp::draw_plane(uint8_t *pixels, uint8_t *palette, uint8_t *priorities, uint32_t nt, uint32_t v_scroll,
-                       uint32_t h_scroll)
+                       uint32_t h_scroll, uint32_t low_pri_val, uint32_t hi_pri_val)
 {
     uint32_t vscroll_mode = reg[0x0B] & 0x4;
    
@@ -287,6 +288,8 @@ void c_vdp::draw_plane(uint8_t *pixels, uint8_t *palette, uint8_t *priorities, u
         uint32_t v_flip = tile & 0x1000 ? 7 : 0;
         uint8_t pal = (tile >> 13) & 0x3;
 
+        int shift_amount = low_pri_val << (4 * priority);
+
         const uint32_t bytes_per_tile = 32;
         const uint32_t bytes_per_tile_row = bytes_per_tile / 8;
         uint32_t pattern_address =
@@ -300,7 +303,16 @@ void c_vdp::draw_plane(uint8_t *pixels, uint8_t *palette, uint8_t *priorities, u
                 uint8_t pixel = (pattern >> ((7 - (p ^ h_flip)) * 4)) & 0xF;
                 pixels[x] = pixel;
                 palette[x] = pal;
-                priorities[x] = priority;
+                //priorities[x] = priority;
+                if (pixel) {
+                    //if (priority) {
+                    //    xpriorities[x] |= hi_pri_val;
+                    //}
+                    //else {
+                    //    xpriorities[x] |= low_pri_val;
+                    //}
+                    xpriorities[x] |= shift_amount;
+                }
             }
             x++;
         }
@@ -342,6 +354,7 @@ void c_vdp::draw_scanline()
     }
 
     if (line < 224) {
+        memset(xpriorities, 0, sizeof(xpriorities));
         eval_sprites();
 
         uint8_t vp = reg[0x12] & 0x1F;
@@ -374,16 +387,18 @@ void c_vdp::draw_scanline()
         uint32_t b_nt = (reg[0x04] & 0x7) << 13;
         uint32_t win_nt = (reg[0x03] & 0x3E) << 10;
 
-        draw_plane(a_pixels, a_palette, a_priorities, a_nt, a_v_scroll, a_h_scroll);
-        draw_plane(b_pixels, b_palette, b_priorities, b_nt, b_v_scroll, b_h_scroll);
-        draw_plane(win_pixels, win_palette, win_priorities, win_nt, 0, 0);
+        draw_plane(a_pixels, a_palette, 0, a_nt, a_v_scroll, a_h_scroll, 1 << 1, 1 << 5);
+        draw_plane(b_pixels, b_palette, 0, b_nt, b_v_scroll, b_h_scroll, 1 << 0, 1 << 4);
+        draw_plane(win_pixels, win_palette, 0, win_nt, 0, 0, 1 << 2, 1 << 6);
 
         bool in_h_window = false;
         uint32_t *fb = &frame_buffer[line * 320];
 
         for (int i = 0; i < x_res; i++) {
-            uint8_t pixel = reg[0x07] & 0xF;
-            uint8_t palette = (reg[0x07] >> 4) & 0x3;
+            //uint8_t pixel = reg[0x07] & 0xF;
+            //uint8_t palette = (reg[0x07] >> 4) & 0x3;
+            uint8_t pixel;
+            uint8_t palette;
 
             uint8_t sprite = sprite_buf[i];
             bool sprite_here = sprite != 0xFF;
@@ -409,7 +424,7 @@ void c_vdp::draw_scanline()
                             //pretty kludgey...
                             for (int j = i; j < i + (a_h_scroll & 0xF); j++) {
                                 int src = (j + 16) % x_res;
-                                a_priorities[j] = a_priorities[src];
+                                //a_priorities[j] = a_priorities[src];
                                 a_pixels[j] = a_pixels[src];
                                 a_palette[j] = a_palette[src];
                             }
@@ -419,52 +434,81 @@ void c_vdp::draw_scanline()
                 }
             }
 
-            bool in_win = in_v_window || in_h_window;
+            int in_win = in_v_window || in_h_window;
+            in_win *= 0xFF;
+
+            uint32_t p = (in_win & (xpriorities[i] & 0x44)) | (xpriorities[i] & ~0x44);
+
+            uint32_t c = _lzcnt_u32(p);
             
-            if (!b_priorities[i] && b_pixels[i]) {
-                pixel = b_pixels[i];
-                palette = b_palette[i];
-            }
-            if (in_win) {
-                if (!win_priorities[i] && win_pixels[i]) {
+            switch (c) {
+                case 16+16:
+                    pixel = reg[0x07] & 0xF;
+                    palette = (reg[0x07] >> 4) & 0x3;
+                    break;
+                case 16+12:
+                case 16+8:
+                    pixel = sprite & 0xF;
+                    palette = (sprite >> 4) & 0x3;
+                    break;
+                case 16+13:
+                case 16+9:
                     pixel = win_pixels[i];
                     palette = win_palette[i];
-                }
-            }
-            else {
-                if (!a_priorities[i] && a_pixels[i]) {
+                    break;
+                case 16+14:
+                case 16+10:
                     pixel = a_pixels[i];
                     palette = a_palette[i];
+                    break;
+                case 16+15:
+                case 16+11:
+                    pixel = b_pixels[i];
+                    palette = b_palette[i];
+                    break;
+                default: {
+                    __assume(0);
                 }
+
             }
 
-            if (sprite_here && !(sprite & 0x40) && (sprite & 0xF) != 0) {
-                pixel = sprite & 0xF;
-                palette = (sprite >> 4) & 3;
-            }
 
-            if (b_priorities[i] && b_pixels[i]) {
-                pixel = b_pixels[i];
-                palette = b_palette[i];
-            }
-
-            if (in_win) {
-                if (win_priorities[i] && win_pixels[i]) {
-                    pixel = win_pixels[i];
-                    palette = win_palette[i];
-                }
-            }
-            else {
-                if (a_priorities[i] && a_pixels[i]) {
-                    pixel = a_pixels[i];
-                    palette = a_palette[i];
-                }
-            }
-
-            if (sprite_here && sprite & 0x40 && (sprite & 0xF) != 0) {
-                pixel = sprite & 0xF;
-                palette = (sprite >> 4) & 3;
-            }
+            //if (sprite_here && sprite & 0x40 && (sprite & 0xF) != 0) {
+            //    pixel = sprite & 0xF;
+            //    palette = (sprite >> 4) & 3;
+            //}
+            //else if (in_win && win_priorities[i] && win_pixels[i]) {
+            //    pixel = win_pixels[i];
+            //    palette = win_palette[i];
+            //}
+            //else if (a_priorities[i] && a_pixels[i]) {
+            //    pixel = a_pixels[i];
+            //    palette = a_palette[i];
+            //}
+            //else if (b_priorities[i] && b_pixels[i]) {
+            //    pixel = b_pixels[i];
+            //    palette = b_palette[i];
+            //}
+            //else if (sprite_here && !(sprite & 0x40) && (sprite & 0xF) != 0) {
+            //    pixel = sprite & 0xF;
+            //    palette = (sprite >> 4) & 3;
+            //}
+            //else if (in_win && !win_priorities[i] && win_pixels[i]) {
+            //    pixel = win_pixels[i];
+            //    palette = win_palette[i];
+            //}
+            //else if (!a_priorities[i] && a_pixels[i]) {
+            //    pixel = a_pixels[i];
+            //    palette = a_palette[i];
+            //}
+            //else if (!b_priorities[i] && b_pixels[i]) {
+            //    pixel = b_pixels[i];
+            //    palette = b_palette[i];
+            //}
+            //else {
+            //    pixel = reg[0x07] & 0xF;
+            //    palette = (reg[0x07] >> 4) & 0x3;
+            //}
 
             if (reg[0x01] & 0x40) {
                 *fb = lookup_color(palette, pixel);
@@ -592,6 +636,14 @@ void c_vdp::eval_sprites()
                                 }
                             }
                             uint8_t color = (pattern >> ((7 - (p ^ h_flip)) * 4)) & 0xF;
+                            if (color) {
+                                if (priority) {
+                                    xpriorities[j] |= (1 << 7);
+                                }
+                                else {
+                                    xpriorities[j] |= (1 << 3);
+                                }
+                            }
                             color |= palette;
                             if (priority) {
                                 color |= 0x40;

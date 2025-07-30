@@ -87,19 +87,23 @@ export class c_vdp
         uint8_t *priorities,
         uint32_t nt,
         uint32_t v_scroll,
-        uint32_t h_scroll
+        uint32_t h_scroll,
+        uint32_t low_pri_val,
+        uint32_t hi_pri_val
         );
     uint16_t get_hscroll_loc();
 
     uint8_t a_pixels[320] = {0};
     uint8_t a_palette[320] = {0};
-    uint8_t a_priorities[320] = {0};
+    //uint8_t a_priorities[320] = {0};
     uint8_t b_pixels[320] = {0};
     uint8_t b_palette[320] = {0};
-    uint8_t b_priorities[320] = {0};
+    //uint8_t b_priorities[320] = {0};
     uint8_t win_pixels[320] = {0};
     uint8_t win_palette[320] = {0};
-    uint8_t win_priorities[320] = {0};
+    //uint8_t win_priorities[320] = {0};
+
+    uint8_t xpriorities[320] = {0};
 
     void eval_sprites();
     uint32_t rgb[512];
