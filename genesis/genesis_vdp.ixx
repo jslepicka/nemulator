@@ -68,6 +68,9 @@ export class c_vdp
     uint32_t cram_entry[128];
     uint8_t vsram[80];
     uint8_t vram[64 * 1024];
+    uint8_t bg_pixel;
+    uint8_t bg_palette;
+    uint8_t bg_combo;
 
     void update_x_res();
 
@@ -82,32 +85,24 @@ export class c_vdp
     void update_ipl();
 
     void draw_plane(
-        uint8_t *pixels,
-        uint8_t *palette,
-        uint8_t *priorities,
+        uint8_t *combo,
         uint32_t nt,
         uint32_t v_scroll,
         uint32_t h_scroll,
-        uint32_t low_pri_val,
-        uint32_t hi_pri_val
+        uint32_t low_pri_val
         );
     uint16_t get_hscroll_loc();
 
-    uint8_t a_pixels[320] = {0};
-    uint8_t a_palette[320] = {0};
-    //uint8_t a_priorities[320] = {0};
-    uint8_t b_pixels[320] = {0};
-    uint8_t b_palette[320] = {0};
-    //uint8_t b_priorities[320] = {0};
-    uint8_t win_pixels[320] = {0};
-    uint8_t win_palette[320] = {0};
-    //uint8_t win_priorities[320] = {0};
-
+    uint8_t a_combo[320] = {0};
+    uint8_t b_combo[320] = {0};
+    uint8_t win_combo[320] = {0};
+    uint8_t sprite_combo[320] = {0};
     uint8_t xpriorities[320] = {0};
+    uint8_t *combo_ptrs[4];
 
     void eval_sprites();
     uint32_t rgb[512];
-    uint8_t sprite_buf[320];
+    
 
   public:
     uint32_t frame_buffer[320 * 224];

@@ -24,6 +24,11 @@ c_vdp::c_vdp(uint8_t *ipl, read_word_t read_word_68k, mode_switch_callback_t mod
         color |= ((((i >> 6) & 7) * 32)) << 16;
         rgb[i] = color;
     }
+    
+    combo_ptrs[0] = sprite_combo;
+    combo_ptrs[1] = win_combo;
+    combo_ptrs[2] = a_combo;
+    combo_ptrs[3] = b_combo;
 }
 
 c_vdp::~c_vdp()
@@ -50,6 +55,8 @@ void c_vdp::reset()
     update_ipl();
     hint_counter = 0;
     x_res = 320;
+    bg_pixel = 0;
+    bg_palette = 0;
 }
 
 uint16_t c_vdp::read_word(uint32_t address)
@@ -150,6 +157,11 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
                 uint8_t reg_value = value & 0xFF;
                 reg[reg_number] = reg_value;
                 switch (reg_number) {
+                    case 0x07:
+                        bg_pixel = reg_value & 0xF;
+                        bg_palette = (reg_value >> 4) & 0x3;
+                        bg_combo = reg_value & 0x3F;
+                        break;
                     case 0x10:
                         plane_width = 32 + (reg_value & 0x3) * 32;
                         plane_height = 32 + ((reg_value >> 4) & 0x3) * 32;
@@ -263,8 +275,8 @@ uint32_t c_vdp::lookup_color(uint32_t pal, uint32_t index)
     return cram_entry[loc];
 }
 
-void c_vdp::draw_plane(uint8_t *pixels, uint8_t *palette, uint8_t *priorities, uint32_t nt, uint32_t v_scroll,
-                       uint32_t h_scroll, uint32_t low_pri_val, uint32_t hi_pri_val)
+void c_vdp::draw_plane(uint8_t *combo, uint32_t nt, uint32_t v_scroll,
+                       uint32_t h_scroll, uint32_t low_pri_val)
 {
     uint32_t vscroll_mode = reg[0x0B] & 0x4;
    
@@ -286,7 +298,7 @@ void c_vdp::draw_plane(uint8_t *pixels, uint8_t *palette, uint8_t *priorities, u
         uint8_t priority = tile >> 15;
         uint32_t h_flip = tile & 0x800 ? 7 : 0;
         uint32_t v_flip = tile & 0x1000 ? 7 : 0;
-        uint8_t pal = (tile >> 13) & 0x3;
+        uint8_t pal = ((tile >> 13) & 0x3) << 4;
 
         int shift_amount = low_pri_val << (4 * priority);
 
@@ -296,22 +308,15 @@ void c_vdp::draw_plane(uint8_t *pixels, uint8_t *palette, uint8_t *priorities, u
             tile_number * bytes_per_tile + (((y & 7) ^ v_flip) * bytes_per_tile_row);
 
         uint32_t pattern = std::byteswap(*((uint32_t *)&vram[pattern_address]));
-        
+
         for (int p = 0; p < 8; p++) {
             if (x < x_res) {
 
                 uint8_t pixel = (pattern >> ((7 - (p ^ h_flip)) * 4)) & 0xF;
-                pixels[x] = pixel;
-                palette[x] = pal;
-                //priorities[x] = priority;
+
                 if (pixel) {
-                    //if (priority) {
-                    //    xpriorities[x] |= hi_pri_val;
-                    //}
-                    //else {
-                    //    xpriorities[x] |= low_pri_val;
-                    //}
                     xpriorities[x] |= shift_amount;
+                    combo[x] = pal | pixel;
                 }
             }
             x++;
@@ -387,21 +392,15 @@ void c_vdp::draw_scanline()
         uint32_t b_nt = (reg[0x04] & 0x7) << 13;
         uint32_t win_nt = (reg[0x03] & 0x3E) << 10;
 
-        draw_plane(a_pixels, a_palette, 0, a_nt, a_v_scroll, a_h_scroll, 1 << 1, 1 << 5);
-        draw_plane(b_pixels, b_palette, 0, b_nt, b_v_scroll, b_h_scroll, 1 << 0, 1 << 4);
-        draw_plane(win_pixels, win_palette, 0, win_nt, 0, 0, 1 << 2, 1 << 6);
+        draw_plane(a_combo, a_nt, a_v_scroll, a_h_scroll, 1 << 1);
+        draw_plane(b_combo, b_nt, b_v_scroll, b_h_scroll, 1 << 0);
+        draw_plane(win_combo, win_nt, 0, 0, 1 << 2);
 
         bool in_h_window = false;
         uint32_t *fb = &frame_buffer[line * 320];
 
         for (int i = 0; i < x_res; i++) {
-            //uint8_t pixel = reg[0x07] & 0xF;
-            //uint8_t palette = (reg[0x07] >> 4) & 0x3;
-            uint8_t pixel;
-            uint8_t palette;
 
-            uint8_t sprite = sprite_buf[i];
-            bool sprite_here = sprite != 0xFF;
 
             if (hp && !in_v_window) {
                 if (reg[0x11] & 0x80) {
@@ -424,9 +423,9 @@ void c_vdp::draw_scanline()
                             //pretty kludgey...
                             for (int j = i; j < i + (a_h_scroll & 0xF); j++) {
                                 int src = (j + 16) % x_res;
-                                //a_priorities[j] = a_priorities[src];
-                                a_pixels[j] = a_pixels[src];
-                                a_palette[j] = a_palette[src];
+                                xpriorities[j] &= ~0x22;
+                                xpriorities[j] |= xpriorities[src] & 0x22;
+                                a_combo[j] = a_combo[src];
                             }
                         }
                         in_h_window = false;
@@ -435,83 +434,24 @@ void c_vdp::draw_scanline()
             }
 
             int in_win = in_v_window || in_h_window;
-            in_win *= 0xFF;
+            //in_win *= 0xFF;
 
-            uint32_t p = (in_win & (xpriorities[i] & 0x44)) | (xpriorities[i] & ~0x44);
-
-            uint32_t c = _lzcnt_u32(p);
+            //uint32_t p = (in_win & (xpriorities[i] & 0x44)) | (xpriorities[i] & ~0x44);
+            uint32_t mask = in_win ? 0xFF : ~0x44;
+            uint32_t p = xpriorities[i] & mask;
+            uint8_t combo;
             
-            switch (c) {
-                case 16+16:
-                    pixel = reg[0x07] & 0xF;
-                    palette = (reg[0x07] >> 4) & 0x3;
-                    break;
-                case 16+12:
-                case 16+8:
-                    pixel = sprite & 0xF;
-                    palette = (sprite >> 4) & 0x3;
-                    break;
-                case 16+13:
-                case 16+9:
-                    pixel = win_pixels[i];
-                    palette = win_palette[i];
-                    break;
-                case 16+14:
-                case 16+10:
-                    pixel = a_pixels[i];
-                    palette = a_palette[i];
-                    break;
-                case 16+15:
-                case 16+11:
-                    pixel = b_pixels[i];
-                    palette = b_palette[i];
-                    break;
-                default: {
-                    __assume(0);
-                }
-
+            if (p) {
+                uint32_t c = _lzcnt_u32(p) & 3;
+                combo = combo_ptrs[c][i];
+            }
+            else {
+                combo = bg_combo;
             }
 
-
-            //if (sprite_here && sprite & 0x40 && (sprite & 0xF) != 0) {
-            //    pixel = sprite & 0xF;
-            //    palette = (sprite >> 4) & 3;
-            //}
-            //else if (in_win && win_priorities[i] && win_pixels[i]) {
-            //    pixel = win_pixels[i];
-            //    palette = win_palette[i];
-            //}
-            //else if (a_priorities[i] && a_pixels[i]) {
-            //    pixel = a_pixels[i];
-            //    palette = a_palette[i];
-            //}
-            //else if (b_priorities[i] && b_pixels[i]) {
-            //    pixel = b_pixels[i];
-            //    palette = b_palette[i];
-            //}
-            //else if (sprite_here && !(sprite & 0x40) && (sprite & 0xF) != 0) {
-            //    pixel = sprite & 0xF;
-            //    palette = (sprite >> 4) & 3;
-            //}
-            //else if (in_win && !win_priorities[i] && win_pixels[i]) {
-            //    pixel = win_pixels[i];
-            //    palette = win_palette[i];
-            //}
-            //else if (!a_priorities[i] && a_pixels[i]) {
-            //    pixel = a_pixels[i];
-            //    palette = a_palette[i];
-            //}
-            //else if (!b_priorities[i] && b_pixels[i]) {
-            //    pixel = b_pixels[i];
-            //    palette = b_palette[i];
-            //}
-            //else {
-            //    pixel = reg[0x07] & 0xF;
-            //    palette = (reg[0x07] >> 4) & 0x3;
-            //}
-
+            
             if (reg[0x01] & 0x40) {
-                *fb = lookup_color(palette, pixel);
+                *fb = cram_entry[combo];
             }
             else {
                 *fb = 0xFF000000;
@@ -559,7 +499,7 @@ void c_vdp::eval_sprites()
 {
     uint16_t sprite_table_base = (reg[0x05] & (x_res == 320 ? 0x7E : 0x7F)) << 9;
 
-    memset(sprite_buf, -1, sizeof(sprite_buf));
+    memset(sprite_combo, -1, sizeof(sprite_combo));
 
     const uint32_t sprites_per_frame = (x_res == 320 ? 80 : 64);
     const uint32_t sprites_per_scanline = (x_res == 320 ? 20 : 16);
@@ -628,9 +568,9 @@ void c_vdp::eval_sprites()
                             return;
                         }
                         if (j >= 0 && j < x_res) {
-                            if (sprite_buf[j] != 0xFF) {
+                            if (sprite_combo[j] != 0xFF) {
                                 //there is already a sprite here
-                                if ((sprite_buf[j] & 0xF) != 0) {
+                                if ((sprite_combo[j] & 0xF) != 0) {
                                     //and it's not transparent
                                     continue;
                                 }
@@ -643,12 +583,8 @@ void c_vdp::eval_sprites()
                                 else {
                                     xpriorities[j] |= (1 << 3);
                                 }
+                                sprite_combo[j] = palette | color;
                             }
-                            color |= palette;
-                            if (priority) {
-                                color |= 0x40;
-                            }
-                            sprite_buf[j] = color;
                         }
                     }
                 }
