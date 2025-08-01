@@ -85,23 +85,35 @@ export class c_vdp
     void update_ipl();
 
     void draw_plane(
-        uint8_t *combo,
+        uint8_t *out,
         uint32_t nt,
         uint32_t v_scroll,
         uint32_t h_scroll,
-        uint32_t low_pri_val
+        uint32_t low_priority_val
         );
     uint16_t get_hscroll_loc();
 
-    uint8_t a_combo[320] = {0};
-    uint8_t b_combo[320] = {0};
-    uint8_t win_combo[320] = {0};
-    uint8_t sprite_combo[320] = {0};
-    uint8_t xpriorities[320] = {0};
-    uint8_t *combo_ptrs[4];
+    uint8_t a_out[320] = {0};
+    uint8_t b_out[320] = {0};
+    uint8_t win_out[320] = {0};
+    uint8_t sprite_out[320] = {0};
+    uint8_t priorities[320] = {0};
+    uint8_t *plane_ptrs[4];
 
     void eval_sprites();
     uint32_t rgb[512];
+
+    enum LAYER_PRIORITY
+    {
+        SPRITE_HIGH = 0,
+        WINDOW_HIGH = 1,
+        A_HIGH      = 2,
+        B_HIGH      = 3,
+        SPRITE_LOW  = 4,
+        WINDOW_LOW  = 5,
+        A_LOW       = 6,
+        B_LOW       = 7
+    };
     
 
   public:

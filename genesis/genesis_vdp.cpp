@@ -25,10 +25,10 @@ c_vdp::c_vdp(uint8_t *ipl, read_word_t read_word_68k, mode_switch_callback_t mod
         rgb[i] = color;
     }
     
-    combo_ptrs[0] = sprite_combo;
-    combo_ptrs[1] = win_combo;
-    combo_ptrs[2] = a_combo;
-    combo_ptrs[3] = b_combo;
+    plane_ptrs[0] = sprite_out;
+    plane_ptrs[1] = win_out;
+    plane_ptrs[2] = a_out;
+    plane_ptrs[3] = b_out;
 }
 
 c_vdp::~c_vdp()
@@ -275,7 +275,7 @@ uint32_t c_vdp::lookup_color(uint32_t pal, uint32_t index)
     return cram_entry[loc];
 }
 
-void c_vdp::draw_plane(uint8_t *combo, uint32_t nt, uint32_t v_scroll,
+void c_vdp::draw_plane(uint8_t *out, uint32_t nt, uint32_t v_scroll,
                        uint32_t h_scroll, uint32_t low_pri_val)
 {
     uint32_t vscroll_mode = reg[0x0B] & 0x4;
@@ -299,27 +299,68 @@ void c_vdp::draw_plane(uint8_t *combo, uint32_t nt, uint32_t v_scroll,
         uint32_t h_flip = tile & 0x800 ? 7 : 0;
         uint32_t v_flip = tile & 0x1000 ? 7 : 0;
         uint8_t pal = ((tile >> 13) & 0x3) << 4;
+        #ifdef USE_BMI2
+        uint64_t pal64 = pal * 0x0101010101010101;
+        #endif
 
-        int shift_amount = low_pri_val << (4 * priority);
+        int priority_shift = low_pri_val - (4 * priority);
+        int priority_bit = 1 << priority_shift;
 
         const uint32_t bytes_per_tile = 32;
         const uint32_t bytes_per_tile_row = bytes_per_tile / 8;
         uint32_t pattern_address =
             tile_number * bytes_per_tile + (((y & 7) ^ v_flip) * bytes_per_tile_row);
 
-        uint32_t pattern = std::byteswap(*((uint32_t *)&vram[pattern_address]));
+        uint32_t pattern = std::byteswap(*((uint32_t *)&vram[pattern_address]));        
 
-        for (int p = 0; p < 8; p++) {
-            if (x < x_res) {
+        if (x >= x_res || x + 7 >= x_res) {
+            for (int p = 0; p < 8; p++) {
+                if (x < x_res) {
 
+                    uint8_t pixel = (pattern >> ((7 - (p ^ h_flip)) * 4)) & 0xF;
+
+                    if (pixel) {
+                        priorities[x] |= priority_bit;
+                        out[x] = pal | pixel;
+                    }
+                }
+                x++;
+            }
+        }
+        else {
+            #ifdef USE_BMI2
+            uint64_t p2 = _pdep_u64(pattern, 0x0F0F0F0F0F0F0F0F);
+            // find non-zero nibbles in p2
+            // set the msb to 1
+            uint64_t pri = p2 | 0x8080808080808080;
+            // subtract 1.  If the value of the nibble is zero, there
+            // will be a carry from the MSB, setting it to 0
+            pri -= 0x0101010101010101;
+            // shift the MSBs into the correct priority position
+            pri &= 0x8080808080808080;
+            pri >>= 7 - priority_shift;
+            
+            p2 |= pal64;
+
+            if (!h_flip) {
+                p2 = std::byteswap(p2);
+                pri = std::byteswap(pri);
+            }
+
+            *((uint64_t *)&priorities[x]) |= pri;
+            *((uint64_t *)&out[x]) = p2;
+            x += 8;
+            #else
+            for (int p = 0; p < 8; p++) {
                 uint8_t pixel = (pattern >> ((7 - (p ^ h_flip)) * 4)) & 0xF;
 
                 if (pixel) {
-                    xpriorities[x] |= shift_amount;
-                    combo[x] = pal | pixel;
+                    priorities[x] |= priority_bit;
+                    out[x] = pal | pixel;
                 }
+                x++;
             }
-            x++;
+            #endif
         }
     }
 }
@@ -359,26 +400,30 @@ void c_vdp::draw_scanline()
     }
 
     if (line < 224) {
-        memset(xpriorities, 0, sizeof(xpriorities));
+        memset(priorities, 0, sizeof(priorities));
         eval_sprites();
 
         uint8_t vp = reg[0x12] & 0x1F;
         uint8_t hp = reg[0x11] & 0x1F;
-        bool in_v_window = false;
+        uint32_t in_window = 0;
+        const int DISABLE_WINDOW_PLANE = ~((1 << LAYER_PRIORITY::WINDOW_LOW) | (1 << LAYER_PRIORITY::WINDOW_HIGH));
+        const int DISABLE_A_PLANE = ~((1 << LAYER_PRIORITY::A_LOW) | (1 << LAYER_PRIORITY::A_HIGH));
+        uint32_t plane_mask = DISABLE_WINDOW_PLANE;
         if (vp) {
             //vertical window set
-            int x = 1;
 
             if (reg[0x12] & 0x80) {
                 //draw from vp to bottom
                 if (line >= (vp * 8)) {
-                    in_v_window = true;
+                    in_window = 0x1;
+                    plane_mask = DISABLE_A_PLANE;
                 }
             }
             else {
                 //draw from top to vp
                 if (line < (vp * 8)) {
-                    in_v_window = true;
+                    in_window = 0x1;
+                    plane_mask = DISABLE_A_PLANE;
                 }
             }
         }
@@ -392,66 +437,66 @@ void c_vdp::draw_scanline()
         uint32_t b_nt = (reg[0x04] & 0x7) << 13;
         uint32_t win_nt = (reg[0x03] & 0x3E) << 10;
 
-        draw_plane(a_combo, a_nt, a_v_scroll, a_h_scroll, 1 << 1);
-        draw_plane(b_combo, b_nt, b_v_scroll, b_h_scroll, 1 << 0);
-        draw_plane(win_combo, win_nt, 0, 0, 1 << 2);
+        draw_plane(a_out, a_nt, a_v_scroll, a_h_scroll, LAYER_PRIORITY::A_LOW);
+        draw_plane(b_out, b_nt, b_v_scroll, b_h_scroll, LAYER_PRIORITY::B_LOW);
+        draw_plane(win_out, win_nt, 0, 0, LAYER_PRIORITY::WINDOW_LOW);
 
-        bool in_h_window = false;
         uint32_t *fb = &frame_buffer[line * 320];
 
         for (int i = 0; i < x_res; i++) {
-
-
-            if (hp && !in_v_window) {
+            if (hp && !(in_window & 1)) {
                 if (reg[0x11] & 0x80) {
                     //from hp to right edge
                     if (i >= (hp * 16)) {
-                        in_h_window = true;
+                        in_window |= 0x2;
+                        plane_mask = DISABLE_A_PLANE;
                     }
                     else {
-                        in_h_window = false;
+                        in_window &= ~0x2;
+                        if (!in_window) {
+                            plane_mask = DISABLE_WINDOW_PLANE;
+                        }
                     }
                 }
                 else {
                     //from left edge to hp
                     if (i < (hp * 16)) {
-                        in_h_window = true;
+                        in_window |= 0x2;
+                        plane_mask = DISABLE_A_PLANE;
                     }
                     else {
-                        if (in_h_window && (a_h_scroll & 0xF)) {
+                        if ((in_window & 0x2) && (a_h_scroll & 0xF)) {
                             //emulate window bug
                             //pretty kludgey...
                             for (int j = i; j < i + (a_h_scroll & 0xF); j++) {
                                 int src = (j + 16) % x_res;
-                                xpriorities[j] &= ~0x22;
-                                xpriorities[j] |= xpriorities[src] & 0x22;
-                                a_combo[j] = a_combo[src];
+                                priorities[j] &= DISABLE_A_PLANE;
+                                priorities[j] |= priorities[src] & ~DISABLE_A_PLANE;
+                                a_out[j] = a_out[src];
                             }
                         }
-                        in_h_window = false;
+                        in_window &= ~0x2;
+                        if (!in_window) {
+                            plane_mask = DISABLE_WINDOW_PLANE;
+                        }
                     }
                 }
             }
-
-            int in_win = in_v_window || in_h_window;
-            //in_win *= 0xFF;
-
-            //uint32_t p = (in_win & (xpriorities[i] & 0x44)) | (xpriorities[i] & ~0x44);
-            uint32_t mask = in_win ? 0xFF : ~0x44;
-            uint32_t p = xpriorities[i] & mask;
-            uint8_t combo;
+            
+            uint32_t p = priorities[i] & plane_mask;
+            uint8_t out;
             
             if (p) {
-                uint32_t c = _lzcnt_u32(p) & 3;
-                combo = combo_ptrs[c][i];
+                uint32_t c = _tzcnt_u32(p) & 0x3;
+                out = plane_ptrs[c][i];
             }
             else {
-                combo = bg_combo;
+                out = bg_combo;
             }
 
             
             if (reg[0x01] & 0x40) {
-                *fb = cram_entry[combo];
+                *fb = cram_entry[out];
             }
             else {
                 *fb = 0xFF000000;
@@ -499,7 +544,7 @@ void c_vdp::eval_sprites()
 {
     uint16_t sprite_table_base = (reg[0x05] & (x_res == 320 ? 0x7E : 0x7F)) << 9;
 
-    memset(sprite_combo, -1, sizeof(sprite_combo));
+    memset(sprite_out, -1, sizeof(sprite_out));
 
     const uint32_t sprites_per_frame = (x_res == 320 ? 80 : 64);
     const uint32_t sprites_per_scanline = (x_res == 320 ? 20 : 16);
@@ -568,9 +613,9 @@ void c_vdp::eval_sprites()
                             return;
                         }
                         if (j >= 0 && j < x_res) {
-                            if (sprite_combo[j] != 0xFF) {
+                            if (sprite_out[j] != 0xFF) {
                                 //there is already a sprite here
-                                if ((sprite_combo[j] & 0xF) != 0) {
+                                if ((sprite_out[j] & 0xF) != 0) {
                                     //and it's not transparent
                                     continue;
                                 }
@@ -578,12 +623,12 @@ void c_vdp::eval_sprites()
                             uint8_t color = (pattern >> ((7 - (p ^ h_flip)) * 4)) & 0xF;
                             if (color) {
                                 if (priority) {
-                                    xpriorities[j] |= (1 << 7);
+                                    priorities[j] |= (1 << LAYER_PRIORITY::SPRITE_HIGH);
                                 }
                                 else {
-                                    xpriorities[j] |= (1 << 3);
+                                    priorities[j] |= (1 << LAYER_PRIORITY::SPRITE_LOW);
                                 }
-                                sprite_combo[j] = palette | color;
+                                sprite_out[j] = palette | color;
                             }
                         }
                     }
