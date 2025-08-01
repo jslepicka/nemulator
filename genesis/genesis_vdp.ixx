@@ -67,10 +67,7 @@ export class c_vdp
     uint8_t cram[128];
     uint32_t cram_entry[128];
     uint8_t vsram[80];
-    uint8_t vram[64 * 1024];
-    uint8_t bg_pixel;
-    uint8_t bg_palette;
-    uint8_t bg_combo;
+    uint8_t bg_color;
 
     void update_x_res();
 
@@ -92,17 +89,18 @@ export class c_vdp
         uint32_t low_priority_val
         );
     uint16_t get_hscroll_loc();
-
-    alignas(64) uint8_t a_out[336] = {0};
-    alignas(64) uint8_t b_out[336] = {0};
-    alignas(64) uint8_t win_out[336] = {0};
-    alignas(64) uint8_t sprite_out[336] = {0};
-    alignas(64) uint8_t priorities[336] = {0};
-    uint8_t *plane_ptrs[4];
-
-    void eval_sprites();
     uint32_t rgb[512];
-
+    uint8_t *plane_ptrs[4];
+    alignas(64) uint8_t vram[64 * 1024];
+    alignas(64) uint8_t a_out[328] = {0};
+    alignas(64) uint8_t b_out[328] = {0};
+    alignas(64) uint8_t win_out[328] = {0};
+    alignas(64) uint8_t sprite_out[328] = {0};
+    uint8_t padding[48];
+    uint8_t priorities[336] = {0};
+    
+    void eval_sprites();
+    
     enum LAYER_PRIORITY
     {
         SPRITE_HIGH = 0,
@@ -114,9 +112,8 @@ export class c_vdp
         A_LOW       = 6,
         B_LOW       = 7
     };
-    
 
   public:
-    uint32_t frame_buffer[320 * 224];
+    alignas(64) uint32_t frame_buffer[320 * 224];
 };
 } //namespace genesis

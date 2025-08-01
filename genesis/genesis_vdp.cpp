@@ -55,8 +55,7 @@ void c_vdp::reset()
     update_ipl();
     hint_counter = 0;
     x_res = 320;
-    bg_pixel = 0;
-    bg_palette = 0;
+    bg_color = 0;
 }
 
 uint16_t c_vdp::read_word(uint32_t address)
@@ -158,9 +157,7 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
                 reg[reg_number] = reg_value;
                 switch (reg_number) {
                     case 0x07:
-                        bg_pixel = reg_value & 0xF;
-                        bg_palette = (reg_value >> 4) & 0x3;
-                        bg_combo = reg_value & 0x3F;
+                        bg_color = reg_value & 0x3F;
                         break;
                     case 0x10:
                         plane_width = 32 + (reg_value & 0x3) * 32;
@@ -279,19 +276,14 @@ void c_vdp::draw_plane(uint8_t *out, uint32_t nt, uint32_t v_scroll,
                        uint32_t h_scroll, uint32_t low_pri_val)
 {
     uint32_t vscroll_mode = reg[0x0B] & 0x4;
-   
     uint32_t y_coarse = v_scroll >> 3;
     uint32_t y_fine = v_scroll & 7;
     uint32_t y = line + (y_coarse << 3) + y_fine;
-
     uint32_t y_address = ((y >> 3) & (plane_height - 1)) * plane_width * 2;
-
     uint32_t fine_x = (8 - (h_scroll & 0x7)) & 7;
-    
-    uint32_t x = -((8 - (h_scroll & 0x7)) & 7);
-    x = 0;
-    out = out + 8 - fine_x;
-    uint8_t *pp = priorities + 8 - fine_x;
+    uint32_t x = 0;
+   
+    uint8_t *priorities_offset = &priorities[8 - fine_x];
 
     int column_count = reg[0x0C] & 1 ? 41 : 33;
 
@@ -305,7 +297,7 @@ void c_vdp::draw_plane(uint8_t *out, uint32_t nt, uint32_t v_scroll,
         uint32_t v_flip = tile & 0x1000 ? 7 : 0;
         uint8_t pal = ((tile >> 13) & 0x3) << 4;
         #ifdef USE_BMI2
-        uint64_t pal64 = pal * 0x0101010101010101;
+        uint64_t palette_broadcast = pal * 0x0101010101010101;
         #endif
 
         int priority_shift = low_pri_val - (4 * priority);
@@ -319,33 +311,33 @@ void c_vdp::draw_plane(uint8_t *out, uint32_t nt, uint32_t v_scroll,
         uint32_t pattern = std::byteswap(*((uint32_t *)&vram[pattern_address]));        
 
         #ifdef USE_BMI2
-        uint64_t p2 = _pdep_u64(pattern, 0x0F0F0F0F0F0F0F0F);
+        uint64_t pattern_expanded = _pdep_u64(pattern, 0x0F0F0F0F0F0F0F0F);
         // find non-zero nibbles in p2
         // set the msb to 1
-        uint64_t pri = p2 | 0x8080808080808080;
+        uint64_t priorities = pattern_expanded | 0x8080808080808080;
         // subtract 1.  If the value of the nibble is zero, there
         // will be a carry from the MSB, setting it to 0
-        pri -= 0x0101010101010101;
+        priorities -= 0x0101010101010101;
         // shift the MSBs into the correct priority position
-        pri &= 0x8080808080808080;
-        pri >>= 7 - priority_shift;
-            
-        p2 |= pal64;
+        priorities &= 0x8080808080808080;
+        priorities >>= 7 - priority_shift;
+
+        pattern_expanded |= palette_broadcast;
 
         if (!h_flip) {
-            p2 = std::byteswap(p2);
-            pri = std::byteswap(pri);
+            pattern_expanded = std::byteswap(pattern_expanded);
+            priorities = std::byteswap(priorities);
         }
 
-        *((uint64_t *)&pp[x]) |= pri;
-        *((uint64_t *)&out[x]) = p2;
+        *((uint64_t *)&priorities_offset[x]) |= priorities;
+        *((uint64_t *)&out[x]) = pattern_expanded;
         x += 8;
         #else
         for (int p = 0; p < 8; p++) {
             uint8_t pixel = (pattern >> ((7 - (p ^ h_flip)) * 4)) & 0xF;
 
             if (pixel) {
-                pp[x] |= priority_bit;
+                priorities_offset[x] |= priority_bit;
                 out[x] = pal | pixel;
             }
             x++;
@@ -389,109 +381,109 @@ void c_vdp::draw_scanline()
     }
 
     if (line < 224) {
-        memset(priorities, 0, sizeof(priorities));
-        eval_sprites();
-
-        uint8_t vp = reg[0x12] & 0x1F;
-        uint8_t hp = reg[0x11] & 0x1F;
-        uint32_t in_window = 0;
-        const int DISABLE_WINDOW_PLANE = ~((1 << LAYER_PRIORITY::WINDOW_LOW) | (1 << LAYER_PRIORITY::WINDOW_HIGH));
-        const int DISABLE_A_PLANE = ~((1 << LAYER_PRIORITY::A_LOW) | (1 << LAYER_PRIORITY::A_HIGH));
-        uint32_t plane_mask = DISABLE_WINDOW_PLANE;
-        if (vp) {
-            //vertical window set
-
-            if (reg[0x12] & 0x80) {
-                //draw from vp to bottom
-                if (line >= (vp * 8)) {
-                    in_window = 0x1;
-                    plane_mask = DISABLE_A_PLANE;
-                }
-            }
-            else {
-                //draw from top to vp
-                if (line < (vp * 8)) {
-                    in_window = 0x1;
-                    plane_mask = DISABLE_A_PLANE;
-                }
-            }
-        }
-
-        uint16_t hscroll_loc = get_hscroll_loc();
-
-        uint16_t a_h_scroll = std::byteswap(*(uint16_t *)&vram[hscroll_loc + 0]) & 0x3FF;
-        uint16_t b_h_scroll = std::byteswap(*(uint16_t *)&vram[hscroll_loc + 2]) & 0x3FF;
-
-        uint32_t a_nt = (reg[0x02] & 0x38) << 10;
-        uint32_t b_nt = (reg[0x04] & 0x7) << 13;
-        uint32_t win_nt = (reg[0x03] & 0x3E) << 10;
-
-        draw_plane(a_out, a_nt, a_v_scroll, a_h_scroll, LAYER_PRIORITY::A_LOW);
-        draw_plane(b_out, b_nt, b_v_scroll, b_h_scroll, LAYER_PRIORITY::B_LOW);
-        draw_plane(win_out, win_nt, 0, 0, LAYER_PRIORITY::WINDOW_LOW);
-
         uint32_t *fb = &frame_buffer[line * 320];
+        if (!(reg[0x01] & 0x40)) {
+            std::fill_n(fb, 320, 0xFF000000);
+        }
+        else {
+            memset(priorities, 0, sizeof(priorities));
+            eval_sprites();
 
-        for (int i = 0; i < x_res; i++) {
-            if (hp && !(in_window & 1)) {
-                if (reg[0x11] & 0x80) {
-                    //from hp to right edge
-                    if (i >= (hp * 16)) {
-                        in_window |= 0x2;
+            uint8_t vp = reg[0x12] & 0x1F;
+            uint8_t hp = reg[0x11] & 0x1F;
+            uint32_t in_window = 0;
+            const int DISABLE_WINDOW_PLANE = ~((1 << LAYER_PRIORITY::WINDOW_LOW) | (1 << LAYER_PRIORITY::WINDOW_HIGH));
+            const int DISABLE_A_PLANE = ~((1 << LAYER_PRIORITY::A_LOW) | (1 << LAYER_PRIORITY::A_HIGH));
+            uint32_t plane_mask = DISABLE_WINDOW_PLANE;
+            if (vp) {
+                //vertical window set
+                if (reg[0x12] & 0x80) {
+                    //draw from vp to bottom
+                    if (line >= (vp * 8)) {
+                        in_window = 0x1;
                         plane_mask = DISABLE_A_PLANE;
-                    }
-                    else {
-                        in_window &= ~0x2;
-                        if (!in_window) {
-                            plane_mask = DISABLE_WINDOW_PLANE;
-                        }
                     }
                 }
                 else {
-                    //from left edge to hp
-                    if (i < (hp * 16)) {
-                        in_window |= 0x2;
+                    //draw from top to vp
+                    if (line < (vp * 8)) {
+                        in_window = 0x1;
                         plane_mask = DISABLE_A_PLANE;
-                    }
-                    else {
-                        if ((in_window & 0x2) && (a_h_scroll & 0xF)) {
-                            //emulate window bug
-                            //pretty kludgey...
-                            for (int j = i; j < i + (a_h_scroll & 0xF); j++) {
-                                int src = (j + 16) % x_res;
-                                priorities[j + 8] &= DISABLE_A_PLANE;
-                                priorities[j + 8] |= priorities[src + 8] & ~DISABLE_A_PLANE;
-                                a_out[j + 8] = a_out[src + 8];
-                            }
-                        }
-                        in_window &= ~0x2;
-                        if (!in_window) {
-                            plane_mask = DISABLE_WINDOW_PLANE;
-                        }
                     }
                 }
             }
-            
-            uint32_t p = priorities[i+8] & plane_mask;
-            uint8_t out;
-            
-            if (p) {
-                uint32_t c = _tzcnt_u32(p) & 0x3;
-                out = plane_ptrs[c][i+8];
-            }
-            else {
-                out = bg_combo;
-            }
 
-            
-            if (reg[0x01] & 0x40) {
-                *fb = cram_entry[out];
-            }
-            else {
-                *fb = 0xFF000000;
-            }
+            uint16_t hscroll_loc = get_hscroll_loc();
 
-            fb++;
+            uint16_t a_h_scroll = std::byteswap(*(uint16_t *)&vram[hscroll_loc + 0]) & 0x3FF;
+            uint16_t b_h_scroll = std::byteswap(*(uint16_t *)&vram[hscroll_loc + 2]) & 0x3FF;
+
+            uint32_t a_nt = (reg[0x02] & 0x38) << 10;
+            uint32_t b_nt = (reg[0x04] & 0x7) << 13;
+            uint32_t win_nt = (reg[0x03] & 0x3E) << 10;
+
+            draw_plane(a_out, a_nt, a_v_scroll, a_h_scroll, LAYER_PRIORITY::A_LOW);
+            draw_plane(b_out, b_nt, b_v_scroll, b_h_scroll, LAYER_PRIORITY::B_LOW);
+            draw_plane(win_out, win_nt, 0, 0, LAYER_PRIORITY::WINDOW_LOW);
+
+            uint32_t a_fine_x = (8 - (a_h_scroll & 0x7)) & 7;
+            uint32_t b_fine_x = (8 - (b_h_scroll & 0x7)) & 7;
+            plane_ptrs[2] = a_out + a_fine_x;
+            plane_ptrs[3] = b_out + b_fine_x;
+
+            for (int i = 0; i < x_res; i += 16) {
+                if (hp && !(in_window & 1)) {
+                    if (reg[0x11] & 0x80) {
+                        //from hp to right edge
+                        if (i >= (hp * 16)) {
+                            in_window |= 0x2;
+                            plane_mask = DISABLE_A_PLANE;
+                        }
+                        else {
+                            in_window &= ~0x2;
+                            if (!in_window) {
+                                plane_mask = DISABLE_WINDOW_PLANE;
+                            }
+                        }
+                    }
+                    else {
+    
+                        if (i < (hp * 16)) {
+                            in_window |= 0x2;
+                            plane_mask = DISABLE_A_PLANE;
+                        }
+                        else {
+                            if ((in_window & 0x2) && (a_h_scroll & 0xF)) {
+                                //emulate window bug
+                                //pretty kludgey...
+                                for (int j = i; j < i + (a_h_scroll & 0xF); j++) {
+                                    int src = (j + 16) % x_res;
+                                    priorities[j + 8] &= DISABLE_A_PLANE;
+                                    priorities[j + 8] |= priorities[src + 8] & ~DISABLE_A_PLANE;
+                                    plane_ptrs[2][j] = plane_ptrs[2][src];
+                                }
+                            }
+                            in_window &= ~0x2;
+                            if (!in_window) {
+                                plane_mask = DISABLE_WINDOW_PLANE;
+                            }
+                        }
+                    }
+                }
+                for (int j = 0; j < 16; j++) {
+                    uint32_t p = priorities[8 + i + j] & plane_mask;
+                    uint8_t out;
+
+                    if (p) {
+                        uint32_t c = _tzcnt_u32(p) & 0x3;
+                        out = plane_ptrs[c][j + i];
+                    }
+                    else {
+                        out = bg_color;
+                    }
+                    *fb++ = cram_entry[out];
+                }
+            }
         }
     }
 
@@ -602,9 +594,9 @@ void c_vdp::eval_sprites()
                             return;
                         }
                         if (j >= 0 && j < x_res) {
-                            if (sprite_out[j + 8] != 0xFF) {
+                            if (sprite_out[j] != 0xFF) {
                                 //there is already a sprite here
-                                if ((sprite_out[j + 8] & 0xF) != 0) {
+                                if ((sprite_out[j] & 0xF) != 0) {
                                     //and it's not transparent
                                     continue;
                                 }
@@ -617,7 +609,7 @@ void c_vdp::eval_sprites()
                                 else {
                                     priorities[j + 8] |= (1 << LAYER_PRIORITY::SPRITE_LOW);
                                 }
-                                sprite_out[j + 8] = palette | color;
+                                sprite_out[j] = palette | color;
                             }
                         }
                     }
