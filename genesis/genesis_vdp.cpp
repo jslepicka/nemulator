@@ -285,8 +285,13 @@ void c_vdp::draw_plane(uint8_t *out, uint32_t nt, uint32_t v_scroll,
     uint32_t y = line + (y_coarse << 3) + y_fine;
 
     uint32_t y_address = ((y >> 3) & (plane_height - 1)) * plane_width * 2;
+
+    uint32_t fine_x = (8 - (h_scroll & 0x7)) & 7;
     
     uint32_t x = -((8 - (h_scroll & 0x7)) & 7);
+    x = 0;
+    out = out + 8 - fine_x;
+    uint8_t *pp = priorities + 8 - fine_x;
 
     int column_count = reg[0x0C] & 1 ? 41 : 33;
 
@@ -313,55 +318,39 @@ void c_vdp::draw_plane(uint8_t *out, uint32_t nt, uint32_t v_scroll,
 
         uint32_t pattern = std::byteswap(*((uint32_t *)&vram[pattern_address]));        
 
-        if (x >= x_res || x + 7 >= x_res) {
-            for (int p = 0; p < 8; p++) {
-                if (x < x_res) {
-
-                    uint8_t pixel = (pattern >> ((7 - (p ^ h_flip)) * 4)) & 0xF;
-
-                    if (pixel) {
-                        priorities[x] |= priority_bit;
-                        out[x] = pal | pixel;
-                    }
-                }
-                x++;
-            }
-        }
-        else {
-            #ifdef USE_BMI2
-            uint64_t p2 = _pdep_u64(pattern, 0x0F0F0F0F0F0F0F0F);
-            // find non-zero nibbles in p2
-            // set the msb to 1
-            uint64_t pri = p2 | 0x8080808080808080;
-            // subtract 1.  If the value of the nibble is zero, there
-            // will be a carry from the MSB, setting it to 0
-            pri -= 0x0101010101010101;
-            // shift the MSBs into the correct priority position
-            pri &= 0x8080808080808080;
-            pri >>= 7 - priority_shift;
+        #ifdef USE_BMI2
+        uint64_t p2 = _pdep_u64(pattern, 0x0F0F0F0F0F0F0F0F);
+        // find non-zero nibbles in p2
+        // set the msb to 1
+        uint64_t pri = p2 | 0x8080808080808080;
+        // subtract 1.  If the value of the nibble is zero, there
+        // will be a carry from the MSB, setting it to 0
+        pri -= 0x0101010101010101;
+        // shift the MSBs into the correct priority position
+        pri &= 0x8080808080808080;
+        pri >>= 7 - priority_shift;
             
-            p2 |= pal64;
+        p2 |= pal64;
 
-            if (!h_flip) {
-                p2 = std::byteswap(p2);
-                pri = std::byteswap(pri);
-            }
-
-            *((uint64_t *)&priorities[x]) |= pri;
-            *((uint64_t *)&out[x]) = p2;
-            x += 8;
-            #else
-            for (int p = 0; p < 8; p++) {
-                uint8_t pixel = (pattern >> ((7 - (p ^ h_flip)) * 4)) & 0xF;
-
-                if (pixel) {
-                    priorities[x] |= priority_bit;
-                    out[x] = pal | pixel;
-                }
-                x++;
-            }
-            #endif
+        if (!h_flip) {
+            p2 = std::byteswap(p2);
+            pri = std::byteswap(pri);
         }
+
+        *((uint64_t *)&pp[x]) |= pri;
+        *((uint64_t *)&out[x]) = p2;
+        x += 8;
+        #else
+        for (int p = 0; p < 8; p++) {
+            uint8_t pixel = (pattern >> ((7 - (p ^ h_flip)) * 4)) & 0xF;
+
+            if (pixel) {
+                pp[x] |= priority_bit;
+                out[x] = pal | pixel;
+            }
+            x++;
+        }
+        #endif
     }
 }
 
@@ -470,9 +459,9 @@ void c_vdp::draw_scanline()
                             //pretty kludgey...
                             for (int j = i; j < i + (a_h_scroll & 0xF); j++) {
                                 int src = (j + 16) % x_res;
-                                priorities[j] &= DISABLE_A_PLANE;
-                                priorities[j] |= priorities[src] & ~DISABLE_A_PLANE;
-                                a_out[j] = a_out[src];
+                                priorities[j + 8] &= DISABLE_A_PLANE;
+                                priorities[j + 8] |= priorities[src + 8] & ~DISABLE_A_PLANE;
+                                a_out[j + 8] = a_out[src + 8];
                             }
                         }
                         in_window &= ~0x2;
@@ -483,12 +472,12 @@ void c_vdp::draw_scanline()
                 }
             }
             
-            uint32_t p = priorities[i] & plane_mask;
+            uint32_t p = priorities[i+8] & plane_mask;
             uint8_t out;
             
             if (p) {
                 uint32_t c = _tzcnt_u32(p) & 0x3;
-                out = plane_ptrs[c][i];
+                out = plane_ptrs[c][i+8];
             }
             else {
                 out = bg_combo;
@@ -613,9 +602,9 @@ void c_vdp::eval_sprites()
                             return;
                         }
                         if (j >= 0 && j < x_res) {
-                            if (sprite_out[j] != 0xFF) {
+                            if (sprite_out[j + 8] != 0xFF) {
                                 //there is already a sprite here
-                                if ((sprite_out[j] & 0xF) != 0) {
+                                if ((sprite_out[j + 8] & 0xF) != 0) {
                                     //and it's not transparent
                                     continue;
                                 }
@@ -623,12 +612,12 @@ void c_vdp::eval_sprites()
                             uint8_t color = (pattern >> ((7 - (p ^ h_flip)) * 4)) & 0xF;
                             if (color) {
                                 if (priority) {
-                                    priorities[j] |= (1 << LAYER_PRIORITY::SPRITE_HIGH);
+                                    priorities[j + 8] |= (1 << LAYER_PRIORITY::SPRITE_HIGH);
                                 }
                                 else {
-                                    priorities[j] |= (1 << LAYER_PRIORITY::SPRITE_LOW);
+                                    priorities[j + 8] |= (1 << LAYER_PRIORITY::SPRITE_LOW);
                                 }
-                                sprite_out[j] = palette | color;
+                                sprite_out[j + 8] = palette | color;
                             }
                         }
                     }

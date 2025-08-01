@@ -93,11 +93,11 @@ export class c_vdp
         );
     uint16_t get_hscroll_loc();
 
-    uint8_t a_out[320] = {0};
-    uint8_t b_out[320] = {0};
-    uint8_t win_out[320] = {0};
-    uint8_t sprite_out[320] = {0};
-    uint8_t priorities[320] = {0};
+    alignas(64) uint8_t a_out[336] = {0};
+    alignas(64) uint8_t b_out[336] = {0};
+    alignas(64) uint8_t win_out[336] = {0};
+    alignas(64) uint8_t sprite_out[336] = {0};
+    alignas(64) uint8_t priorities[336] = {0};
     uint8_t *plane_ptrs[4];
 
     void eval_sprites();
