@@ -5,6 +5,7 @@ import nemulator.std;
 import nemulator.buttons;
 import system;
 import class_registry;
+import z80;
 import :vdp;
 
 class c_m68k;
@@ -74,10 +75,16 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     std::unique_ptr<c_m68k> m68k;
     //std::unique_ptr<uint8_t[]> ram;
     std::unique_ptr<uint8_t[]> rom;
+    std::unique_ptr<uint8_t[]> cart_ram;
     std::unique_ptr<c_vdp> vdp;
+    std::unique_ptr<c_z80> z80;
     int file_length;
     uint8_t ipl;
     int last_bus_request;
+    int z80_reset;
+    int z80_busreq;
+    int z80_irq;
+    int z80_nmi;
     uint32_t stalled;
     uint32_t th1;
     uint32_t th2;
@@ -87,8 +94,17 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     uint8_t z80_ram[8 * 1024];
     uint32_t rom_size;
     uint32_t rom_mask;
+    uint32_t rom_end;
+    uint32_t cart_ram_start;
+    uint32_t cart_ram_end;
+    uint32_t cart_ram_size;
+    
 
     void on_mode_switch(int x_res);
+    uint8_t z80_read_byte(uint16_t address);
+    void z80_write_byte(uint16_t address, uint8_t value);
+    uint8_t z80_read_port(uint8_t port);
+    void z80_write_port(uint8_t port, uint8_t value);
 };
 
 } //namespace genesis

@@ -63,9 +63,13 @@ uint16_t c_vdp::read_word(uint32_t address)
     uint16_t ret;
     switch (address) {
         case 0x00C00000:
-        case 0x00C00002:
+        case 0x00C00002: {
             address_write = 0;
-            break;
+            uint16_t ret = vram[_address] << 8;
+            ret |= vram[_address + 1];
+            _address += reg[0x0F];
+            return ret;
+        }
         case 0x00C00004:
         case 0x00C00006:
             ret = status.value;
@@ -312,6 +316,7 @@ void c_vdp::draw_plane(uint8_t *out, uint32_t nt, uint32_t v_scroll,
 
         #ifdef USE_BMI2
         uint64_t pattern_expanded = _pdep_u64(pattern, 0x0F0F0F0F0F0F0F0F);
+        uint64_t pixels = pattern_expanded | palette_broadcast;
         // find non-zero nibbles in p2
         // set the msb to 1
         uint64_t priorities = pattern_expanded | 0x8080808080808080;
@@ -322,15 +327,13 @@ void c_vdp::draw_plane(uint8_t *out, uint32_t nt, uint32_t v_scroll,
         priorities &= 0x8080808080808080;
         priorities >>= 7 - priority_shift;
 
-        pattern_expanded |= palette_broadcast;
-
         if (!h_flip) {
-            pattern_expanded = std::byteswap(pattern_expanded);
+            pixels = std::byteswap(pixels);
             priorities = std::byteswap(priorities);
         }
 
         *((uint64_t *)&priorities_offset[x]) |= priorities;
-        *((uint64_t *)&out[x]) = pattern_expanded;
+        *((uint64_t *)&out[x]) = pixels;
         x += 8;
         #else
         for (int p = 0; p < 8; p++) {
