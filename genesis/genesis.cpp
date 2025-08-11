@@ -95,6 +95,7 @@ int c_genesis::load()
         cart_ram_end |= 1;
         cart_ram_size = cart_ram_end - cart_ram_start + 1;
         cart_ram = std::make_unique<uint8_t[]>(cart_ram_size);
+        memset(cart_ram.get(), 0xFF, cart_ram_size);
         int x = 1;
     }
 
@@ -279,7 +280,7 @@ uint16_t c_genesis::read_word(uint32_t address)
     if (address < 0x400000) {
         if (cart_ram_start && address >= cart_ram_start && address <= cart_ram_end) {
             assert(0);
-            return std::byteswap(*(uint16_t *)(rom.get() + address - cart_ram_start));
+            return std::byteswap(*(uint16_t *)(cart_ram.get() + address - cart_ram_start));
         }
         else {
             address &= rom_mask;
@@ -323,7 +324,10 @@ void c_genesis::write_byte(uint32_t address, uint8_t value)
     if (address < 0x400000) {
         if (cart_ram_start && address >= cart_ram_start && address <= cart_ram_end)
         {
-            rom[address - cart_ram_start] = value;
+            cart_ram[address - cart_ram_start] = value;
+        }
+        else {
+            int x = 1;
         }
     }
     else if (address >= 0x00C00000 && address <= 0xC0001E) {
@@ -374,8 +378,8 @@ void c_genesis::write_word(uint32_t address, uint16_t value)
         if (cart_ram_start && address >= cart_ram_start && address <= cart_ram_end)
         {
             assert(0);
-            rom[address - cart_ram_start] = value >> 8;
-            rom[address - cart_ram_start + 1] = value & 0xFF;
+            cart_ram[address - cart_ram_start] = value >> 8;
+            cart_ram[address - cart_ram_start + 1] = value & 0xFF;
         }
     }
     else if (address >= 0x00C00000 && address <= 0xC0001E) {
