@@ -38,6 +38,8 @@ c_genesis::c_genesis()
     );
     cart_ram_start = 0;
     cart_ram_end = 0;
+    z80_has_bus = 1;
+    z80_reset = 1;
 }
 
 c_genesis::~c_genesis()
@@ -133,7 +135,7 @@ int c_genesis::emulate_frame()
         m68k->execute(488 - hblank_len);
         vdp->draw_scanline();
         m68k->execute(hblank_len);
-        if (z80_reset == 0x100 && z80_busreq == 0) {
+        if (z80_has_bus && z80_reset) {
             z80->execute(228);
         }
         vdp->clear_hblank();
@@ -260,7 +262,7 @@ uint8_t c_genesis::read_byte(uint32_t address)
             case 0xA11101:
                 //68k bus access? incomplete
                 //return last_bus_request;
-                return z80_busreq;
+                return (z80_has_bus && z80_reset);
             case 0xA11200:
             case 0xA11201:
                 return z80_reset;
@@ -304,7 +306,7 @@ uint16_t c_genesis::read_word(uint32_t address)
         switch (address) {
             case 0xA11100:
             case 0xA11101:
-                return z80_busreq;
+                return (z80_has_bus && z80_reset);
                 break;
             case 0xA11200:
             case 0xA11201:
@@ -356,10 +358,14 @@ void c_genesis::write_byte(uint32_t address, uint8_t value)
             case 0xA11100:
             case 0xA11101:
                 z80_busreq = value;
+                z80_has_bus = !value;
                 break;
             case 0xA11200:
             case 0xA11201:
                 z80_reset = value;
+                if (!z80_reset) {
+                    z80->reset();
+                }
                 break;
             default:
                 break;
@@ -399,9 +405,13 @@ void c_genesis::write_word(uint32_t address, uint16_t value)
         switch (address) {
             case 0x00A11100:
                 z80_busreq = value;
+                z80_has_bus = !value;
                 break;
             case 0xA11200:
                 z80_reset = value;
+                if (!z80_reset) {
+                    z80->reset();
+                }
                 break;
         }
         int x = 1;

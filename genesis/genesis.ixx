@@ -85,6 +85,8 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     int z80_busreq;
     int z80_irq;
     int z80_nmi;
+    int z80_running;
+    int z80_has_bus;
     uint32_t stalled;
     uint32_t th1;
     uint32_t th2;

@@ -279,6 +279,36 @@ uint32_t c_vdp::lookup_color(uint32_t pal, uint32_t index)
 void c_vdp::draw_plane(uint8_t *out, uint32_t nt, uint32_t v_scroll,
                        uint32_t h_scroll, uint32_t low_pri_val)
 {
+    uint32_t column_count;
+    uint32_t plane_width;
+    uint32_t plane_height;
+
+    if (reg[0x0C] & 1) {
+        //h40
+        column_count = 41;
+        if (out == win_out) {
+            plane_width = 64;
+            plane_height = 32;
+        }
+        else {
+            plane_width = this->plane_width;
+            plane_height = this->plane_height;
+        }
+    }
+    else {
+        //h30
+        column_count = 33;
+        if (out == win_out) {
+            plane_width = 32;
+            plane_height = 32;
+        }
+        else
+        {
+            plane_width = this->plane_width;
+            plane_height = this->plane_height;
+        }
+    }
+
     uint32_t vscroll_mode = reg[0x0B] & 0x4;
     uint32_t y_coarse = v_scroll >> 3;
     uint32_t y_fine = v_scroll & 7;
@@ -289,7 +319,7 @@ void c_vdp::draw_plane(uint8_t *out, uint32_t nt, uint32_t v_scroll,
    
     uint8_t *priorities_offset = &priorities[8 - fine_x];
 
-    int column_count = reg[0x0C] & 1 ? 41 : 33;
+    //int column_count = reg[0x0C] & 1 ? 41 : 33;
 
     for (int column = 0; column < column_count; column++) {
         uint32_t nt_column = (((column * 8) - h_scroll) >> 3) & (plane_width - 1);
@@ -392,24 +422,25 @@ void c_vdp::draw_scanline()
             memset(priorities, 0, sizeof(priorities));
             eval_sprites();
 
-            uint8_t vp = reg[0x12] & 0x1F;
-            uint8_t hp = reg[0x11] & 0x1F;
+            uint8_t vp = reg[0x12] & 0x9F;
+            uint8_t hp = reg[0x11] & 0x9F;
             uint32_t in_window = 0;
             const int DISABLE_WINDOW_PLANE = ~((1 << LAYER_PRIORITY::WINDOW_LOW) | (1 << LAYER_PRIORITY::WINDOW_HIGH));
             const int DISABLE_A_PLANE = ~((1 << LAYER_PRIORITY::A_LOW) | (1 << LAYER_PRIORITY::A_HIGH));
             uint32_t plane_mask = DISABLE_WINDOW_PLANE;
             if (vp) {
+                int pos = vp & 0x1F;
                 //vertical window set
                 if (reg[0x12] & 0x80) {
                     //draw from vp to bottom
-                    if (line >= (vp * 8)) {
+                    if (line >= (pos * 8)) {
                         in_window = 0x1;
                         plane_mask = DISABLE_A_PLANE;
                     }
                 }
                 else {
                     //draw from top to vp
-                    if (line < (vp * 8)) {
+                    if (line < (pos * 8)) {
                         in_window = 0x1;
                         plane_mask = DISABLE_A_PLANE;
                     }
@@ -436,9 +467,10 @@ void c_vdp::draw_scanline()
 
             for (int i = 0; i < x_res; i += 16) {
                 if (hp && !(in_window & 1)) {
+                    int pos = hp & 0x1F;
                     if (reg[0x11] & 0x80) {
                         //from hp to right edge
-                        if (i >= (hp * 16)) {
+                        if (i >= (pos * 16)) {
                             in_window |= 0x2;
                             plane_mask = DISABLE_A_PLANE;
                         }
@@ -451,7 +483,7 @@ void c_vdp::draw_scanline()
                     }
                     else {
     
-                        if (i < (hp * 16)) {
+                        if (i < (pos * 16)) {
                             in_window |= 0x2;
                             plane_mask = DISABLE_A_PLANE;
                         }
