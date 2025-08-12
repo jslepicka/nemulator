@@ -430,20 +430,26 @@ void c_vdp::draw_scanline()
             uint32_t plane_mask = DISABLE_WINDOW_PLANE;
             if (vp) {
                 int pos = vp & 0x1F;
-                //vertical window set
-                if (reg[0x12] & 0x80) {
-                    //draw from vp to bottom
-                    if (line >= (pos * 8)) {
-                        in_window = 0x1;
-                        plane_mask = DISABLE_A_PLANE;
-                    }
-                }
-                else {
-                    //draw from top to vp
-                    if (line < (pos * 8)) {
-                        in_window = 0x1;
-                        plane_mask = DISABLE_A_PLANE;
-                    }
+                
+                //if vp & 0x80 (mode), then the window starts at pos and extends to bottom of screen
+                //else the window starts at the top of the screen and extends to pos
+                //pos of 0 is invalid in the latter mode
+                //
+                //examples:
+                //line = 0, pos = 20, diff = -20
+                //line = 20, pos = 20, diff = 0
+                //line = 21, pos = 20, diff = 1
+                //for the first case, diff is positive when in range
+                //for the second case, diff is negative when in range
+                //therefore, we can combine the tests by xor'ing the mode
+                //bit with the diff sign bit
+                
+                uint32_t diff = line - (pos * 8);
+                int in_range = (diff >> 31) ^ (vp >> 7);
+
+                if (in_range) {
+                    in_window = 0x1;
+                    plane_mask = DISABLE_A_PLANE;
                 }
             }
 
@@ -468,40 +474,27 @@ void c_vdp::draw_scanline()
             for (int i = 0; i < x_res; i += 16) {
                 if (hp && !(in_window & 1)) {
                     int pos = hp & 0x1F;
-                    if (reg[0x11] & 0x80) {
-                        //from hp to right edge
-                        if (i >= (pos * 16)) {
-                            in_window |= 0x2;
-                            plane_mask = DISABLE_A_PLANE;
-                        }
-                        else {
-                            in_window &= ~0x2;
-                            if (!in_window) {
-                                plane_mask = DISABLE_WINDOW_PLANE;
-                            }
-                        }
+                    uint32_t diff = i - (pos * 16);
+                    int in_range = (diff >> 31) ^ (hp >> 7);
+
+                    if (in_range) {
+                        in_window |= 0x2;
+                        plane_mask = DISABLE_A_PLANE;
                     }
-                    else {
-    
-                        if (i < (pos * 16)) {
-                            in_window |= 0x2;
-                            plane_mask = DISABLE_A_PLANE;
+                    else if (in_window & 0x2) {
+                        if (a_h_scroll & 0xF) {
+                            //emulate window bug
+                            //pretty kludgey...
+                            for (int j = i; j < i + (a_h_scroll & 0xF); j++) {
+                                int src = (j + 16) % x_res;
+                                priorities[j + 8] &= DISABLE_A_PLANE;
+                                priorities[j + 8] |= priorities[src + 8] & ~DISABLE_A_PLANE;
+                                plane_ptrs[2][j] = plane_ptrs[2][src];
+                            }
                         }
-                        else {
-                            if ((in_window & 0x2) && (a_h_scroll & 0xF)) {
-                                //emulate window bug
-                                //pretty kludgey...
-                                for (int j = i; j < i + (a_h_scroll & 0xF); j++) {
-                                    int src = (j + 16) % x_res;
-                                    priorities[j + 8] &= DISABLE_A_PLANE;
-                                    priorities[j + 8] |= priorities[src + 8] & ~DISABLE_A_PLANE;
-                                    plane_ptrs[2][j] = plane_ptrs[2][src];
-                                }
-                            }
-                            in_window &= ~0x2;
-                            if (!in_window) {
-                                plane_mask = DISABLE_WINDOW_PLANE;
-                            }
+                        in_window &= ~0x2;
+                        if (!in_window) {
+                            plane_mask = DISABLE_WINDOW_PLANE;
                         }
                     }
                 }
