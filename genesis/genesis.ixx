@@ -100,6 +100,10 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     uint32_t cart_ram_start;
     uint32_t cart_ram_end;
     uint32_t cart_ram_size;
+    uint32_t has_sram;
+
+    void open_sram();
+    void close_sram();
     
 
     void on_mode_switch(int x_res);

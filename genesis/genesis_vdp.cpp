@@ -64,6 +64,10 @@ uint16_t c_vdp::read_word(uint32_t address)
     switch (address) {
         case 0x00C00000:
         case 0x00C00002: {
+            if (address_type != ADDRESS_TYPE::VRAM_READ) {
+                //assert(0);
+                return 0xFFFF;
+            }
             address_write = 0;
             uint16_t ret = vram[_address] << 8;
             ret |= vram[_address + 1];
@@ -276,50 +280,18 @@ uint32_t c_vdp::lookup_color(uint32_t pal, uint32_t index)
     return cram_entry[loc];
 }
 
-void c_vdp::draw_plane(uint8_t *out, uint32_t nt, uint32_t v_scroll,
+void c_vdp::draw_plane(uint8_t *out, uint32_t nt, uint32_t plane_width, uint32_t plane_height, uint32_t v_scroll,
                        uint32_t h_scroll, uint32_t low_pri_val)
 {
-    uint32_t column_count;
-    uint32_t plane_width;
-    uint32_t plane_height;
-
-    if (reg[0x0C] & 1) {
-        //h40
-        column_count = 41;
-        if (out == win_out) {
-            plane_width = 64;
-            plane_height = 32;
-        }
-        else {
-            plane_width = this->plane_width;
-            plane_height = this->plane_height;
-        }
-    }
-    else {
-        //h30
-        column_count = 33;
-        if (out == win_out) {
-            plane_width = 32;
-            plane_height = 32;
-        }
-        else
-        {
-            plane_width = this->plane_width;
-            plane_height = this->plane_height;
-        }
-    }
-
     uint32_t vscroll_mode = reg[0x0B] & 0x4;
-    uint32_t y_coarse = v_scroll >> 3;
-    uint32_t y_fine = v_scroll & 7;
-    uint32_t y = line + (y_coarse << 3) + y_fine;
+    uint32_t y = line + v_scroll;
     uint32_t y_address = ((y >> 3) & (plane_height - 1)) * plane_width * 2;
     uint32_t fine_x = (8 - (h_scroll & 0x7)) & 7;
     uint32_t x = 0;
    
     uint8_t *priorities_offset = &priorities[8 - fine_x];
 
-    //int column_count = reg[0x0C] & 1 ? 41 : 33;
+    int column_count = reg[0x0C] & 1 ? 41 : 33;
 
     for (int column = 0; column < column_count; column++) {
         uint32_t nt_column = (((column * 8) - h_scroll) >> 3) & (plane_width - 1);
@@ -402,18 +374,14 @@ uint16_t c_vdp::get_hscroll_loc()
 
 void c_vdp::draw_scanline()
 {
-    uint32_t vscroll_mode = reg[0x0B] & 0x4;
-    uint32_t a_v_scroll = 0;
-    uint32_t b_v_scroll = 0;
-    if (vscroll_mode == 0) {
-        a_v_scroll = std::byteswap(*(uint16_t *)&vsram[0]) & 0x3FF;
-        b_v_scroll = std::byteswap(*(uint16_t *)&vsram[2]) & 0x3FF;
-    }
-    else {
-        int x = 1;
-    }
-
     if (line < 224) {
+        uint32_t vscroll_mode = reg[0x0B] & 0x4;
+        uint32_t a_v_scroll = 0;
+        uint32_t b_v_scroll = 0;
+        if (vscroll_mode == 0) {
+            a_v_scroll = std::byteswap(*(uint16_t *)&vsram[0]) & 0x3FF;
+            b_v_scroll = std::byteswap(*(uint16_t *)&vsram[2]) & 0x3FF;
+        }
         uint32_t *fb = &frame_buffer[line * 320];
         if (!(reg[0x01] & 0x40)) {
             std::fill_n(fb, 320, 0xFF000000);
@@ -462,9 +430,9 @@ void c_vdp::draw_scanline()
             uint32_t b_nt = (reg[0x04] & 0x7) << 13;
             uint32_t win_nt = (reg[0x03] & 0x3E) << 10;
 
-            draw_plane(a_out, a_nt, a_v_scroll, a_h_scroll, LAYER_PRIORITY::A_LOW);
-            draw_plane(b_out, b_nt, b_v_scroll, b_h_scroll, LAYER_PRIORITY::B_LOW);
-            draw_plane(win_out, win_nt, 0, 0, LAYER_PRIORITY::WINDOW_LOW);
+            draw_plane(a_out, a_nt, plane_width, plane_height, a_v_scroll, a_h_scroll, LAYER_PRIORITY::A_LOW);
+            draw_plane(b_out, b_nt, plane_width, plane_height, b_v_scroll, b_h_scroll, LAYER_PRIORITY::B_LOW);
+            draw_plane(win_out, win_nt, reg[0x0C] & 1 ? 64 : 32, 32, 0, 0, LAYER_PRIORITY::WINDOW_LOW);
 
             uint32_t a_fine_x = (8 - (a_h_scroll & 0x7)) & 7;
             uint32_t b_fine_x = (8 - (b_h_scroll & 0x7)) & 7;

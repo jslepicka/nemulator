@@ -13,16 +13,16 @@ namespace genesis
 c_genesis::c_genesis()
 {
     m68k = std::make_unique<c_m68k>(
-            [this](uint32_t address) { return this->read_word(address); },
-            [this](uint32_t address, uint16_t value) { this->write_word(address, value); },
-            [this](uint32_t address) { return this->read_byte(address); },
-            [this](uint32_t address, uint8_t value) { this->write_byte(address, value); },
-            [this]() { this->vdp->ack_irq(); },
-            &ipl,
-            &stalled
+        [this](uint32_t address) { return this->read_word(address); },
+        [this](uint32_t address, uint16_t value) { this->write_word(address, value); },
+        [this](uint32_t address) { return this->read_byte(address); },
+        [this](uint32_t address, uint8_t value) { this->write_byte(address, value); },
+        [this]() { this->vdp->ack_irq(); },
+        &ipl,
+        &stalled
     );
     vdp = std::make_unique<c_vdp>(&ipl,
-         [this](uint32_t address) { return this->read_word(address); },
+        [this](uint32_t address) { return this->read_word(address); },
         [this](int x_res) { this->on_mode_switch(x_res); },
         &stalled
     );
@@ -40,10 +40,12 @@ c_genesis::c_genesis()
     cart_ram_end = 0;
     z80_has_bus = 1;
     z80_reset = 1;
+    has_sram = 0;
 }
 
 c_genesis::~c_genesis()
 {
+    close_sram();
 }
 
 uint8_t c_genesis::z80_read_port(uint8_t port)
@@ -97,13 +99,46 @@ int c_genesis::load()
         cart_ram_end |= 1;
         cart_ram_size = cart_ram_end - cart_ram_start + 1;
         cart_ram = std::make_unique<uint8_t[]>(cart_ram_size);
-        memset(cart_ram.get(), 0xFF, cart_ram_size);
-        int x = 1;
+        if (rom[0x1B2] & 0x40) {
+            has_sram = 1;
+            open_sram();
+        }
     }
 
     reset();
     loaded = 1;
     return 1;
+}
+
+void c_genesis::open_sram()
+{
+    std::ifstream file;
+    file.open(sram_path_file, std::ios_base::in | std::ios_base::binary);
+    if (file.fail()) {
+        return;
+    }
+    file.seekg(0, std::ios_base::end);
+    int len = (int)file.tellg();
+    if (len != cart_ram_size) {
+        int x = 1;
+        return;
+    }
+    file.seekg(0, std::ios_base::beg);
+    file.read((char *)cart_ram.get(), len);
+    file.close();
+}
+
+void c_genesis::close_sram()
+{
+    if (has_sram) {
+        std::ofstream file;
+        file.open(sram_path_file, std::ios_base::out | std::ios_base::binary);
+        if (file.fail()) {
+            return;
+        }
+        file.write((char *)cart_ram.get(), cart_ram_size);
+        file.close();
+    }
 }
 
 int c_genesis::reset()
@@ -430,7 +465,7 @@ void c_genesis::set_input(int input)
         int x = 1;
     }
     joy1 = ~joy1;
-    }
+}
 
 int *c_genesis::get_video()
 {

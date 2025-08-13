@@ -84,6 +84,8 @@ export class c_vdp
     void draw_plane(
         uint8_t *out,
         uint32_t nt,
+        uint32_t plane_width,
+        uint32_t plane_height,
         uint32_t v_scroll,
         uint32_t h_scroll,
         uint32_t low_priority_val
