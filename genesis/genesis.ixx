@@ -101,6 +101,8 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     uint32_t cart_ram_end;
     uint32_t cart_ram_size;
     uint32_t has_sram;
+    int is_ps4;
+    int ps4_ram_access;
 
     void open_sram();
     void close_sram();

@@ -41,6 +41,8 @@ c_genesis::c_genesis()
     z80_has_bus = 1;
     z80_reset = 1;
     has_sram = 0;
+    is_ps4 = 0;
+    ps4_ram_access = 0;
 }
 
 c_genesis::~c_genesis()
@@ -103,6 +105,10 @@ int c_genesis::load()
             has_sram = 1;
             open_sram();
         }
+    }
+    const char ps4_title[] = "PHANTASY STAR The end of the millennium";
+    if (memcmp(&rom[0x120], ps4_title, sizeof(ps4_title) - 1) == 0) {
+        is_ps4 = 1;
     }
 
     reset();
@@ -236,6 +242,14 @@ void c_genesis::z80_write_byte(uint16_t address, uint8_t value)
 uint8_t c_genesis::read_byte(uint32_t address)
 {
     if (address < 0x400000) {
+        if (is_ps4) {
+            if (ps4_ram_access && address >= cart_ram_start && address <= cart_ram_end) {
+                return cart_ram[address - cart_ram_start];
+            }
+            else {
+                return rom[address & rom_mask];
+            }
+        }
         //probably not correct.  how is on-cart ram in this address space
         //handled?  is that even a thing?
         if (cart_ram_start && address >= cart_ram_start && address <= cart_ram_end) {
@@ -315,6 +329,15 @@ uint16_t c_genesis::read_word(uint32_t address)
 {
     assert(!(address & 1));
     if (address < 0x400000) {
+        if (is_ps4) {
+            if (ps4_ram_access && address >= cart_ram_start && address <= cart_ram_end) {
+                return std::byteswap(*(uint16_t *)(cart_ram.get() + address - cart_ram_start));
+            }
+            else {
+                address &= rom_mask;
+                return std::byteswap(*((uint16_t *)(rom.get() + address)));
+            }
+        }
         if (cart_ram_start && address >= cart_ram_start && address <= cart_ram_end) {
             assert(0);
             return std::byteswap(*(uint16_t *)(cart_ram.get() + address - cart_ram_start));
@@ -359,6 +382,11 @@ uint16_t c_genesis::read_word(uint32_t address)
 void c_genesis::write_byte(uint32_t address, uint8_t value)
 {
     if (address < 0x400000) {
+        if (is_ps4) {
+            if (ps4_ram_access && address >= cart_ram_start && address <= cart_ram_end) {
+                cart_ram[address - cart_ram_start] = value;
+            }
+        }
         if (cart_ram_start && address >= cart_ram_start && address <= cart_ram_end)
         {
             cart_ram[address - cart_ram_start] = value;
@@ -402,6 +430,9 @@ void c_genesis::write_byte(uint32_t address, uint8_t value)
                     z80->reset();
                 }
                 break;
+            case 0xA130F1:
+                ps4_ram_access = value;
+                break;
             default:
                 break;
         }
@@ -416,6 +447,13 @@ void c_genesis::write_word(uint32_t address, uint16_t value)
 {
     assert(!(address & 1));
     if (address < 0x400000) {
+        if (is_ps4) {
+            if (ps4_ram_access && address >= cart_ram_start && address <= cart_ram_end) {
+                assert(0);
+                cart_ram[address - cart_ram_start] = value >> 8;
+                cart_ram[address - cart_ram_start + 1] = value & 0xFF;
+            }
+        }
         if (cart_ram_start && address >= cart_ram_start && address <= cart_ram_end)
         {
             assert(0);
