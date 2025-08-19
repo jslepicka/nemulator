@@ -284,8 +284,6 @@ void c_vdp::draw_plane(uint8_t *out, uint32_t nt, uint32_t plane_width, uint32_t
                        uint32_t h_scroll, uint32_t low_pri_val)
 {
     uint32_t vscroll_mode = reg[0x0B] & 0x4;
-    uint32_t y = line + v_scroll;
-    uint32_t y_address = ((y >> 3) & (plane_height - 1)) * plane_width * 2;
     uint32_t fine_x = (8 - (h_scroll & 0x7)) & 7;
     uint32_t x = 0;
    
@@ -294,6 +292,34 @@ void c_vdp::draw_plane(uint8_t *out, uint32_t nt, uint32_t plane_width, uint32_t
     int column_count = reg[0x0C] & 1 ? 41 : 33;
 
     for (int column = 0; column < column_count; column++) {
+        if (vscroll_mode && out != win_out) {
+            int col16 = column / 2;
+            if (fine_x) {
+                col16--;
+            }
+
+            if (col16 == -1) {
+                //https://gendev.spritesmind.net/forum/viewtopic.php?t=737&postdays=0&postorder=asc&start=30
+                if (x_res == 320) {
+                    v_scroll = ((vsram[0x4C] & vsram[0x4E]) << 8) | (vsram[0x4D] & vsram[0x4F]);
+                }
+                else {
+                    v_scroll = 0;
+                }
+            }
+            else {
+                int v_scroll_loc = col16 * 4;
+                if (out == a_out) {
+                    v_scroll = std::byteswap(*(uint16_t *)&vsram[v_scroll_loc]) & 0x3FF;
+                }
+                else {
+                    v_scroll = std::byteswap(*(uint16_t *)&vsram[v_scroll_loc + 2]) & 0x3FF;
+                }
+            }
+        }
+
+        uint32_t y = line + v_scroll;
+        uint32_t y_address = ((y >> 3) & (plane_height - 1)) * plane_width * 2;
         uint32_t nt_column = (((column * 8) - h_scroll) >> 3) & (plane_width - 1);
         uint16_t nt_address = nt + y_address + (nt_column * 2);
         uint16_t tile = std::byteswap(*((uint16_t *)&vram[nt_address]));
