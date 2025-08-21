@@ -170,6 +170,14 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
                     case 0x10:
                         plane_width = 32 + (reg_value & 0x3) * 32;
                         plane_height = 32 + ((reg_value >> 4) & 0x3) * 32;
+                        //Window distortion bug.bin uses invalid plane_width setting
+                        if (plane_width == 96) {
+                            plane_width = 32;
+                            plane_height = 1;
+                        }
+                        else if (plane_height = 96) {
+                            plane_height = 32;
+                        }
                         break;
                     case 0x0C:
                         update_x_res();
@@ -233,8 +241,15 @@ uint8_t c_vdp::read_byte(uint32_t address)
             asserting_hblank = 0;
             update_ipl();
             return ret;
-        case 0x00C00008:
-            return 0; //what should this return?
+        case 0x00C00008: {
+            int r = line;
+            if (r > 234) {
+                r -= 6;
+            }
+            return r & 0xFF;
+        }
+        case 0x00C00009:
+            return 0;
         default:
             return 0;
     }
