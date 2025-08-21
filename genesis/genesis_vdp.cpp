@@ -293,12 +293,12 @@ void c_vdp::draw_plane(uint8_t *out, uint32_t nt, uint32_t plane_width, uint32_t
 
     for (int column = 0; column < column_count; column++) {
         if (vscroll_mode && out != win_out) {
-            int col16 = column / 2;
+            int col = column;
             if (fine_x) {
-                col16--;
+                col--;
             }
 
-            if (col16 == -1) {
+            if (col == -1) {
                 //https://gendev.spritesmind.net/forum/viewtopic.php?t=737&postdays=0&postorder=asc&start=30
                 if (x_res == 320) {
                     v_scroll = ((vsram[0x4C] & vsram[0x4E]) << 8) | (vsram[0x4D] & vsram[0x4F]);
@@ -308,7 +308,7 @@ void c_vdp::draw_plane(uint8_t *out, uint32_t nt, uint32_t plane_width, uint32_t
                 }
             }
             else {
-                int v_scroll_loc = col16 * 4;
+                int v_scroll_loc = (col / 2) * 4;
                 if (out == a_out) {
                     v_scroll = std::byteswap(*(uint16_t *)&vsram[v_scroll_loc]) & 0x3FF;
                 }
