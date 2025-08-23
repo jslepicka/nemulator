@@ -175,7 +175,7 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
                             plane_width = 32;
                             plane_height = 1;
                         }
-                        else if (plane_height = 96) {
+                        else if (plane_height == 96) {
                             plane_height = 32;
                         }
                         break;
@@ -551,7 +551,7 @@ void c_vdp::draw_scanline()
 
     if (line == 261) {
         line = 0;
-        hint_counter = reg[0x10];
+        hint_counter = reg[0x0A];
     }
     else {
         line++;

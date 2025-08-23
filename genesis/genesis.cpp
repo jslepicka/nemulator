@@ -264,7 +264,7 @@ uint8_t c_genesis::read_byte(uint32_t address)
     }
     else if (address >= 0xA00000 && address < 0xA10000) {
         //return 0;
-        address &= 0xFFFF;
+        address &= 0x7FFF;
         if (address < 0x4000) {
             return z80_ram[address & 0x1FFF];
         }
@@ -352,7 +352,7 @@ uint16_t c_genesis::read_word(uint32_t address)
     }
     else if (address >= 0xA00000 && address < 0xA10000) {
         //return 0;
-        address &= 0xFFFF;
+        address &= 0x7FFF;
         if (address < 0x4000) {
             return (z80_ram[address & 0x1FFF] << 8) | (z80_ram[(address + 1) & 0x1FFF] & 0xFF);
         }
@@ -399,7 +399,7 @@ void c_genesis::write_byte(uint32_t address, uint8_t value)
         vdp->write_byte(address, value);
     }
     else if (address >= 0xA00000 && address < 0xA10000) {
-        address &= 0xFFFF;
+        address &= 0x7FFF;
         if (address < 0x4000) {
             z80_ram[address & 0x1FFF] = value;
         }
@@ -465,7 +465,7 @@ void c_genesis::write_word(uint32_t address, uint16_t value)
         vdp->write_word(address, value);
     }
     else if (address >= 0xA00000 && address < 0xA10000) {
-        address &= 0xFFFF;
+        address &= 0x7FFF;
         if (address < 0x4000) {
             z80_ram[address & 0x1FFF] = value >> 8;
             z80_ram[(address + 1) & 0x1FFF] = value & 0xFF;
