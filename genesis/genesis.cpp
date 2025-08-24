@@ -173,6 +173,9 @@ int c_genesis::reset()
     last_psg_run = 0;
     skipped_psg_cycles = 0;
     bank_register = 0;
+    master_cycles = 0;
+    last_z80_cycle = 0;
+    next_z80_cycle = 15;
     return 0;
 }
 
@@ -180,25 +183,57 @@ int c_genesis::emulate_frame()
 {
     psg->clear_buffer();
     uint32_t hblank_len = 50;
-    for (int i = 0; i < 262; i++) {
-        m68k->execute(488 - hblank_len);
-        vdp->draw_scanline();
-        m68k->execute(hblank_len);
-        if (i == 224) {
-            z80_irq = 1;
-        }
-        else {
-            z80_irq = 0;
-        }
-        for (int j = 0; j < 228; j++) {
-            if (z80_has_bus && z80_reset) {
-                z80->execute(1);
+    //for (int i = 0; i < 262; i++) {
+    //    m68k->execute(488 - hblank_len);
+    //    vdp->draw_scanline();
+    //    m68k->execute(hblank_len);
+    //    if (i == 224) {
+    //        z80_irq = 1;
+    //    }
+    //    else {
+    //        z80_irq = 0;
+    //    }
+    //    for (int j = 0; j < 228; j++) {
+    //        if (z80_has_bus && z80_reset) {
+    //            z80->execute(1);
+    //        }
+    //        psg->clock(1);
+    //    }
+    //    
+    //    vdp->clear_hblank();
+    //}
+
+    for (int line = 0; line < 262; line++) {
+        z80_irq = line == 224;
+        for (int i = 0; i < 488 - hblank_len; i++) {
+            m68k->execute(1);
+            master_cycles += 7;
+            //if (master_cycles / 15 != last_z80_cycle) {
+            if (master_cycles >= next_z80_cycle) {
+                //last_z80_cycle = master_cycles / 15;
+                next_z80_cycle += 15;
+                if (z80_has_bus && z80_reset) {
+                    z80->execute(1);
+                }
+                psg->clock(1);
             }
-            psg->clock(1);
         }
-        
-        vdp->clear_hblank();
+        vdp->draw_scanline();
+        for (int i = 0; i < hblank_len; i++) {
+            m68k->execute(1);
+            master_cycles += 7;
+            //if (master_cycles / 15 != last_z80_cycle) {
+            if (master_cycles >= next_z80_cycle) {
+                next_z80_cycle += 15;
+                //last_z80_cycle = master_cycles / 15;
+                if (z80_has_bus && z80_reset) {
+                    z80->execute(1);
+                }
+                psg->clock(1);
+            }
+        }
     }
+
     catchup_psg();
     return 0;
 }

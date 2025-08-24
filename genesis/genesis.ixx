@@ -123,6 +123,9 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
 
     uint64_t last_psg_run;
     uint64_t skipped_psg_cycles;
+    uint64_t master_cycles;
+    uint64_t last_z80_cycle;
+    uint64_t next_z80_cycle;
 };
 
 } //namespace genesis
