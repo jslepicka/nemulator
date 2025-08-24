@@ -8,7 +8,7 @@ import dsp;
 namespace sms
 {
 
-class c_psg
+export class c_psg
 {
   public:
     c_psg();

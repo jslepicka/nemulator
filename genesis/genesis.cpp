@@ -43,6 +43,8 @@ c_genesis::c_genesis()
     has_sram = 0;
     is_ps4 = 0;
     ps4_ram_access = 0;
+    bank_register = 0;
+    psg = std::make_unique<sms::c_psg>();
 }
 
 c_genesis::~c_genesis()
@@ -150,9 +152,11 @@ void c_genesis::close_sram()
 int c_genesis::reset()
 {
     ipl = 0;
+    z80_irq = 0;
     m68k->reset();
     vdp->reset();
     z80->reset();
+    psg->reset();
     last_bus_request = 0;
     stalled = 0;
     th1 = 0;
@@ -166,22 +170,45 @@ int c_genesis::reset()
     z80_busreq = 0;
     z80_nmi = 0;
     z80_irq = 0;
+    last_psg_run = 0;
+    skipped_psg_cycles = 0;
+    bank_register = 0;
     return 0;
 }
 
 int c_genesis::emulate_frame()
 {
+    psg->clear_buffer();
     uint32_t hblank_len = 50;
     for (int i = 0; i < 262; i++) {
         m68k->execute(488 - hblank_len);
         vdp->draw_scanline();
         m68k->execute(hblank_len);
-        if (z80_has_bus && z80_reset) {
-            z80->execute(228);
+        if (i == 224) {
+            z80_irq = 1;
         }
+        else {
+            z80_irq = 0;
+        }
+        for (int j = 0; j < 228; j++) {
+            if (z80_has_bus && z80_reset) {
+                z80->execute(1);
+            }
+            psg->clock(1);
+        }
+        
         vdp->clear_hblank();
     }
+    catchup_psg();
     return 0;
+}
+
+void c_genesis::catchup_psg()
+{
+    return;
+    int num_cycles = (int)(z80->retired_cycles - last_psg_run);
+    last_psg_run = z80->retired_cycles;
+    psg->clock(num_cycles);
 }
 
 uint8_t c_genesis::z80_read_byte(uint16_t address)
@@ -198,7 +225,7 @@ uint8_t c_genesis::z80_read_byte(uint16_t address)
     }
     else if (address < 0x6100) {
         //bank register
-        return 0xFF;
+        return bank_register;
     }
     else if (address < 0x7F00) {
         //unused
@@ -209,7 +236,8 @@ uint8_t c_genesis::z80_read_byte(uint16_t address)
         return 0;
     }
     else {
-        return 0;
+        uint32_t a = (bank_register << 16) | address;
+        return read_byte(a);
     }
 }
 
@@ -227,16 +255,30 @@ void c_genesis::z80_write_byte(uint16_t address, uint8_t value)
     else if (address < 0x6100) {
         //bank register
         int x = 1;
+        write_bank_register(value);
     }
     else if (address < 0x7F00) {
         //unused
     }
     else if (address < 0x8000) {
         //vdp
+        if (address == 0x7F11) {
+            psg->write(value);
+            catchup_psg();
+            //OutputDebugString("z80 psg write\n");
+        }
     }
     else {
         int x = 1;
     }
+}
+
+void c_genesis::write_bank_register(uint8_t value)
+{
+    bank_register >>= 1;
+    bank_register &= 0xFF;
+    bank_register |= ((value & 0x1) << 8);
+    int x = 1;
 }
 
 uint8_t c_genesis::read_byte(uint32_t address)
@@ -395,8 +437,13 @@ void c_genesis::write_byte(uint32_t address, uint8_t value)
             int x = 1;
         }
     }
-    else if (address >= 0x00C00000 && address <= 0xC0001E) {
+    else if (address >= 0x00C00000 && address < 0xC00011) {
         vdp->write_byte(address, value);
+    }
+    else if (address == 0xC00011) {
+        psg->write(value);
+        catchup_psg();
+        //OutputDebugString("psg write\n");
     }
     else if (address >= 0xA00000 && address < 0xA10000) {
         address &= 0x7FFF;
@@ -461,8 +508,11 @@ void c_genesis::write_word(uint32_t address, uint16_t value)
             cart_ram[address - cart_ram_start + 1] = value & 0xFF;
         }
     }
-    else if (address >= 0x00C00000 && address <= 0xC0001E) {
+    else if (address >= 0x00C00000 && address < 0xC00011) {
         vdp->write_word(address, value);
+    }
+    else if (address == 0xC00011) {
+        assert(0);
     }
     else if (address >= 0xA00000 && address < 0xA10000) {
         address &= 0x7FFF;
@@ -512,20 +562,24 @@ int *c_genesis::get_video()
 
 int c_genesis::get_sound_bufs(const short **buf_l, const short **buf_r)
 {
-    *buf_l = nullptr;
+    //*buf_l = nullptr;
+    int num_samples = psg->get_buffer(buf_l);
     *buf_r = nullptr;
-    return 0;
+    return num_samples;
 }
 void c_genesis::set_audio_freq(double freq)
 {
+    psg->set_audio_rate(freq);
 }
 
 void c_genesis::enable_mixer()
 {
+    psg->enable_mixer();
 }
 
 void c_genesis::disable_mixer()
 {
+    psg->disable_mixer();
 }
 
 } //namespace genesis

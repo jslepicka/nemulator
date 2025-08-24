@@ -7,6 +7,7 @@ import system;
 import class_registry;
 import z80;
 import :vdp;
+import sms;
 
 class c_m68k;
 //class c_vdp;
@@ -103,9 +104,12 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     uint32_t has_sram;
     int is_ps4;
     int ps4_ram_access;
+    uint32_t bank_register;
 
     void open_sram();
     void close_sram();
+
+    void write_bank_register(uint8_t value);
     
 
     void on_mode_switch(int x_res);
@@ -113,6 +117,12 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     void z80_write_byte(uint16_t address, uint8_t value);
     uint8_t z80_read_port(uint8_t port);
     void z80_write_port(uint8_t port, uint8_t value);
+
+    std::unique_ptr<sms::c_psg> psg;
+    void catchup_psg();
+
+    uint64_t last_psg_run;
+    uint64_t skipped_psg_cycles;
 };
 
 } //namespace genesis

@@ -4,7 +4,7 @@ export module sms;
 import nemulator.std;
 
 import :vdp;
-import :psg;
+export import :psg;
 import :crc;
 import nemulator.buttons;
 import system;
