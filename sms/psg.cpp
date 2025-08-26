@@ -100,7 +100,7 @@ void c_psg::clock(int cycles)
                 out += vol_table[vol[s]];
         }
         //noise
-        counter[3] = (counter[3] - 1) & 0x3FF;
+        
         if (counter[3] == 0) {
             output[3] ^= 1;
             switch (tone[3] & 0x3) {
@@ -134,6 +134,9 @@ void c_psg::clock(int cycles)
                 }
             }
             //printf("%2X\n", lfsr);
+        }
+        else {
+            counter[3] = (counter[3] - 1) & 0x3FF;
         }
         if (lfsr & 0x1)
             out += vol_table[vol[3]];

@@ -564,6 +564,7 @@ void c_vdp::eval_sprites()
 
     memset(sprite_out, -1, sizeof(sprite_out));
 
+
     const uint32_t sprites_per_frame = (x_res == 320 ? 80 : 64);
     const uint32_t sprites_per_scanline = (x_res == 320 ? 20 : 16);
     uint32_t sprite_number = 0;

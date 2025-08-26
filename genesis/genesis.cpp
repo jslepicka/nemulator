@@ -271,7 +271,7 @@ uint8_t c_genesis::z80_read_byte(uint16_t address)
         return 0;
     }
     else {
-        uint32_t a = (bank_register << 16) | address;
+        uint32_t a = (bank_register << 15) | (address);
         return read_byte(a);
     }
 }
@@ -311,7 +311,7 @@ void c_genesis::z80_write_byte(uint16_t address, uint8_t value)
 void c_genesis::write_bank_register(uint8_t value)
 {
     bank_register >>= 1;
-    bank_register &= 0xFF;
+    //bank_register &= 0xFF;
     bank_register |= ((value & 0x1) << 8);
     int x = 1;
 }
