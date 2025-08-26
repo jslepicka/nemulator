@@ -8,6 +8,9 @@ import class_registry;
 import z80;
 import :vdp;
 import sms;
+import ym;
+
+import dsp;
 
 class c_m68k;
 //class c_vdp;
@@ -79,6 +82,7 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     std::unique_ptr<uint8_t[]> cart_ram;
     std::unique_ptr<c_vdp> vdp;
     std::unique_ptr<c_z80> z80;
+    std::unique_ptr<c_ym> ym;
     int file_length;
     uint8_t ipl;
     int last_bus_request;
@@ -126,6 +130,14 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     uint64_t master_cycles;
     uint64_t last_z80_cycle;
     uint64_t next_z80_cycle;
+    uint64_t next_ym_cycle;
+
+    int mixer_enabled;
+
+
+    std::unique_ptr<dsp::c_biquad4> lpf;
+    std::unique_ptr<dsp::c_biquad> post_filter;
+    std::unique_ptr<dsp::c_resampler> resampler;
 };
 
 } //namespace genesis

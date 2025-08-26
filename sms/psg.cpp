@@ -71,6 +71,7 @@ void c_psg::reset()
     lfsr_out = 0;
     channel = 0;
     type = 0;
+    out = 0.0f;
     std::memset(sound_buffer.get(), 0, sizeof(int32_t) * 1024);
 }
 
@@ -140,7 +141,7 @@ void c_psg::clock(int cycles)
         }
         if (lfsr & 0x1)
             out += vol_table[vol[3]];
-
+        this->out = out / 4.0f;
         //resample(out / 4.0f);
         if (mixer_enabled) {
             for (int i = 0; i < 4; i++) {

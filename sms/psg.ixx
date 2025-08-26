@@ -28,6 +28,8 @@ export class c_psg
         mixer_enabled = 0;
     };
 
+    float out;
+
   private:
     int available_cycles;
     int mixer_enabled = 0;

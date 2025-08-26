@@ -36,6 +36,7 @@ c_genesis::c_genesis()
         &z80_irq, //irq
         nullptr  //data bus
     );
+    ym = std::make_unique<c_ym>();
     cart_ram_start = 0;
     cart_ram_end = 0;
     z80_has_bus = 1;
@@ -45,6 +46,32 @@ c_genesis::c_genesis()
     ps4_ram_access = 0;
     bank_register = 0;
     psg = std::make_unique<sms::c_psg>();
+    mixer_enabled = 0;
+
+
+
+    /*
+    lowpass 20kHz
+    d = fdesign.lowpass('N,Fp,Ap,Ast', 8, 20000, .1, 80, 7671360/6);
+    Hd = design(d, 'ellip', 'FilterStructure', 'df2tsos');
+    set(Hd, 'Arithmetic', 'single');
+    g = regexprep(num2str(reshape(Hd.ScaleValues(1:4), [1 4]), '%.16ff '), '\s+', ',')
+    b2 = regexprep(num2str(Hd.sosMatrix(5:8), '%.16ff '), '\s+', ',')
+    a2 = regexprep(num2str(Hd.sosMatrix(17:20), '%.16ff '), '\s+', ',')
+    a3 = regexprep(num2str(Hd.sosMatrix(21:24), '%.16ff '), '\s+', ',')
+    */
+    lpf = std::make_unique<dsp::c_biquad4>(
+        std::array{0.5068508386611939f, 0.3307863473892212f, 0.1168005615472794f, 0.0055816280655563f},
+        std::array{-1.9496889114379883f, -1.9021773338317871f, -1.3770858049392700f, -1.9604763984680176f},
+        std::array{-1.9442052841186523f, -1.9171522855758667f, -1.8950747251510620f, -1.9676681756973267f},
+        std::array{0.9609073400497437f, 0.9271715879440308f, 0.8989855647087097f, 0.9881398081779480f});
+    post_filter = std::make_unique<dsp::c_biquad>(
+        0.5648277401924133f, std::array{1.0000000000000000f, 0.0000000000000000f, -1.0000000000000000f},
+        std::array{1.0000000000000000f, -0.8659016489982605f, -0.1296554803848267f});
+    resampler = std::make_unique<dsp::c_resampler>((float)(((488.0 * 262.0 * 60.0) / 6.0) / 48000.0), lpf.get(),
+                                                   post_filter.get());
+
+
 }
 
 c_genesis::~c_genesis()
@@ -157,6 +184,7 @@ int c_genesis::reset()
     vdp->reset();
     z80->reset();
     psg->reset();
+    ym->reset();
     last_bus_request = 0;
     stalled = 0;
     th1 = 0;
@@ -176,60 +204,44 @@ int c_genesis::reset()
     master_cycles = 0;
     last_z80_cycle = 0;
     next_z80_cycle = 15;
+    next_ym_cycle = 0;
     return 0;
 }
 
 int c_genesis::emulate_frame()
 {
     psg->clear_buffer();
+    resampler->clear_buf();
     uint32_t hblank_len = 50;
-    //for (int i = 0; i < 262; i++) {
-    //    m68k->execute(488 - hblank_len);
-    //    vdp->draw_scanline();
-    //    m68k->execute(hblank_len);
-    //    if (i == 224) {
-    //        z80_irq = 1;
-    //    }
-    //    else {
-    //        z80_irq = 0;
-    //    }
-    //    for (int j = 0; j < 228; j++) {
-    //        if (z80_has_bus && z80_reset) {
-    //            z80->execute(1);
-    //        }
-    //        psg->clock(1);
-    //    }
-    //    
-    //    vdp->clear_hblank();
-    //}
 
     for (int line = 0; line < 262; line++) {
         z80_irq = line == 224;
-        for (int i = 0; i < 488 - hblank_len; i++) {
-            m68k->execute(1);
-            master_cycles += 7;
-            //if (master_cycles / 15 != last_z80_cycle) {
-            if (master_cycles >= next_z80_cycle) {
-                //last_z80_cycle = master_cycles / 15;
-                next_z80_cycle += 15;
-                if (z80_has_bus && z80_reset) {
-                    z80->execute(1);
+
+        const int cycles[] = {488 - hblank_len, hblank_len};
+
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < cycles[i]; j++) {
+                m68k->execute(1);
+                if (++next_ym_cycle == 6) {
+                    //clock ym at 1/6 68k freq
+                    next_ym_cycle = 0;
+                    ym->clock(1);
+                    if (mixer_enabled) {
+                        //todo: volume adjustments
+                        resampler->process(ym->out + psg->out * .5);
+                    }
                 }
-                psg->clock(1);
+                master_cycles += 7;
+                if (master_cycles >= next_z80_cycle) {
+                    next_z80_cycle += 15;
+                    if (z80_has_bus && z80_reset) {
+                        z80->execute(1);
+                    }
+                    psg->clock(1);
+                }
             }
-        }
-        vdp->draw_scanline();
-        for (int i = 0; i < hblank_len; i++) {
-            m68k->execute(1);
-            master_cycles += 7;
-            //if (master_cycles / 15 != last_z80_cycle) {
-            if (master_cycles >= next_z80_cycle) {
-                next_z80_cycle += 15;
-                //last_z80_cycle = master_cycles / 15;
-                if (z80_has_bus && z80_reset) {
-                    z80->execute(1);
-                }
-                psg->clock(1);
+            if (i == 0) {
+                vdp->draw_scanline();
             }
         }
     }
@@ -271,7 +283,7 @@ uint8_t c_genesis::z80_read_byte(uint16_t address)
         return 0;
     }
     else {
-        uint32_t a = (bank_register << 15) | (address);
+        uint32_t a = (bank_register << 15) | (address & 0x7FFF);
         return read_byte(a);
     }
 }
@@ -286,6 +298,7 @@ void c_genesis::z80_write_byte(uint16_t address, uint8_t value)
     }
     else if (address < 0x6000) {
         //ym2162
+        ym->write(address & 0x3, value);
     }
     else if (address < 0x6100) {
         //bank register
@@ -597,10 +610,16 @@ int *c_genesis::get_video()
 
 int c_genesis::get_sound_bufs(const short **buf_l, const short **buf_r)
 {
-    //*buf_l = nullptr;
-    int num_samples = psg->get_buffer(buf_l);
+    ////*buf_l = nullptr;
+    //int num_samples = psg->get_buffer(buf_l);
+    //*buf_r = nullptr;
+    //return num_samples;
+    
+    //mono for now
     *buf_r = nullptr;
+    int num_samples = resampler->get_output_buf(buf_l);
     return num_samples;
+
 }
 void c_genesis::set_audio_freq(double freq)
 {
@@ -610,11 +629,13 @@ void c_genesis::set_audio_freq(double freq)
 void c_genesis::enable_mixer()
 {
     psg->enable_mixer();
+    mixer_enabled = 1;
 }
 
 void c_genesis::disable_mixer()
 {
     psg->disable_mixer();
+    mixer_enabled = 0;
 }
 
 } //namespace genesis

@@ -577,7 +577,10 @@ void c_vdp::eval_sprites()
         uint16_t attribute2 = std::byteswap(*(uint16_t *)&vram[sprite_table_base + sprite_number * 8 + 2]);
         uint16_t attribute3 = std::byteswap(*(uint16_t *)&vram[sprite_table_base + sprite_number * 8 + 4]);
         uint16_t attribute4 = std::byteswap(*(uint16_t *)&vram[sprite_table_base + sprite_number * 8 + 6]);
-        uint32_t vpos = attribute1 & 0x3FF;
+        //todo: vpos is lower 10 bits of first word.  truxtron requires mask of 1ff to work properly.
+        //per https://wiki.megadrive.org/index.php?title=VDP_Sprites, non-interlaced range is 0-511,
+        //interlaced range is 0-1023.  Mask probably needs to change depending on mode, but need to verify.
+        uint32_t vpos = attribute1 & 0x1FF;
         uint32_t hpos = attribute4 & 0x1FF;
         uint32_t next = attribute2 & 0x7F;
         uint32_t vsize = ((attribute2 >> 8) & 0x3);
