@@ -1303,12 +1303,14 @@ export class c_z80
                         tchar = tchar | (1 << y);
                         break;
                 }
-                if (z == 6) {
-                    write_byte(HL.word, tchar);
-                }
-                else {
-                    //todo: is this correct?
-                    *r[z] = tchar;
+                if (x != 1) {
+                    if (z == 6) {
+                        write_byte(HL.word, tchar);
+                    }
+                    else {
+                        //todo: is this correct?
+                        *r[z] = tchar;
+                    }
                 }
                 break;
 
