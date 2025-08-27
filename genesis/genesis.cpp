@@ -268,7 +268,7 @@ uint8_t c_genesis::z80_read_byte(uint16_t address)
     }
     else if (address < 0x6000) {
         //ym2162
-        return 0;
+        return ym->read(address);
     }
     else if (address < 0x6100) {
         //bank register
@@ -429,7 +429,7 @@ uint16_t c_genesis::read_word(uint32_t address)
             }
         }
         if (cart_ram_start && address >= cart_ram_start && address <= cart_ram_end) {
-            assert(0);
+            //assert(0);
             return std::byteswap(*(uint16_t *)(cart_ram.get() + address - cart_ram_start));
         }
         else {
@@ -544,14 +544,14 @@ void c_genesis::write_word(uint32_t address, uint16_t value)
     if (address < 0x400000) {
         if (is_ps4) {
             if (ps4_ram_access && address >= cart_ram_start && address <= cart_ram_end) {
-                assert(0);
+                //assert(0);
                 cart_ram[address - cart_ram_start] = value >> 8;
                 cart_ram[address - cart_ram_start + 1] = value & 0xFF;
             }
         }
         if (cart_ram_start && address >= cart_ram_start && address <= cart_ram_end)
         {
-            assert(0);
+            //assert(0);
             cart_ram[address - cart_ram_start] = value >> 8;
             cart_ram[address - cart_ram_start + 1] = value & 0xFF;
         }
