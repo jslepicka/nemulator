@@ -38,6 +38,8 @@ c_m68k::c_m68k(
     a[5] = &a5;
     a[6] = &a6;
     a[7] = &usp;
+
+    make_instruction_array();
 }
 
 void c_m68k::reset()
@@ -104,7 +106,7 @@ void c_m68k::execute(int cycles)
             else {
                 op_word = read_word(pc);
                 pc += 2;
-                instruction = instructions[op_word];
+                instruction = instructions2[op_word];
                 decode();
                 //assert(opcode_fn != nullptr);
                 required_cycles = 5;
@@ -146,7 +148,7 @@ bool c_m68k::test()
     update_status();
     op_word = read_word(pc);
     pc += 2;
-    instruction = instructions[op_word];
+    instruction = instructions2[op_word];
     decode();
     if (opcode_fn == nullptr) {
         return false;

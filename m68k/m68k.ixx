@@ -139,7 +139,7 @@ public:
 
     ADDRESS_MODE address_mode;
 
-    static const uint8_t instructions[65536];
+    //static const uint8_t instructions[65536];
 
     uint16_t sr;
     uint32_t d0;
@@ -298,4 +298,7 @@ public:
 
     uint8_t interrupt;
 
+    void make_instruction_array();
+    static uint8_t instructions2[65536];
+    static std::atomic<int> instruction_array_built;
 };
