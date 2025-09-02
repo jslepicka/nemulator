@@ -72,10 +72,15 @@ uint16_t c_vdp::read_word(uint32_t address)
             uint16_t ret = vram[_address] << 8;
             ret |= vram[_address + 1];
             _address += reg[0x0F];
+            return 0xff;
             return ret;
         }
         case 0x00C00004:
         case 0x00C00006:
+            //unsure when dma status should be cleared
+            //world series baseball will hang if this reads back set
+            //(see 0x1140 in disassembly)
+            status.dma = 0;
             ret = status.value;
             status.vint = 0;
             status.dma = 0;
@@ -191,9 +196,12 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
                     //second word
                     //address_reg |= value;
                     address_reg = (address_reg & 0xFFFF0000) | value;
-                    address_type = (ADDRESS_TYPE)((((address_reg & 0xF0) | (address_reg >> 28)) >> 2) & 0xF);
+                    address_type = (ADDRESS_TYPE)((((address_reg & 0x30) | (address_reg >> 28)) >> 2) & 0xF);
                     _address = ((address_reg & 0x3) << 14) | ((address_reg >> 16) & 0x3FFF);
                     vram_to_vram_copy = address_reg & 0x40;
+                    if (vram_to_vram_copy) {
+                        int x = 1;
+                    }
                     dma_copy = address_reg & 0x80;
                     if (dma_copy) {
                         if (reg[0x01] & 0x10) {

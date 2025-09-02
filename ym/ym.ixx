@@ -18,7 +18,7 @@ export class c_ym
     int ticks;
     int group;
 
-    uint8_t addr;
+    uint8_t reg_addr;
     uint8_t data;
     int channel_idx;
     int operator_idx;
@@ -28,6 +28,10 @@ export class c_ym
     int timer_a_enabled;
     uint8_t status;
     int busy_counter;
+    uint32_t timer_b;
+    uint32_t timer_b_reload;
+    int timer_b_enabled;
+    int timer_b_divider;
 
     //we don't really need 256 of these but just keeping it simple
     uint8_t registers[256];
@@ -37,4 +41,7 @@ export class c_ym
         GROUP_ONE = 0,
         GROUP_TWO = 1
     };
+
+    void clock_timer_a();
+    void clock_timer_b();
 };

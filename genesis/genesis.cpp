@@ -139,6 +139,9 @@ int c_genesis::load()
     if (memcmp(&rom[0x120], ps4_title, sizeof(ps4_title) - 1) == 0) {
         is_ps4 = 1;
     }
+    if (cart_ram_start && cart_ram_start < rom_size) {
+        is_ps4 = 1;
+    }
 
     reset();
     loaded = 1;
@@ -477,7 +480,7 @@ void c_genesis::write_byte(uint32_t address, uint8_t value)
                 cart_ram[address - cart_ram_start] = value;
             }
         }
-        if (cart_ram_start && address >= cart_ram_start && address <= cart_ram_end)
+        else if (cart_ram_start && address >= cart_ram_start && address <= cart_ram_end)
         {
             cart_ram[address - cart_ram_start] = value;
         }
@@ -526,9 +529,11 @@ void c_genesis::write_byte(uint32_t address, uint8_t value)
                 }
                 break;
             case 0xA130F1:
-                ps4_ram_access = value;
+                ps4_ram_access = value & 0x1;
                 break;
-            default:
+            default: {
+                int x = 1;
+            }
                 break;
         }
         int x = 1;
@@ -549,7 +554,7 @@ void c_genesis::write_word(uint32_t address, uint16_t value)
                 cart_ram[address - cart_ram_start + 1] = value & 0xFF;
             }
         }
-        if (cart_ram_start && address >= cart_ram_start && address <= cart_ram_end)
+        else if (cart_ram_start && address >= cart_ram_start && address <= cart_ram_end)
         {
             //assert(0);
             cart_ram[address - cart_ram_start] = value >> 8;

@@ -82,12 +82,16 @@ void c_m68k::reset()
     available_cycles = 0;
     required_cycles = 0;
     interrupt = 0;
+    stopped = false;
 }
 
 void c_m68k::execute(int cycles)
 {
     available_cycles += cycles;
     while (true) {
+        if (pc == 0x113A) {
+            int x = 1;
+        }
         if (*stalled) {
             available_cycles--;
             (*stalled)--;
@@ -96,45 +100,46 @@ void c_m68k::execute(int cycles)
         if (fetch_opcode) {
             uint8_t i = *ipl & 0x7;
             uint8_t mask = (sr >> 8) & 0x7;
-            if (i) {
-                int x = 1;
-            }
             if (i && i > mask) {
+                stopped = false;
                 interrupt = i;
                 required_cycles = 44;
+                fetch_opcode = 0;
             }
-            else {
+            else if (!stopped) {
                 op_word = read_word(pc);
                 pc += 2;
-                instruction = instructions2[op_word];
+                instruction = instructions[op_word];
                 decode();
                 //assert(opcode_fn != nullptr);
                 required_cycles = 5;
+                fetch_opcode = 0;
             }
-            fetch_opcode = 0;
+            //fetch_opcode = 0;
         }
         if (required_cycles <= available_cycles) {
             available_cycles -= required_cycles;
-            fetch_opcode = 1;
-            if (interrupt) {
-                do_trap(24 + interrupt);
-                //do_trap already calls update_status, so no need to do that again
-                sr &= 0xF8FF;
-                sr |= (interrupt << 8);
-                interrupt = 0;
-                ack_irq();
-            }
-            else {
-                if (opcode_fn == nullptr) {
-                    do_trap(4);
+            if (!stopped) {
+                fetch_opcode = 1;
+                if (interrupt) {
+                    do_trap(24 + interrupt);
+                    //do_trap already calls update_status, so no need to do that again
+                    sr &= 0xF8FF;
+                    sr |= (interrupt << 8);
+                    interrupt = 0;
+                    ack_irq();
                 }
                 else {
-                    opcode_fn(this);
+                    if (opcode_fn == nullptr) {
+                        do_trap(4);
+                    }
+                    else {
+                        opcode_fn(this);
+                    }
+                    //shouldn't be required unless I've missed somewhere else
+                    update_status();
                 }
-                //shouldn't be required unless I've missed somewhere else
-                update_status();
             }
-            int x = 1;
         }
         else {
             return;
@@ -461,15 +466,31 @@ void c_m68k::decode()
         opcode_fn = std::mem_fn(&c_m68k::DIVS_);
         break;
     case INTERRUPT_4:
-        opcode_fn = opcode_fn = std::bind(&c_m68k::do_trap, this, 112);
+        opcode_fn = std::bind(&c_m68k::do_trap, this, 112);
         break;
     case INTERRUPT_6:
-        opcode_fn = opcode_fn = std::bind(&c_m68k::do_trap, this, 120);
+        opcode_fn = std::bind(&c_m68k::do_trap, this, 120);
+        break;
+    case STOP:
+        opcode_fn = std::mem_fn(&c_m68k::STOP_);
         break;
     default:
         opcode_fn = nullptr;
         break;
     }
+}
+
+void c_m68k::STOP_()
+{
+    if (!(sr & 0x2000)) {
+        //user mode
+        assert(0);
+    }
+    stopped = true;
+    sr = read_word(pc);
+    pc += 2;
+    set_flags();
+    update_status();
 }
 
 void c_m68k::DIVS_()

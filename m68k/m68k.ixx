@@ -272,6 +272,7 @@ public:
     void DIVU_();
     void DIVS_();
     void INTERRUPT_(int number);
+    void STOP_();
 
     void do_trap(uint32_t vector);
 
@@ -297,8 +298,10 @@ public:
     uint32_t immediate_size;
 
     uint8_t interrupt;
+    bool stopped;
 
     void make_instruction_array();
+    static const uint8_t instructions[65536];
     static uint8_t instructions2[65536];
     static std::atomic<int> instruction_array_built;
 };

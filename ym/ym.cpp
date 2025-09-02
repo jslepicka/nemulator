@@ -15,11 +15,44 @@ void c_ym::reset()
     out = 0.0f;
     ticks = 0;
     group = GROUP_ONE;
+
     timer_a = 0;
     timer_a_reload = 0;
     timer_a_enabled = 0;
+
+    timer_b = 0;
+    timer_b_reload = 0;
+    timer_b_enabled = 0;
+
     status = 0;
     busy_counter = 0;
+    timer_b_divider = 0;
+}
+
+void c_ym::clock_timer_a()
+{
+    if (timer_a_enabled) {
+        timer_a++;
+        if (timer_a == 0x400) {
+            if (registers[0x27] & 0x4) {
+                status |= 1;
+            }
+            timer_a = timer_a_reload;
+        }
+    }
+}
+
+void c_ym::clock_timer_b()
+{
+    if (timer_b_enabled) {
+        timer_b++;
+        if (timer_b == 0x100) {
+            if (registers[0x27] & 0x8) {
+                status |= 2;
+            }
+            timer_b = timer_b_reload;
+        }
+    }
 }
 
 void c_ym::clock(int cycles)
@@ -33,16 +66,11 @@ void c_ym::clock(int cycles)
     if (++ticks == 24) {
         ticks = 0;
         //clock timers
-        if (timer_a_enabled) {
-            timer_a++;
-            if (timer_a == 0x400) {
-                if (registers[0x27] & 0x4) {
-                    status |= 1;
-                }
-                timer_a = timer_a_reload;
-            }
+        clock_timer_a();
+        if (++timer_b_divider == 16) {
+            timer_b_divider = 0;
+            clock_timer_b();
         }
-
 
         if (registers[0x2B] & 0x80) {
             //dac enabled
@@ -69,15 +97,15 @@ void c_ym::write(uint16_t address, uint8_t value)
         case 0:
         case 2:
             group = address == 0 ? GROUP_ONE : GROUP_TWO;
-            addr = value;
+            reg_addr = value;
             if (value == 0x1) {
                 int x = 1;
             }
-            channel_idx = addr & 0x3;
+            channel_idx = reg_addr & 0x3;
             if (group == GROUP_TWO) {
                 channel_idx += 3;
             }
-            operator_idx = ((addr >> 3) & 0x1) | ((addr >> 1) & 2);
+            operator_idx = ((reg_addr >> 3) & 0x1) | ((reg_addr >> 1) & 2);
             break;
         case 1:
         case 3:
@@ -85,19 +113,22 @@ void c_ym::write(uint16_t address, uint8_t value)
                 int x = 1;
             }
             data = value;
-            registers[addr] = value;
-            if (addr == 0x26) {
+            registers[reg_addr] = value;
+            if (reg_addr == 0x26) {
                 int x = 1;
             }
             busy_counter = 32;
             status |= 0x80;
-            switch (addr) {
+            switch (reg_addr) {
                 case 0x24:
                     timer_a_reload = (timer_a_reload & 3) | (value << 2);
                     break;
                 case 0x25:
                     //should timer_a be reset here?
                     timer_a_reload = (timer_a_reload & ~3) | (value & 0x3);
+                    break;
+                case 0x26:
+                    timer_b_reload = value;
                     break;
                 case 0x27:
                     if (value & 0x10) {
@@ -113,9 +144,17 @@ void c_ym::write(uint16_t address, uint8_t value)
                     else if (!(value & 0x1)) {
                         timer_a_enabled = 0;
                     }
+                    if (!timer_b_enabled && (value & 0x2)) {
+                        timer_b_enabled = 1;
+                        timer_b = timer_a_reload;
+                    }
+                    else if (!(value & 0x2)) {
+                        timer_b_enabled = 0;
+                    }
                     break;
                 case 0x2A: {
                     int x = 1;
+                    break;
                 } break;
             }
             break;
