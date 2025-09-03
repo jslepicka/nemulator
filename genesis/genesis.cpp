@@ -247,6 +247,7 @@ int c_genesis::emulate_frame()
                 vdp->draw_scanline();
             }
         }
+        vdp->clear_hblank();
     }
 
     catchup_psg();

@@ -17,19 +17,36 @@ c_vdp::c_vdp(uint8_t *ipl, read_word_t read_word_68k, mode_switch_callback_t mod
     this->read_word_68k = read_word_68k;
     this->mode_switch_callback = mode_switch_callback;
 
-    for (int i = 0; i < 512; i++) {
-        uint32_t color = 0xFF000000;
-        color |= ((((i >> 0) & 7) * 32)) << 0;
-        color |= ((((i >> 3) & 7) * 32)) << 8;
-        color |= ((((i >> 6) & 7) * 32)) << 16;
-        rgb[i] = color;
-    }
-    
     plane_ptrs[0] = sprite_out;
     plane_ptrs[1] = win_out;
     plane_ptrs[2] = a_out;
     plane_ptrs[3] = b_out;
 }
+
+constexpr auto c_vdp::make_rgb_entries()
+{
+    std::array<std::array<uint32_t, 512>, 3> entries{};
+    //colors from
+    //https://forums.nesdev.org/viewtopic.php?p=233530&sid=e77eb32ab8b8a8da89b7f7cf77e7cfa7#p233530
+    uint8_t colors[3][8] = {
+        {0,  29,  52,  70,  87, 101, 116, 130}, //shadow
+        {0,  52,  87, 116, 144, 172, 206, 255}, //normal
+      {130, 144, 158, 172, 187, 206, 228, 255}  //highlight
+    };
+
+    for (int color_mode = 0; color_mode < 3; color_mode++) {
+        for (int i = 0; i < 512; i++) {
+            uint32_t color = 0xFF000000;
+            color |= colors[color_mode][(i >> 0) & 7] << 0;
+            color |= colors[color_mode][(i >> 3) & 7] << 8;
+            color |= colors[color_mode][(i >> 6) & 7] << 16;
+            entries[color_mode][i] = color;
+        }
+    }
+    return entries;
+}
+
+constexpr std::array<std::array<uint32_t, 512>, 3> c_vdp::rgb_entries = make_rgb_entries();
 
 c_vdp::~c_vdp()
 {
@@ -131,7 +148,9 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
                     cram[a] = value >> 8;
                     cram[a + 1] = value & 0xFF;
 #ifdef USE_BMI2
-                    cram_entry[a >> 1] = rgb[_pext_u32(value, 0xEEE)];
+                    for (int i = 0; i < 3; i++) {
+                        cram_entries[i][a >> 1] = rgb_entries[i][_pext_u32(value, 0xEEE)];
+                    }
 #else
                     {
                         uint32_t color = ((value >> 0) & 0xE) * 16;
@@ -141,6 +160,7 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
                         cram_entry[a >> 1] = color;
                     }
 #endif
+
                     break;
                 case ADDRESS_TYPE::VSRAM_WRITE:
                     a &= 0x7F;
@@ -244,9 +264,9 @@ uint8_t c_vdp::read_byte(uint32_t address)
             status.vint = 0;
             status.dma = 0;
             //*ipl &= ~0x6;
-            asserting_vblank = 0;
-            asserting_hblank = 0;
-            update_ipl();
+            //asserting_vblank = 0;
+            //asserting_hblank = 0;
+            //update_ipl();
             return ret;
         case 0x00C00008: {
             int r = line;
@@ -296,12 +316,6 @@ void c_vdp::write_byte(uint32_t address, uint8_t value)
     }
 }
 
-uint32_t c_vdp::lookup_color(uint32_t pal, uint32_t index)
-{
-    int loc = pal * 16 + index;
-    return cram_entry[loc];
-}
-
 void c_vdp::draw_plane(uint8_t *out, uint32_t nt, uint32_t plane_width, uint32_t plane_height, uint32_t v_scroll,
                        uint32_t h_scroll, uint32_t low_pri_val)
 {
@@ -309,7 +323,8 @@ void c_vdp::draw_plane(uint8_t *out, uint32_t nt, uint32_t plane_width, uint32_t
     uint32_t fine_x = (8 - (h_scroll & 0x7)) & 7;
     uint32_t x = 0;
    
-    uint8_t *priorities_offset = &priorities[8 - fine_x];
+    uint8_t *visibility_offset = &layer_visibility[8 - fine_x];
+    uint8_t *priority_offset = &layer_priorities[8 - fine_x];
 
     int column_count = reg[0x0C] & 1 ? 41 : 33;
 
@@ -354,8 +369,8 @@ void c_vdp::draw_plane(uint8_t *out, uint32_t nt, uint32_t plane_width, uint32_t
         uint64_t palette_broadcast = pal * 0x0101010101010101;
         #endif
 
-        int priority_shift = low_pri_val - (4 * priority);
-        int priority_bit = 1 << priority_shift;
+        int layer_shift = low_pri_val - (4 * priority);
+        int priority_bit = 1 << layer_shift;
 
         const uint32_t bytes_per_tile = 32;
         const uint32_t bytes_per_tile_row = bytes_per_tile / 8;
@@ -367,25 +382,26 @@ void c_vdp::draw_plane(uint8_t *out, uint32_t nt, uint32_t plane_width, uint32_t
         #ifdef USE_BMI2
         uint64_t pattern_expanded = _pdep_u64(pattern, 0x0F0F0F0F0F0F0F0F);
         uint64_t pixels = pattern_expanded | palette_broadcast;
-        if (priority) {
-            pixels |= 0x8080808080808080;
-        }
         // find non-zero nibbles in p2
         // set the msb to 1
-        uint64_t priorities = pattern_expanded | 0x8080808080808080;
+        uint64_t visibility = pattern_expanded | 0x8080808080808080;
         // subtract 1.  If the value of the nibble is zero, there
         // will be a carry from the MSB, setting it to 0
-        priorities -= 0x0101010101010101;
+        visibility -= 0x0101010101010101;
         // shift the MSBs into the correct priority position
-        priorities &= 0x8080808080808080;
-        priorities >>= 7 - priority_shift;
+        visibility &= 0x8080808080808080;
+        visibility >>= 7 - layer_shift;
+
+        uint64_t priorities = priority ? 0x8080808080808080 : 0;
+        priorities >>= 7 - layer_shift;
+        *((uint64_t *)&priority_offset[x]) |= priorities;
 
         if (!h_flip) {
             pixels = std::byteswap(pixels);
-            priorities = std::byteswap(priorities);
+            visibility = std::byteswap(visibility);
         }
 
-        *((uint64_t *)&priorities_offset[x]) |= priorities;
+        *((uint64_t *)&visibility_offset[x]) |= visibility;
         *((uint64_t *)&out[x]) = pixels;
         x += 8;
         #else
@@ -438,7 +454,8 @@ void c_vdp::draw_scanline()
             std::fill_n(fb, 320, 0xFF000000);
         }
         else {
-            memset(priorities, 0, sizeof(priorities));
+            memset(layer_visibility, 0, sizeof(layer_visibility));
+            memset(layer_priorities, 0, sizeof(layer_priorities));
             eval_sprites();
 
             uint8_t vp = reg[0x12] & 0x9F;
@@ -506,8 +523,8 @@ void c_vdp::draw_scanline()
                             //pretty kludgey...
                             for (int j = i; j < i + (a_h_scroll & 0xF); j++) {
                                 int src = (j + 16) % x_res;
-                                priorities[j + 8] &= DISABLE_A_PLANE;
-                                priorities[j + 8] |= priorities[src + 8] & ~DISABLE_A_PLANE;
+                                layer_visibility[j + 8] &= DISABLE_A_PLANE;
+                                layer_visibility[j + 8] |= layer_visibility[src + 8] & ~DISABLE_A_PLANE;
                                 plane_ptrs[2][j] = plane_ptrs[2][src];
                             }
                         }
@@ -518,17 +535,26 @@ void c_vdp::draw_scanline()
                     }
                 }
                 for (int j = 0; j < 16; j++) {
-                    uint32_t p = priorities[8 + i + j] & plane_mask;
+                    uint8_t visible_layers = layer_visibility[8 + i + j] & plane_mask;
                     uint8_t out;
                     int color_mode = 1;
-                    if (p) {
-                        uint32_t c = _tzcnt_u32(p);
-                        out = plane_ptrs[c & 0x3][j + i];
-                        out &= 0x7F;
-                        if (reg[0x0c] & 0x8) {
-                            color_mode = (plane_ptrs[in_window ? WINDOW_HIGH : A_HIGH][j + i] & 0x80) ||
-                                         (plane_ptrs[B_HIGH][j + i] & 0x80);
-                            if (c == 0 || c == 4) {
+                    if (visible_layers) {
+                        uint32_t visible_layer = _tzcnt_u32(visible_layers);
+                        out = plane_ptrs[visible_layer & 0x3][j + i];
+                        
+                        //shadow/highlight mode
+                        //https://gendev.spritesmind.net/forum/viewtopic.php?p=32174&sid=469a79afbb947556542ed3e4ff6c3f78#p32174
+                        if (reg[0x0C] & 0x8) {
+                            uint8_t high_priority_layers = layer_priorities[8 + i + j] & plane_mask & 0xE;
+                            color_mode = high_priority_layers ? 1 : 0;
+
+                            auto mask_sprite = [&]() {
+                                //v &= ~0x11;
+                                visible_layers &= ~((1 << SPRITE_HIGH) | (1 << SPRITE_LOW));
+                                out = visible_layers ? plane_ptrs[_tzcnt_u32(visible_layers) & 0x3][j + i] : bg_color;
+                            };
+
+                            if (visible_layer == SPRITE_HIGH || visible_layer == SPRITE_LOW) {
                                 switch (out) {
                                     case 0x0E:
                                     case 0x1E:
@@ -537,26 +563,14 @@ void c_vdp::draw_scanline()
                                         break;
                                     case 0x3E:
                                         color_mode += 1;
-                                        p &= ~0x11;
-                                        if (p) {
-                                            out = plane_ptrs[_tzcnt_u32(p) & 0x3][j + i] & 0x7F;
-                                        }
-                                        else {
-                                            out = bg_color;
-                                        }
+                                        mask_sprite();
                                         break;
                                     case 0x3F:
                                         color_mode = 0;
-                                        p &= ~0x11;
-                                        if (p) {
-                                            out = plane_ptrs[_tzcnt_u32(p) & 0x3][j + i] & 0x7F;
-                                        }
-                                        else {
-                                            out = bg_color;
-                                        }
+                                        mask_sprite();
                                         break;
                                     default:
-                                        if (c == 0) {
+                                        if (visible_layer == SPRITE_HIGH) {
                                             color_mode = 1;
                                         }
                                 }
@@ -566,21 +580,13 @@ void c_vdp::draw_scanline()
                     else {
                         out = bg_color;
                     }
-                    if (color_mode == 0) {
-                        *fb++ = ((cram_entry[out] >> 1) & 0x7F7F7F) | 0xFF000000;
-                    }
-                    else if (color_mode == 2) {
-                        *fb++ = ((cram_entry[out] << 1) & 0xFEFEFE) | 0xFF000000;
-                    }
-                    else {
-                        *fb++ = cram_entry[out];
-                    }
+                    *fb++ = cram_entries[color_mode][out];
                 }
             }
         }
     }
 
-    if (--hint_counter == 0) {
+    if (--hint_counter == 0xFF) {
         if (reg[0x00] & 0x10) {
             asserting_hblank = 1;
             status.hblank = 1;
@@ -701,10 +707,10 @@ void c_vdp::eval_sprites()
                             uint8_t color = (pattern >> ((7 - (p ^ h_flip)) * 4)) & 0xF;
                             if (color) {
                                 if (priority) {
-                                    priorities[j + 8] |= (1 << LAYER_PRIORITY::SPRITE_HIGH);
+                                    layer_visibility[j + 8] |= (1 << LAYER_PRIORITY::SPRITE_HIGH);
                                 }
                                 else {
-                                    priorities[j + 8] |= (1 << LAYER_PRIORITY::SPRITE_LOW);
+                                    layer_visibility[j + 8] |= (1 << LAYER_PRIORITY::SPRITE_LOW);
                                 }
                                 sprite_out[j] = palette | color;
                             }
@@ -733,23 +739,26 @@ void c_vdp::clear_hblank()
 
 void c_vdp::ack_irq()
 {
-    if (*ipl == 4) {
-        asserting_hblank = 0;
-    }
-    else if (*ipl == 6) {
+    if (*ipl == 6) {
         asserting_vblank = 0;
+    }
+    else if (*ipl == 4) {
+        asserting_hblank = 0;
     }
     update_ipl();
 }
 
 void c_vdp::update_ipl()
 {
-    if (asserting_hblank) {
-        *ipl = 4;
+    if (asserting_hblank && asserting_vblank) {
+        int x = 1;
     }
-    else if (asserting_vblank) {
-
+    if (asserting_vblank) {
         *ipl = 6;
+    }
+    else if (asserting_hblank) {
+
+        *ipl = 4;
     }
     else {
         *ipl = 0;

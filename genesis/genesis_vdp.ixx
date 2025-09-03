@@ -65,13 +65,12 @@ export class c_vdp
         uint16_t value;
     } status;
     uint8_t cram[128];
-    uint32_t cram_entry[128];
+    uint32_t cram_entries[3][128];
     uint8_t vsram[80];
     uint8_t bg_color;
 
     void update_x_res();
 
-    uint32_t lookup_color(uint32_t pal, uint32_t index);
     void do_68k_dma();
     uint32_t plane_width;
     uint32_t plane_height;
@@ -91,7 +90,8 @@ export class c_vdp
         uint32_t low_priority_val
         );
     uint16_t get_hscroll_loc();
-    uint32_t rgb[512];
+    static const std::array<std::array<uint32_t, 512>, 3> rgb_entries;
+    constexpr static auto make_rgb_entries();
     uint8_t *plane_ptrs[4];
     alignas(64) uint8_t vram[64 * 1024];
     alignas(64) uint8_t a_out[328] = {0};
@@ -99,7 +99,8 @@ export class c_vdp
     alignas(64) uint8_t win_out[328] = {0};
     alignas(64) uint8_t sprite_out[328] = {0};
     uint8_t padding[48];
-    uint8_t priorities[336] = {0};
+    uint8_t layer_priorities[336] = {0};
+    uint8_t layer_visibility[336] = {0};
     
     void eval_sprites();
     
