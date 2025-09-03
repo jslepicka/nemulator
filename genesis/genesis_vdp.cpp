@@ -72,7 +72,6 @@ uint16_t c_vdp::read_word(uint32_t address)
             uint16_t ret = vram[_address] << 8;
             ret |= vram[_address + 1];
             _address += reg[0x0F];
-            return 0xff;
             return ret;
         }
         case 0x00C00004:
