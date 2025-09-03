@@ -368,6 +368,9 @@ void c_vdp::draw_plane(uint8_t *out, uint32_t nt, uint32_t plane_width, uint32_t
         #ifdef USE_BMI2
         uint64_t pattern_expanded = _pdep_u64(pattern, 0x0F0F0F0F0F0F0F0F);
         uint64_t pixels = pattern_expanded | palette_broadcast;
+        if (priority) {
+            pixels |= 0x8080808080808080;
+        }
         // find non-zero nibbles in p2
         // set the msb to 1
         uint64_t priorities = pattern_expanded | 0x8080808080808080;
@@ -518,15 +521,61 @@ void c_vdp::draw_scanline()
                 for (int j = 0; j < 16; j++) {
                     uint32_t p = priorities[8 + i + j] & plane_mask;
                     uint8_t out;
-
+                    int color_mode = 1;
                     if (p) {
-                        uint32_t c = _tzcnt_u32(p) & 0x3;
-                        out = plane_ptrs[c][j + i];
+                        uint32_t c = _tzcnt_u32(p);
+                        out = plane_ptrs[c & 0x3][j + i];
+                        out &= 0x7F;
+                        if (reg[0x0c] & 0x8) {
+                            color_mode = (plane_ptrs[in_window ? WINDOW_HIGH : A_HIGH][j + i] & 0x80) ||
+                                         (plane_ptrs[B_HIGH][j + i] & 0x80);
+                            if (c == 0 || c == 4) {
+                                switch (out) {
+                                    case 0x0E:
+                                    case 0x1E:
+                                    case 0x2E:
+                                        color_mode = 1;
+                                        break;
+                                    case 0x3E:
+                                        color_mode += 1;
+                                        p &= ~0x11;
+                                        if (p) {
+                                            out = plane_ptrs[_tzcnt_u32(p) & 0x3][j + i] & 0x7F;
+                                        }
+                                        else {
+                                            out = bg_color;
+                                        }
+                                        break;
+                                    case 0x3F:
+                                        color_mode = 0;
+                                        p &= ~0x11;
+                                        if (p) {
+                                            out = plane_ptrs[_tzcnt_u32(p) & 0x3][j + i] & 0x7F;
+                                        }
+                                        else {
+                                            out = bg_color;
+                                        }
+                                        break;
+                                    default:
+                                        if (c == 0) {
+                                            color_mode = 1;
+                                        }
+                                }
+                            }
+                        }
                     }
                     else {
                         out = bg_color;
                     }
-                    *fb++ = cram_entry[out];
+                    if (color_mode == 0) {
+                        *fb++ = ((cram_entry[out] >> 1) & 0x7F7F7F) | 0xFF000000;
+                    }
+                    else if (color_mode == 2) {
+                        *fb++ = ((cram_entry[out] << 1) & 0xFEFEFE) | 0xFF000000;
+                    }
+                    else {
+                        *fb++ = cram_entry[out];
+                    }
                 }
             }
         }
