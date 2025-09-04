@@ -231,7 +231,8 @@ int c_genesis::emulate_frame()
                     ym->clock(1);
                     if (mixer_enabled) {
                         //todo: volume adjustments
-                        resampler->process(ym->out + psg->out * .5);
+                        //resampler->process(ym->out + psg->out * .5);
+                        resampler->process(ym->out);
                     }
                 }
                 master_cycles += 7;

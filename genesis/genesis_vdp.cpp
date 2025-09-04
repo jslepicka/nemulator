@@ -101,9 +101,9 @@ uint16_t c_vdp::read_word(uint32_t address)
             status.vint = 0;
             status.dma = 0;
             //*ipl &= ~0x6;
-            asserting_vblank = 0;
-            asserting_hblank = 0;
-            update_ipl();
+            //asserting_vblank = 0;
+            //asserting_hblank = 0;
+            //update_ipl();
             address_write = 0;
             return ret;
         case 0x00C00008:

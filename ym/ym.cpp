@@ -27,6 +27,8 @@ void c_ym::reset()
     status = 0;
     busy_counter = 0;
     timer_b_divider = 0;
+
+    std::memset(freq_hi, 0, sizeof(freq_hi));
 }
 
 void c_ym::clock_timer_a()
@@ -72,13 +74,39 @@ void c_ym::clock(int cycles)
             clock_timer_b();
         }
 
-        if (registers[0x2B] & 0x80) {
-            //dac enabled
-            int dac_sample = (int)(registers[0x2A]) - 128;
-            dac_sample <<= 6;
-            float o = (float)dac_sample / (float)(1 << 13);
-            out = o / 6.0;
+        clock_channels();
+
+        out = mix();
+    }
+}
+
+float c_ym::mix()
+{
+    float out = 0.0f;
+    for (int i = 0; i < 6; i++) {
+        if (i == 5 && (registers[0x2B] & 0x80)) {
+            out += get_dac_sample();
         }
+        else {
+            out += .3 * channels[i].output();
+        }
+    }
+    out /= 6.0f;
+    return out;
+}
+
+float c_ym::get_dac_sample()
+{
+    int dac_sample = (int)(registers[0x2A]) - 128;
+    dac_sample <<= 6;
+    float o = (float)dac_sample / (float)(1 << 13);
+    return o;
+}
+
+void c_ym::clock_channels()
+{
+    for (auto &channel : channels) {
+        channel.clock();
     }
 }
 
@@ -102,10 +130,13 @@ void c_ym::write(uint16_t address, uint8_t value)
                 int x = 1;
             }
             channel_idx = reg_addr & 0x3;
+            if (channel_idx == 3) {
+                int x = 1;
+            }
             if (group == GROUP_TWO) {
                 channel_idx += 3;
             }
-            operator_idx = ((reg_addr >> 3) & 0x1) | ((reg_addr >> 1) & 2);
+            operator_idx = ((reg_addr & 0x8) >> 3) | ((reg_addr & 0x4) >> 1);
             break;
         case 1:
         case 3:
@@ -152,11 +183,154 @@ void c_ym::write(uint16_t address, uint8_t value)
                         timer_b_enabled = 0;
                     }
                     break;
+                case 0x28: {
+                    int c = value & 0x7;
+                    if (c != 3 && c != 7) {
+                        if (c >= 4) {
+                            c -= 1;
+                        }
+                        value >>= 4;
+                        for (int o = 0; o < 4; o++) {
+                            channels[c].operators[o].key(value & 0x1);
+                            value >>= 1;
+                        }
+                    }
+                }
+                    break;
                 case 0x2A: {
                     int x = 1;
                     break;
                 } break;
+                case 0x30:
+                case 0x31:
+                case 0x32:
+                case 0x33:
+                case 0x34:
+                case 0x35:
+                case 0x36:
+                case 0x37:
+                case 0x38:
+                case 0x39:
+                case 0x3A:
+                case 0x3B:
+                case 0x3C:
+                case 0x3D:
+                case 0x3E:
+                case 0x3F:
+                    if (!((reg_addr & 0x3) == 3)) {
+                        channels[channel_idx].operators[operator_idx].phase_generator.multiple = value & 0xF;
+                    }
+                    break;
+                case 0xA0:
+                case 0xA1:
+                case 0xA2: {
+                    if (channel_idx == 3) {
+                        int x = 1;
+                    }
+                    uint32_t f = (((uint32_t)freq_hi[channel_idx] & 7) << 8) | value;
+                    for (int o = 0; o < 4; o++) {
+                        channels[channel_idx].operators[o].phase_generator.f_number = f;
+                        channels[channel_idx].operators[o].phase_generator.block = (value >> 3) & 7;
+                    }
+                }
+                    break;
+                case 0xA4:
+                case 0xA5:
+                case 0xA6: {
+                    freq_hi[channel_idx] = value;
+                }
+                    break;
             }
             break;
     }
+}
+
+c_phase_generator::c_phase_generator()
+{
+    reset();
+}
+
+void c_phase_generator::reset()
+{
+    counter = 0;
+    f_number = 0;
+    block = 0;
+    detune = 0;
+    multiple = 0;
+}
+
+void c_phase_generator::clock()
+{
+    uint32_t increment = (f_number << block) >> 1;
+    //todo: detune
+    increment = increment & ((1 << 17) - 1);
+
+    if (multiple) {
+        increment *= multiple;
+    }
+    else {
+        increment >>= 1;
+    }
+
+    counter = (counter + increment) & ((1 << 20) - 1);
+}
+
+uint32_t c_phase_generator::output()
+{
+    return counter >> 10;
+}
+
+void c_phase_generator::reset_counter()
+{
+    counter = 0;
+}
+
+c_fm_operator::c_fm_operator()
+{
+    reset();
+}
+
+void c_fm_operator::reset()
+{
+    key_on = false;
+}
+
+void c_fm_operator::key(bool on)
+{
+    if (on && !key_on) {
+        phase_generator.reset_counter();
+        key_on = true;
+    }
+    else {
+        key_on = on;
+    }
+}
+
+c_fm_channel::c_fm_channel()
+{
+    reset();
+}
+
+void c_fm_channel::reset()
+{
+    out = 0.0f;
+}
+
+void c_fm_channel::clock()
+{
+    c_fm_operator &carrier = operators[3];
+    if (!carrier.key_on) {
+        out = 0.0f;
+        return;
+    }
+    carrier.phase_generator.clock();
+    uint32_t phase = carrier.phase_generator.output();
+
+    float p = ((float)phase / 1024.0f) * 2.0f * (float)std::numbers::pi;
+    out = sin(p);
+}
+
+float c_fm_channel::output()
+{
+    return out;
 }

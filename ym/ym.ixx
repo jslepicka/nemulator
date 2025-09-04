@@ -3,6 +3,45 @@ module;
 export module ym;
 import nemulator.std;
 
+class c_phase_generator
+{
+  public:
+    c_phase_generator();
+    void reset();
+    void clock();
+    uint32_t output();
+    void reset_counter();
+
+    uint32_t counter;
+    uint32_t f_number;
+    uint8_t block;
+    uint8_t detune;
+    uint32_t multiple;
+};
+
+class c_fm_operator
+{
+  public:
+    c_fm_operator();
+    void reset();
+    void key(bool on);
+    bool key_on;
+    c_phase_generator phase_generator;
+};
+
+class c_fm_channel
+{
+  public:
+    c_fm_channel();
+    void reset();
+    void clock();
+    float output();
+    c_fm_operator operators[4];
+
+  private:
+    float out;
+};
+
 export class c_ym
 {
   public:
@@ -44,4 +83,12 @@ export class c_ym
 
     void clock_timer_a();
     void clock_timer_b();
+
+    uint8_t freq_hi[6];
+
+    c_fm_channel channels[6];
+    void clock_channels();
+    float get_dac_sample();
+    float mix();
 };
+
