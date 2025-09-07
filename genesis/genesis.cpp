@@ -231,8 +231,8 @@ int c_genesis::emulate_frame()
                     ym->clock(1);
                     if (mixer_enabled) {
                         //todo: volume adjustments
-                        //resampler->process(ym->out + psg->out * .5);
-                        resampler->process(ym->out);
+                        resampler->process(ym->out * .5 + psg->out * .5);
+                        //resampler->process(ym->out);
                     }
                 }
                 master_cycles += 7;
@@ -248,7 +248,8 @@ int c_genesis::emulate_frame()
                 vdp->draw_scanline();
             }
         }
-        vdp->clear_hblank();
+        //vdp->clear_hblank();
+        vdp->end_line();
     }
 
     catchup_psg();
@@ -363,6 +364,9 @@ uint8_t c_genesis::read_byte(uint32_t address)
         if (address < 0x4000) {
             return z80_ram[address & 0x1FFF];
         }
+        else if (address < 0x6000) {
+            return ym->read(address & 0x3);
+        }
         else {
             return 0;
         }
@@ -451,6 +455,11 @@ uint16_t c_genesis::read_word(uint32_t address)
         if (address < 0x4000) {
             return (z80_ram[address & 0x1FFF] << 8) | (z80_ram[(address + 1) & 0x1FFF] & 0xFF);
         }
+        else if (address < 0x6000) {
+            //this probably shouldn't be allowed
+            assert(0);
+            return (ym->read(address & 0x3) << 8) | (ym->read((address + 1) & 0x3));
+        }
         else {
             return 0;
         }
@@ -503,6 +512,9 @@ void c_genesis::write_byte(uint32_t address, uint8_t value)
         if (address < 0x4000) {
             z80_ram[address & 0x1FFF] = value;
         }
+        else if (address < 0x6000) {
+            ym->write(address & 0x3, value);
+        }
         else {
             int x = 1;
         }
@@ -542,6 +554,9 @@ void c_genesis::write_byte(uint32_t address, uint8_t value)
     }
     else {
         ram[address & 0xFFFF] = value;
+        if (address == 0xFFFFF625) {
+            int x = 1;
+        }
     }
 }
 
@@ -574,6 +589,12 @@ void c_genesis::write_word(uint32_t address, uint16_t value)
         if (address < 0x4000) {
             z80_ram[address & 0x1FFF] = value >> 8;
             z80_ram[(address + 1) & 0x1FFF] = value & 0xFF;
+        }
+        else if (address < 0x6000) {
+            assert(0);
+            //this probably shouldn't be allowed
+            ym->write(address & 0x3, value >> 8);
+            ym->write((address + 1) & 0x3, value >> 8);
         }
         else {
             int x = 1;

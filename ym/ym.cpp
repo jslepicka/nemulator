@@ -2,6 +2,31 @@ module;
 
 module ym;
 
+static const std::array<uint32_t, 512> log_sin_table = [] {
+    std::array<uint32_t, 512> ret;
+    for (int x = 0; x < 512; x++) {
+        int i = x;
+        if ((i >> 8) & 1) {
+            i = (~i) & 0xFF;
+        }
+        float n = ((i << 1) | 1);
+        float sine = std::sin((n / 512.0f * std::numbers::pi / 2.0));
+        float attenuation = -std::log2f(sine);
+        ret[x] = (uint32_t)std::roundf(attenuation * (1 << 8));
+    }
+    return ret;
+}();
+
+static const std::array<uint32_t, 256> pow2_table = [] {
+    std::array<uint32_t, 256> ret;
+    for (int i = 0; i < 256; i++) {
+        float n = (float)(i + 1) / 256.0f;
+        float inv_pow2 = std::powf(2.0, -n);
+        ret[i] = (uint32_t)std::roundf(inv_pow2 * (1 << 11));
+    }
+    return ret;
+}();
+
 c_ym::c_ym()
 {
 }
@@ -28,6 +53,7 @@ void c_ym::reset()
     busy_counter = 0;
     timer_b_divider = 0;
 
+    //move this to the channel
     std::memset(freq_hi, 0, sizeof(freq_hi));
 }
 
@@ -84,11 +110,24 @@ float c_ym::mix()
 {
     float out = 0.0f;
     for (int i = 0; i < 6; i++) {
+        float channel_out = 0.0f;
         if (i == 5 && (registers[0x2B] & 0x80)) {
-            out += get_dac_sample();
+            channel_out = get_dac_sample();
         }
         else {
-            out += .3 * channels[i].output();
+            channel_out = channels[i].output();
+        }
+        switch (channels[i].panning) {
+            case 1:
+            case 2:
+                //todo: stereo
+                out += .5f * channel_out;
+                break;
+            case 3:
+                out += channel_out;
+                break;
+            default:
+                break;
         }
     }
     out /= 6.0f;
@@ -195,6 +234,9 @@ void c_ym::write(uint16_t address, uint8_t value)
                             value >>= 1;
                         }
                     }
+                    else {
+                        int x = 1;
+                    }
                 }
                     break;
                 case 0x2A: {
@@ -219,27 +261,166 @@ void c_ym::write(uint16_t address, uint8_t value)
                 case 0x3F:
                     if (!((reg_addr & 0x3) == 3)) {
                         channels[channel_idx].operators[operator_idx].phase_generator.multiple = value & 0xF;
+                        channels[channel_idx].operators[operator_idx].phase_generator.detune = (value >> 4) & 7;
+                    }
+                    else {
+                        int x = 1;
+                    }
+                    break;
+                case 0x40:
+                case 0x41:
+                case 0x42:
+                case 0x43:
+                case 0x44:
+                case 0x45:
+                case 0x46:
+                case 0x47:
+                case 0x48:
+                case 0x49:
+                case 0x4A:
+                case 0x4B:
+                case 0x4C:
+                case 0x4D:
+                case 0x4E:
+                case 0x4F:
+                    if (!((reg_addr & 0x3) == 3)) {
+                        channels[channel_idx].operators[operator_idx].envelope_generator.total_level = value & 0x7F;
+                    }
+                    else {
+                        int x = 1;
+                    }
+                    break;
+                case 0x50:
+                case 0x51:
+                case 0x52:
+                case 0x53:
+                case 0x54:
+                case 0x55:
+                case 0x56:
+                case 0x57:
+                case 0x58:
+                case 0x59:
+                case 0x5A:
+                case 0x5B:
+                case 0x5C:
+                case 0x5D:
+                case 0x5E:
+                case 0x5F:
+                    if (!((reg_addr & 0x3) == 3)) {
+                        channels[channel_idx].operators[operator_idx].envelope_generator.attack_rate = value & 0x1F;
+                        //channels[channel_idx].operators[operator_idx].envelope_generator.key_scale = (value >> 6) & 0x3;
+                        channels[channel_idx].operators[operator_idx].update_key_scale((value >> 6) & 0x3);
+                    }
+                    else {
+                        int x = 1;
+                    }
+                    break;
+                case 0x60:
+                case 0x61:
+                case 0x62:
+                case 0x63:
+                case 0x64:
+                case 0x65:
+                case 0x66:
+                case 0x67:
+                case 0x68:
+                case 0x69:
+                case 0x6A:
+                case 0x6B:
+                case 0x6C:
+                case 0x6D:
+                case 0x6E:
+                case 0x6F:
+                    if (!((reg_addr & 0x3) == 3)) {
+                        channels[channel_idx].operators[operator_idx].envelope_generator.decay_rate = value & 0x1F;
+                        channels[channel_idx].operators[operator_idx].envelope_generator.am_enable = (value >> 7) & 1;
+                    }
+                    else {
+                        int x = 1;
+                    }
+                    break;
+                case 0x70:
+                case 0x71:
+                case 0x72:
+                case 0x73:
+                case 0x74:
+                case 0x75:
+                case 0x76:
+                case 0x77:
+                case 0x78:
+                case 0x79:
+                case 0x7A:
+                case 0x7B:
+                case 0x7C:
+                case 0x7D:
+                case 0x7E:
+                case 0x7F:
+                    if (!((reg_addr & 0x3) == 3)) {
+                        channels[channel_idx].operators[operator_idx].envelope_generator.sustain_rate = value & 0x1F;
+                    }
+                    else {
+                        int x = 1;
+                    }
+                    break;
+                case 0x80:
+                case 0x81:
+                case 0x82:
+                case 0x83:
+                case 0x84:
+                case 0x85:
+                case 0x86:
+                case 0x87:
+                case 0x88:
+                case 0x89:
+                case 0x8A:
+                case 0x8B:
+                case 0x8C:
+                case 0x8D:
+                case 0x8E:
+                case 0x8F:
+                    if (!((reg_addr & 0x3) == 3)) {
+                        channels[channel_idx].operators[operator_idx].envelope_generator.release_rate = value & 0xF;
+                        channels[channel_idx].operators[operator_idx].envelope_generator.sustain_level = value >> 4;
+                    }
+                    else {
+                        int x = 1;
                     }
                     break;
                 case 0xA0:
                 case 0xA1:
                 case 0xA2: {
-                    if (channel_idx == 3) {
-                        int x = 1;
-                    }
-                    uint32_t f = (((uint32_t)freq_hi[channel_idx] & 7) << 8) | value;
-                    for (int o = 0; o < 4; o++) {
-                        channels[channel_idx].operators[o].phase_generator.f_number = f;
-                        channels[channel_idx].operators[o].phase_generator.block = (value >> 3) & 7;
+                    if (!((reg_addr & 0x3) == 3)) {
+
+                        uint32_t f = (((uint32_t)freq_hi[channel_idx] & 7) << 8) | value;
+                        for (int o = 0; o < 4; o++) {
+                            channels[channel_idx].operators[o].update_frequency(f, (freq_hi[channel_idx] >> 3) & 7);
+                        }
                     }
                 }
                     break;
                 case 0xA4:
                 case 0xA5:
                 case 0xA6: {
-                    freq_hi[channel_idx] = value;
+                    if (!((reg_addr & 0x3) == 3)) {
+                        freq_hi[channel_idx] = value;
+                    }
                 }
                     break;
+                case 0xB0:
+                case 0xB1:
+                case 0xB2: {
+                    if (!((reg_addr & 0x3) == 3)) {
+                        channels[channel_idx].algorithm = value & 7;
+                        channels[channel_idx].feedback = (value >> 3) & 7;
+                    }
+                } break;
+                case 0xB4:
+                case 0xB5:
+                case 0xB6: {
+                    if (!((reg_addr & 0x3) == 3)) {
+                        channels[channel_idx].panning = value >> 6;
+                    }
+                } break;
             }
             break;
     }
@@ -261,18 +442,32 @@ void c_phase_generator::reset()
 
 void c_phase_generator::clock()
 {
-    uint32_t increment = (f_number << block) >> 1;
-    //todo: detune
-    increment = increment & ((1 << 17) - 1);
+    uint32_t modulated_f_num = (f_number << 1) & 0xFFF;
+    uint32_t shifted_f_num = (modulated_f_num << block) >> 2;
 
-    if (multiple) {
-        increment *= multiple;
+    //todo: modulation
+
+    uint32_t key_code = compute_key_code(f_number, block);
+    uint32_t detune_magnitude = detune & 3;
+    uint32_t detune_increment_magnitude = detune_table[key_code][detune_magnitude];
+
+    uint32_t detuned_f_num = 0;
+    if ((detune_increment_magnitude >> 2) & 0x1) {
+        detuned_f_num = (shifted_f_num - detune_increment_magnitude) & 0x1FFFF;
     }
     else {
-        increment >>= 1;
+        detuned_f_num = (shifted_f_num + detune_increment_magnitude) & 0x1FFFF;
     }
 
-    counter = (counter + increment) & ((1 << 20) - 1);
+    if (multiple) {
+        detuned_f_num *= multiple;
+    }
+    else {
+        detuned_f_num >>= 1;
+    }
+
+
+    counter = (counter + detuned_f_num) & ((1 << 20) - 1);
 }
 
 uint32_t c_phase_generator::output()
@@ -293,17 +488,91 @@ c_fm_operator::c_fm_operator()
 void c_fm_operator::reset()
 {
     key_on = false;
+    current_output = 0;
+    last_output = 0;
 }
 
 void c_fm_operator::key(bool on)
 {
-    if (on && !key_on) {
-        phase_generator.reset_counter();
-        key_on = true;
+    //if (on && !key_on) {
+    //    phase_generator.reset_counter();
+    //    key_on = true;
+    //}
+    //else {
+    //    key_on = on;
+    //}
+
+    //envelope_generator.set_key_on(on);
+    if (on) {
+        if (!(envelope_generator.phase != ADSR_PHASE::RELEASE)) {
+            phase_generator.reset_counter();
+            envelope_generator.set_key_on(true);
+        }
     }
     else {
-        key_on = on;
+        envelope_generator.set_key_on(false);
     }
+}
+
+void c_fm_operator::update_frequency(uint32_t f_number, uint8_t block)
+{
+    phase_generator.f_number = f_number;
+    phase_generator.block = block;
+    update_key_scale_rate();
+}
+
+void c_fm_operator::update_key_scale(uint32_t key_scale)
+{
+    envelope_generator.key_scale = key_scale;
+    update_key_scale_rate();
+}
+
+void c_fm_operator::update_key_scale_rate()
+{
+    uint32_t key_code = compute_key_code(phase_generator.f_number, phase_generator.block);
+    envelope_generator.key_scale_rate = key_code >> (3 - envelope_generator.key_scale);
+}
+
+#define SIGN_EXTEND(bit_index, value) (((value) & ((1u << (bit_index)) - 1u)) - ((value) & (1u << (bit_index))))
+
+int32_t c_fm_operator::output(int32_t modulation_input)
+{
+    //modulation_input >>= 4; //this is definitely not right but helps... why?
+    uint32_t phase = (phase_generator.output() & 0x3FF) + (uint32_t)(modulation_input & 0x3FF);
+    phase &= 0x3FF;
+
+    uint32_t sign = phase & 0x200;
+
+    uint32_t sine_attenuation = log_sin_table.at(phase & (0x3FF >> 1));
+
+    uint32_t envelope_attenuation = envelope_generator.output();
+    //todo: amplitude modulation
+    uint32_t envelope_am_attenuation = envelope_attenuation;
+
+    uint32_t total_attenuation = sine_attenuation + (envelope_am_attenuation << 2);
+    if (total_attenuation > 0x1FFF) {
+        total_attenuation = 0x1FFF;
+    }
+
+    uint32_t amplitude = attenuation_to_amplitude(total_attenuation);
+    int32_t output = sign ? 0 - amplitude: amplitude;
+    
+    last_output = current_output;
+    current_output = output;
+
+    return output;
+}
+
+uint32_t c_fm_operator::attenuation_to_amplitude(uint32_t attenuation)
+{
+    uint32_t int_part = (attenuation >> 8) & 0x1F;
+    if (int_part >= 13) {
+        return 0;
+        //int x = 1;
+    }
+    uint32_t fract_part = attenuation & 0xFF;
+    uint32_t fract_pow2 = pow2_table.at(fract_part);
+    return ((fract_pow2 << 2) >> int_part);
 }
 
 c_fm_channel::c_fm_channel()
@@ -314,23 +583,186 @@ c_fm_channel::c_fm_channel()
 void c_fm_channel::reset()
 {
     out = 0.0f;
+    panning = 3;
+    algorithm = 0;
+    feedback = 0;
 }
 
 void c_fm_channel::clock()
 {
-    c_fm_operator &carrier = operators[3];
-    if (!carrier.key_on) {
-        out = 0.0f;
-        return;
+    for (auto &op : operators) {
+        op.phase_generator.clock();
+        op.envelope_generator.clock();
     }
-    carrier.phase_generator.clock();
-    uint32_t phase = carrier.phase_generator.output();
 
-    float p = ((float)phase / 1024.0f) * 2.0f * (float)std::numbers::pi;
-    out = sin(p);
+    int32_t op1_feedback = 0;
+    if (feedback) {
+        op1_feedback = (operators[0].current_output + operators[0].last_output) >> (10 - feedback);
+    }
+    //todo quanitzation mask on output
+    switch (algorithm) {
+        case 0: {
+            int32_t m1 = operators[0].output(op1_feedback);
+            //int32_t m2_old = operators[1].current_output;
+            //operators[1].output(m1 >> 1);
+            //int32_t m3 = operators[2].output(m2_old >> 1);
+            int32_t m2 = operators[1].output(m1 >> 1);
+            int32_t m3 = operators[2].output(m2 >> 1);
+            int32_t c4 = operators[3].output(m3 >> 1);
+            out = (int32_t)c4;
+        }
+            break;
+        //case 4: {
+        //    int32_t m1 = operators[0].output(op1_feedback);
+        //    int32_t m3 = operators[2].output(0);
+        //    int32_t c2 = operators[1].output(m1 >> 1);
+        //    int32_t c4 = operators[3].output(m3 >> 1);
+        //    out = (int32_t)(c2 + c4); //need to clamp
+        //}
+        //    break;
+        default:
+            out = (int32_t)operators[3].output(0);
+            break;
+    }
+    out /= 8192.0f;
 }
 
 float c_fm_channel::output()
 {
     return out;
+}
+
+c_envelope_generator::c_envelope_generator()
+{
+    reset();
+}
+
+void c_envelope_generator::reset()
+{
+    phase = ADSR_PHASE::RELEASE;
+    key_on = false;
+    //level = 0;
+    sustain_level = 0;
+
+    attack_rate = 0;
+    decay_rate = 0;
+    sustain_rate = 0;
+    release_rate = 0;
+    cycle_count = 1;
+
+    attenuation = 0;
+
+    total_level = 0;
+    rate_scaling = 0;
+
+    am_enable = 0;
+    divider = 0;
+
+    key_scale = 0;
+    key_scale_rate = 0;
+}
+
+void c_envelope_generator::set_key_on(bool k)
+{
+    if (!k) {
+        //key off
+        phase = ADSR_PHASE::RELEASE;
+        return;
+    }
+
+
+    if (phase != ADSR_PHASE::RELEASE) {
+        return;
+    }
+    
+    //phase = key_on ? ADSR_PHASE::ATTACK : ADSR_PHASE::RELEASE;
+    uint32_t rate = 2 * attack_rate + key_scale_rate;
+    //should attack_rate of 0 = rate 0?
+    if (rate >= 62) {
+        phase = ADSR_PHASE::DECAY;
+        attenuation = 0;
+    }
+    else {
+        phase = ADSR_PHASE::ATTACK;
+    }
+}
+
+void c_envelope_generator::clock()
+{
+    if (++divider != 3) {
+        return;
+    }
+    divider = 0;
+
+    cycle_count++;
+    cycle_count = (cycle_count & 0xFFF) + (cycle_count >> 12);
+
+    uint32_t sl_steps = sustain_level == 15 ? (uint32_t)0x3FF >> 5 : sustain_level;
+    sl_steps <<= 5;
+
+    if (phase == ADSR_PHASE::ATTACK && attenuation == 0) {
+        phase = ADSR_PHASE::DECAY;
+    }
+
+    if (phase == ADSR_PHASE::DECAY && attenuation >= sl_steps) {
+        phase = ADSR_PHASE::SUSTAIN;
+    }
+    uint32_t r;
+    switch (phase) {
+        case ADSR_PHASE::ATTACK:
+            r = attack_rate;
+            break;
+        case ADSR_PHASE::DECAY:
+            r = decay_rate;
+            break;
+        case ADSR_PHASE::SUSTAIN:
+            r = sustain_rate;
+            break;
+        case ADSR_PHASE::RELEASE:
+            r = (release_rate << 1) | 1;
+            break;
+    }
+
+    uint32_t rate = r == 0 ? 0 : std::min(63u, 2 * r + key_scale_rate);
+
+    uint32_t rr = rate >> 2;
+    if (rr > 11) {
+        rr = 11;
+    }
+    uint32_t update_frequency_shift = 11 - rr;
+
+    if ((cycle_count & ((1 << update_frequency_shift) - 1)) == 0) {
+        uint32_t increment_idx = (cycle_count >> update_frequency_shift) & 7;
+        uint32_t increment = attenuation_increments[rate][increment_idx];
+
+        switch (phase) {
+            case ADSR_PHASE::ATTACK:
+                if (rate <= 61) {
+                    attenuation = attenuation + ((~attenuation * increment) >> 4);
+                    attenuation &= 0x3FF;
+                }
+                break;
+            default:
+                attenuation = std::min((uint32_t)0x3FF, attenuation + increment);
+        }
+    }
+    
+
+}
+
+uint32_t c_envelope_generator::output()
+{
+    uint32_t out = total_level << 3;
+    return std::min((uint32_t)0x3FF, attenuation + total_level);
+}
+
+uint32_t compute_key_code(uint32_t f_number, uint8_t block)
+{
+    uint32_t f11 = (f_number >> 10) & 0x1;
+    uint32_t f10 = (f_number >> 9) & 0x1;
+    uint32_t f9 = (f_number >> 8) & 0x1;
+    uint32_t f8 = (f_number >> 7) & 0x1;
+
+    return (block << 2) | (f11 << 1) | ((f11 && (f10 || f9 || f8)) || (!f11 && f10 && f9 && f8));
+
 }

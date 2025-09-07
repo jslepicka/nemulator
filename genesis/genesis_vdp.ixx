@@ -21,6 +21,7 @@ export class c_vdp
     int freeze_cpu;
     void ack_irq();
     void clear_hblank();
+    void end_line();
 
   private:
     uint32_t x_res;

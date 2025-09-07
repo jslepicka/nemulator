@@ -874,7 +874,7 @@ void c_m68k::UNLK_()
     set_size(SIZE_WORD);
     uint32_t reg = op_word & 0x7;
     if (reg == 0x7) {
-        assert(0);
+        //assert(0);
     }
     *a[7] = *a[reg];
     uint32_t sp = *a[7];
@@ -889,7 +889,7 @@ void c_m68k::LINK_()
     set_size(SIZE_WORD);
     uint32_t reg = op_word & 0x7;
     if (reg == 0x7) {
-        assert(0);
+        //assert(0);
     }
     uint32_t An = *a[reg];
     *a[7] -= 4;
