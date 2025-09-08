@@ -112,7 +112,7 @@ void c_m68k::execute(int cycles)
                 instruction = instructions[op_word];
                 decode();
                 //assert(opcode_fn != nullptr);
-                required_cycles = 5;
+                required_cycles = 8;
                 fetch_opcode = 0;
             }
             //fetch_opcode = 0;

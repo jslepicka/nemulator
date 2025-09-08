@@ -600,6 +600,7 @@ void c_fm_channel::clock()
         op1_feedback = (operators[0].current_output + operators[0].last_output) >> (10 - feedback);
     }
     //todo quanitzation mask on output
+    int32_t int_out = 0;
     switch (algorithm) {
         case 0: {
             int32_t m1 = operators[0].output(op1_feedback);
@@ -609,21 +610,61 @@ void c_fm_channel::clock()
             int32_t m2 = operators[1].output(m1 >> 1);
             int32_t m3 = operators[2].output(m2 >> 1);
             int32_t c4 = operators[3].output(m3 >> 1);
-            out = (int32_t)c4;
-        }
-            break;
-        //case 4: {
-        //    int32_t m1 = operators[0].output(op1_feedback);
-        //    int32_t m3 = operators[2].output(0);
-        //    int32_t c2 = operators[1].output(m1 >> 1);
-        //    int32_t c4 = operators[3].output(m3 >> 1);
-        //    out = (int32_t)(c2 + c4); //need to clamp
-        //}
-        //    break;
+            int_out = c4;
+        } break;
+        case 1: {
+            int32_t m1 = operators[0].output(op1_feedback);
+            int32_t m2 = operators[1].output(0);
+            int32_t m3 = operators[2].output((m1 + m2) >> 1);
+            int32_t c4 = operators[3].output(m3 >> 1);
+            int_out = c4;
+        } break;
+        case 2: {
+            int32_t m1 = operators[0].output(op1_feedback);
+            int32_t m2 = operators[1].output(0);
+            int32_t m3 = operators[2].output(m2 >> 1);
+            int32_t c4 = operators[3].output((m1 + m3) >> 1);
+            int_out = c4;
+        } break;
+        case 3: {
+            int32_t m1 = operators[0].output(op1_feedback);
+            int32_t m2 = operators[1].output(m1 >> 1);
+            int32_t m3 = operators[2].output(0);
+            int32_t c4 = operators[3].output((m2 + m3) >> 1);
+            int_out = c4;
+        } break;
+        case 4: {
+            int32_t m1 = operators[0].output(op1_feedback);
+            int32_t m3 = operators[2].output(0);
+            int32_t c2 = operators[1].output(m1 >> 1);
+            int32_t c4 = operators[3].output(m3 >> 1);
+            int_out = (int32_t)(c2 + c4); //need to clamp
+        } break;
+        case 5: {
+            int32_t m1 = operators[0].output(op1_feedback);
+            int32_t c2 = operators[1].output(m1 >> 1);
+            int32_t c3 = operators[2].output(m1 >> 1);
+            int32_t c4 = operators[3].output(m1 >> 1);
+            int_out = c2 + c3 + c4;
+        } break;
+        case 6: {
+            int32_t m1 = operators[0].output(op1_feedback);
+            int32_t c2 = operators[1].output(m1 >> 1);
+            int32_t c3 = operators[2].output(0);
+            int32_t c4 = operators[3].output(0);
+            int_out = c2 + c3 + c4;
+        } break;
+        case 7: {
+            int32_t c1 = operators[0].output(op1_feedback);
+            int32_t c2 = operators[1].output(0);
+            int32_t c3 = operators[2].output(0);
+            int32_t c4 = operators[3].output(0);
+            int_out = c1 + c2 + c3 + c4;
+        } break;
         default:
-            out = (int32_t)operators[3].output(0);
             break;
     }
+    out = std::clamp(int_out, -0x2000, 0x1FFF);
     out /= 8192.0f;
 }
 
@@ -752,8 +793,7 @@ void c_envelope_generator::clock()
 
 uint32_t c_envelope_generator::output()
 {
-    uint32_t out = total_level << 3;
-    return std::min((uint32_t)0x3FF, attenuation + total_level);
+    return std::min((uint32_t)0x3FF, attenuation + (total_level << 3));
 }
 
 uint32_t compute_key_code(uint32_t f_number, uint8_t block)
