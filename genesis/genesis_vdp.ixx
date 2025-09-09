@@ -47,6 +47,7 @@ export class c_vdp
         VSRAM_READ = 0b0100,
         VSRAM_WRITE = 0b0101,
         CRAM_READ = 0b1000,
+        INVALID = -1
     } address_type;
     union {
         struct

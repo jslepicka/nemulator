@@ -186,6 +186,7 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
             if (value >> 14 == 0x02) {
                 uint8_t reg_number = (value >> 8) & 0x1F;
                 uint8_t reg_value = value & 0xFF;
+                address_type = ADDRESS_TYPE::INVALID;
                 reg[reg_number] = reg_value;
                 switch (reg_number) {
                     case 0x07:
