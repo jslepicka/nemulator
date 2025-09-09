@@ -24,7 +24,7 @@ export class c_apu
     void set_nes(c_nes *nes);
     void enable_mixer();
     void disable_mixer();
-    int get_buffer(const short **buf);
+    int get_buffer(const float **buf);
     void clear_buffer();
     void set_audio_rate(double freq);
 

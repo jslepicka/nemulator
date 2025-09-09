@@ -97,6 +97,9 @@ export class c_z80
         available_cycles += cycles;
         while (true) {
             if (fetch_opcode) {
+                if (PC == 0xaf8) {
+                    int x = 1;
+                }
                 inc_r();
                 ddfd_ptr = 0;
                 //dd = 0;

@@ -17,7 +17,7 @@ public:
     virtual int emulate_frame() = 0;
     virtual int reset() = 0;
     int get_crc() { return crc32; }
-    virtual int get_sound_bufs(const short **buf_l, const short **buf_r) = 0;
+    virtual int get_sound_bufs(const float **buf_l, const float **buf_r) = 0;
     virtual void set_audio_freq(double freq) = 0;
     virtual void set_input(int input) = 0;
     virtual void enable_mixer() {}

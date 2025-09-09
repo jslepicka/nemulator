@@ -38,8 +38,6 @@ c_m68k::c_m68k(
     a[5] = &a5;
     a[6] = &a6;
     a[7] = &usp;
-
-    make_instruction_array();
 }
 
 void c_m68k::reset()
@@ -109,7 +107,7 @@ void c_m68k::execute(int cycles)
             else if (!stopped) {
                 op_word = read_word(pc);
                 pc += 2;
-                instruction = instructions[op_word];
+                instruction = instructions3[op_word];
                 decode();
                 //assert(opcode_fn != nullptr);
                 required_cycles = 8;
@@ -153,7 +151,7 @@ bool c_m68k::test()
     update_status();
     op_word = read_word(pc);
     pc += 2;
-    instruction = instructions2[op_word];
+    instruction = instructions3[op_word];
     decode();
     if (opcode_fn == nullptr) {
         return false;
@@ -465,12 +463,12 @@ void c_m68k::decode()
     case DIVS:
         opcode_fn = std::mem_fn(&c_m68k::DIVS_);
         break;
-    case INTERRUPT_4:
-        opcode_fn = std::bind(&c_m68k::do_trap, this, 112);
-        break;
-    case INTERRUPT_6:
-        opcode_fn = std::bind(&c_m68k::do_trap, this, 120);
-        break;
+    //case INTERRUPT_4:
+    //    opcode_fn = std::bind(&c_m68k::do_trap, this, 112);
+    //    break;
+    //case INTERRUPT_6:
+    //    opcode_fn = std::bind(&c_m68k::do_trap, this, 120);
+    //    break;
     case STOP:
         opcode_fn = std::mem_fn(&c_m68k::STOP_);
         break;
@@ -3018,3 +3016,155 @@ void c_m68k::ASd2_()
     flag_z = result == 0;
     *d[register_index] = (*d[register_index] & ~mask) | (result & mask);
 }
+
+const std::array<uint8_t, 65536> c_m68k::instructions3 = [] {
+    std::array<uint8_t, 65536> ret;
+    struct s_opwords
+    {
+        char opword[17];
+        uint8_t instruction;
+        std::function<bool(uint16_t)> test = nullptr;
+        uint16_t mask;
+        uint16_t mask_match;
+        uint16_t mask_len;
+    };
+
+    // clang-format off
+
+	s_opwords opwords[] = {
+		{"0000000000111100", ORItoCCR},
+        {"0000000001111100", ORItoSR},
+        {"00000000--------", ORI},
+        {"0000001000111100", ANDItoCCR},
+		{"0000001001111100", ANDItoSR},
+		{"00000010--------", ANDI},
+        {"00000100--------", SUBI},
+		{"00000110--------", ADDI},
+		{"0000101000111100", EORItoCCR},
+		{"0000101001111100", EORItoSR},
+		{"00001010--------", EORI},
+		{"00001100--------", CMPI},
+		{"0000100000------", BTST},
+		{"0000100001------", BCHG},
+		{"0000100010------", BCLR},
+		{"0000100011------", BSET},
+		{"0000---100------", BTST2},
+		{"0000---101------", BCHG2},
+		{"0000---110------", BCLR2},
+		{"0000---111------", BSET2},
+		{"0000---1--001---", MOVEP},
+		{"00-----001------", MOVEA},
+		{"00--------------", MOVE},
+		{"0100000011------", MOVEfromSR},
+		{"0100010011------", MOVEtoCCR},
+		{"0100011011------", MOVEtoSR},
+		{"01000000--------", NEGX},
+		{"01000010--------", CLR},
+		{"01000100--------", NEG},
+		{"01000110--------", NOT},
+		{"010010001-000---", EXT},
+		{"0100100000------", NBCD},
+		{"0100100001000---", SWAP},
+		{"0100100001------", PEA},
+		{"0100101011111100", ILLEGAL},
+		{"0100101011------", TAS},
+		{"01001010--------", TST},
+		{"010011100100----", TRAP},
+		{"0100111001010---", LINK},
+		{"0100111001011---", UNLK},
+		{"010011100110----", MOVE_USP},
+		{"0100111001110000", RESET},
+		{"0100111001110001", NOP},
+		{"0100111001110010", STOP},
+		{"0100111001110011", RTE},
+		{"0100111001110101", RTS},
+		{"0100111001110110", TRAPV},
+		{"0100111001110111", RTR},
+		{"0100111010------", JSR},
+		{"0100111011------", JMP},
+		{"01001-001-------", MOVEM},
+		{"0100---111------", LEA},
+		{"0100---110------", CHK},
+		{"0101---0--------", ADDQ},
+		{"0101---1--------", SUBQ},
+		{"0101----11------", Scc},
+		{"0101----11001---", DBcc},
+		{"01100000--------", BRA},
+		{"01100001--------", BSR},
+		{"0110------------", Bcc},
+		{"0111---0--------", MOVEQ},
+		{"1000---011------", DIVU},
+		{"1000---111------", DIVS},
+		{"1000---10000----", SBCD},
+		{"1000------------", OR},
+		{"1001------------", SUB},
+		{"1001---1--00----", SUBX, [](uint16_t o) {return ((o >> 6) & 3) < 3;}},
+		{"1001----11------", SUBA},
+		{"1011---1--------", EOR},
+		{"1011---1--001---", CMPM, [](uint16_t o) {return ((o >> 6) & 3) < 3;}},
+		{"1011---0--------", CMP},
+		{"1011----11------", CMPA},
+		{"1100---011------", MULU},
+		{"1100---111------", MULS},
+		{"1100---10000----", ABCD},
+		{"1100---101000---", EXGd},
+		{"1100---101001---", EXGa},
+		{"1100---110001---", EXGda},
+		{"1100------------", AND},
+		{"1101------------", ADD},
+		{"1101---1--00----", ADDX, [](uint16_t o) {return ((o >> 6) & 3) < 3;}},
+		{"1101----11------", ADDA},
+		{"1110000-11------", ASd},
+		{"1110001-11------", LSd},
+		{"1110010-11------", ROXd},
+		{"1110011-11------", ROd},
+		{"1110-------00---", ASd2},
+		{"1110-------01---", LSd2},
+		{"1110-------10---", ROXd2},
+		{"1110-------11---", ROd2},
+	};
+
+    // clang-format on
+
+    for (auto &o : opwords) {
+        o.mask = 0;
+        o.mask_match = 0;
+        o.mask_len = 0;
+        int x = 0;
+        for (int i = 0; i < std::strlen(o.opword); i++) {
+            char c = o.opword[i];
+            x++;
+            o.mask <<= 1;
+            o.mask_match <<= 1;
+            if (c == '1') {
+                o.mask |= 1;
+                o.mask_match |= 1;
+                o.mask_len += 1;
+            }
+            else if (c == '0') {
+                o.mask |= 1;
+                o.mask_len += 1;
+            }
+        }
+    }
+
+    for (int i = 0; i < 65536; i++) {
+        int best_len = 0;
+        int matched_opcode = INVALID;
+        for (auto &o : opwords) {
+            if ((i & o.mask) == o.mask_match) {
+                if (o.test != nullptr) {
+                    if (!o.test(i)) {
+                        continue;
+                    }
+                }
+                if (o.mask_len > best_len) {
+                    matched_opcode = o.instruction;
+                    best_len = o.mask_len;
+                }
+            }
+        }
+        ret[i] = matched_opcode;
+    }
+    return ret;
+}();

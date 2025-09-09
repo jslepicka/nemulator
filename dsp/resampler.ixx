@@ -20,7 +20,7 @@ export class c_resampler
         mf = m - (int)m;
         samples_required = (int)m + 2;
 
-        output_buf = std::make_unique<short[]>(OUTPUT_BUF_LEN);
+        output_buf = std::make_unique<float[]>(OUTPUT_BUF_LEN);
         filtered_buf = std::make_unique<float[]>(FILTERED_BUF_LEN * 2);
 
         for (int i = 0; i < FILTERED_BUF_LEN * 2; i++)
@@ -34,7 +34,7 @@ export class c_resampler
     {
         this->m = m;
     }
-    int get_output_buf(const short **sample_buf)
+    int get_output_buf(const float **sample_buf)
     {
         *sample_buf = this->output_buf.get();
         return output_buf_index;
@@ -79,11 +79,7 @@ export class c_resampler
             mf = n - (int)n;
             samples_required = (int)n + 2;
 
-            static const float max_out = 32767.0f;
-            int s = (int)round(post_filter->process(j) * max_out);
-            s = std::clamp(s, -32768, 32767);
-
-            output_buf[output_buf_index++] = (short)s;
+            output_buf[output_buf_index++] = post_filter->process(j);
         }
         #else
         if (--samples_required == 0) {
@@ -130,7 +126,7 @@ export class c_resampler
     static const int OUTPUT_BUF_LEN = 1024;
     static const int FILTERED_BUF_LEN = 4;
     int filtered_buf_index;
-    std::unique_ptr<short[]> output_buf;
+    std::unique_ptr<float[]> output_buf;
     std::unique_ptr<float[]> filtered_buf;
 
     i_audio_filter *pre_filter;

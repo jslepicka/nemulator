@@ -319,7 +319,7 @@ void c_nes::set_audio_freq(double freq)
     apu->set_audio_rate(freq);
 }
 
-int c_nes::get_sound_bufs(const short **buf_l, const short **buf_r)
+int c_nes::get_sound_bufs(const float **buf_l, const float **buf_r)
 {
     int num_samples = apu->get_buffer(buf_l);
     *buf_r = nullptr;

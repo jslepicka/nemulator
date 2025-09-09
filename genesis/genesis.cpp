@@ -36,7 +36,7 @@ c_genesis::c_genesis()
         &z80_irq, //irq
         nullptr  //data bus
     );
-    ym = std::make_unique<c_ym>();
+    ym = std::make_unique<c_ym2612>();
     cart_ram_start = 0;
     cart_ram_end = 0;
     z80_has_bus = 1;
@@ -60,18 +60,29 @@ c_genesis::c_genesis()
     a2 = regexprep(num2str(Hd.sosMatrix(17:20), '%.16ff '), '\s+', ',')
     a3 = regexprep(num2str(Hd.sosMatrix(21:24), '%.16ff '), '\s+', ',')
     */
-    lpf = std::make_unique<dsp::c_biquad4>(
-        std::array{0.5068508386611939f, 0.3307863473892212f, 0.1168005615472794f, 0.0055816280655563f},
-        std::array{-1.9496889114379883f, -1.9021773338317871f, -1.3770858049392700f, -1.9604763984680176f},
-        std::array{-1.9442052841186523f, -1.9171522855758667f, -1.8950747251510620f, -1.9676681756973267f},
-        std::array{0.9609073400497437f, 0.9271715879440308f, 0.8989855647087097f, 0.9881398081779480f});
-    post_filter = std::make_unique<dsp::c_biquad>(
-        0.5648277401924133f, std::array{1.0000000000000000f, 0.0000000000000000f, -1.0000000000000000f},
-        std::array{1.0000000000000000f, -0.8659016489982605f, -0.1296554803848267f});
-    resampler = std::make_unique<dsp::c_resampler>((float)(((488.0 * 262.0 * 60.0) / 6.0) / 48000.0), lpf.get(),
-                                                   post_filter.get());
 
+    struct
+    {
+        std::unique_ptr<dsp::c_biquad4> *lpf;
+        std::unique_ptr<dsp::c_biquad> *post_filter;
+        std::unique_ptr<dsp::c_resampler> *resampler;
+    } filters[] = {
+        {&lpf_l, &post_filter_l, &resampler_l},
+        {&lpf_r, &post_filter_r, &resampler_r}
+    };
 
+    for (auto &f : filters) {
+        *f.lpf = std::make_unique<dsp::c_biquad4>(
+            std::array{0.5068508386611939f, 0.3307863473892212f, 0.1168005615472794f, 0.0055816280655563f},
+            std::array{-1.9496889114379883f, -1.9021773338317871f, -1.3770858049392700f, -1.9604763984680176f},
+            std::array{-1.9442052841186523f, -1.9171522855758667f, -1.8950747251510620f, -1.9676681756973267f},
+            std::array{0.9609073400497437f, 0.9271715879440308f, 0.8989855647087097f, 0.9881398081779480f});
+        *f.post_filter = std::make_unique<dsp::c_biquad>(
+            0.5648277401924133f, std::array{1.0000000000000000f, 0.0000000000000000f, -1.0000000000000000f},
+            std::array{1.0000000000000000f, -0.8659016489982605f, -0.1296554803848267f});
+        *f.resampler = std::make_unique<dsp::c_resampler>((float)(BASE_AUDIO_FREQ / 48000.0),
+                                                          f.lpf->get(), f.post_filter->get());
+    }
 }
 
 c_genesis::~c_genesis()
@@ -208,13 +219,15 @@ int c_genesis::reset()
     last_z80_cycle = 0;
     next_z80_cycle = 15;
     next_ym_cycle = 0;
+    psg_divider = 0;
     return 0;
 }
 
 int c_genesis::emulate_frame()
 {
     psg->clear_buffer();
-    resampler->clear_buf();
+    resampler_l->clear_buf();
+    resampler_r->clear_buf();
     uint32_t hblank_len = 50;
 
     for (int line = 0; line < 262; line++) {
@@ -231,7 +244,8 @@ int c_genesis::emulate_frame()
                     ym->clock(1);
                     if (mixer_enabled) {
                         //todo: volume adjustments
-                        resampler->process(ym->out * (1.0f - 1.0f/6.0f) + psg->out * (1.0f/6.0f));
+                        resampler_l->process(ym->out_l * (1.0f - 1.0f/6.0f) + psg->out * (1.0f/6.0f * 2.0f));
+                        resampler_r->process(ym->out_r * (1.0f - 1.0f / 6.0f) + psg->out * (1.0f / 6.0f * 2.0f));
                         //resampler->process(ym->out);
                     }
                 }
@@ -241,7 +255,10 @@ int c_genesis::emulate_frame()
                     if (z80_has_bus && z80_reset) {
                         z80->execute(1);
                     }
-                    psg->clock(1);
+                    if (++psg_divider == 16) {
+                        psg_divider = 0;
+                        psg->clock(16);
+                    }
                 }
             }
             if (i == 0) {
@@ -252,16 +269,7 @@ int c_genesis::emulate_frame()
         vdp->end_line();
     }
 
-    catchup_psg();
     return 0;
-}
-
-void c_genesis::catchup_psg()
-{
-    return;
-    int num_cycles = (int)(z80->retired_cycles - last_psg_run);
-    last_psg_run = z80->retired_cycles;
-    psg->clock(num_cycles);
 }
 
 uint8_t c_genesis::z80_read_byte(uint16_t address)
@@ -318,8 +326,6 @@ void c_genesis::z80_write_byte(uint16_t address, uint8_t value)
         //vdp
         if (address == 0x7F11) {
             psg->write(value);
-            catchup_psg();
-            //OutputDebugString("z80 psg write\n");
         }
     }
     else {
@@ -504,8 +510,6 @@ void c_genesis::write_byte(uint32_t address, uint8_t value)
     }
     else if (address == 0xC00011) {
         psg->write(value);
-        catchup_psg();
-        //OutputDebugString("psg write\n");
     }
     else if (address >= 0xA00000 && address < 0xA10000) {
         address &= 0x7FFF;
@@ -636,22 +640,18 @@ int *c_genesis::get_video()
     return (int*)vdp->frame_buffer;
 }
 
-int c_genesis::get_sound_bufs(const short **buf_l, const short **buf_r)
+int c_genesis::get_sound_bufs(const float **buf_l, const float **buf_r)
 {
-    ////*buf_l = nullptr;
-    //int num_samples = psg->get_buffer(buf_l);
-    //*buf_r = nullptr;
-    //return num_samples;
-    
-    //mono for now
-    *buf_r = nullptr;
-    int num_samples = resampler->get_output_buf(buf_l);
+    int num_samples = resampler_l->get_output_buf(buf_l);
+    resampler_r->get_output_buf(buf_r);
     return num_samples;
 
 }
 void c_genesis::set_audio_freq(double freq)
 {
-    psg->set_audio_rate(freq);
+    double m = BASE_AUDIO_FREQ / freq;
+    resampler_l->set_m(m);
+    resampler_r->set_m(m);
 }
 
 void c_genesis::enable_mixer()

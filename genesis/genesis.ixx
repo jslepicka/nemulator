@@ -8,7 +8,7 @@ import class_registry;
 import z80;
 import :vdp;
 import sms;
-import ym;
+import ym2612;
 
 import dsp;
 
@@ -61,7 +61,7 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     void write_word(uint32_t address, uint16_t value);
     int reset();
     int *get_video();
-    int get_sound_bufs(const short **buf_l, const short **buf_r);
+    int get_sound_bufs(const float **buf_l, const float **buf_r);
     int irq;
     int nmi;
     void set_audio_freq(double freq);
@@ -82,7 +82,7 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     std::unique_ptr<uint8_t[]> cart_ram;
     std::unique_ptr<c_vdp> vdp;
     std::unique_ptr<c_z80> z80;
-    std::unique_ptr<c_ym> ym;
+    std::unique_ptr<c_ym2612> ym;
     int file_length;
     uint8_t ipl;
     int last_bus_request;
@@ -109,6 +109,7 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     int is_ps4;
     int ps4_ram_access;
     uint32_t bank_register;
+    int psg_divider;
 
     void open_sram();
     void close_sram();
@@ -123,7 +124,6 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     void z80_write_port(uint8_t port, uint8_t value);
 
     std::unique_ptr<sms::c_psg> psg;
-    void catchup_psg();
 
     uint64_t last_psg_run;
     uint64_t skipped_psg_cycles;
@@ -135,9 +135,15 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     int mixer_enabled;
 
 
-    std::unique_ptr<dsp::c_biquad4> lpf;
-    std::unique_ptr<dsp::c_biquad> post_filter;
-    std::unique_ptr<dsp::c_resampler> resampler;
+    std::unique_ptr<dsp::c_biquad4> lpf_l;
+    std::unique_ptr<dsp::c_biquad> post_filter_l;
+    std::unique_ptr<dsp::c_resampler> resampler_l;
+
+    std::unique_ptr<dsp::c_biquad4> lpf_r;
+    std::unique_ptr<dsp::c_biquad> post_filter_r;
+    std::unique_ptr<dsp::c_resampler> resampler_r;
+
+    static constexpr double BASE_AUDIO_FREQ=(488.0 * 262.0 * 60.0) / 6.0;
 };
 
 } //namespace genesis

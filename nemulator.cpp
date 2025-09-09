@@ -71,6 +71,8 @@ c_nemulator::c_nemulator()
     load_thread_handle = 0;
     show_suspend = false;
 
+    master_volume = 1.0f;
+
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
 }
@@ -271,6 +273,7 @@ void c_nemulator::configure_input()
         int repeat_mode;
     };
     static const unsigned int BUTTON = 0x80000000;
+    // clang-format off
     s_button_map button_map[] =
     {
         { BUTTON_1LEFT,         "joy1",     "left",    VK_LEFT,                1 },
@@ -312,7 +315,12 @@ void c_nemulator::configure_input()
 
         { BUTTON_1COIN,          "",        "",        0x31,                   0 },
         { BUTTON_SWITCH_DISK,    "",        "",        VK_F5,                  0 },
+
+        { BUTTON_VOLUME_UP,      "",        "",        VK_OEM_PLUS,            1 },
+        { BUTTON_VOLUME_DOWN,    "",        "",        VK_OEM_MINUS,           1 }
+
     };
+    // clang-format on
 
     int num_buttons = sizeof(button_map) / sizeof(s_button_map);
     g_ih = std::make_unique<c_input_handler>(BUTTON_COUNT);
@@ -480,6 +488,20 @@ void c_nemulator::adjust_sharpness(float value)
     status->add_message("set sharpness to " + std::string(buf));
 }
 
+void c_nemulator::adjust_volume(int value)
+{
+    const int min_volume = 0;
+    const int max_volume = 100;
+    if (value < 0 && sound->master_volume <= min_volume)
+        return;
+    if (value > 0 && sound->master_volume >= max_volume)
+        return;
+    sound->set_volume(sound->master_volume + value);
+    char buf[8];
+    sprintf_s(buf, sizeof(buf), "%d", sound->master_volume);
+    status->add_message("set volume to " + std::string(buf));
+}
+
 void c_nemulator::handle_button_dec_sharpness(s_button_handler_params *params)
 {
     adjust_sharpness(-0.025f);
@@ -488,6 +510,16 @@ void c_nemulator::handle_button_dec_sharpness(s_button_handler_params *params)
 void c_nemulator::handle_button_inc_sharpness(s_button_handler_params *params)
 {
     adjust_sharpness(.025f);
+}
+
+void c_nemulator::handle_button_volume_up(s_button_handler_params *params)
+{
+    adjust_volume(5);
+}
+
+void c_nemulator::handle_button_volume_down(s_button_handler_params *params)
+{
+    adjust_volume(-5);
 }
 
 
@@ -642,6 +674,8 @@ const c_nemulator::s_button_handler c_nemulator::button_handlers[] =
     { SCOPE::GAMES_LOADED, {BUTTON_SPRITE_LIMIT}, true, RESULT_DOWN, &c_nemulator::handle_button_sprite_limit },
     { SCOPE::GAMES_LOADED, {BUTTON_DEC_SHARPNESS}, true, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_dec_sharpness },
     { SCOPE::GAMES_LOADED, {BUTTON_INC_SHARPNESS}, true, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_inc_sharpness },
+    { SCOPE::GAMES_LOADED, {BUTTON_VOLUME_UP}, true, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_volume_up },
+    { SCOPE::GAMES_LOADED, {BUTTON_VOLUME_DOWN}, true, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_volume_down },
     { SCOPE::IN_MENU, {BUTTON_1RIGHT}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_right },
     { SCOPE::IN_MENU, {BUTTON_1LEFT}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_left },
     { SCOPE::IN_MENU, {BUTTON_1UP}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_up },
@@ -1028,8 +1062,8 @@ void c_nemulator::UpdateScene(double dt)
         {
             c_system *system = ((c_system_container *)texturePanels[selectedPanel]->GetSelected())->system.get();
 
-            const short* buf_l;
-            const short* buf_r;
+            const float* buf_l;
+            const float* buf_r;
 
             int num_samples = system->get_sound_bufs(&buf_l, &buf_r);
             
@@ -1088,6 +1122,7 @@ void c_nemulator::UpdateScene(double dt)
             stats->report_stat("audio_position", sound->audio_position);
             stats->report_stat("audio_position_diff", sound->audio_position_diff);
             stats->report_stat("audio state", sound->state);
+            stats->report_stat("audio.clips", sound->clips);
             std::ostringstream s;
             s << std::hex << std::uppercase << system->get_crc();
             stats->report_stat("CRC", s.str());

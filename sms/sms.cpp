@@ -297,7 +297,7 @@ int *c_sms::get_video()
     return vdp->get_frame_buffer();
 }
 
-int c_sms::get_sound_bufs(const short **buf_l, const short **buf_r)
+int c_sms::get_sound_bufs(const float **buf_l, const float **buf_r)
 {
     int num_samples = psg->get_buffer(buf_l);
     *buf_r = nullptr;

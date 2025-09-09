@@ -300,8 +300,6 @@ public:
     uint8_t interrupt;
     bool stopped;
 
-    void make_instruction_array();
     static const uint8_t instructions[65536];
-    static uint8_t instructions2[65536];
-    static std::atomic<int> instruction_array_built;
+    static const std::array<uint8_t, 65536> instructions3;
 };

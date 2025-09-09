@@ -1,6 +1,6 @@
 module;
 
-export module ym;
+export module ym2612;
 import nemulator.std;
 
 enum class ADSR_PHASE
@@ -16,7 +16,6 @@ uint32_t compute_key_code(uint32_t f_number, uint8_t block);
 class c_envelope_generator
 {
   public:
-    c_envelope_generator();
     void reset();
     void clock();
     void set_key_on(bool k);
@@ -80,7 +79,6 @@ class c_envelope_generator
 class c_phase_generator
 {
   public:
-    c_phase_generator();
     void reset();
     void clock();
     uint32_t output();
@@ -108,7 +106,6 @@ class c_phase_generator
 class c_fm_operator
 {
   public:
-    c_fm_operator();
     void reset();
     void key(bool on);
     bool key_on;
@@ -128,7 +125,6 @@ class c_fm_operator
 class c_fm_channel
 {
   public:
-    c_fm_channel();
     void reset();
     void clock();
     float output();
@@ -136,21 +132,29 @@ class c_fm_channel
     uint8_t panning;
     uint8_t algorithm;
     uint8_t feedback;
+    bool multi_frequency_operators;
+    uint32_t f_number;
+    uint32_t block;
+    uint32_t operator_f_number_hi[4];
+    uint32_t operator_f_number[4];
+    uint32_t operator_block[4];
+    void update_frequency();
+
+    int32_t out_i;
 
   private:
     float out;
 };
 
-export class c_ym
+export class c_ym2612
 {
   public:
-    c_ym();
-    ~c_ym();
     void clock(int cycles);
     void write(uint16_t address, uint8_t data);
     uint8_t read(uint16_t address);
     void reset();
-    float out;
+    float out_l;
+    float out_r;
 
   private:
     int ticks;
@@ -188,6 +192,6 @@ export class c_ym
     c_fm_channel channels[6];
     void clock_channels();
     float get_dac_sample();
-    float mix();
+    void mix();
 };
 

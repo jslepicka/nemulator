@@ -42,7 +42,7 @@ c_psg::~c_psg()
 {
 }
 
-int c_psg::get_buffer(const short **buf)
+int c_psg::get_buffer(const float **buf)
 {
     int num_samples = resampler->get_output_buf(buf);
     return num_samples;

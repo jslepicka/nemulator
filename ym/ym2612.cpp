@@ -1,6 +1,6 @@
 module;
 
-module ym;
+module ym2612;
 
 static const std::array<uint32_t, 512> log_sin_table = [] {
     std::array<uint32_t, 512> ret;
@@ -27,17 +27,10 @@ static const std::array<uint32_t, 256> pow2_table = [] {
     return ret;
 }();
 
-c_ym::c_ym()
+void c_ym2612::reset()
 {
-}
-
-c_ym::~c_ym()
-{
-}
-
-void c_ym::reset()
-{
-    out = 0.0f;
+    out_l = 0.0f;
+    out_r = 0.0f;
     ticks = 0;
     group = GROUP_ONE;
 
@@ -55,9 +48,13 @@ void c_ym::reset()
 
     //move this to the channel
     std::memset(freq_hi, 0, sizeof(freq_hi));
+
+    for (auto &channel : channels) {
+        channel.reset();
+    }
 }
 
-void c_ym::clock_timer_a()
+void c_ym2612::clock_timer_a()
 {
     if (timer_a_enabled) {
         timer_a++;
@@ -70,7 +67,7 @@ void c_ym::clock_timer_a()
     }
 }
 
-void c_ym::clock_timer_b()
+void c_ym2612::clock_timer_b()
 {
     if (timer_b_enabled) {
         timer_b++;
@@ -83,7 +80,7 @@ void c_ym::clock_timer_b()
     }
 }
 
-void c_ym::clock(int cycles)
+void c_ym2612::clock(int cycles)
 {
     if (busy_counter) {
         busy_counter--;
@@ -102,13 +99,15 @@ void c_ym::clock(int cycles)
 
         clock_channels();
 
-        out = mix();
+        mix();
     }
 }
 
-float c_ym::mix()
+void c_ym2612::mix()
 {
-    float out = 0.0f;
+    out_l = 0.0f;
+    out_r = 0.0f;
+
     for (int i = 0; i < 6; i++) {
         float channel_out = 0.0f;
         if (i == 5 && (registers[0x2B] & 0x80)) {
@@ -117,24 +116,18 @@ float c_ym::mix()
         else {
             channel_out = channels[i].output();
         }
-        switch (channels[i].panning) {
-            case 1:
-            case 2:
-                //todo: stereo
-                out += .5f * channel_out;
-                break;
-            case 3:
-                out += channel_out;
-                break;
-            default:
-                break;
+        if (channels[i].panning & 0x1) {
+            out_r += channel_out;
+        }
+        if (channels[i].panning & 0x2) {
+            out_l += channel_out;
         }
     }
-    out /= 6.0f;
-    return out;
+    out_l /= 6.0f;
+    out_r /= 6.0f;
 }
 
-float c_ym::get_dac_sample()
+float c_ym2612::get_dac_sample()
 {
     int dac_sample = (int)(registers[0x2A]) - 128;
     dac_sample <<= 6;
@@ -142,14 +135,14 @@ float c_ym::get_dac_sample()
     return o;
 }
 
-void c_ym::clock_channels()
+void c_ym2612::clock_channels()
 {
     for (auto &channel : channels) {
         channel.clock();
     }
 }
 
-uint8_t c_ym::read(uint16_t address)
+uint8_t c_ym2612::read(uint16_t address)
 {
     //if (address != 0x4000) {
     //    int x = 1;
@@ -158,20 +151,14 @@ uint8_t c_ym::read(uint16_t address)
     return status;
 }
 
-void c_ym::write(uint16_t address, uint8_t value)
+void c_ym2612::write(uint16_t address, uint8_t value)
 {
     switch (address) {
         case 0:
         case 2:
             group = address == 0 ? GROUP_ONE : GROUP_TWO;
             reg_addr = value;
-            if (value == 0x1) {
-                int x = 1;
-            }
             channel_idx = reg_addr & 0x3;
-            if (channel_idx == 3) {
-                int x = 1;
-            }
             if (group == GROUP_TWO) {
                 channel_idx += 3;
             }
@@ -179,14 +166,8 @@ void c_ym::write(uint16_t address, uint8_t value)
             break;
         case 1:
         case 3:
-            if (group == GROUP_TWO) {
-                int x = 1;
-            }
             data = value;
             registers[reg_addr] = value;
-            if (reg_addr == 0x26) {
-                int x = 1;
-            }
             busy_counter = 32;
             status |= 0x80;
             switch (reg_addr) {
@@ -207,20 +188,25 @@ void c_ym::write(uint16_t address, uint8_t value)
                     else if (value & 0x20) {
                         status &= ~2;
                     }
+
                     if (!timer_a_enabled && (value & 0x1)) {
                         timer_a_enabled = 1;
                         timer_a = timer_a_reload;
                     }
+
                     else if (!(value & 0x1)) {
                         timer_a_enabled = 0;
                     }
+
                     if (!timer_b_enabled && (value & 0x2)) {
                         timer_b_enabled = 1;
-                        timer_b = timer_a_reload;
+                        timer_b = timer_b_reload;
                     }
                     else if (!(value & 0x2)) {
                         timer_b_enabled = 0;
                     }
+                    channels[2].multi_frequency_operators = ((value >> 6) & 0x3) == 1;
+                    channels[2].update_frequency();
                     break;
                 case 0x28: {
                     int c = value & 0x7;
@@ -234,15 +220,8 @@ void c_ym::write(uint16_t address, uint8_t value)
                             value >>= 1;
                         }
                     }
-                    else {
-                        int x = 1;
-                    }
                 }
                     break;
-                case 0x2A: {
-                    int x = 1;
-                    break;
-                } break;
                 case 0x30:
                 case 0x31:
                 case 0x32:
@@ -263,9 +242,6 @@ void c_ym::write(uint16_t address, uint8_t value)
                         channels[channel_idx].operators[operator_idx].phase_generator.multiple = value & 0xF;
                         channels[channel_idx].operators[operator_idx].phase_generator.detune = (value >> 4) & 7;
                     }
-                    else {
-                        int x = 1;
-                    }
                     break;
                 case 0x40:
                 case 0x41:
@@ -285,9 +261,6 @@ void c_ym::write(uint16_t address, uint8_t value)
                 case 0x4F:
                     if (!((reg_addr & 0x3) == 3)) {
                         channels[channel_idx].operators[operator_idx].envelope_generator.total_level = value & 0x7F;
-                    }
-                    else {
-                        int x = 1;
                     }
                     break;
                 case 0x50:
@@ -311,9 +284,6 @@ void c_ym::write(uint16_t address, uint8_t value)
                         //channels[channel_idx].operators[operator_idx].envelope_generator.key_scale = (value >> 6) & 0x3;
                         channels[channel_idx].operators[operator_idx].update_key_scale((value >> 6) & 0x3);
                     }
-                    else {
-                        int x = 1;
-                    }
                     break;
                 case 0x60:
                 case 0x61:
@@ -335,9 +305,6 @@ void c_ym::write(uint16_t address, uint8_t value)
                         channels[channel_idx].operators[operator_idx].envelope_generator.decay_rate = value & 0x1F;
                         channels[channel_idx].operators[operator_idx].envelope_generator.am_enable = (value >> 7) & 1;
                     }
-                    else {
-                        int x = 1;
-                    }
                     break;
                 case 0x70:
                 case 0x71:
@@ -357,9 +324,6 @@ void c_ym::write(uint16_t address, uint8_t value)
                 case 0x7F:
                     if (!((reg_addr & 0x3) == 3)) {
                         channels[channel_idx].operators[operator_idx].envelope_generator.sustain_rate = value & 0x1F;
-                    }
-                    else {
-                        int x = 1;
                     }
                     break;
                 case 0x80:
@@ -382,19 +346,16 @@ void c_ym::write(uint16_t address, uint8_t value)
                         channels[channel_idx].operators[operator_idx].envelope_generator.release_rate = value & 0xF;
                         channels[channel_idx].operators[operator_idx].envelope_generator.sustain_level = value >> 4;
                     }
-                    else {
-                        int x = 1;
-                    }
                     break;
                 case 0xA0:
                 case 0xA1:
                 case 0xA2: {
                     if (!((reg_addr & 0x3) == 3)) {
-
-                        uint32_t f = (((uint32_t)freq_hi[channel_idx] & 7) << 8) | value;
-                        for (int o = 0; o < 4; o++) {
-                            channels[channel_idx].operators[o].update_frequency(f, (freq_hi[channel_idx] >> 3) & 7);
-                        }
+                        uint32_t f = ((channels[channel_idx].operator_f_number_hi[3] & 7) << 8) | value;
+                        channels[channel_idx].operator_f_number[3] = f;
+                        channels[channel_idx].operator_block[3] =
+                            (channels[channel_idx].operator_f_number_hi[3] >> 3) & 7;
+                        channels[channel_idx].update_frequency();
                     }
                 }
                     break;
@@ -402,8 +363,37 @@ void c_ym::write(uint16_t address, uint8_t value)
                 case 0xA5:
                 case 0xA6: {
                     if (!((reg_addr & 0x3) == 3)) {
-                        freq_hi[channel_idx] = value;
+                        channels[channel_idx].operator_f_number_hi[3] = value;
                     }
+                }
+                    break;
+                case 0xA9:
+                case 0xAA:
+                case 0xA8: {
+                    int op = 0;
+                    if (reg_addr == 0xAA) {
+                        op = 1;
+                    }
+                    else if (reg_addr == 0xA8) {
+                        op = 2;
+                    }
+                    uint32_t f = (((uint32_t)channels[2].operator_f_number_hi[op] & 7) << 8) | value;
+                    channels[2].operator_f_number[op] = f;
+                    channels[2].operator_block[op] = (channels[2].operator_f_number_hi[op] >> 3) & 7;
+                    channels[2].update_frequency();
+                }
+                    break;
+                case 0xAD:
+                case 0xAE:
+                case 0xAC: {
+                    int op = 0;
+                    if (reg_addr == 0xAE) {
+                        op = 1;
+                    }
+                    else if (reg_addr == 0xAC) {
+                        op = 2;
+                    }
+                    channels[2].operator_f_number_hi[op] = value;
                 }
                     break;
                 case 0xB0:
@@ -424,11 +414,6 @@ void c_ym::write(uint16_t address, uint8_t value)
             }
             break;
     }
-}
-
-c_phase_generator::c_phase_generator()
-{
-    reset();
 }
 
 void c_phase_generator::reset()
@@ -480,16 +465,13 @@ void c_phase_generator::reset_counter()
     counter = 0;
 }
 
-c_fm_operator::c_fm_operator()
-{
-    reset();
-}
-
 void c_fm_operator::reset()
 {
     key_on = false;
     current_output = 0;
     last_output = 0;
+    phase_generator.reset();
+    envelope_generator.reset();
 }
 
 void c_fm_operator::key(bool on)
@@ -533,8 +515,6 @@ void c_fm_operator::update_key_scale_rate()
     envelope_generator.key_scale_rate = key_code >> (3 - envelope_generator.key_scale);
 }
 
-#define SIGN_EXTEND(bit_index, value) (((value) & ((1u << (bit_index)) - 1u)) - ((value) & (1u << (bit_index))))
-
 int32_t c_fm_operator::output(int32_t modulation_input)
 {
     //modulation_input >>= 4; //this is definitely not right but helps... why?
@@ -575,17 +555,30 @@ uint32_t c_fm_operator::attenuation_to_amplitude(uint32_t attenuation)
     return ((fract_pow2 << 2) >> int_part);
 }
 
-c_fm_channel::c_fm_channel()
-{
-    reset();
-}
-
 void c_fm_channel::reset()
 {
     out = 0.0f;
     panning = 3;
     algorithm = 0;
     feedback = 0;
+    multi_frequency_operators = false;
+    f_number = 0;
+    block = 0;
+    memset(operator_f_number_hi, 0, sizeof(operator_f_number_hi));
+    memset(operator_f_number, 0, sizeof(operator_f_number));
+    memset(operator_f_number, 0, sizeof(operator_block));
+
+    for (auto &op : operators) {
+        op.reset();
+    }
+}
+
+void c_fm_channel::update_frequency()
+{
+    for (int i = 0; i < 4; i++) {
+        int f_index = multi_frequency_operators ? i : 3;
+        operators[i].update_frequency(operator_f_number[f_index], operator_block[f_index]);
+    }
 }
 
 void c_fm_channel::clock()
@@ -601,6 +594,7 @@ void c_fm_channel::clock()
     }
     //todo quanitzation mask on output
     int32_t int_out = 0;
+    uint32_t mask = ~((1 << 5) - 1);
     switch (algorithm) {
         case 0: {
             int32_t m1 = operators[0].output(op1_feedback);
@@ -636,46 +630,42 @@ void c_fm_channel::clock()
         case 4: {
             int32_t m1 = operators[0].output(op1_feedback);
             int32_t m3 = operators[2].output(0);
-            int32_t c2 = operators[1].output(m1 >> 1);
-            int32_t c4 = operators[3].output(m3 >> 1);
-            int_out = (int32_t)(c2 + c4); //need to clamp
+            int32_t c2 = operators[1].output(m1 >> 1) & mask;
+            int32_t c4 = operators[3].output(m3 >> 1) & mask;
+            int_out = c2 + c4;
         } break;
         case 5: {
             int32_t m1 = operators[0].output(op1_feedback);
-            int32_t c2 = operators[1].output(m1 >> 1);
-            int32_t c3 = operators[2].output(m1 >> 1);
-            int32_t c4 = operators[3].output(m1 >> 1);
+            int32_t c2 = operators[1].output(m1 >> 1) & mask;
+            int32_t c3 = operators[2].output(m1 >> 1) & mask;
+            int32_t c4 = operators[3].output(m1 >> 1) & mask;
             int_out = c2 + c3 + c4;
         } break;
         case 6: {
             int32_t m1 = operators[0].output(op1_feedback);
-            int32_t c2 = operators[1].output(m1 >> 1);
-            int32_t c3 = operators[2].output(0);
-            int32_t c4 = operators[3].output(0);
+            int32_t c2 = operators[1].output(m1 >> 1) & mask;
+            int32_t c3 = operators[2].output(0) & mask;
+            int32_t c4 = operators[3].output(0) & mask;
             int_out = c2 + c3 + c4;
         } break;
         case 7: {
-            int32_t c1 = operators[0].output(op1_feedback);
-            int32_t c2 = operators[1].output(0);
-            int32_t c3 = operators[2].output(0);
-            int32_t c4 = operators[3].output(0);
+            int32_t c1 = operators[0].output(op1_feedback) & mask;
+            int32_t c2 = operators[1].output(0) & mask;
+            int32_t c3 = operators[2].output(0) & mask;
+            int32_t c4 = operators[3].output(0) & mask;
             int_out = c1 + c2 + c3 + c4;
         } break;
         default:
             break;
     }
-    out = std::clamp(int_out, -0x2000, 0x1FFF);
+    out_i = out;
+    out = std::clamp(int_out, (int32_t)(-0x2000 & mask), (int32_t)(0x1FFF & mask));
     out /= 8192.0f;
 }
 
 float c_fm_channel::output()
 {
     return out;
-}
-
-c_envelope_generator::c_envelope_generator()
-{
-    reset();
 }
 
 void c_envelope_generator::reset()
@@ -691,7 +681,7 @@ void c_envelope_generator::reset()
     release_rate = 0;
     cycle_count = 1;
 
-    attenuation = 0;
+    attenuation = 0x3FF;
 
     total_level = 0;
     rate_scaling = 0;
@@ -748,7 +738,7 @@ void c_envelope_generator::clock()
     if (phase == ADSR_PHASE::DECAY && attenuation >= sl_steps) {
         phase = ADSR_PHASE::SUSTAIN;
     }
-    uint32_t r;
+    uint32_t r = 0;
     switch (phase) {
         case ADSR_PHASE::ATTACK:
             r = attack_rate;

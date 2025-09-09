@@ -125,7 +125,7 @@ void c_apu::reset()
     resampler = std::make_unique<dsp::c_resampler>(NES_AUDIO_RATE / 48000.0f, lpf.get(), post_filter.get());
 }
 
-int c_apu::get_buffer(const short** buf)
+int c_apu::get_buffer(const float** buf)
 {
     int num_samples = resampler->get_output_buf(buf);
     return num_samples;

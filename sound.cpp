@@ -29,10 +29,13 @@ c_sound::c_sound()
     first_b = 1;
     slope = 0.0;
     value_index = 0;
+    clips = 0;
 
     interleave_buffer = std::make_unique<uint32_t[]>(INTERLEAVE_BUFFER_LEN);
     buffer_wait_count = 0;
     memset(values, 0xFF, sizeof(values));
+
+    set_volume(master_volume);
 }
 
 int c_sound::init_wasapi()
@@ -316,16 +319,33 @@ int c_sound::sync()
     return b;
 }
 
-int c_sound::copy(const short *left, const short *right, int numSamples)
+void c_sound::set_volume(int value)
+{
+    master_volume = value;
+    volume = master_volume == 0 ? 0.0f : std::pow(10.0f, ((master_volume - 50) / 100.0f) * 4.0f * std::log10(2.0f));
+}
+
+int c_sound::copy(const float *left, const float *right, int numSamples)
 {
     int waited = 0;
     int src_len = numSamples * wf.nBlockAlign;
 
+    auto amplify = [&](float sample) {
+        sample = round(sample * 32767.0f * volume);
+        if (sample > 32767.0f || sample < -32768.0f) {
+            clips++;
+        }
+        return (uint16_t)std::clamp((int)sample, -32768, 32767);
+    };
+ 
+
     uint32_t *ib = interleave_buffer.get();
-    const uint16_t *l = (uint16_t*)left;
-    const uint16_t *r = right != NULL ? (uint16_t*)right : (uint16_t*)left;
+    const float *l = left;
+    const float *r = right != NULL ? right : left;
     for (int i = 0; i < numSamples; i++) {
-        *ib++ = *l++ | (*r++ << 16);
+        //uint16_t l_sample = (short)std::clamp((int)round(*l++ * 32767.0f * volume), -32768, 32767);
+        //uint16_t r_sample = (short)std::clamp((int)round(*r++ * 32767.0f * volume), -32768, 32767);
+        *ib++ = amplify(*l++) | (amplify(*r++) << 16);
     }
     while (get_max_write() < src_len) {
         waited = 1;

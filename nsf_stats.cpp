@@ -250,14 +250,14 @@ float c_nsf_stats::aweight_filter(float sample)
 void c_nsf_stats::draw()
 {
     draw_count++;
-    const short* buf_l;
-    const short* buf_r;
+    const float* buf_l;
+    const float* buf_r;
 
     int num_samples = c->get_sound_bufs(&buf_l, &buf_r);
 
     for (int i = 0; i < num_samples; i++) {
         //*sbp++ = *buf_l++;
-        sb[(sb_index + i) & 8191] = *buf_l++;
+        sb[(sb_index + i) & 8191] = (short)((*buf_l++) * 32767.0f);
     }
 
     sb_index = (sb_index + num_samples) & 8191;

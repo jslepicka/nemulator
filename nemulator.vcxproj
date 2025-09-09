@@ -373,8 +373,8 @@
     <ClCompile Include="nes\mapper.cpp" />
     <ClCompile Include="nes\nes.cpp" />
     <ClCompile Include="nes\ppu.cpp" />
-    <ClCompile Include="ym\ym.cpp" />
-    <ClCompile Include="ym\ym.ixx" />
+    <ClCompile Include="ym\ym2612.cpp" />
+    <ClCompile Include="ym\ym2612.ixx" />
     <ClCompile Include="z80\z80.ixx" />
   </ItemGroup>
   <ItemGroup>
