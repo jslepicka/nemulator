@@ -681,7 +681,7 @@ const c_nemulator::s_button_handler c_nemulator::button_handlers[] =
     { SCOPE::IN_MENU, {BUTTON_1UP}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_up },
     { SCOPE::IN_MENU, {BUTTON_1DOWN}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_down },
     { SCOPE::IN_MENU | SCOPE::NO_GAMES_LOADED, {BUTTON_1B, BUTTON_ESCAPE}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_cancel },
-    { SCOPE::IN_MENU, {BUTTON_1A, BUTTON_1START, BUTTON_RETURN}, true, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_ok },
+    { SCOPE::IN_MENU, {BUTTON_1A, BUTTON_1C, BUTTON_1START, BUTTON_RETURN}, true, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_ok },
     { SCOPE::IN_MENU, {BUTTON_1SELECT}, true, RESULT_DOWN, &c_nemulator::handle_button_show_qam },
     { SCOPE::IN_GAME, {BUTTON_1A_TURBO, BUTTON_1B_TURBO, BUTTON_2A_TURBO, BUTTON_2B_TURBO}, false, RESULT_DOWN, &c_nemulator::handle_button_turbo },
     { SCOPE::IN_GAME, {BUTTON_ESCAPE}, false, RESULT_DOWN, &c_nemulator::handle_button_leave_game },

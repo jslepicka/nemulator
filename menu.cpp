@@ -80,6 +80,7 @@ int c_menu::update(double dt, int child_result, void *params)
             selected_item = menu_items->num_items - 1;
     }
     else if (g_ih->get_result(BUTTON_1A, true) & c_input_handler::RESULT_DOWN ||
+        g_ih->get_result(BUTTON_1C, true) & c_input_handler::RESULT_DOWN ||
         g_ih->get_result(BUTTON_1START, true) & c_input_handler::RESULT_DOWN ||
         g_ih->get_result(BUTTON_RETURN, true) & c_input_handler::RESULT_DOWN)
     {
