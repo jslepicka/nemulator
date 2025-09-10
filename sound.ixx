@@ -13,7 +13,7 @@ export class c_sound
     int init();
     void play();
     void stop();
-    int copy(const float *left, const float *right, int numSamples);
+    int copy(const float *left, const float *right, int numSamples, float system_volume);
     double get_freq()
     {
         return freq;
@@ -37,9 +37,13 @@ export class c_sound
 
     std::string state = "";
     void set_volume(int value);
-    int master_volume = 70;
+    int master_volume = 50;
+
+    float average_db;
 
   private:
+    float sample_sum;
+    float sample_count;
     double requested_freq;
     double default_freq;
     float volume = .5f;

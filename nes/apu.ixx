@@ -268,7 +268,7 @@ export class c_apu
     //c_biquad* post_filter;
     std::unique_ptr<dsp::c_resampler> resampler;
     std::unique_ptr<dsp::c_biquad4> lpf;
-    std::unique_ptr<dsp::c_biquad> post_filter;
+    std::unique_ptr<dsp::c_first_order_bandpass> post_filter;
     std::unique_ptr<int32_t[]> sound_buffer;
     static const int CLOCKS_PER_FRAME_SEQ = 89489;
     int mixer_enabled;

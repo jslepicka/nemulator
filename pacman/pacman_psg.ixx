@@ -36,7 +36,7 @@ class c_pacman_psg
 
     dsp::c_resampler *resampler;
     dsp::c_biquad4 *lpf;
-    dsp::c_biquad *post_filter;
+    dsp::c_first_order_bandpass *post_filter;
     int32_t *sound_buffer;
     int muted;
     int mixer_enabled;

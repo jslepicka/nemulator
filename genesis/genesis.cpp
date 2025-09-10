@@ -61,10 +61,27 @@ c_genesis::c_genesis()
     a3 = regexprep(num2str(Hd.sosMatrix(21:24), '%.16ff '), '\s+', ',')
     */
 
+    /*
+    1st order bandpass 2Hz - 3390Hz
+    fs=48000;
+    fc_l=3390;
+    fc_h=2;
+    [b_l, a_l] = butter(1, fc_l/(fs/2), 'low');
+    [b_h, a_h] = butter(1, fc_h/(fs/2), 'high');
+    b0_l = num2str(b_l(1), '%.16ff');
+    b1_l = num2str(b_l(2), '%.16ff');
+    a1_l = num2str(a_l(2), '%.16ff');
+    b0_h = num2str(b_h(1), '%.16ff');
+    b1_h = num2str(b_h(2), '%.16ff');
+    a1_h = num2str(a_h(2), '%.16ff');
+    fprintf('%s, %s, %s, %s, %s, %s\n', b0_l, b1_l, a1_l, b0_h, b1_h, a1_h);
+
+    */
+
     struct
     {
         std::unique_ptr<dsp::c_biquad4> *lpf;
-        std::unique_ptr<dsp::c_biquad> *post_filter;
+        std::unique_ptr<dsp::c_first_order_bandpass> *post_filter;
         std::unique_ptr<dsp::c_resampler> *resampler;
     } filters[] = {
         {&lpf_l, &post_filter_l, &resampler_l},
@@ -77,9 +94,11 @@ c_genesis::c_genesis()
             std::array{-1.9496889114379883f, -1.9021773338317871f, -1.3770858049392700f, -1.9604763984680176f},
             std::array{-1.9442052841186523f, -1.9171522855758667f, -1.8950747251510620f, -1.9676681756973267f},
             std::array{0.9609073400497437f, 0.9271715879440308f, 0.8989855647087097f, 0.9881398081779480f});
-        *f.post_filter = std::make_unique<dsp::c_biquad>(
-            0.5648277401924133f, std::array{1.0000000000000000f, 0.0000000000000000f, -1.0000000000000000f},
-            std::array{1.0000000000000000f, -0.8659016489982605f, -0.1296554803848267f});
+
+        *f.post_filter = std::make_unique<dsp::c_first_order_bandpass>(0.1840657775125092f, 0.1840657775125092f,
+                                                                       -0.6318684449749816f, 0.9998691174378402f,
+                                                                       -0.9998691174378402f, -0.9997382348756805f);
+
         *f.resampler = std::make_unique<dsp::c_resampler>((float)(BASE_AUDIO_FREQ / 48000.0),
                                                           f.lpf->get(), f.post_filter->get());
     }
@@ -97,7 +116,6 @@ uint8_t c_genesis::z80_read_port(uint8_t port)
 
 void c_genesis::z80_write_port(uint8_t port, uint8_t value)
 {
-    int x = 1;
 }
 
 void c_genesis::on_mode_switch(int x_res)
@@ -169,7 +187,6 @@ void c_genesis::open_sram()
     file.seekg(0, std::ios_base::end);
     int len = (int)file.tellg();
     if (len != cart_ram_size) {
-        int x = 1;
         return;
     }
     file.seekg(0, std::ios_base::beg);
@@ -316,7 +333,6 @@ void c_genesis::z80_write_byte(uint16_t address, uint8_t value)
     }
     else if (address < 0x6100) {
         //bank register
-        int x = 1;
         write_bank_register(value);
     }
     else if (address < 0x7F00) {
@@ -328,17 +344,12 @@ void c_genesis::z80_write_byte(uint16_t address, uint8_t value)
             psg->write(value);
         }
     }
-    else {
-        int x = 1;
-    }
 }
 
 void c_genesis::write_bank_register(uint8_t value)
 {
     bank_register >>= 1;
-    //bank_register &= 0xFF;
     bank_register |= ((value & 0x1) << 8);
-    int x = 1;
 }
 
 uint8_t c_genesis::read_byte(uint32_t address)
@@ -382,9 +393,6 @@ uint8_t c_genesis::read_byte(uint32_t address)
             case 0xA10001:
                 return 0xA0;
             case 0xA10003:
-                if (joy1 != 0xffffffff) {
-                    int x = 1;
-                }
                 if (th1 & 0x40) {
                     uint16_t ret = 0x40 | (joy1 & 0x3F);
 
@@ -392,9 +400,6 @@ uint8_t c_genesis::read_byte(uint32_t address)
                 }
                 else {
                     uint16_t ret = (joy1 & 0x3) | ((joy1 >> 8) & 0x30);
-                    if (ret != 0) {
-                        int x = 1;
-                    }
                     return ret;
                 }
                 return 0x00;
@@ -406,9 +411,6 @@ uint8_t c_genesis::read_byte(uint32_t address)
                 }
                 else {
                     uint16_t ret = (0xFF & 0x3) | ((0xFFFF >> 8) & 0x30);
-                    if (ret != 0) {
-                        int x = 1;
-                    }
                     return ret;
                 }
                 return 0x00;
@@ -481,7 +483,6 @@ uint16_t c_genesis::read_word(uint32_t address)
                 return z80_reset;
                 break;
         }
-        int x = 1;
     }
     else if (address >= 0xE00000) {
         return std::byteswap(*(uint16_t *)&ram[address & 0xFFFF]);
@@ -501,9 +502,6 @@ void c_genesis::write_byte(uint32_t address, uint8_t value)
         {
             cart_ram[address - cart_ram_start] = value;
         }
-        else {
-            int x = 1;
-        }
     }
     else if (address >= 0x00C00000 && address < 0xC00011) {
         vdp->write_byte(address, value);
@@ -518,9 +516,6 @@ void c_genesis::write_byte(uint32_t address, uint8_t value)
         }
         else if (address < 0x6000) {
             ym->write(address & 0x3, value);
-        }
-        else {
-            int x = 1;
         }
     }
     else if (address < 0xE00000) {
@@ -549,18 +544,12 @@ void c_genesis::write_byte(uint32_t address, uint8_t value)
             case 0xA130F1:
                 ps4_ram_access = value & 0x1;
                 break;
-            default: {
-                int x = 1;
-            }
+            default:
                 break;
         }
-        int x = 1;
     }
     else {
         ram[address & 0xFFFF] = value;
-        if (address == 0xFFFFF625) {
-            int x = 1;
-        }
     }
 }
 
@@ -600,9 +589,6 @@ void c_genesis::write_word(uint32_t address, uint16_t value)
             ym->write(address & 0x3, value >> 8);
             ym->write((address + 1) & 0x3, value >> 8);
         }
-        else {
-            int x = 1;
-        }
     }
     else if (address < 0xE00000) {
         switch (address) {
@@ -617,7 +603,6 @@ void c_genesis::write_word(uint32_t address, uint16_t value)
                 }
                 break;
         }
-        int x = 1;
     }
     else {
         ram[address & 0xFFFF] = value >> 8;
@@ -629,9 +614,6 @@ void c_genesis::write_word(uint32_t address, uint16_t value)
 void c_genesis::set_input(int input)
 {
     joy1 = input;
-    if (joy1) {
-        int x = 1;
-    }
     joy1 = ~joy1;
 }
 

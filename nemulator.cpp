@@ -317,7 +317,9 @@ void c_nemulator::configure_input()
         { BUTTON_SWITCH_DISK,    "",        "",        VK_F5,                  0 },
 
         { BUTTON_VOLUME_UP,      "",        "",        VK_OEM_PLUS,            1 },
-        { BUTTON_VOLUME_DOWN,    "",        "",        VK_OEM_MINUS,           1 }
+        { BUTTON_VOLUME_DOWN,    "",        "",        VK_OEM_MINUS,           1 },
+
+        { BUTTON_HOME,           "joy1",    "home",    0,                      0 }
 
     };
     // clang-format on
@@ -680,11 +682,11 @@ const c_nemulator::s_button_handler c_nemulator::button_handlers[] =
     { SCOPE::IN_MENU, {BUTTON_1LEFT}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_left },
     { SCOPE::IN_MENU, {BUTTON_1UP}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_up },
     { SCOPE::IN_MENU, {BUTTON_1DOWN}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_down },
-    { SCOPE::IN_MENU | SCOPE::NO_GAMES_LOADED, {BUTTON_1B, BUTTON_ESCAPE}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_cancel },
+    { SCOPE::IN_MENU | SCOPE::NO_GAMES_LOADED, {BUTTON_1B, BUTTON_ESCAPE, BUTTON_HOME}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_cancel },
     { SCOPE::IN_MENU, {BUTTON_1A, BUTTON_1C, BUTTON_1START, BUTTON_RETURN}, true, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_ok },
     { SCOPE::IN_MENU, {BUTTON_1SELECT}, true, RESULT_DOWN, &c_nemulator::handle_button_show_qam },
     { SCOPE::IN_GAME, {BUTTON_1A_TURBO, BUTTON_1B_TURBO, BUTTON_2A_TURBO, BUTTON_2B_TURBO}, false, RESULT_DOWN, &c_nemulator::handle_button_turbo },
-    { SCOPE::IN_GAME, {BUTTON_ESCAPE}, false, RESULT_DOWN, &c_nemulator::handle_button_leave_game },
+    { SCOPE::IN_GAME, {BUTTON_ESCAPE, BUTTON_HOME}, false, RESULT_DOWN, &c_nemulator::handle_button_leave_game },
     { SCOPE::IN_GAME, {BUTTON_SWITCH_DISK}, true, RESULT_DOWN, &c_nemulator::handle_button_switch_disk },
 };
 
@@ -1060,7 +1062,8 @@ void c_nemulator::UpdateScene(double dt)
     {
         if (inGame)
         {
-            c_system *system = ((c_system_container *)texturePanels[selectedPanel]->GetSelected())->system.get();
+            c_system_container *sc = (c_system_container *)texturePanels[selectedPanel]->GetSelected();
+            c_system *system = sc->system.get();
 
             const float* buf_l;
             const float* buf_r;
@@ -1068,7 +1071,7 @@ void c_nemulator::UpdateScene(double dt)
             int num_samples = system->get_sound_bufs(&buf_l, &buf_r);
             
             if (!benchmark_mode && !paused) {
-                sound->copy(buf_l, buf_r, num_samples);
+                sound->copy(buf_l, buf_r, num_samples, sc->get_volume());
                 s = sound->sync();
             }
             system->set_audio_freq(sound->get_requested_freq());
@@ -1123,6 +1126,7 @@ void c_nemulator::UpdateScene(double dt)
             stats->report_stat("audio_position_diff", sound->audio_position_diff);
             stats->report_stat("audio state", sound->state);
             stats->report_stat("audio.clips", sound->clips);
+            stats->report_stat("audio.avg_db", sound->average_db);
             std::ostringstream s;
             s << std::hex << std::uppercase << system->get_crc();
             stats->report_stat("CRC", s.str());

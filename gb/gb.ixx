@@ -86,6 +86,7 @@ export class c_gb : public c_system, register_class<system_registry, c_gb>
                 .identifier = "gb",
                 .display_info = display_info,
                 .button_map = button_map,
+                .volume = .708f, //reduce by 3dB
                 .constructor = []() { return std::make_unique<c_gb>(GB_MODEL::DMG); },
             },
             {
@@ -93,6 +94,7 @@ export class c_gb : public c_system, register_class<system_registry, c_gb>
                 .identifier = "gbc",
                 .display_info = display_info,
                 .button_map = button_map,
+                .volume = .708f,
                 .constructor = []() { return std::make_unique<c_gb>(GB_MODEL::CGB); },
             },
         };

@@ -56,6 +56,7 @@ export class c_sms : public c_system, register_class<system_registry, c_sms>
                         .crop_bottom = -14,
                     },
                 .button_map = button_map,
+                .volume = .708f,
                 .constructor = []() { return std::make_unique<c_sms>(SMS_MODEL::SMS); },
             },
             {
@@ -71,6 +72,7 @@ export class c_sms : public c_system, register_class<system_registry, c_sms>
                         .crop_bottom = 24,
                     },
                 .button_map = button_map,
+                .volume = .708f,
                 .constructor = []() { return std::make_unique<c_sms>(SMS_MODEL::GAMEGEAR); },
             },
         };

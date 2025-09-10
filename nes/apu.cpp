@@ -117,10 +117,28 @@ void c_apu::reset()
     );*/
 
     //12kHz
-    post_filter = std::make_unique<dsp::c_biquad>(
-        0.4990182518959045f,
-        std::array{1.0000000000000000f, 0.0000000000000000f, -1.0000000000000000f},
-        std::array{1.0000000000000000f, -0.9980365037918091f, 0.0019634978380054f});
+    //post_filter = std::make_unique<dsp::c_biquad>(
+    //    0.4990182518959045f,
+    //    std::array{1.0000000000000000f, 0.0000000000000000f, -1.0000000000000000f},
+    //    std::array{1.0000000000000000f, -0.9980365037918091f, 0.0019634978380054f});
+
+    /*
+    fs=48000;
+    fc_l=12000;
+    fc_h=2;
+    [b_l, a_l] = butter(1, fc_l/(fs/2), 'low');
+    [b_h, a_h] = butter(1, fc_h/(fs/2), 'high');
+    b0_l = num2str(b_l(1), '%.16ff');
+    b1_l = num2str(b_l(2), '%.16ff');
+    a1_l = num2str(a_l(2), '%.16ff');
+    b0_h = num2str(b_h(1), '%.16ff');
+    b1_h = num2str(b_h(2), '%.16ff');
+    a1_h = num2str(a_h(2), '%.16ff');
+    fprintf('%s, %s, %s, %s, %s, %s\n', b0_l, b1_l, a1_l, b0_h, b1_h, a1_h);
+    */
+    post_filter =
+        std::make_unique<dsp::c_first_order_bandpass>(0.5000000000000000f, 0.5000000000000000f, -0.0000000000000001f,
+                                                      0.9998691174378402f, -0.9998691174378402f, -0.9997382348756805f);
 
     resampler = std::make_unique<dsp::c_resampler>(NES_AUDIO_RATE / 48000.0f, lpf.get(), post_filter.get());
 }

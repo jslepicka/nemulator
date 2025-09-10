@@ -37,9 +37,9 @@ class c_gbapu
     std::unique_ptr<dsp::c_resampler> resampler_l;
     std::unique_ptr<dsp::c_resampler> resampler_r;
     std::unique_ptr<dsp::c_biquad4> lpf_l;
-    std::unique_ptr<dsp::c_biquad> post_filter_l;
+    std::unique_ptr<dsp::c_first_order_bandpass> post_filter_l;
     std::unique_ptr<dsp::c_biquad4> lpf_r;
-    std::unique_ptr<dsp::c_biquad> post_filter_r;
+    std::unique_ptr<dsp::c_first_order_bandpass> post_filter_r;
     std::unique_ptr<int32_t[]> sound_buffer;
 
     int mixer_enabled;

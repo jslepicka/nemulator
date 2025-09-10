@@ -52,6 +52,7 @@ public:
         } display_info;
         std::vector<s_button_map> button_map;
         //std::function<c_system *()> constructor;
+        float volume = 1.0f;
         std::function <std::unique_ptr<c_system>()> constructor;
     };
     int crop_left;

@@ -56,7 +56,7 @@ export class c_psg
         TYPE_VOLUME = 0x10
     };
     std::unique_ptr<dsp::c_biquad4> lpf;
-    std::unique_ptr<dsp::c_biquad> post_filter;
+    std::unique_ptr<dsp::c_first_order_bandpass> post_filter;
     std::unique_ptr<int32_t[]> sound_buffer;
     std::unique_ptr<dsp::c_resampler> resampler;
 };

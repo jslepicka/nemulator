@@ -10,7 +10,7 @@ static const std::array<uint32_t, 512> log_sin_table = [] {
             i = (~i) & 0xFF;
         }
         float n = ((i << 1) | 1);
-        float sine = std::sin((n / 512.0f * std::numbers::pi / 2.0));
+        float sine = (float)std::sin((n / 512.0 * std::numbers::pi / 2.0));
         float attenuation = -std::log2f(sine);
         ret[x] = (uint32_t)std::roundf(attenuation * (1 << 8));
     }
@@ -52,6 +52,11 @@ void c_ym2612::reset()
     for (auto &channel : channels) {
         channel.reset();
     }
+
+    lfo_counter = 0;
+    lfo_divider = 0;
+    lfo_freq = 0;
+    lfo_enabled = 0;
 }
 
 void c_ym2612::clock_timer_a()
@@ -80,6 +85,15 @@ void c_ym2612::clock_timer_b()
     }
 }
 
+void c_ym2612::clock_lfo()
+{
+    lfo_divider++;
+    if (lfo_divider >= lfo_freqs[lfo_freq]) {
+        lfo_divider = 0;
+        lfo_counter = (lfo_counter + 1) & 0x7F;
+    }
+}
+
 void c_ym2612::clock(int cycles)
 {
     if (busy_counter) {
@@ -96,6 +110,10 @@ void c_ym2612::clock(int cycles)
             timer_b_divider = 0;
             clock_timer_b();
         }
+        
+        if (lfo_enabled) {
+            clock_lfo();
+        }
 
         clock_channels();
 
@@ -108,31 +126,50 @@ void c_ym2612::mix()
     out_l = 0.0f;
     out_r = 0.0f;
 
+    const uint32_t mask = ~((1u << 5) - 1);
+
     for (int i = 0; i < 6; i++) {
-        float channel_out = 0.0f;
+        int32_t sample;
         if (i == 5 && (registers[0x2B] & 0x80)) {
-            channel_out = get_dac_sample();
+            sample = get_dac_sample();
         }
         else {
-            channel_out = channels[i].output();
+            sample = channels[i].output();
         }
-        if (channels[i].panning & 0x1) {
-            out_r += channel_out;
-        }
-        if (channels[i].panning & 0x2) {
-            out_l += channel_out;
-        }
+
+        auto output_ladder = [](int32_t sample, bool enabled) {
+            if (enabled) {
+                if (sample >= 0) {
+                    sample += (4 << 5);
+                }
+                else {
+                    sample -= (3 << 5);
+                }
+            }
+            else {
+                if (sample >= 0) {
+                    sample = (4 << 5);
+                }
+                else {
+                    sample = -((4 << 5));
+                }
+            }
+            sample = std::clamp(sample, (int32_t)(-0x2000 & mask), (int32_t)(0x1FFF & mask));
+            return (float)sample / 8192.0f;
+        };
+        out_l += output_ladder(sample, channels[i].panning & 0x1);
+        out_r += output_ladder(sample, channels[i].panning & 0x2);
     }
     out_l /= 6.0f;
     out_r /= 6.0f;
 }
 
-float c_ym2612::get_dac_sample()
+int32_t c_ym2612::get_dac_sample()
 {
-    int dac_sample = (int)(registers[0x2A]) - 128;
-    dac_sample <<= 6;
-    float o = (float)dac_sample / (float)(1 << 13);
-    return o;
+    int32_t dac_sample = (int32_t)(registers[0x2A]) - 128;
+    dac_sample = (int32_t)(((uint32_t)dac_sample) << 6);
+    //float o = (float)dac_sample / (float)(1 << 13);
+    return dac_sample;
 }
 
 void c_ym2612::clock_channels()
@@ -171,6 +208,13 @@ void c_ym2612::write(uint16_t address, uint8_t value)
             busy_counter = 32;
             status |= 0x80;
             switch (reg_addr) {
+                case 0x22:
+                    lfo_freq = value & 7;
+                    lfo_enabled = value & 0x8;
+                    if (!lfo_enabled) {
+                        lfo_counter = 0;
+                    }
+                    break;
                 case 0x24:
                     timer_a_reload = (timer_a_reload & 3) | (value << 2);
                     break;
@@ -303,7 +347,7 @@ void c_ym2612::write(uint16_t address, uint8_t value)
                 case 0x6F:
                     if (!((reg_addr & 0x3) == 3)) {
                         channels[channel_idx].operators[operator_idx].envelope_generator.decay_rate = value & 0x1F;
-                        channels[channel_idx].operators[operator_idx].envelope_generator.am_enable = (value >> 7) & 1;
+                        channels[channel_idx].operators[operator_idx].am_enable = (value >> 7) & 1;
                     }
                     break;
                 case 0x70:
@@ -326,25 +370,25 @@ void c_ym2612::write(uint16_t address, uint8_t value)
                         channels[channel_idx].operators[operator_idx].envelope_generator.sustain_rate = value & 0x1F;
                     }
                     break;
-                case 0x80:
-                case 0x81:
-                case 0x82:
-                case 0x83:
-                case 0x84:
-                case 0x85:
-                case 0x86:
-                case 0x87:
-                case 0x88:
-                case 0x89:
-                case 0x8A:
-                case 0x8B:
-                case 0x8C:
-                case 0x8D:
-                case 0x8E:
-                case 0x8F:
+                case 0x80: case 0x81: case 0x82: case 0x83:
+                case 0x84: case 0x85: case 0x86: case 0x87:
+                case 0x88: case 0x89: case 0x8A: case 0x8B:
+                case 0x8C: case 0x8D: case 0x8E: case 0x8F:
                     if (!((reg_addr & 0x3) == 3)) {
                         channels[channel_idx].operators[operator_idx].envelope_generator.release_rate = value & 0xF;
                         channels[channel_idx].operators[operator_idx].envelope_generator.sustain_level = value >> 4;
+                    }
+                    break;
+                case 0x90: case 0x91: case 0x92: case 0x93:
+                case 0x94: case 0x95: case 0x96: case 0x97:
+                case 0x98: case 0x99: case 0x9A: case 0x9B:
+                case 0x9C: case 0x9D: case 0x9E: case 0x9F:
+                    if (!((reg_addr & 0x3) == 3)) {
+                        channels[channel_idx].operators[operator_idx].envelope_generator.ssg_hold = value & 0x1;
+                        channels[channel_idx].operators[operator_idx].envelope_generator.ssg_alternate = value & 0x2;
+                        channels[channel_idx].operators[operator_idx].envelope_generator.ssg_attack = value & 0x4;
+                        channels[channel_idx].operators[operator_idx].envelope_generator.ssg_enabled = value & 0x8;
+
                     }
                     break;
                 case 0xA0:
@@ -409,6 +453,8 @@ void c_ym2612::write(uint16_t address, uint8_t value)
                 case 0xB6: {
                     if (!((reg_addr & 0x3) == 3)) {
                         channels[channel_idx].panning = value >> 6;
+                        channels[channel_idx].fm_level = value & 7;
+                        channels[channel_idx].am_level = (value >> 4) & 3;
                     }
                 } break;
             }
@@ -425,9 +471,30 @@ void c_phase_generator::reset()
     multiple = 0;
 }
 
-void c_phase_generator::clock()
+void c_phase_generator::clock(uint8_t lfo_counter, uint8_t fm_level)
 {
-    uint32_t modulated_f_num = (f_number << 1) & 0xFFF;
+    uint8_t lfo_high = lfo_counter >> 2;
+    uint8_t lfo_fm_idx = lfo_high & 7;
+    if (lfo_high & (1 << 3)) {
+        lfo_fm_idx ^= 7;
+    }
+    uint8_t multiplier = vibrato_table[fm_level][lfo_fm_idx];
+
+    uint32_t f_num_delta = 0;
+
+    for (int i = 4; i <= 10; i++) {
+        uint8_t bit = (f_number >> i) & 1;
+        uint8_t increment = multiplier >> (10 - i);
+        f_num_delta += bit * increment;
+    }
+
+    uint32_t modulated_f_num = f_number << 1;
+    if (lfo_high & (1 << 4)) {
+        modulated_f_num -= f_num_delta;
+    }
+    else {
+        modulated_f_num += f_num_delta;
+    }
     uint32_t shifted_f_num = (modulated_f_num << block) >> 2;
 
     //todo: modulation
@@ -472,6 +539,7 @@ void c_fm_operator::reset()
     last_output = 0;
     phase_generator.reset();
     envelope_generator.reset();
+    tremolo_attenuation = 0;
 }
 
 void c_fm_operator::key(bool on)
@@ -526,8 +594,12 @@ int32_t c_fm_operator::output(int32_t modulation_input)
     uint32_t sine_attenuation = log_sin_table.at(phase & (0x3FF >> 1));
 
     uint32_t envelope_attenuation = envelope_generator.output();
+    
     //todo: amplitude modulation
     uint32_t envelope_am_attenuation = envelope_attenuation;
+    if (am_enable) {
+        envelope_am_attenuation = std::clamp(envelope_attenuation + tremolo_attenuation, 0u, 0x3FFu);
+    }
 
     uint32_t total_attenuation = sine_attenuation + (envelope_am_attenuation << 2);
     if (total_attenuation > 0x1FFF) {
@@ -564,6 +636,8 @@ void c_fm_channel::reset()
     multi_frequency_operators = false;
     f_number = 0;
     block = 0;
+    fm_level = 0;
+    am_level = 0;
     memset(operator_f_number_hi, 0, sizeof(operator_f_number_hi));
     memset(operator_f_number, 0, sizeof(operator_f_number));
     memset(operator_f_number, 0, sizeof(operator_block));
@@ -583,9 +657,33 @@ void c_fm_channel::update_frequency()
 
 void c_fm_channel::clock()
 {
+    uint8_t lfo_am = lfo_counter & 0x3F;
+    uint32_t tremolo_attenuation = 0;
+    if (!(lfo_counter & (1 << 6))) {
+        lfo_counter ^= 0x3F;
+    }
+    lfo_am <<= 1;
+    switch (am_level) {
+        case 0:
+            tremolo_attenuation = 0;
+            break;
+        case 1:
+            tremolo_attenuation = lfo_am >> 3;
+            break;
+        case 2:
+            tremolo_attenuation = lfo_am >> 1;
+            break;
+        case 3:
+            tremolo_attenuation = lfo_am;
+            break;
+    }
+
     for (auto &op : operators) {
-        op.phase_generator.clock();
-        op.envelope_generator.clock();
+        op.phase_generator.clock(lfo_counter, fm_level);
+        if (op.envelope_generator.clock()) {
+            op.phase_generator.reset_counter();
+        }
+        op.tremolo_attenuation = tremolo_attenuation;
     }
 
     int32_t op1_feedback = 0;
@@ -594,7 +692,7 @@ void c_fm_channel::clock()
     }
     //todo quanitzation mask on output
     int32_t int_out = 0;
-    uint32_t mask = ~((1 << 5) - 1);
+    const uint32_t mask = ~((1u << 5) - 1);
     switch (algorithm) {
         case 0: {
             int32_t m1 = operators[0].output(op1_feedback);
@@ -658,14 +756,12 @@ void c_fm_channel::clock()
         default:
             break;
     }
-    out_i = out;
-    out = std::clamp(int_out, (int32_t)(-0x2000 & mask), (int32_t)(0x1FFF & mask));
-    out /= 8192.0f;
+    out_i = int_out;
 }
 
-float c_fm_channel::output()
+int32_t c_fm_channel::output()
 {
-    return out;
+    return out_i;
 }
 
 void c_envelope_generator::reset()
@@ -686,17 +782,28 @@ void c_envelope_generator::reset()
     total_level = 0;
     rate_scaling = 0;
 
-    am_enable = 0;
     divider = 0;
 
     key_scale = 0;
     key_scale_rate = 0;
+
+    ssg_enabled = false;
+    ssg_attack = false;
+    ssg_alternate = false;
+    ssg_hold = false;
+    ssg_invert_output = false;
 }
 
 void c_envelope_generator::set_key_on(bool k)
 {
     if (!k) {
         //key off
+
+        if (ssg_enabled && phase != ADSR_PHASE::RELEASE && ssg_invert_output != ssg_attack) {
+            attenuation = 0x200 - attenuation;
+            attenuation &= 0x3FF;
+        }
+
         phase = ADSR_PHASE::RELEASE;
         return;
     }
@@ -716,12 +823,54 @@ void c_envelope_generator::set_key_on(bool k)
     else {
         phase = ADSR_PHASE::ATTACK;
     }
+    ssg_invert_output = false;
 }
 
-void c_envelope_generator::clock()
+bool c_envelope_generator::ssg_clock()
 {
+    if (attenuation < 0x200) {
+        return false;
+    }
+
+    if (ssg_alternate) {
+        if (ssg_hold) {
+            ssg_invert_output = true;
+        }
+        else {
+            ssg_invert_output = !ssg_invert_output;
+        }
+    }
+
+    if (!ssg_alternate && ssg_hold) {
+        return true;
+    }
+
+    if ((phase == ADSR_PHASE::DECAY || phase == ADSR_PHASE::SUSTAIN) && !ssg_hold) {
+        if (2 * attack_rate + key_scale_rate >= 62) {
+            attenuation = 0;
+            phase = ADSR_PHASE::DECAY;
+        }
+        else {
+            phase = ADSR_PHASE::ATTACK;
+        }
+    }
+    else if (phase == ADSR_PHASE::RELEASE || (phase != ADSR_PHASE::ATTACK && ssg_invert_output == ssg_attack)) {
+        attenuation = 0x3FF;
+    }
+
+    return false;
+}
+
+bool c_envelope_generator::clock()
+{
+    bool reset_phase = false;
+
+    if (ssg_enabled) {
+        reset_phase = ssg_clock();
+    }
+
     if (++divider != 3) {
-        return;
+        return reset_phase;
     }
     divider = 0;
 
@@ -774,11 +923,16 @@ void c_envelope_generator::clock()
                 }
                 break;
             default:
+                if (ssg_enabled) {
+                    if (attenuation < 0x200) {
+                        attenuation = std::min(0x3FFu, attenuation + 4 * increment);
+                    }
+                }
+
                 attenuation = std::min((uint32_t)0x3FF, attenuation + increment);
         }
     }
-    
-
+    return reset_phase;
 }
 
 uint32_t c_envelope_generator::output()

@@ -1,5 +1,5 @@
 export module dsp:audio_filter;
-
+import std;
 namespace dsp
 {
 export class i_audio_filter

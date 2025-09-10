@@ -11,25 +11,45 @@ constexpr double c_gbapu::GB_AUDIO_RATE = (456.0f * 154.0f * 60.0f) / 2.0f;
 c_gbapu::c_gbapu(c_gb *gb)
 {
     this->gb = gb;
-    mixer_enabled = 1;
+    mixer_enabled = 0;
     std::array lpf_g = {0.5090923309326172f, 0.3317873477935791f, 0.1050286665558815f, 0.0055788583122194f};
     std::array lpf_b2 = {-1.9908285140991211f, -1.9819903373718262f, -1.8711743354797363f, -1.9928110837936401f};
     std::array lpf_a2 = {-1.9800899028778076f, -1.9664875268936157f, -1.9550460577011108f, -1.9912019968032837f};
     std::array lpf_a3 = {0.9831480979919434f, 0.9683376550674439f, 0.9557733535766602f, 0.9949237704277039f};
-    lpf_l = std::make_unique<dsp::c_biquad4>(lpf_g, lpf_b2, lpf_a2, lpf_a3);
-    lpf_r = std::make_unique<dsp::c_biquad4>(lpf_g, lpf_b2, lpf_a2, lpf_a3);
+    //lpf_l = std::make_unique<dsp::c_biquad4>(lpf_g, lpf_b2, lpf_a2, lpf_a3);
+    //lpf_r = std::make_unique<dsp::c_biquad4>(lpf_g, lpf_b2, lpf_a2, lpf_a3);
 
-    float post_g = 0.4990182518959045f;
-    std::array post_b = {1.0000000000000000f, 0.0000000000000000f, -1.0000000000000000f};
-    std::array post_a = {1.0000000000000000f, -0.9980365037918091f, 0.0019634978380054f};
-    //30Hz - 12kHz
-    post_filter_l = std::make_unique<dsp::c_biquad>(post_g, post_b, post_a);
-    post_filter_r = std::make_unique<dsp::c_biquad>(post_g, post_b, post_a);
+    //float post_g = 0.4990182518959045f;
+    //std::array post_b = {1.0000000000000000f, 0.0000000000000000f, -1.0000000000000000f};
+    //std::array post_a = {1.0000000000000000f, -0.9980365037918091f, 0.0019634978380054f};
+    ////30Hz - 12kHz
+    //post_filter_l = std::make_unique<dsp::c_biquad>(post_g, post_b, post_a);
+    //post_filter_r = std::make_unique<dsp::c_biquad>(post_g, post_b, post_a);
 
-    resampler_l =
-        std::make_unique<dsp::c_resampler>((float)(GB_AUDIO_RATE / 48000.0), lpf_l.get(), post_filter_l.get());
-    resampler_r =
-        std::make_unique<dsp::c_resampler>((float)(GB_AUDIO_RATE / 48000.0), lpf_r.get(), post_filter_r.get());
+    //resampler_l =
+    //    std::make_unique<dsp::c_resampler>((float)(GB_AUDIO_RATE / 48000.0), lpf_l.get(), post_filter_l.get());
+    //resampler_r =
+    //    std::make_unique<dsp::c_resampler>((float)(GB_AUDIO_RATE / 48000.0), lpf_r.get(), post_filter_r.get());
+
+
+    struct
+    {
+        std::unique_ptr<dsp::c_biquad4> *lpf;
+        std::unique_ptr<dsp::c_first_order_bandpass> *post_filter;
+        std::unique_ptr<dsp::c_resampler> *resampler;
+    } filters[] = {
+        {&lpf_l, &post_filter_l, &resampler_l},
+        {&lpf_r, &post_filter_r, &resampler_r}
+    };
+
+    for (auto &f : filters) {
+        *f.lpf = std::make_unique<dsp::c_biquad4>(lpf_g, lpf_b2, lpf_a2, lpf_a3);
+        *f.post_filter = std::make_unique<dsp::c_first_order_bandpass>();
+        *f.resampler =
+            std::make_unique<dsp::c_resampler>((float)(GB_AUDIO_RATE / 48000.0), f.lpf->get(), f.post_filter->get());
+    }
+
+
     sound_buffer = std::make_unique_for_overwrite<int32_t[]>(1024);
 }
 

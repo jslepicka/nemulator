@@ -48,6 +48,7 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
                         .crop_right = -1,
                     },
                 .button_map = button_map,
+                .volume = 1.4125f, //boost by 3dB
                 .constructor = []() { return std::make_unique<c_genesis>(); },
             }
         };
@@ -136,12 +137,14 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
 
 
     std::unique_ptr<dsp::c_biquad4> lpf_l;
-    std::unique_ptr<dsp::c_biquad> post_filter_l;
+    std::unique_ptr<dsp::c_first_order_bandpass> post_filter_l;
     std::unique_ptr<dsp::c_resampler> resampler_l;
 
     std::unique_ptr<dsp::c_biquad4> lpf_r;
-    std::unique_ptr<dsp::c_biquad> post_filter_r;
+    std::unique_ptr<dsp::c_first_order_bandpass> post_filter_r;
     std::unique_ptr<dsp::c_resampler> resampler_r;
+
+    std::unique_ptr<dsp::c_null_filter> null_filter;
 
     static constexpr double BASE_AUDIO_FREQ=(488.0 * 262.0 * 60.0) / 6.0;
 };

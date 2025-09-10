@@ -17,7 +17,7 @@ class c_envelope_generator
 {
   public:
     void reset();
-    void clock();
+    bool clock();
     void set_key_on(bool k);
     ADSR_PHASE phase;
     bool key_on;
@@ -31,9 +31,16 @@ class c_envelope_generator
     uint32_t release_rate;
     uint32_t total_level;
     uint32_t rate_scaling;
-    uint32_t am_enable;
     uint32_t key_scale;
     uint32_t key_scale_rate;
+
+    bool ssg_enabled;
+    bool ssg_attack;
+    bool ssg_alternate;
+    bool ssg_hold;
+    bool ssg_invert_output;
+
+    bool ssg_clock();
 
   private:
     int divider;
@@ -80,7 +87,7 @@ class c_phase_generator
 {
   public:
     void reset();
-    void clock();
+    void clock(uint8_t lfo_counter, uint8_t fm_level);
     uint32_t output();
     void reset_counter();
 
@@ -101,6 +108,16 @@ class c_phase_generator
         { 0, 5, 11, 16 }, { 0, 6, 12, 17 }, { 0, 6, 13, 19 }, { 0, 7, 14, 20 },  // Block 6
         { 0, 8, 16, 22 }, { 0, 8, 16, 22 }, { 0, 8, 16, 22 }, { 0, 8, 16, 22 },  // Block 7
     };
+    const uint8_t vibrato_table[8][8] = {
+        {0,  0,  0,  0,  0,  0,  0,  0},  // Vibrato level 0
+        {0,  0,  0,  0,  4,  4,  4,  4},  // Vibrato level 1
+        {0,  0,  0,  4,  4,  4,  8,  8},  // Vibrato level 2
+        {0,  0,  4,  4,  8,  8, 12, 12},  // Vibrato level 3
+        {0,  0,  4,  8,  8,  8, 12, 16},  // Vibrato level 4
+        {0,  0,  8, 12, 16, 16, 20, 24},  // Vibrato level 5
+        {0,  0, 16, 24, 32, 32, 40, 48},  // Vibrato level 6
+        {0,  0, 32, 48, 64, 64, 80, 96},  // Vibrato level 7
+    };
 };
 
 class c_fm_operator
@@ -117,6 +134,8 @@ class c_fm_operator
     int32_t current_output;
     int32_t last_output;
     int32_t output(int32_t modulation_input);
+    uint32_t am_enable;
+    uint32_t tremolo_attenuation;
 
   private:
     uint32_t attenuation_to_amplitude(uint32_t attenuation);
@@ -125,9 +144,10 @@ class c_fm_operator
 class c_fm_channel
 {
   public:
+    c_fm_channel(uint8_t &lfo_counter) : lfo_counter(lfo_counter) {};
     void reset();
     void clock();
-    float output();
+    int32_t output();
     c_fm_operator operators[4];
     uint8_t panning;
     uint8_t algorithm;
@@ -137,12 +157,15 @@ class c_fm_channel
     uint32_t block;
     uint32_t operator_f_number_hi[4];
     uint32_t operator_f_number[4];
-    uint32_t operator_block[4];
+    uint8_t operator_block[4];
     void update_frequency();
 
     int32_t out_i;
+    uint8_t &lfo_counter;
+    uint8_t fm_level;
+    uint8_t am_level;
 
-  private:
+
     float out;
 };
 
@@ -159,6 +182,13 @@ export class c_ym2612
   private:
     int ticks;
     int group;
+
+    uint8_t lfo_counter;
+    uint8_t lfo_divider;
+    uint8_t lfo_freq;
+    uint8_t lfo_enabled;
+
+    const uint8_t lfo_freqs[8] = {108, 77, 71, 67, 62, 44, 8, 5};
 
     uint8_t reg_addr;
     uint8_t data;
@@ -186,12 +216,16 @@ export class c_ym2612
 
     void clock_timer_a();
     void clock_timer_b();
+    void clock_lfo();
 
     uint8_t freq_hi[6];
 
-    c_fm_channel channels[6];
+    std::array<c_fm_channel, 6> channels = {
+        c_fm_channel(lfo_counter), c_fm_channel(lfo_counter), c_fm_channel(lfo_counter),
+        c_fm_channel(lfo_counter), c_fm_channel(lfo_counter), c_fm_channel(lfo_counter),
+    };
     void clock_channels();
-    float get_dac_sample();
+    int32_t get_dac_sample();
     void mix();
 };
 

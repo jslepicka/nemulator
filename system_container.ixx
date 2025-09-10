@@ -33,6 +33,7 @@ public:
     bool is_nes = false;
 
     std::string &get_system_name() { return system_info.name; }
+    float get_volume() { return system_info.volume; }
     const std::vector<s_button_map> &get_button_map() { return system_info.button_map; }
 
   private:

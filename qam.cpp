@@ -126,6 +126,7 @@ int c_qam::update(double dt, int child_result, void *params)
         }
         else if ((g_ih->get_result(BUTTON_1START, true) & c_input_handler::RESULT_DOWN) ||
             (g_ih->get_result(BUTTON_1A, true) & c_input_handler::RESULT_DOWN) ||
+            (g_ih->get_result(BUTTON_1C, true) & c_input_handler::RESULT_DOWN) ||
             (g_ih->get_result(BUTTON_RETURN, true) & c_input_handler::RESULT_DOWN))
         {
             //*(char *)params = c[selected];
