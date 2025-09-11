@@ -35,7 +35,7 @@
     <Filter Include="genesis">
       <UniqueIdentifier>{25d52904-4679-4fe9-994c-d51451e7fc94}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ym">
+    <Filter Include="ym2612">
       <UniqueIdentifier>{5ab49e7a-a977-4be1-9f0a-50098a8edd7e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -522,11 +522,12 @@
     <ClCompile Include="nes\mappers\mapper52.ixx">
       <Filter>nes\mappers</Filter>
     </ClCompile>
-    <ClCompile Include="ym\ym.ixx">
-      <Filter>ym</Filter>
+    <ClCompile Include="dsp\first_order_bandpass.ixx" />
+    <ClCompile Include="ym\ym2612.cpp">
+      <Filter>ym2612</Filter>
     </ClCompile>
-    <ClCompile Include="ym\ym.cpp">
-      <Filter>ym</Filter>
+    <ClCompile Include="ym\ym2612.ixx">
+      <Filter>ym2612</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

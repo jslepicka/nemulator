@@ -459,7 +459,7 @@ void c_vdp::draw_scanline()
         }
         uint32_t *fb = &frame_buffer[line * 320];
         if (!(reg[0x01] & 0x40)) {
-            std::fill_n(fb, 320, 0xFF000000);
+            std::fill_n(fb, 320, cram_entries[1][bg_color]);
         }
         else {
             memset(layer_visibility, 0, sizeof(layer_visibility));
