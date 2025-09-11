@@ -107,7 +107,14 @@ uint16_t c_vdp::read_word(uint32_t address)
             address_write = 0;
             return ret;
         case 0x00C00008:
-            return (0 << 8) | ((line >> 1) & 0xFF);
+            //return (0 << 8) | ((line >> 1) & 0xFF);
+            {
+                uint32_t l = line;
+                if (l > 0xEA) {
+                    l -= 6;
+                }
+                return (0 << 8) | (l & 0xFF);
+            }
         default:
             return 0;
     }

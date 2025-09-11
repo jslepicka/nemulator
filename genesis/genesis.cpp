@@ -5,7 +5,7 @@ module;
 module genesis;
 import m68k;
 import crc32;
-
+import random;
 
 namespace genesis
 {
@@ -95,6 +95,7 @@ c_genesis::c_genesis()
             std::array{-1.9442052841186523f, -1.9171522855758667f, -1.8950747251510620f, -1.9676681756973267f},
             std::array{0.9609073400497437f, 0.9271715879440308f, 0.8989855647087097f, 0.9881398081779480f});
 
+        //2Hz - 3390Hz
         *f.post_filter = std::make_unique<dsp::c_first_order_bandpass>(0.1840657775125092f, 0.1840657775125092f,
                                                                        -0.6318684449749816f, 0.9998691174378402f,
                                                                        -0.9998691174378402f, -0.9997382348756805f);
@@ -224,6 +225,7 @@ int c_genesis::reset()
     joy2 = -1;
     std::memset(ram, 0, sizeof(ram));
     std::memset(z80_ram, 0, sizeof(z80_ram));
+
     crop_right = 0;
     z80_reset = 0;
     z80_busreq = 0;

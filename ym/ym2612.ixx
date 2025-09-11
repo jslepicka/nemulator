@@ -18,13 +18,12 @@ class c_envelope_generator
   public:
     void reset();
     bool clock();
-    void set_key_on(bool k);
+    void key(bool key_on);
     ADSR_PHASE phase;
-    bool key_on;
-    uint32_t level;
-    uint32_t sustain_level;
-    uint32_t output();
 
+
+    uint32_t get_output();
+    uint32_t sustain_level;
     uint32_t attack_rate;
     uint32_t decay_rate;
     uint32_t sustain_rate;
@@ -43,7 +42,7 @@ class c_envelope_generator
     bool ssg_clock();
 
   private:
-    int divider;
+    uint32_t divider;
     uint32_t cycle_count;
     uint32_t attenuation;
 
@@ -88,16 +87,15 @@ class c_phase_generator
   public:
     void reset();
     void clock(uint8_t lfo_counter, uint8_t fm_level);
-    uint32_t output();
+    uint32_t get_output();
     void reset_counter();
-
-    uint32_t counter;
     uint32_t f_number;
     uint8_t block;
     uint8_t detune;
     uint32_t multiple;
 
-    private:
+  private:
+    uint32_t counter;
     const uint8_t detune_table[32][4] = {
         { 0, 0, 1, 2 },   { 0, 0, 1, 2 },   { 0, 0, 1, 2 },   { 0, 0, 1, 2 },  // Block 0
         { 0, 1, 2, 2 },   { 0, 1, 2, 3 },   { 0, 1, 2, 3 },   { 0, 1, 2, 3 },  // Block 1
@@ -124,8 +122,7 @@ class c_fm_operator
 {
   public:
     void reset();
-    void key(bool on);
-    bool key_on;
+    void key(bool key_on);
     c_phase_generator phase_generator;
     c_envelope_generator envelope_generator;
     void update_frequency(uint32_t f_number, uint8_t block);
@@ -133,7 +130,7 @@ class c_fm_operator
     void update_key_scale_rate();
     int32_t current_output;
     int32_t last_output;
-    int32_t output(int32_t modulation_input);
+    int32_t get_output(int32_t modulation_input);
     uint32_t am_enable;
     uint32_t tremolo_attenuation;
 
@@ -147,7 +144,7 @@ class c_fm_channel
     c_fm_channel(uint8_t &lfo_counter) : lfo_counter(lfo_counter) {};
     void reset();
     void clock();
-    int32_t output();
+    int32_t get_output();
     c_fm_operator operators[4];
     uint8_t panning;
     uint8_t algorithm;
@@ -159,14 +156,12 @@ class c_fm_channel
     uint32_t operator_f_number[4];
     uint8_t operator_block[4];
     void update_frequency();
-
-    int32_t out_i;
-    uint8_t &lfo_counter;
     uint8_t fm_level;
     uint8_t am_level;
 
-
-    float out;
+   private:
+    int32_t out_i;
+    uint8_t &lfo_counter;
 };
 
 export class c_ym2612
@@ -191,22 +186,23 @@ export class c_ym2612
     const uint8_t lfo_freqs[8] = {108, 77, 71, 67, 62, 44, 8, 5};
 
     uint8_t reg_addr;
-    uint8_t data;
+    uint8_t reg_value;
+    uint8_t dac_output;
+    bool dac_enabled;
     int channel_idx;
     int operator_idx;
 
     uint32_t timer_a;
     uint32_t timer_a_reload;
-    int timer_a_enabled;
+    bool timer_a_enabled;
     uint8_t status;
     int busy_counter;
     uint32_t timer_b;
     uint32_t timer_b_reload;
-    int timer_b_enabled;
+    bool timer_b_enabled;
     int timer_b_divider;
-
-    //we don't really need 256 of these but just keeping it simple
-    uint8_t registers[256];
+    bool timer_a_set_flag;
+    bool timer_b_set_flag;
 
     enum
     {
@@ -218,8 +214,6 @@ export class c_ym2612
     void clock_timer_b();
     void clock_lfo();
 
-    uint8_t freq_hi[6];
-
     std::array<c_fm_channel, 6> channels = {
         c_fm_channel(lfo_counter), c_fm_channel(lfo_counter), c_fm_channel(lfo_counter),
         c_fm_channel(lfo_counter), c_fm_channel(lfo_counter), c_fm_channel(lfo_counter),
@@ -227,5 +221,10 @@ export class c_ym2612
     void clock_channels();
     int32_t get_dac_sample();
     void mix();
+
+    void write_register();
+    void write_operator();
+    void write_channel();
+    void write_global();
 };
 
