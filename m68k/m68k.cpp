@@ -646,6 +646,8 @@ void c_m68k::decode()
         break;
     case DBcc:
         opcode_fn = std::mem_fn(&c_m68k::DBcc_);
+        required_cycles = 10;
+        //adjusted in function
         break;
     case MOVEM:
         opcode_fn = std::mem_fn(&c_m68k::MOVEM_);
@@ -1048,14 +1050,14 @@ void c_m68k::DBcc_()
         *d[reg] = (*d[reg] & 0xFFFF0000) | count;
         if (count != 0xFFFF) {
             pc += displacement - 2;
-            required_cycles += 10;
+            //10 total
         }
         else {
-            required_cycles += 14;
+            required_cycles += 4; //14 total
         }
     }
     else {
-        required_cycles += 12;
+        required_cycles += 2; //12 total
     }
 }
 
