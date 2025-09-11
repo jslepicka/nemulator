@@ -1397,7 +1397,7 @@ void c_nemulator::LoadGames()
     std::sort(gameList.begin(), gameList.end(), [](const c_system_container* a, const c_system_container* b) {
         std::string a_title = a->title;
         std::string b_title = b->title;
-        auto fn = [](char c) { return toupper(c); };
+        auto fn = [](char c) { return (char)toupper(c); };
         std::transform(a_title.begin(), a_title.end(), a_title.begin(), fn);
         std::transform(b_title.begin(), b_title.end(), b_title.begin(), fn);
         return a_title < b_title;

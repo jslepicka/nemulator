@@ -90,7 +90,8 @@ public:
     {
         SIZE_BYTE,
         SIZE_WORD,
-        SIZE_LONG
+        SIZE_LONG,
+        SIZE_UNKNOWN = -1
     };
 
     enum class ADDRESS_MODE
@@ -106,7 +107,8 @@ public:
         PC_INDEX,
         ABS_SHORT,
         ABS_LONG,
-        IMMEDIATE
+        IMMEDIATE,
+        UNKNOWN = -1
     };
 
     enum class CONDITION
@@ -281,6 +283,7 @@ public:
     void get_size1();
     void get_size3();
     void get_address_mode();
+    int get_ea_cycles();
     uint32_t compute_ea();
     uint32_t read_ea();
     void write_ea(uint32_t value);

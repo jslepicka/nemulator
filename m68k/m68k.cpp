@@ -108,9 +108,15 @@ void c_m68k::execute(int cycles)
                 op_word = read_word(pc);
                 pc += 2;
                 instruction = instructions3[op_word];
+                required_cycles = 0;
+                op_size = SIZE_UNKNOWN;
+                address_mode = ADDRESS_MODE::UNKNOWN;
                 decode();
                 //assert(opcode_fn != nullptr);
-                required_cycles = 8;
+                if (required_cycles == 0) {
+                    required_cycles = 4;
+                }
+                //required_cycles = 8;
                 fetch_opcode = 0;
             }
             //fetch_opcode = 0;
@@ -205,9 +211,21 @@ void c_m68k::decode()
     switch (instruction) {
     case ASd:
         opcode_fn = std::mem_fn(&c_m68k::ASd_);
+        //memory
+        get_size1();
+        get_address_mode();
+        required_cycles = 8;
+        required_cycles += get_ea_cycles();
         break;
     case ASd2:
         opcode_fn = std::mem_fn(&c_m68k::ASd2_);
+        {
+            get_size1();
+            uint32_t shift_count = (op_word >> 9) & 0x7;
+            required_cycles = op_size == SIZE_LONG ? 8 : 6;
+            required_cycles += shift_count * 2;
+
+        }
         break;
     case AND:
         opcode_fn = std::mem_fn(&c_m68k::AND_);
@@ -217,27 +235,81 @@ void c_m68k::decode()
         break;
     case ANDI:
         opcode_fn = std::mem_fn(&c_m68k::ANDI_);
+        get_size1();
+        get_address_mode();
+        if (address_mode == ADDRESS_MODE::DATA_REGISTER) {
+            required_cycles = op_size == SIZE_LONG ? 16 : 8;
+        }
+        else {
+            required_cycles = op_size == SIZE_LONG ? 20 : 12;
+            required_cycles += get_ea_cycles();
+        }
         break;
     case OR:
         opcode_fn = std::mem_fn(&c_m68k::OR_);
         break;
     case ORI:
         opcode_fn = std::mem_fn(&c_m68k::ORI_);
+        get_size1();
+        get_address_mode();
+        if (address_mode == ADDRESS_MODE::DATA_REGISTER) {
+            required_cycles = op_size == SIZE_LONG ? 16 : 8;
+        }
+        else {
+            required_cycles = op_size == SIZE_LONG ? 20 : 12;
+            required_cycles += get_ea_cycles();
+        }
         break;
     case EOR:
         opcode_fn = std::mem_fn(&c_m68k::EOR_);
         break;
     case EORI:
         opcode_fn = std::mem_fn(&c_m68k::EORI_);
+        get_size1();
+        get_address_mode();
+        if (address_mode == ADDRESS_MODE::DATA_REGISTER) {
+            required_cycles = op_size == SIZE_LONG ? 16 : 8;
+        }
+        else {
+            required_cycles = op_size == SIZE_LONG ? 20 : 12;
+            required_cycles += get_ea_cycles();
+        }
         break;
     case NOT:
         opcode_fn = std::mem_fn(&c_m68k::NOT_);
+        get_size1();
+        get_address_mode();
+        if (address_mode == ADDRESS_MODE::DATA_REGISTER || address_mode == ADDRESS_MODE::ADDRESS_REGISTER) {
+            required_cycles = op_size == SIZE_LONG ? 6 : 4;
+        }
+        else {
+            required_cycles = op_size == SIZE_LONG ? 12 : 8;
+            required_cycles += get_ea_cycles();
+        }
         break;
     case NEG:
         opcode_fn = std::mem_fn(&c_m68k::NEG_);
+        get_size1();
+        get_address_mode();
+        if (address_mode == ADDRESS_MODE::DATA_REGISTER || address_mode == ADDRESS_MODE::ADDRESS_REGISTER) {
+            required_cycles = op_size == SIZE_LONG ? 6 : 4;
+        }
+        else {
+            required_cycles = op_size == SIZE_LONG ? 12 : 8;
+            required_cycles += get_ea_cycles();
+        }
         break;
     case NEGX:
         opcode_fn = std::mem_fn(&c_m68k::NEGX_);
+        get_size1();
+        get_address_mode();
+        if (address_mode == ADDRESS_MODE::DATA_REGISTER || address_mode == ADDRESS_MODE::ADDRESS_REGISTER) {
+            required_cycles = op_size == SIZE_LONG ? 6 : 4;
+        }
+        else {
+            required_cycles = op_size == SIZE_LONG ? 12 : 8;
+            required_cycles += get_ea_cycles();
+        }
         break;
     case BSET:
         opcode_fn = std::bind(&c_m68k::BITOP_, this, [](uint32_t a, uint32_t b) { return a | b; });
@@ -265,20 +337,49 @@ void c_m68k::decode()
         break;
     case CLR:
         opcode_fn = std::mem_fn(&c_m68k::CLR_);
+        get_size1();
+        get_address_mode();
+        if (address_mode == ADDRESS_MODE::DATA_REGISTER || address_mode == ADDRESS_MODE::ADDRESS_REGISTER) {
+            required_cycles = op_size == SIZE_LONG ? 6 : 4;
+        }
+        else {
+            required_cycles = op_size == SIZE_LONG ? 12 : 8;
+            required_cycles += get_ea_cycles();
+        }
         break;
     case EXGd:
     case EXGa:
     case EXGda:
         opcode_fn = std::mem_fn(&c_m68k::EXG_);
+        required_cycles = 6;
         break;
     case TST:
         opcode_fn = std::mem_fn(&c_m68k::TST_);
+        get_size1();
+        get_address_mode();
+        if (address_mode == ADDRESS_MODE::DATA_REGISTER || address_mode == ADDRESS_MODE::ADDRESS_REGISTER) {
+            required_cycles = 4;
+        }
+        else {
+            required_cycles = 4;
+            required_cycles += get_ea_cycles();
+        }
         break;
     case LSd:
         opcode_fn = std::mem_fn(&c_m68k::LSd_);
+        get_size1();
+        get_address_mode();
+        required_cycles = 8;
+        required_cycles += get_ea_cycles();
         break;
     case LSd2:
         opcode_fn = std::mem_fn(&c_m68k::LSd2_);
+        {
+            get_size1();
+            uint32_t shift_count = (op_word >> 9) & 0x7;
+            required_cycles = op_size == SIZE_LONG ? 8 : 6;
+            required_cycles += shift_count * 2;
+        }
         break;
     case JMP:
         opcode_fn = std::mem_fn(&c_m68k::JMP_);
@@ -288,6 +389,7 @@ void c_m68k::decode()
         break;
     case SWAP:
         opcode_fn = std::mem_fn(&c_m68k::SWAP_);
+        required_cycles = 4;
         break;
     case SUBX:
         opcode_fn = std::mem_fn(&c_m68k::SUBX_);
@@ -297,9 +399,30 @@ void c_m68k::decode()
         break;
     case SUBQ:
         opcode_fn = std::mem_fn(&c_m68k::SUBQ_);
+        get_size1();
+        get_address_mode();
+        if (address_mode == ADDRESS_MODE::DATA_REGISTER) {
+            required_cycles == op_size == SIZE_LONG ? 8 : 4;
+        }
+        else if (address_mode == ADDRESS_MODE::ADDRESS_REGISTER) {
+            required_cycles = 8;
+        }
+        else {
+            required_cycles = op_size == SIZE_LONG ? 12 : 8;
+            required_cycles += get_ea_cycles();
+        }
         break;
     case SUBI:
         opcode_fn = std::mem_fn(&c_m68k::SUBI_);
+        get_size1();
+        get_address_mode();
+        if (address_mode == ADDRESS_MODE::DATA_REGISTER) {
+            required_cycles = op_size == SIZE_LONG ? 16 : 8;
+        }
+        else {
+            required_cycles = op_size == SIZE_LONG ? 20 : 12;
+            required_cycles += get_ea_cycles();
+        }
         break;
     case SUBA:
         opcode_fn = std::mem_fn(&c_m68k::SUBA_);
@@ -309,9 +432,11 @@ void c_m68k::decode()
         break;
     case MOVEQ:
         opcode_fn = std::mem_fn(&c_m68k::MOVEQ_);
+        required_cycles = 4;
         break;
     case MOVE_USP:
         opcode_fn = std::mem_fn(&c_m68k::MOVE_USP_);
+        required_cycles = 4;
         break;
     case MOVEtoCCR:
         opcode_fn = std::mem_fn(&c_m68k::MOVEtoCCR_);
@@ -327,24 +452,65 @@ void c_m68k::decode()
         break;
     case ROd:
         opcode_fn = std::mem_fn(&c_m68k::ROd_);
+        get_size1();
+        get_address_mode();
+        required_cycles = 8;
+        required_cycles += get_ea_cycles();
         break;
     case ROd2:
         opcode_fn = std::mem_fn(&c_m68k::ROd2_);
+        {
+            get_size1();
+            uint32_t shift_count = (op_word >> 9) & 0x7;
+            required_cycles = op_size == SIZE_LONG ? 8 : 6;
+            required_cycles += shift_count * 2;
+        }
         break;
     case ROXd:
         opcode_fn = std::mem_fn(&c_m68k::ROXd_);
+        get_size1();
+        get_address_mode();
+        required_cycles = 8;
+        required_cycles += get_ea_cycles();
         break;
     case ROXd2:
         opcode_fn = std::mem_fn(&c_m68k::ROXd2_);
+        {
+            get_size1();
+            uint32_t shift_count = (op_word >> 9) & 0x7;
+            required_cycles = op_size == SIZE_LONG ? 8 : 6;
+            required_cycles += shift_count * 2;
+        }
         break;
     case ADD:
         opcode_fn = std::mem_fn(&c_m68k::ADD_);
         break;
     case ADDI:
         opcode_fn = std::mem_fn(&c_m68k::ADDI_);
+        get_size1();
+        get_address_mode();
+        if (address_mode == ADDRESS_MODE::DATA_REGISTER) {
+            required_cycles = op_size == SIZE_LONG ? 16 : 8;
+        }
+        else {
+            required_cycles = op_size == SIZE_LONG ? 20 : 12;
+            required_cycles += get_ea_cycles();
+        }
         break;
     case ADDQ:
         opcode_fn = std::mem_fn(&c_m68k::ADDQ_);
+        get_size1();
+        get_address_mode();
+        if (address_mode == ADDRESS_MODE::DATA_REGISTER) {
+            required_cycles == op_size == SIZE_LONG ? 8 : 4;
+        }
+        else if (address_mode == ADDRESS_MODE::ADDRESS_REGISTER) {
+            required_cycles = 8;
+        }
+        else {
+            required_cycles = 12;
+            required_cycles += get_ea_cycles();
+        }
         break;
     case ADDA:
         opcode_fn = std::mem_fn(&c_m68k::ADDA_);
@@ -354,33 +520,49 @@ void c_m68k::decode()
         break;
     case NOP:
         opcode_fn = std::mem_fn(&c_m68k::NOP_);
+        required_cycles = 4;
         break;
     case CMP:
         opcode_fn = std::mem_fn(&c_m68k::CMP_);
         break;
     case CMPI:
         opcode_fn = std::mem_fn(&c_m68k::CMPI_);
+        get_size1();
+        get_address_mode();
+        if (address_mode == ADDRESS_MODE::DATA_REGISTER) {
+            required_cycles = op_size == SIZE_LONG ? 14 : 8;
+        }
+        else {
+            required_cycles = op_size == SIZE_LONG ? 12 : 8;
+            required_cycles += get_ea_cycles();
+        }
         break;
     case CMPM:
         opcode_fn = std::mem_fn(&c_m68k::CMPM_);
         break;
     case ANDItoCCR:
         opcode_fn = std::mem_fn(&c_m68k::ANDItoCCR_);
+        required_cycles = 20;
         break;
     case ANDItoSR:
         opcode_fn = std::mem_fn(&c_m68k::ANDItoSR_);
+        required_cycles = 20;
         break;
     case ORItoCCR:
         opcode_fn = std::mem_fn(&c_m68k::ORItoCCR_);
+        required_cycles = 20;
         break;
     case ORItoSR:
         opcode_fn = std::mem_fn(&c_m68k::ORItoSR_);
+        required_cycles = 20;
         break;
     case EORItoCCR:
         opcode_fn = std::mem_fn(&c_m68k::EORItoCCR_);
+        required_cycles = 20;
         break;
     case EORItoSR:
         opcode_fn = std::mem_fn(&c_m68k::EORItoSR_);
+        required_cycles = 20;
         break;
     case CMPA:
         opcode_fn = std::mem_fn(&c_m68k::CMPA_);
@@ -390,45 +572,74 @@ void c_m68k::decode()
         break;
     case TAS:
         opcode_fn = std::mem_fn(&c_m68k::TAS_);
+        get_address_mode();
+        if (address_mode == ADDRESS_MODE::DATA_REGISTER || address_mode == ADDRESS_MODE::ADDRESS_REGISTER) {
+            required_cycles = 4;
+        }
+        else {
+            required_cycles = 10;
+            required_cycles += get_ea_cycles();
+        }
         break;
     case Bcc:
         opcode_fn = std::mem_fn(&c_m68k::Bcc_);
+        required_cycles = 8;
         break;
     case BRA:
         opcode_fn = std::mem_fn(&c_m68k::BRA_);
+        required_cycles = 10;
         break;
     case BSR:
         opcode_fn = std::mem_fn(&c_m68k::BSR_);
+        required_cycles = 18;
         break;
     case CHK:
         opcode_fn = std::mem_fn(&c_m68k::CHK_);
+        required_cycles = 10;
+        // need to add + calc
         break;
     case TRAP:
         opcode_fn = std::mem_fn(&c_m68k::TRAP_);
+        required_cycles = 38;
         break;
     case TRAPV:
         opcode_fn = std::mem_fn(&c_m68k::TRAPV_);
+        required_cycles = flag_v ? 38 : 4;
         break;
     case RESET:
         opcode_fn = std::mem_fn(&c_m68k::RESET_);
+        required_cycles = 132;
         break;
     case RTE:
         opcode_fn = std::mem_fn(&c_m68k::RTE_);
+        required_cycles = 20;
         break;
     case Scc:
         opcode_fn = std::mem_fn(&c_m68k::Scc_);
+        get_address_mode();
+        if (address_mode == ADDRESS_MODE::DATA_REGISTER || address_mode == ADDRESS_MODE::ADDRESS_REGISTER) {
+            required_cycles = 4;
+        }
+        else {
+            required_cycles = 8;
+            required_cycles += get_ea_cycles();
+        }
         break;
     case RTS:
         opcode_fn = std::mem_fn(&c_m68k::RTS_);
+        required_cycles = 16;
         break;
     case RTR:
         opcode_fn = std::mem_fn(&c_m68k::RTR_);
+        required_cycles = 20;
         break;
     case LINK:
         opcode_fn = std::mem_fn(&c_m68k::LINK_);
+        required_cycles = 16;
         break;
     case UNLK:
         opcode_fn = std::mem_fn(&c_m68k::UNLK_);
+        required_cycles = 12;
         break;
     case EXT:
         opcode_fn = std::mem_fn(&c_m68k::EXT_);
@@ -450,6 +661,14 @@ void c_m68k::decode()
         break;
     case NBCD:
         opcode_fn = std::mem_fn(&c_m68k::NBCD_);
+        get_address_mode();
+        if (address_mode == ADDRESS_MODE::DATA_REGISTER || address_mode == ADDRESS_MODE::ADDRESS_REGISTER) {
+            required_cycles = 6;
+        }
+        else {
+            required_cycles = 8;
+            required_cycles += get_ea_cycles();
+        }
         break;
     case MULU:
         opcode_fn = std::mem_fn(&c_m68k::MULU_);
@@ -463,14 +682,9 @@ void c_m68k::decode()
     case DIVS:
         opcode_fn = std::mem_fn(&c_m68k::DIVS_);
         break;
-    //case INTERRUPT_4:
-    //    opcode_fn = std::bind(&c_m68k::do_trap, this, 112);
-    //    break;
-    //case INTERRUPT_6:
-    //    opcode_fn = std::bind(&c_m68k::do_trap, this, 120);
-    //    break;
     case STOP:
         opcode_fn = std::mem_fn(&c_m68k::STOP_);
+        required_cycles = 4;
         break;
     default:
         opcode_fn = nullptr;
@@ -659,7 +873,7 @@ uint8_t c_m68k::bcd_sbc(uint8_t dst, uint8_t src)
 void c_m68k::NBCD_()
 {
     set_size(SIZE_BYTE);
-    get_address_mode();
+    //get_address_mode();
     compute_ea();
     preincrement_ea();
     uint8_t t = bcd_sbc(0, read_ea());
@@ -834,7 +1048,14 @@ void c_m68k::DBcc_()
         *d[reg] = (*d[reg] & 0xFFFF0000) | count;
         if (count != 0xFFFF) {
             pc += displacement - 2;
+            required_cycles += 10;
         }
+        else {
+            required_cycles += 14;
+        }
+    }
+    else {
+        required_cycles += 12;
     }
 }
 
@@ -921,11 +1142,14 @@ void c_m68k::RTS_()
 void c_m68k::Scc_()
 {
     set_size(SIZE_BYTE);
-    get_address_mode();
+    //get_address_mode();
     compute_ea();
     preincrement_ea();
     if (test_condition((CONDITION)((op_word >> 8) & 0xF))) {
         write_ea(0xFF);
+        if (address_mode == ADDRESS_MODE::DATA_REGISTER || address_mode == ADDRESS_MODE::ADDRESS_REGISTER) {
+            required_cycles += 2;
+        }
     }
     else {
         write_ea(0x00);
@@ -1017,6 +1241,7 @@ void c_m68k::CHK_()
             flag_n = 0;
         }
         do_trap(6);
+        required_cycles += 34;
     }
     else {
         int x = 1;
@@ -1097,17 +1322,19 @@ void c_m68k::Bcc_()
     if (displacement == 0) {
         displacement = (int32_t)(int16_t)read_word(pc);
         pc += 2;
+        required_cycles += 4;
     }
 
     if (test_condition((CONDITION)((op_word >> 8) & 0xF))) {
         pc = orig_pc + displacement;
+        required_cycles += 2;
     }
 }
 
 void c_m68k::TAS_()
 {
     set_size(SIZE_BYTE);
-    get_address_mode();
+    //get_address_mode();
     compute_ea();
     preincrement_ea();
     uint8_t operand = read_ea();
@@ -1315,9 +1542,9 @@ void c_m68k::CMP_()
 
 void c_m68k::CMPI_()
 {
-    get_size1();
+    //get_size1();
     uint32_t b = get_immediate();
-    get_address_mode();
+    //get_address_mode();
     compute_ea();
     preincrement_ea();
     uint32_t a = read_ea() & mask;
@@ -1338,8 +1565,8 @@ void c_m68k::NOP_()
 
 void c_m68k::ROXd_()
 {
-    get_size1();
-    get_address_mode();
+    //get_size1();
+    //get_address_mode();
     compute_ea();
     preincrement_ea();
     set_size(SIZE_WORD);
@@ -1389,7 +1616,7 @@ void c_m68k::ROXd_()
 
 void c_m68k::ROXd2_()
 {
-    get_size1();
+    //get_size1();
 
     int direction = op_word & 0x100; //0 = right, 1 = left
     int source = op_word & 0x20; //0 = immediate, 1 = register
@@ -1454,8 +1681,8 @@ void c_m68k::ROXd2_()
 
 void c_m68k::ROd_()
 {
-    get_size1();
-    get_address_mode();
+    //get_size1();
+    //get_address_mode();
     compute_ea();
     preincrement_ea();
     set_size(SIZE_WORD);
@@ -1502,7 +1729,7 @@ void c_m68k::ROd_()
 
 void c_m68k::ROd2_()
 {
-    get_size1();
+    //get_size1();
 
     int direction = op_word & 0x100; //0 = right, 1 = left
     int source = op_word & 0x20; //0 = immediate, 1 = register
@@ -1731,9 +1958,9 @@ void c_m68k::SUBA_()
 
 void c_m68k::ADDI_()
 {
-    get_size1();
+    //get_size1();
     uint32_t b = get_immediate();
-    get_address_mode();
+    //get_address_mode();
     compute_ea();
     preincrement_ea();
     uint32_t a = read_ea() & mask;
@@ -1751,9 +1978,9 @@ void c_m68k::ADDI_()
 
 void c_m68k::SUBI_()
 {
-    get_size1();
+    //get_size1();
     uint32_t b = get_immediate();
-    get_address_mode();
+    //get_address_mode();
     compute_ea();
     preincrement_ea();
     uint32_t a = read_ea() & mask;
@@ -1792,8 +2019,8 @@ uint32_t c_m68k::get_immediate()
 
 void c_m68k::ADDQ_()
 {
-    get_size1();
-    get_address_mode();
+    //get_size1();
+    //get_address_mode();
     compute_ea();
     preincrement_ea();
 
@@ -1823,8 +2050,8 @@ void c_m68k::ADDQ_()
 
 void c_m68k::SUBQ_()
 {
-    get_size1();
-    get_address_mode();
+    //get_size1();
+    //get_address_mode();
     compute_ea();
     preincrement_ea();
 
@@ -2095,8 +2322,8 @@ void c_m68k::JMP_()
 void c_m68k::LSd_()
 {
     //ASR results might not be correct because tests are broken
-    get_size1();
-    get_address_mode();
+    //get_size1();
+    //get_address_mode();
     compute_ea();
     preincrement_ea();
     set_size(SIZE_WORD);
@@ -2141,7 +2368,7 @@ void c_m68k::LSd2_()
 {
     //ASR results might not be correct because tests are broken
 
-    get_size1();
+    //get_size1();
 
     int direction = op_word & 0x100; //0 = right, 1 = left
     int source = op_word & 0x20; //0 = immediate, 1 = register
@@ -2196,8 +2423,8 @@ void c_m68k::LSd2_()
 
 void c_m68k::TST_()
 {
-    get_size1();
-    get_address_mode();
+    //get_size1();
+    //get_address_mode();
     compute_ea();
     preincrement_ea();
 
@@ -2234,8 +2461,8 @@ void c_m68k::EXG_()
 
 void c_m68k::CLR_()
 {
-    get_size1();
-    get_address_mode();
+    //get_size1();
+    //get_address_mode();
     compute_ea();
     preincrement_ea();
     write_ea(0);
@@ -2289,6 +2516,39 @@ void c_m68k::get_size3()
         break;
     }
     set_size(size);
+}
+
+int c_m68k::get_ea_cycles()
+{
+    assert(address_mode != ADDRESS_MODE::UNKNOWN);
+    assert(op_size != SIZE_UNKNOWN);
+    switch (address_mode) {
+        case ADDRESS_MODE::DATA_REGISTER:
+            return 0;
+        case ADDRESS_MODE::ADDRESS_REGISTER:
+            return 0;
+        case ADDRESS_MODE::ADDRESS:
+            return op_size == SIZE_LONG ? 8 : 4;
+        case ADDRESS_MODE::ADDRESS_PREINCREMENT:
+            return op_size == SIZE_LONG ? 10 : 6;
+        case ADDRESS_MODE::ADDRESS_POSTINCREMENT:
+            return op_size == SIZE_LONG ? 8 : 4;
+        case ADDRESS_MODE::ADDRESS_DISPLACEMENT:
+            return op_size == SIZE_LONG ? 12 : 8;
+        case ADDRESS_MODE::ADDRESS_INDEX:
+            return op_size == SIZE_LONG ? 14 : 10;
+        case ADDRESS_MODE::ABS_SHORT:
+            return op_size == SIZE_LONG ? 12 : 8;
+        case ADDRESS_MODE::ABS_LONG:
+            return op_size == SIZE_LONG ? 16 : 12;
+        case ADDRESS_MODE::PC_DISPLACEMENT:
+            return op_size == SIZE_LONG ? 12 : 8;
+        case ADDRESS_MODE::PC_INDEX:
+            return op_size == SIZE_LONG ? 14 : 10;
+        case ADDRESS_MODE::IMMEDIATE:
+            return op_size == SIZE_LONG ? 8 : 4;
+    }
+    return 0;
 }
 
 void c_m68k::get_address_mode()
@@ -2669,8 +2929,8 @@ void c_m68k::LEA_()
 void c_m68k::NEGX_()
 {
     uint32_t X = flag_x ? 1 : 0;
-    get_size1();
-    get_address_mode();
+    //get_size1();
+    //get_address_mode();
     compute_ea();
     preincrement_ea();
     uint32_t register_index = (op_word >> 9) & 0x7;
@@ -2690,8 +2950,8 @@ void c_m68k::NEGX_()
 
 void c_m68k::NEG_()
 {
-    get_size1();
-    get_address_mode();
+    //get_size1();
+    //get_address_mode();
     compute_ea();
     preincrement_ea();
     uint32_t register_index = (op_word >> 9) & 0x7;
@@ -2708,8 +2968,8 @@ void c_m68k::NEG_()
 
 void c_m68k::NOT_()
 {
-    get_size1();
-    get_address_mode();
+    //get_size1();
+    //get_address_mode();
     compute_ea();
     preincrement_ea();
     uint32_t register_index = (op_word >> 9) & 0x7;
@@ -2752,7 +3012,7 @@ void c_m68k::EOR_()
 
 void c_m68k::EORI_()
 {
-    get_size1();
+    //get_size1();
     uint32_t b;
     switch (op_size) {
     case SIZE_BYTE:
@@ -2770,7 +3030,7 @@ void c_m68k::EORI_()
         pc += 2;
         break;
     }
-    get_address_mode();
+    //get_address_mode();
     compute_ea();
     preincrement_ea();
     uint32_t a = read_ea();
@@ -2812,7 +3072,7 @@ void c_m68k::OR_()
 
 void c_m68k::ORI_()
 {
-    get_size1();
+    //get_size1();
     uint32_t b;
     switch (op_size) {
     case SIZE_BYTE:
@@ -2830,7 +3090,7 @@ void c_m68k::ORI_()
         pc += 2;
         break;
     }
-    get_address_mode();
+    //get_address_mode();
     compute_ea();
     preincrement_ea();
     uint32_t a = read_ea();
@@ -2846,7 +3106,7 @@ void c_m68k::ORI_()
 
 void c_m68k::ANDI_()
 {
-    get_size1();
+    //get_size1();
     uint32_t b;
     switch (op_size) {
     case SIZE_BYTE:
@@ -2864,7 +3124,7 @@ void c_m68k::ANDI_()
         pc += 2;
         break;
     }
-    get_address_mode();
+    //get_address_mode();
     compute_ea();
     preincrement_ea();
     uint32_t a = read_ea();
@@ -2907,8 +3167,8 @@ void c_m68k::AND_()
 void c_m68k::ASd_()
 {
     //ASR results might not be correct because tests are broken
-    get_size1();
-    get_address_mode();
+    //get_size1();
+    //get_address_mode();
     compute_ea();
     preincrement_ea();
     set_size(SIZE_WORD);
@@ -2958,7 +3218,7 @@ void c_m68k::ASd2_()
 {
     //ASR results might not be correct because tests are broken
 
-    get_size1();
+    //get_size1();
 
     int direction = op_word & 0x100; //0 = right, 1 = left
     int source = op_word & 0x20; //0 = immediate, 1 = register
