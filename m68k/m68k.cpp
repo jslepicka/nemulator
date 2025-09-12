@@ -81,6 +81,7 @@ void c_m68k::reset()
     required_cycles = 0;
     interrupt = 0;
     stopped = false;
+    movem_register_list = 0;
 }
 
 void c_m68k::execute(int cycles)
@@ -116,7 +117,6 @@ void c_m68k::execute(int cycles)
                 if (required_cycles == 0) {
                     required_cycles = 4;
                 }
-                //required_cycles = 8;
                 fetch_opcode = 0;
             }
             //fetch_opcode = 0;
@@ -252,7 +252,7 @@ void c_m68k::decode()
         opcode_fn = std::mem_fn(&c_m68k::LEA_);
         get_address_mode();
         switch (address_mode) {
-            case ADDRESS_MODE::ADDRESS_REGISTER:
+            case ADDRESS_MODE::ADDRESS:
                 required_cycles = 4;
                 break;
             case ADDRESS_MODE::ADDRESS_DISPLACEMENT:
@@ -524,7 +524,7 @@ void c_m68k::decode()
         opcode_fn = std::mem_fn(&c_m68k::JMP_);
         get_address_mode();
         switch (address_mode) {
-            case ADDRESS_MODE::ADDRESS_REGISTER:
+            case ADDRESS_MODE::ADDRESS:
                 required_cycles = 8;
                 break;
             case ADDRESS_MODE::ADDRESS_DISPLACEMENT:
@@ -553,7 +553,7 @@ void c_m68k::decode()
         opcode_fn = std::mem_fn(&c_m68k::JSR_);
         get_address_mode();
         switch (address_mode) {
-            case ADDRESS_MODE::ADDRESS_REGISTER:
+            case ADDRESS_MODE::ADDRESS:
                 required_cycles = 16;
                 break;
             case ADDRESS_MODE::ADDRESS_DISPLACEMENT:
@@ -644,6 +644,7 @@ void c_m68k::decode()
         break;
     case SUBA:
         opcode_fn = std::mem_fn(&c_m68k::SUBA_);
+        get_address_mode();
         if (op_word & 0x100) {
             //long
             required_cycles = 6;
@@ -764,6 +765,7 @@ void c_m68k::decode()
         break;
     case ADDA:
         opcode_fn = std::mem_fn(&c_m68k::ADDA_);
+        get_address_mode();
         if (op_word & 0x100) {
             //long
             required_cycles = 6;
@@ -851,7 +853,7 @@ void c_m68k::decode()
         opcode_fn = std::mem_fn(&c_m68k::PEA_);
         get_address_mode();
         switch (address_mode) {
-            case ADDRESS_MODE::ADDRESS_REGISTER:
+            case ADDRESS_MODE::ADDRESS:
                 required_cycles = 12;
                 break;
             case ADDRESS_MODE::ADDRESS_DISPLACEMENT:
@@ -962,7 +964,7 @@ void c_m68k::decode()
         if (op_word & 0x400) {
             //M -> R
             switch (address_mode) {
-                case ADDRESS_MODE::ADDRESS_REGISTER:
+                case ADDRESS_MODE::ADDRESS:
                     required_cycles = 12;
                     break;
                 case ADDRESS_MODE::ADDRESS_POSTINCREMENT:
@@ -993,7 +995,7 @@ void c_m68k::decode()
         else {
             //R -> M
             switch (address_mode) {
-                case ADDRESS_MODE::ADDRESS_REGISTER:
+                case ADDRESS_MODE::ADDRESS:
                     required_cycles = 8;
                     break;
                 case ADDRESS_MODE::ADDRESS_PREINCREMENT:
@@ -1018,8 +1020,8 @@ void c_m68k::decode()
         {
             //todo -- doing this again in the instruction; optimize?
             set_size(SIZE_WORD);
-            uint16_t register_list = get_immediate();
-            int num_registers = std::popcount(register_list);
+            movem_register_list = get_immediate();
+            uint32_t num_registers = std::popcount(movem_register_list);
             if (op_word & 0x40) {
                 //long
                 required_cycles += 8 * num_registers;
@@ -1384,14 +1386,13 @@ void c_m68k::MOVEP_()
 void c_m68k::MOVEM_()
 {
     set_size(SIZE_WORD);
-    uint16_t register_list = get_immediate();
     set_size(op_word & 0x40 ? SIZE_LONG : SIZE_WORD);
     get_address_mode();
     compute_ea();
     bool predecrement = address_mode == ADDRESS_MODE::ADDRESS_PREINCREMENT;
     for (int i = 0; i < 16; i++) {
         uint32_t *r;
-        if (register_list & 0x1) {
+        if (movem_register_list & 0x1) {
             preincrement_ea();
             uint32_t** reg;
             if (predecrement) {
@@ -1423,7 +1424,7 @@ void c_m68k::MOVEM_()
             }
             postincrement_ea();
         }
-        register_list >>= 1;
+        movem_register_list >>= 1;
     }
     writeback_ea();
 }
@@ -3424,7 +3425,7 @@ void c_m68k::EORI_()
         pc += 2;
         break;
     }
-    //get_address_mode();
+    get_address_mode();
     compute_ea();
     preincrement_ea();
     uint32_t a = read_ea();
@@ -3484,7 +3485,7 @@ void c_m68k::ORI_()
         pc += 2;
         break;
     }
-    //get_address_mode();
+    get_address_mode();
     compute_ea();
     preincrement_ea();
     uint32_t a = read_ea();
@@ -3518,7 +3519,7 @@ void c_m68k::ANDI_()
         pc += 2;
         break;
     }
-    //get_address_mode();
+    get_address_mode();
     compute_ea();
     preincrement_ea();
     uint32_t a = read_ea();

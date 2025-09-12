@@ -1,7 +1,7 @@
 module;
 #include <cassert>
 #include <stdio.h>
-#include <Windows.h>
+#include <immintrin.h>
 module genesis;
 import m68k;
 import crc32;
@@ -12,30 +12,24 @@ namespace genesis
 
 c_genesis::c_genesis()
 {
-    m68k = std::make_unique<c_m68k>(
-        [this](uint32_t address) { return this->read_word(address); },
-        [this](uint32_t address, uint16_t value) { this->write_word(address, value); },
-        [this](uint32_t address) { return this->read_byte(address); },
-        [this](uint32_t address, uint8_t value) { this->write_byte(address, value); },
-        [this]() { this->vdp->ack_irq(); },
-        &ipl,
-        &stalled
-    );
-    vdp = std::make_unique<c_vdp>(&ipl,
-        [this](uint32_t address) { return this->read_word(address); },
-        [this](int x_res) { this->on_mode_switch(x_res); },
-        &stalled
-    );
-    z80 = std::make_unique<c_z80>(
-        [this](uint16_t address) { return this->z80_read_byte(address); },
-        [this](uint16_t address, uint8_t value) { this->z80_write_byte(address, value); },
-        [this](uint8_t port) { return this->z80_read_port(port); }, //read port
-        [this](uint8_t port, uint8_t value) { this->z80_write_byte(port, value); }, //write port
-        nullptr, //int ack
-        &z80_nmi, //nmi
-        &z80_irq, //irq
-        nullptr  //data bus
-    );
+    m68k = std::make_unique<c_m68k>([this](uint32_t address) { return this->read_word(address); },
+                                    [this](uint32_t address, uint16_t value) { this->write_word(address, value); },
+                                    [this](uint32_t address) { return this->read_byte(address); },
+                                    [this](uint32_t address, uint8_t value) { this->write_byte(address, value); },
+                                    [this]() { this->vdp->ack_irq(); }, &ipl, &stalled);
+    vdp = std::make_unique<c_vdp>(
+        &ipl, [this](uint32_t address) { return this->read_word(address); },
+        [this](int x_res) { this->on_mode_switch(x_res); }, &stalled);
+    z80 =
+        std::make_unique<c_z80>([this](uint16_t address) { return this->z80_read_byte(address); },
+                                [this](uint16_t address, uint8_t value) { this->z80_write_byte(address, value); },
+                                [this](uint8_t port) { return this->z80_read_port(port); }, //read port
+                                [this](uint8_t port, uint8_t value) { this->z80_write_byte(port, value); }, //write port
+                                nullptr, //int ack
+                                &z80_nmi, //nmi
+                                &z80_irq, //irq
+                                nullptr //data bus
+        );
     ym = std::make_unique<c_ym2612>();
     cart_ram_start = 0;
     cart_ram_end = 0;
@@ -47,8 +41,6 @@ c_genesis::c_genesis()
     bank_register = 0;
     psg = std::make_unique<sms::c_psg>();
     mixer_enabled = 0;
-
-
 
     /*
     lowpass 20kHz
@@ -83,10 +75,7 @@ c_genesis::c_genesis()
         std::unique_ptr<dsp::c_biquad4> *lpf;
         std::unique_ptr<dsp::c_first_order_bandpass> *post_filter;
         std::unique_ptr<dsp::c_resampler> *resampler;
-    } filters[] = {
-        {&lpf_l, &post_filter_l, &resampler_l},
-        {&lpf_r, &post_filter_r, &resampler_r}
-    };
+    } filters[] = {{&lpf_l, &post_filter_l, &resampler_l}, {&lpf_r, &post_filter_r, &resampler_r}};
 
     for (auto &f : filters) {
         *f.lpf = std::make_unique<dsp::c_biquad4>(
@@ -100,8 +89,8 @@ c_genesis::c_genesis()
                                                                        -0.6318684449749816f, 0.9998691174378402f,
                                                                        -0.9998691174378402f, -0.9997382348756805f);
 
-        *f.resampler = std::make_unique<dsp::c_resampler>((float)(BASE_AUDIO_FREQ / 48000.0),
-                                                          f.lpf->get(), f.post_filter->get());
+        *f.resampler =
+            std::make_unique<dsp::c_resampler>((float)(BASE_AUDIO_FREQ / 48000.0), f.lpf->get(), f.post_filter->get());
     }
 }
 
@@ -166,7 +155,7 @@ int c_genesis::load()
         }
     }
     const char ps4_title[] = "PHANTASY STAR The end of the millennium";
-    if (memcmp(&rom[0x120], ps4_title, sizeof(ps4_title) - 1) == 0) {
+    if (std::memcmp(&rom[0x120], ps4_title, sizeof(ps4_title) - 1) == 0) {
         is_ps4 = 1;
     }
     if (cart_ram_start && cart_ram_start < rom_size) {
@@ -228,6 +217,8 @@ int c_genesis::reset()
 
     crop_right = 0;
     z80_reset = 0;
+    z80_has_bus = 0;
+    z80_enabled = false;
     z80_busreq = 0;
     z80_nmi = 0;
     z80_irq = 0;
@@ -238,8 +229,71 @@ int c_genesis::reset()
     last_z80_cycle = 0;
     next_z80_cycle = 15;
     next_ym_cycle = 0;
+    m68k_cycles = 0;
+    next_m68k_cycle = 0;
     psg_divider = 0;
+    m68k_required = 1;
+    z80_required = 1;
+    current_cycle = 0;
+    z80_comp = 0;
+
+    for (auto &n : next_events) {
+        n = (uint64_t)-1;
+    }
+
+    //next_m68k_cycle = (7 << 3) | CYCLE_EVENT::M68K_CLOCK;
+    //next_vdp_endline = (3420 << 3) | CYCLE_EVENT::VDP_END_LINE;
+    //next_vdp_hblank = (500 << 3) | CYCLE_EVENT::VDP_HBLANK; //no idea if this is accurate
+    //next_end_frame = ((3420 * 262) << 3) | CYCLE_EVENT::END_FRAME;
+    //next_ym_cycle = ((7 * 6) << 3) | CYCLE_EVENT::YM_CLOCK;
+    //next_z80_cycle = (15 << 3) | CYCLE_EVENT::Z80_CLOCK;
+    //next_psg_cycle = ((15 * 16) << 3) | CYCLE_EVENT::PSG_CLOCK;
+
+    next_events[CYCLE_EVENT::M68K_CLOCK] = (7 << 3) | CYCLE_EVENT::M68K_CLOCK;
+    next_events[CYCLE_EVENT::VDP_END_LINE] = (3420 << 3) | CYCLE_EVENT::VDP_END_LINE;
+    next_events[CYCLE_EVENT::VDP_HBLANK] = (500 << 3) | CYCLE_EVENT::VDP_HBLANK; //no idea if this is accurate
+    next_events[CYCLE_EVENT::END_FRAME] = ((3420 * 262) << 3) | CYCLE_EVENT::END_FRAME;
+    next_events[CYCLE_EVENT::YM_CLOCK] = ((7 * 6) << 3) | CYCLE_EVENT::YM_CLOCK;
+    next_events[CYCLE_EVENT::Z80_CLOCK] = ((uint64_t)-1 << 3) | CYCLE_EVENT::Z80_CLOCK;
+    next_events[CYCLE_EVENT::PSG_CLOCK] = ((15 * 16) << 3) | CYCLE_EVENT::PSG_CLOCK;
+
+    //prep the z80 -- this is just for instruction cycle alignment purposes.  probably not necessary.
+    z80->execute(0);
+    z80_required = z80->get_required_cycles();
+
     return 0;
+}
+
+void c_genesis::enable_z80()
+{
+    if (z80_enabled) {
+        return;
+    }
+    z80_enabled = true;
+    z80_required = z80->get_required_cycles() * 15;
+    if (z80_required == 0) {
+        //z80_required should only be 0 following reset
+        assert(z80_comp == 0);
+        z80->execute(0);
+        z80_required = z80->get_required_cycles() * 15;
+    }
+    z80_required -= z80_comp;
+    next_events[CYCLE_EVENT::Z80_CLOCK] = ((current_cycle << 3) + ((z80_required) << 3)) | CYCLE_EVENT::Z80_CLOCK;
+}
+
+void c_genesis::disable_z80()
+{
+    if (!z80_enabled) {
+        return;
+    }
+    else {
+        z80_enabled = false;
+        uint64_t current_z80 = next_events[CYCLE_EVENT::Z80_CLOCK] >> 3;
+        uint64_t diff = current_z80 - current_cycle;
+        z80_comp = diff;
+        assert(z80_comp >= 0);
+        next_events[CYCLE_EVENT::Z80_CLOCK] = ((uint64_t)-1 << 3) | CYCLE_EVENT::Z80_CLOCK;
+    }
 }
 
 int c_genesis::emulate_frame()
@@ -248,44 +302,71 @@ int c_genesis::emulate_frame()
     resampler_l->clear_buf();
     resampler_r->clear_buf();
     uint32_t hblank_len = 50;
+    int line = 0;
 
-    for (int line = 0; line < 262; line++) {
-        z80_irq = line == 224;
+    auto get_next_event = [&]() {
+        uint64_t a = next_events[M68K_CLOCK];
+        uint64_t b = next_events[Z80_CLOCK];
+        uint64_t c = next_events[VDP_HBLANK];
+        uint64_t d = next_events[VDP_END_LINE];
+        uint64_t e = next_events[YM_CLOCK];
+        uint64_t f = next_events[PSG_CLOCK];
+        uint64_t g = next_events[END_FRAME];
 
-        const int cycles[] = {488 - hblank_len, hblank_len};
+        uint64_t m1 = std::min(a, b);
+        uint64_t m2 = std::min(c, d);
+        uint64_t m3 = std::min(e, f);
 
-        for (int i = 0; i < 2; i++) {
-            for (int j = 0; j < cycles[i]; j++) {
-                m68k->execute(1);
-                if (++next_ym_cycle == 6) {
-                    //clock ym at 1/6 68k freq
-                    next_ym_cycle = 0;
-                    ym->clock(1);
-                    if (mixer_enabled) {
-                        //todo: volume adjustments
-                        resampler_l->process(ym->out_l * (1.0f - 1.0f/6.0f) + psg->out * (1.0f/6.0f * 2.0f));
-                        resampler_r->process(ym->out_r * (1.0f - 1.0f / 6.0f) + psg->out * (1.0f / 6.0f * 2.0f));
-                        //resampler->process(ym->out);
-                    }
-                }
-                master_cycles += 7;
-                if (master_cycles >= next_z80_cycle) {
-                    next_z80_cycle += 15;
-                    if (z80_has_bus && z80_reset) {
-                        z80->execute(1);
-                    }
-                    if (++psg_divider == 16) {
-                        psg_divider = 0;
-                        psg->clock(16);
-                    }
-                }
-            }
-            if (i == 0) {
-                vdp->draw_scanline();
+        uint64_t m12 = std::min(m1, m2);
+        uint64_t m3g = std::min(m3, g);
+
+        return std::min(m12, m3g);
+    };
+
+    int line_count = 0;
+    int loops = 0;
+    while (true) {
+        uint64_t event = get_next_event();
+        current_cycle = event >> 3;
+        int handler = event & 7;
+        if (handler == CYCLE_EVENT::YM_CLOCK) {
+            next_events[CYCLE_EVENT::YM_CLOCK] += (7 * 6) << 3;
+            ym->clock(1);
+            if (mixer_enabled) {
+                resampler_l->process(ym->out_l * (1.0f - 1.0f / 6.0f) + psg->out * (1.0f / 6.0f * 2.0f));
+                resampler_r->process(ym->out_r * (1.0f - 1.0f / 6.0f) + psg->out * (1.0f / 6.0f * 2.0f));
             }
         }
-        //vdp->clear_hblank();
-        vdp->end_line();
+        else if (handler == CYCLE_EVENT::M68K_CLOCK) {
+            m68k->execute(m68k_required);
+            m68k_required = m68k->get_required_cycles();
+            next_events[CYCLE_EVENT::M68K_CLOCK] += (m68k_required * 7) << 3;
+        }
+        else if (handler == CYCLE_EVENT::Z80_CLOCK) {
+            assert(z80_enabled);
+            z80->execute(z80_required);
+            z80_required = z80->get_required_cycles();
+            assert(z80_required != 0);
+            next_events[CYCLE_EVENT::Z80_CLOCK] += (z80_required * 15) << 3;
+        }
+        else if (handler == CYCLE_EVENT::PSG_CLOCK) {
+            psg->clock(16);
+            next_events[CYCLE_EVENT::PSG_CLOCK] += (15 * 16) << 3;
+        }
+        else if (handler == CYCLE_EVENT::VDP_HBLANK) {
+            vdp->draw_scanline();
+            next_events[CYCLE_EVENT::VDP_HBLANK] += 3420 << 3;
+        }
+        else if (handler == CYCLE_EVENT::VDP_END_LINE) {
+            vdp->end_line();
+            next_events[CYCLE_EVENT::VDP_END_LINE] += 3420 << 3;
+            line++;
+            z80_irq = line == 224;
+        }
+        else if (handler == CYCLE_EVENT::END_FRAME) {
+            next_events[CYCLE_EVENT::END_FRAME] += (3420 * 262) << 3;
+            break;
+        }
     }
 
     return 0;
@@ -535,12 +616,26 @@ void c_genesis::write_byte(uint32_t address, uint8_t value)
             case 0xA11101:
                 z80_busreq = value;
                 z80_has_bus = !value;
+                if (z80_has_bus && z80_reset) {
+                    enable_z80();
+                }
+                else {
+                    disable_z80();
+                }
                 break;
             case 0xA11200:
             case 0xA11201:
                 z80_reset = value;
                 if (!z80_reset) {
                     z80->reset();
+                    z80_comp = 0;
+                    z80_required = 0;
+                }
+                if (z80_has_bus && z80_reset) {
+                    enable_z80();
+                }
+                else {
+                    disable_z80();
                 }
                 break;
             case 0xA130F1:
@@ -597,11 +692,25 @@ void c_genesis::write_word(uint32_t address, uint16_t value)
             case 0x00A11100:
                 z80_busreq = value;
                 z80_has_bus = !value;
+                if (z80_has_bus && z80_reset) {
+                    enable_z80();
+                }
+                else {
+                    disable_z80();
+                }
                 break;
             case 0xA11200:
                 z80_reset = value;
                 if (!z80_reset) {
                     z80->reset();
+                    z80_comp = 0;
+                    z80_required = 0;
+                }
+                if (z80_has_bus && z80_reset) {
+                    enable_z80();
+                }
+                else {
+                    disable_z80();
                 }
                 break;
         }

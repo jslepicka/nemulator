@@ -38,7 +38,10 @@ public:
     void set_flags();
     void update_status();
     void execute(int cycles);
-
+    int get_required_cycles()
+    {
+        return required_cycles - available_cycles;
+    };
   private:
     uint8_t *ipl;
     uint32_t *stalled;
@@ -277,7 +280,7 @@ public:
     void STOP_();
 
     void do_trap(uint32_t vector);
-
+    
     void set_size(int size);
 
     void get_size1();
@@ -299,7 +302,8 @@ public:
     uint32_t M;
     uint32_t Xn;
     uint32_t immediate_size;
-
+    uint32_t movem_register_list;
+    
     uint8_t interrupt;
     bool stopped;
 

@@ -129,11 +129,27 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     uint64_t last_psg_run;
     uint64_t skipped_psg_cycles;
     uint64_t master_cycles;
+    uint64_t m68k_cycles;
     uint64_t last_z80_cycle;
     uint64_t next_z80_cycle;
+    uint64_t next_m68k_cycle;
+    uint64_t next_vdp_endline;
+    uint64_t next_vdp_hblank;
+    uint64_t next_psg_cycle;
+    uint32_t m68k_required;
+    uint32_t z80_required;
     uint64_t next_ym_cycle;
+    uint64_t next_end_frame;
+    uint64_t next_event;
+    uint64_t current_cycle;
+    int z80_comp;
+
+    uint64_t next_events[8];
 
     int mixer_enabled;
+
+    int line;
+    bool frame_complete;
 
 
     std::unique_ptr<dsp::c_biquad4> lpf_l;
@@ -147,6 +163,20 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     std::unique_ptr<dsp::c_null_filter> null_filter;
 
     static constexpr double BASE_AUDIO_FREQ=(488.0 * 262.0 * 60.0) / 6.0;
+
+    enum CYCLE_EVENT
+    {
+        M68K_CLOCK,
+        Z80_CLOCK,
+        VDP_HBLANK,
+        VDP_END_LINE,
+        YM_CLOCK,
+        PSG_CLOCK,
+        END_FRAME = 7 //must be last
+    };
+    void enable_z80();
+    void disable_z80();
+    bool z80_enabled;
 };
 
 } //namespace genesis

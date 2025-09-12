@@ -31,6 +31,10 @@ export class c_z80
     ~c_z80()
     {
     }
+    int get_required_cycles()
+    {
+        return required_cycles - available_cycles;
+    }
     int reset()
     {
         pending_ei = 0;
