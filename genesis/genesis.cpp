@@ -261,15 +261,15 @@ void c_genesis::enable_z80()
         return;
     }
     z80_enabled = true;
-    z80_required = z80->get_required_cycles() * 15;
+    z80_required = z80->get_required_cycles();
     if (z80_required == 0) {
         //z80_required should only be 0 following reset
         assert(z80_comp == 0);
         z80->execute(0);
-        z80_required = z80->get_required_cycles() * 15;
+        z80_required = z80->get_required_cycles();
     }
-    z80_required -= z80_comp;
-    next_events[CYCLE_EVENT::Z80_CLOCK] = ((current_cycle << 3) + ((z80_required) << 3)) | CYCLE_EVENT::Z80_CLOCK;
+    int z80r = z80_required * 15 - z80_comp;
+    next_events[CYCLE_EVENT::Z80_CLOCK] = ((current_cycle << 3) + ((z80r) << 3)) | CYCLE_EVENT::Z80_CLOCK;
 }
 
 void c_genesis::disable_z80()
@@ -335,6 +335,7 @@ int c_genesis::emulate_frame()
         }
         else if (event == CYCLE_EVENT::Z80_CLOCK) {
             assert(z80_enabled);
+            assert(z80_has_bus && z80_reset);
             z80->execute(z80_required);
             z80_required = z80->get_required_cycles();
             assert(z80_required != 0);
@@ -617,16 +618,16 @@ void c_genesis::write_byte(uint32_t address, uint8_t value)
             case 0xA11200:
             case 0xA11201:
                 z80_reset = value;
-                if (!z80_reset) {
-                    z80->reset();
-                    z80_comp = 0;
-                    z80_required = 0;
-                }
                 if (z80_has_bus && z80_reset) {
                     enable_z80();
                 }
                 else {
                     disable_z80();
+                }
+                if (!z80_reset) {
+                    z80->reset();
+                    z80_comp = 0;
+                    z80_required = 0;
                 }
                 break;
             case 0xA130F1:
@@ -692,16 +693,16 @@ void c_genesis::write_word(uint32_t address, uint16_t value)
                 break;
             case 0xA11200:
                 z80_reset = value;
-                if (!z80_reset) {
-                    z80->reset();
-                    z80_comp = 0;
-                    z80_required = 0;
-                }
                 if (z80_has_bus && z80_reset) {
                     enable_z80();
                 }
                 else {
                     disable_z80();
+                }
+                if (!z80_reset) {
+                    z80->reset();
+                    z80_comp = 0;
+                    z80_required = 0;
                 }
                 break;
         }
