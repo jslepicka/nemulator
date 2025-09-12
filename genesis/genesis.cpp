@@ -222,16 +222,7 @@ int c_genesis::reset()
     z80_busreq = 0;
     z80_nmi = 0;
     z80_irq = 0;
-    last_psg_run = 0;
-    skipped_psg_cycles = 0;
     bank_register = 0;
-    master_cycles = 0;
-    last_z80_cycle = 0;
-    next_z80_cycle = 15;
-    next_ym_cycle = 0;
-    m68k_cycles = 0;
-    next_m68k_cycle = 0;
-    psg_divider = 0;
     m68k_required = 1;
     z80_required = 1;
     current_cycle = 0;
@@ -326,10 +317,10 @@ int c_genesis::emulate_frame()
     int line_count = 0;
     int loops = 0;
     while (true) {
-        uint64_t event = get_next_event();
-        current_cycle = event >> 3;
-        int handler = event & 7;
-        if (handler == CYCLE_EVENT::YM_CLOCK) {
+        uint64_t next_event = get_next_event();
+        current_cycle = next_event >> 3;
+        int event = next_event & 7;
+        if (event == CYCLE_EVENT::YM_CLOCK) {
             next_events[CYCLE_EVENT::YM_CLOCK] += (7 * 6) << 3;
             ym->clock(1);
             if (mixer_enabled) {
@@ -337,33 +328,33 @@ int c_genesis::emulate_frame()
                 resampler_r->process(ym->out_r * (1.0f - 1.0f / 6.0f) + psg->out * (1.0f / 6.0f * 2.0f));
             }
         }
-        else if (handler == CYCLE_EVENT::M68K_CLOCK) {
+        else if (event == CYCLE_EVENT::M68K_CLOCK) {
             m68k->execute(m68k_required);
             m68k_required = m68k->get_required_cycles();
             next_events[CYCLE_EVENT::M68K_CLOCK] += (m68k_required * 7) << 3;
         }
-        else if (handler == CYCLE_EVENT::Z80_CLOCK) {
+        else if (event == CYCLE_EVENT::Z80_CLOCK) {
             assert(z80_enabled);
             z80->execute(z80_required);
             z80_required = z80->get_required_cycles();
             assert(z80_required != 0);
             next_events[CYCLE_EVENT::Z80_CLOCK] += (z80_required * 15) << 3;
         }
-        else if (handler == CYCLE_EVENT::PSG_CLOCK) {
+        else if (event == CYCLE_EVENT::PSG_CLOCK) {
             psg->clock(16);
             next_events[CYCLE_EVENT::PSG_CLOCK] += (15 * 16) << 3;
         }
-        else if (handler == CYCLE_EVENT::VDP_HBLANK) {
+        else if (event == CYCLE_EVENT::VDP_HBLANK) {
             vdp->draw_scanline();
             next_events[CYCLE_EVENT::VDP_HBLANK] += 3420 << 3;
         }
-        else if (handler == CYCLE_EVENT::VDP_END_LINE) {
+        else if (event == CYCLE_EVENT::VDP_END_LINE) {
             vdp->end_line();
             next_events[CYCLE_EVENT::VDP_END_LINE] += 3420 << 3;
             line++;
             z80_irq = line == 224;
         }
-        else if (handler == CYCLE_EVENT::END_FRAME) {
+        else if (event == CYCLE_EVENT::END_FRAME) {
             next_events[CYCLE_EVENT::END_FRAME] += (3420 * 262) << 3;
             break;
         }

@@ -110,7 +110,6 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     int is_ps4;
     int ps4_ram_access;
     uint32_t bank_register;
-    int psg_divider;
 
     void open_sram();
     void close_sram();
@@ -126,21 +125,8 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
 
     std::unique_ptr<sms::c_psg> psg;
 
-    uint64_t last_psg_run;
-    uint64_t skipped_psg_cycles;
-    uint64_t master_cycles;
-    uint64_t m68k_cycles;
-    uint64_t last_z80_cycle;
-    uint64_t next_z80_cycle;
-    uint64_t next_m68k_cycle;
-    uint64_t next_vdp_endline;
-    uint64_t next_vdp_hblank;
-    uint64_t next_psg_cycle;
     uint32_t m68k_required;
     uint32_t z80_required;
-    uint64_t next_ym_cycle;
-    uint64_t next_end_frame;
-    uint64_t next_event;
     uint64_t current_cycle;
     int z80_comp;
 
