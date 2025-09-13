@@ -351,6 +351,7 @@ int c_genesis::emulate_frame()
         else if (event == CYCLE_EVENT::Z80_CLOCK) {
             assert(!z80_was_reset);
             assert(z80_enabled);
+            assert(z80_has_bus && z80_reset);
             z80->execute(z80_required);
             z80_required = z80->get_required_cycles();
             assert(z80_required != 0);
@@ -645,6 +646,11 @@ void c_genesis::write_byte(uint32_t address, uint8_t value)
                 else {
                     disable_z80();
                 }
+                if (!z80_reset) {
+                    z80->reset();
+                    z80_comp = 0;
+                    z80_required = 0;
+                }
                 break;
             case 0xA130F1:
                 ps4_ram_access = value & 0x1;
@@ -720,6 +726,11 @@ void c_genesis::write_word(uint32_t address, uint16_t value)
                 }
                 else {
                     disable_z80();
+                }
+                if (!z80_reset) {
+                    z80->reset();
+                    z80_comp = 0;
+                    z80_required = 0;
                 }
                 break;
         }
