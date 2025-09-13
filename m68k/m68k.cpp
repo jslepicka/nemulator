@@ -221,7 +221,18 @@ void c_m68k::decode()
         opcode_fn = std::mem_fn(&c_m68k::ASd2_);
         {
             get_size1();
+            int source = op_word & 0x20; //0 = immediate, 1 = register
             uint32_t shift_count = (op_word >> 9) & 0x7;
+            if (source) {
+                //register
+                shift_count = *d[shift_count];
+                shift_count &= 63;
+            }
+            else {
+                if (shift_count == 0) {
+                    shift_count = 8;
+                }
+            }
             required_cycles = op_size == SIZE_LONG ? 8 : 6;
             required_cycles += shift_count * 2;
         }
@@ -515,7 +526,18 @@ void c_m68k::decode()
         opcode_fn = std::mem_fn(&c_m68k::LSd2_);
         {
             get_size1();
+            int source = op_word & 0x20; //0 = immediate, 1 = register
             uint32_t shift_count = (op_word >> 9) & 0x7;
+            if (source) {
+                //register
+                shift_count = *d[shift_count];
+                shift_count &= 63;
+            }
+            else {
+                if (shift_count == 0) {
+                    shift_count = 8;
+                }
+            }
             required_cycles = op_size == SIZE_LONG ? 8 : 6;
             required_cycles += shift_count * 2;
         }
@@ -620,7 +642,7 @@ void c_m68k::decode()
         get_size1();
         get_address_mode();
         if (address_mode == ADDRESS_MODE::DATA_REGISTER) {
-            required_cycles == op_size == SIZE_LONG ? 8 : 4;
+            required_cycles = op_size == SIZE_LONG ? 8 : 4;
         }
         else if (address_mode == ADDRESS_MODE::ADDRESS_REGISTER) {
             required_cycles = 8;
@@ -693,7 +715,18 @@ void c_m68k::decode()
         opcode_fn = std::mem_fn(&c_m68k::ROd2_);
         {
             get_size1();
+            int source = op_word & 0x20; //0 = immediate, 1 = register
             uint32_t shift_count = (op_word >> 9) & 0x7;
+            if (source) {
+                //register
+                shift_count = *d[shift_count];
+                shift_count &= 63;
+            }
+            else {
+                if (shift_count == 0) {
+                    shift_count = 8;
+                }
+            }
             required_cycles = op_size == SIZE_LONG ? 8 : 6;
             required_cycles += shift_count * 2;
         }
@@ -709,7 +742,18 @@ void c_m68k::decode()
         opcode_fn = std::mem_fn(&c_m68k::ROXd2_);
         {
             get_size1();
+            int source = op_word & 0x20; //0 = immediate, 1 = register
             uint32_t shift_count = (op_word >> 9) & 0x7;
+            if (source) {
+                //register
+                shift_count = *d[shift_count];
+                shift_count &= 63;
+            }
+            else {
+                if (shift_count == 0) {
+                    shift_count = 8;
+                }
+            }
             required_cycles = op_size == SIZE_LONG ? 8 : 6;
             required_cycles += shift_count * 2;
         }
@@ -753,7 +797,7 @@ void c_m68k::decode()
         get_size1();
         get_address_mode();
         if (address_mode == ADDRESS_MODE::DATA_REGISTER) {
-            required_cycles == op_size == SIZE_LONG ? 8 : 4;
+            required_cycles = op_size == SIZE_LONG ? 8 : 4;
         }
         else if (address_mode == ADDRESS_MODE::ADDRESS_REGISTER) {
             required_cycles = 8;
@@ -799,7 +843,7 @@ void c_m68k::decode()
         opcode_fn = std::mem_fn(&c_m68k::CMP_);
         get_size1();
         get_address_mode();
-        required_cycles == op_size == SIZE_LONG ? 6 : 4;
+        required_cycles = op_size == SIZE_LONG ? 6 : 4;
         required_cycles += get_ea_cycles();
         break;
     case CMPI:

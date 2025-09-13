@@ -606,32 +606,26 @@ void c_vdp::draw_scanline()
 void c_vdp::end_line()
 {
     clear_hblank();
-    //I think this should actually be 223, but sonic 2 intro breaks if set to that
-    //need to further validate timing
-    if (line == 224) {
+    if (line == 223) {
         status.vblank = 1;
         if (reg[0x01] & 0x20) {
             status.vint = 1;
-            //*ipl |= 0x6;
             asserting_vblank = 1;
             status.vblank = 1;
             update_ipl();
         }
     }
 
-    //should vblank be cleared here or on the transition to line 261?
     if (line == 261) {
         line = 0;
         hint_counter = reg[0x0A];
-        status.vblank = 0;
-        status.vint = 0;
     }
     else {
         line++;
-        //if (line == 261) {
-        //    status.vblank = 0;
-        //    status.vint = 0;
-        //}
+        if (line == 261) {
+            status.vblank = 0;
+            status.vint = 0;
+        }
     }
 }
 

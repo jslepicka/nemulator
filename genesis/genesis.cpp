@@ -2,6 +2,8 @@ module;
 #include <cassert>
 #include <stdio.h>
 #include <immintrin.h>
+#include <Windows.h>
+#undef min
 module genesis;
 import m68k;
 import crc32;
@@ -232,17 +234,9 @@ int c_genesis::reset()
         n = (uint64_t)-1;
     }
 
-    //next_m68k_cycle = (7 << 3) | CYCLE_EVENT::M68K_CLOCK;
-    //next_vdp_endline = (3420 << 3) | CYCLE_EVENT::VDP_END_LINE;
-    //next_vdp_hblank = (500 << 3) | CYCLE_EVENT::VDP_HBLANK; //no idea if this is accurate
-    //next_end_frame = ((3420 * 262) << 3) | CYCLE_EVENT::END_FRAME;
-    //next_ym_cycle = ((7 * 6) << 3) | CYCLE_EVENT::YM_CLOCK;
-    //next_z80_cycle = (15 << 3) | CYCLE_EVENT::Z80_CLOCK;
-    //next_psg_cycle = ((15 * 16) << 3) | CYCLE_EVENT::PSG_CLOCK;
-
     next_events[CYCLE_EVENT::M68K_CLOCK] = (7 << 3) | CYCLE_EVENT::M68K_CLOCK;
     next_events[CYCLE_EVENT::VDP_END_LINE] = (3420 << 3) | CYCLE_EVENT::VDP_END_LINE;
-    next_events[CYCLE_EVENT::VDP_HBLANK] = (500 << 3) | CYCLE_EVENT::VDP_HBLANK; //no idea if this is accurate
+    next_events[CYCLE_EVENT::VDP_HBLANK] = (2560 << 3) | CYCLE_EVENT::VDP_HBLANK; //no idea if this is accurate
     next_events[CYCLE_EVENT::END_FRAME] = ((3420 * 262) << 3) | CYCLE_EVENT::END_FRAME;
     next_events[CYCLE_EVENT::YM_CLOCK] = ((7 * 6) << 3) | CYCLE_EVENT::YM_CLOCK;
     next_events[CYCLE_EVENT::Z80_CLOCK] = ((uint64_t)-1 << 3) | CYCLE_EVENT::Z80_CLOCK;
@@ -251,6 +245,8 @@ int c_genesis::reset()
     //prep the z80 -- this is just for instruction cycle alignment purposes.  probably not necessary.
     z80->execute(0);
     z80_required = z80->get_required_cycles();
+
+    z80_was_reset = false;
 
     return 0;
 }
@@ -261,15 +257,23 @@ void c_genesis::enable_z80()
         return;
     }
     z80_enabled = true;
-    z80_required = z80->get_required_cycles() * 15;
-    if (z80_required == 0) {
+    z80_required = z80->get_required_cycles();
+    if (z80_was_reset) {
         //z80_required should only be 0 following reset
         assert(z80_comp == 0);
         z80->execute(0);
-        z80_required = z80->get_required_cycles() * 15;
+        z80_required = z80->get_required_cycles();
+        z80_was_reset = false;
     }
-    z80_required -= z80_comp;
-    next_events[CYCLE_EVENT::Z80_CLOCK] = ((current_cycle << 3) + ((z80_required) << 3)) | CYCLE_EVENT::Z80_CLOCK;
+
+    uint64_t next;
+    if (z80_comp == 0) {
+        next = current_cycle + (z80_required * 15);
+    }
+    else {
+        next = current_cycle + z80_comp;
+    }
+    next_events[CYCLE_EVENT::Z80_CLOCK] = (next << 3) | CYCLE_EVENT::Z80_CLOCK;
 }
 
 void c_genesis::disable_z80()
@@ -279,10 +283,21 @@ void c_genesis::disable_z80()
     }
     else {
         z80_enabled = false;
-        uint64_t current_z80 = next_events[CYCLE_EVENT::Z80_CLOCK] >> 3;
-        uint64_t diff = current_z80 - current_cycle;
-        z80_comp = diff;
-        assert(z80_comp >= 0);
+        if (!z80_was_reset) {
+            uint64_t current_z80 = next_events[CYCLE_EVENT::Z80_CLOCK] >> 3;
+            uint64_t diff = current_z80 - current_cycle;
+            z80_comp = diff;
+            if (z80_comp == 0) {
+                // if diff is equal to zero, the z80 is scheduled to run on this cycle
+                // however it won't because this code is being executed by the
+                // m68k which has a higher priority.
+                // so run it now before disabling the event so that when it's resumed
+                // it's scheduled correctly.
+                assert(z80_required == z80->get_required_cycles());
+                z80->execute(z80_required);
+                z80_comp = 0;
+            }
+        }
         next_events[CYCLE_EVENT::Z80_CLOCK] = ((uint64_t)-1 << 3) | CYCLE_EVENT::Z80_CLOCK;
     }
 }
@@ -334,6 +349,7 @@ int c_genesis::emulate_frame()
             next_events[CYCLE_EVENT::M68K_CLOCK] += (m68k_required * 7) << 3;
         }
         else if (event == CYCLE_EVENT::Z80_CLOCK) {
+            assert(!z80_was_reset);
             assert(z80_enabled);
             z80->execute(z80_required);
             z80_required = z80->get_required_cycles();
@@ -621,6 +637,7 @@ void c_genesis::write_byte(uint32_t address, uint8_t value)
                     z80->reset();
                     z80_comp = 0;
                     z80_required = 0;
+                    z80_was_reset = true;
                 }
                 if (z80_has_bus && z80_reset) {
                     enable_z80();
@@ -672,7 +689,7 @@ void c_genesis::write_word(uint32_t address, uint16_t value)
             z80_ram[(address + 1) & 0x1FFF] = value & 0xFF;
         }
         else if (address < 0x6000) {
-            assert(0);
+            //assert(0);
             //this probably shouldn't be allowed
             ym->write(address & 0x3, value >> 8);
             ym->write((address + 1) & 0x3, value >> 8);
@@ -696,6 +713,7 @@ void c_genesis::write_word(uint32_t address, uint16_t value)
                     z80->reset();
                     z80_comp = 0;
                     z80_required = 0;
+                    z80_was_reset = true;
                 }
                 if (z80_has_bus && z80_reset) {
                     enable_z80();

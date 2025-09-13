@@ -110,6 +110,7 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     int is_ps4;
     int ps4_ram_access;
     uint32_t bank_register;
+    bool z80_was_reset;
 
     void open_sram();
     void close_sram();
