@@ -4,6 +4,39 @@ module;
 #include <cstdio>
 module m68k;
 
+// clang-format off
+const std::array<std::array<uint8_t, 9>, 12> c_m68k::move_cycles = {{
+    {{4, 4, 8, 8, 8, 12, 14, 12, 16}},
+    {{4, 4, 8, 8, 8, 12, 14, 12, 16}},
+    {{8, 8, 12, 12, 12, 16, 18, 16, 20}},
+    {{8, 8, 12, 12, 12, 16, 18, 16, 20}},
+    {{10, 10, 14, 14, 14, 18, 20, 18, 22}},
+    {{12, 12, 16, 16, 16, 20, 22, 20, 24}},
+    {{14, 14, 18, 18, 18, 22, 24, 22, 26}},
+    {{12, 12, 16, 16, 16, 20, 22, 20, 24}},
+    {{16, 16, 20, 20, 20, 24, 26, 24, 28}},
+    {{12, 12, 16, 16, 16, 20, 22, 20, 24}},
+    {{14, 14, 18, 18, 18, 22, 24, 22, 26}},
+    {{8, 8, 12, 12, 12, 16, 18, 16, 20}},
+}};
+
+const std::array<std::array<uint8_t, 9>, 12> c_m68k::move_cycles_l = {{
+    {{4, 4, 12, 12, 12, 16, 18, 16, 20}},
+    {{4, 4, 12, 12, 12, 16, 18, 16, 20}},
+    {{12, 12, 20, 20, 20, 24, 26, 24, 28}},
+    {{12, 12, 20,20,20, 24, 26, 24, 28}},
+    {{14, 14, 22, 22, 22, 26, 28, 26, 30}},
+    {{16, 16, 24, 24, 24, 28, 30, 28, 32}},
+    {{18, 18, 26, 26, 26, 30, 32, 30, 34}},
+    {{16, 16, 24, 24, 24, 28, 30, 28, 32}},
+    {{20, 20, 28, 28, 28, 32, 34, 32, 36}},
+    {{16, 16, 24, 24, 24, 28, 30, 28, 32}},
+    {{18, 18, 26, 26, 26, 30, 32, 30, 34}},
+    {{12, 12, 20, 20, 20, 24, 26, 24, 28}},
+}};
+
+// clang-format on
+
 c_m68k::c_m68k(
     read_word_t read_word,
     write_word_t write_word,
@@ -683,6 +716,19 @@ void c_m68k::decode()
         break;
     case MOVE:
         opcode_fn = std::mem_fn(&c_m68k::MOVE_);
+        {
+            get_size3();
+            get_address_mode();
+            int src = (int)address_mode;
+            get_address_mode2();
+            int dst = (int)address_mode;
+            if (op_size == SIZE_LONG) {
+                required_cycles = move_cycles_l[src][dst];
+            }
+            else {
+                required_cycles = move_cycles[src][dst];
+            }
+        }
         break;
     case MOVEQ:
         opcode_fn = std::mem_fn(&c_m68k::MOVEQ_);
@@ -694,15 +740,40 @@ void c_m68k::decode()
         break;
     case MOVEtoCCR:
         opcode_fn = std::mem_fn(&c_m68k::MOVEtoCCR_);
+        get_address_mode();
+        required_cycles = 12;
+        if (address_mode != ADDRESS_MODE::DATA_REGISTER) {
+            required_cycles += get_ea_cycles();
+        }
         break;
     case MOVEfromSR:
         opcode_fn = std::mem_fn(&c_m68k::MOVEfromSR_);
+        get_address_mode();
+        if (address_mode == ADDRESS_MODE::DATA_REGISTER) {
+            required_cycles = 6;
+        }
+        else {
+            required_cycles = 8 + get_ea_cycles();
+        }
         break;
     case MOVEtoSR:
         opcode_fn = std::mem_fn(&c_m68k::MOVEtoSR_);
+        get_address_mode();
+        required_cycles = 12;
+        if (address_mode != ADDRESS_MODE::DATA_REGISTER) {
+            required_cycles += get_ea_cycles();
+        }
         break;
     case MOVEA:
         opcode_fn = std::mem_fn(&c_m68k::MOVEA_);
+        get_size3();
+        get_address_mode();
+        if (op_size == SIZE_LONG) {
+            required_cycles = move_cycles_l[(int)address_mode][(int)ADDRESS_MODE::ADDRESS_REGISTER];
+        }
+        else {
+            required_cycles = move_cycles[(int)address_mode][(int)ADDRESS_MODE::ADDRESS_REGISTER];
+        }
         break;
     case ROd:
         opcode_fn = std::mem_fn(&c_m68k::ROd_);
@@ -1077,6 +1148,12 @@ void c_m68k::decode()
         break;
     case MOVEP:
         opcode_fn = std::mem_fn(&c_m68k::MOVEP_);
+        if (op_word & 0x40) {
+            required_cycles = 24;
+        }
+        else {
+            required_cycles = 16;
+        }
         break;
     case ABCD:
         opcode_fn = std::mem_fn(&c_m68k::ABCD_);
@@ -1100,13 +1177,13 @@ void c_m68k::decode()
     case MULU:
         opcode_fn = std::mem_fn(&c_m68k::MULU_);
         get_address_mode();
-        required_cycles = 70; //todo - this is max value
+        required_cycles = 38; //todo - this is max value
         required_cycles += get_ea_cycles();
         break;
     case MULS:
         opcode_fn = std::mem_fn(&c_m68k::MULS_);
         get_address_mode();
-        required_cycles = 70; //todo - this is max value
+        required_cycles = 38; //todo - this is max value
         required_cycles += get_ea_cycles();
         break;
     case DIVU:
@@ -1210,6 +1287,7 @@ void c_m68k::MULS_()
     uint32_t dst_reg = (op_word >> 9) & 0x7;
     int32_t dst = (int32_t)(int16_t)(*d[dst_reg] & 0x0000FFFF);
     int32_t src = (int32_t)(int16_t)(read_ea() & 0x0000FFFF);
+    available_cycles -= 2 * std::popcount((uint32_t)src ^ ((uint32_t)src << 1));
     set_size(SIZE_LONG);
     dst *= src;
     *d[dst_reg] = dst;
@@ -1230,6 +1308,7 @@ void c_m68k::MULU_()
     uint32_t dst_reg = (op_word >> 9) & 0x7;
     uint32_t dst = *d[dst_reg] & 0x0000FFFF;
     uint32_t src = read_ea() & 0x0000FFFF;
+    available_cycles -= 2 * std::popcount(src);
     set_size(SIZE_LONG);
     dst *= src;
     *d[dst_reg] = dst;
@@ -2252,7 +2331,7 @@ void c_m68k::MOVEtoSR_()
         assert(0);
     }
     set_size(SIZE_WORD);
-    get_address_mode();
+    //get_address_mode();
     compute_ea();
     preincrement_ea();
     sr = read_ea();// & 0xA71F;
@@ -2265,7 +2344,7 @@ void c_m68k::MOVEtoSR_()
 void c_m68k::MOVEfromSR_()
 {
     set_size(SIZE_WORD);
-    get_address_mode();
+    //get_address_mode();
     compute_ea();
     preincrement_ea();
     update_status();
@@ -2277,7 +2356,7 @@ void c_m68k::MOVEfromSR_()
 void c_m68k::MOVEtoCCR_()
 {
     set_size(SIZE_WORD);
-    get_address_mode();
+    //get_address_mode();
     compute_ea();
     preincrement_ea();
     sr = (sr & 0xFF00) | (read_ea() & 0xFF);
@@ -3019,6 +3098,43 @@ void c_m68k::get_address_mode()
         default:
             assert(0);
             break;
+        }
+        ea_indirect = address_mode == ADDRESS_MODE::IMMEDIATE ? 0 : 1;
+    }
+}
+
+void c_m68k::get_address_mode2()
+{
+    uint16_t op_word2 = (op_word >> 9) & 0x7;
+    op_word2 |= (op_word >> 3) & 0x38;
+
+    M = (op_word2 >> 3) & 0x7;
+    Xn = op_word2 & 0x7;
+    if (M < 7) {
+        address_mode = (ADDRESS_MODE)M;
+        ea_indirect = (int)address_mode < 2 ? 0 : 1;
+    }
+    else {
+        switch (Xn) {
+            case 0:
+                address_mode = ADDRESS_MODE::ABS_SHORT;
+                break;
+            case 1:
+                address_mode = ADDRESS_MODE::ABS_LONG;
+                break;
+            case 2:
+                address_mode = ADDRESS_MODE::PC_DISPLACEMENT;
+                break;
+            case 3:
+                address_mode = ADDRESS_MODE::PC_INDEX;
+                break;
+            case 4:
+                address_mode = ADDRESS_MODE::IMMEDIATE;
+                immediate_size = -1;
+                break;
+            default:
+                assert(0);
+                break;
         }
         ea_indirect = address_mode == ADDRESS_MODE::IMMEDIATE ? 0 : 1;
     }

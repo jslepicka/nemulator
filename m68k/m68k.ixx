@@ -106,10 +106,10 @@ public:
         ADDRESS_PREINCREMENT,
         ADDRESS_DISPLACEMENT,
         ADDRESS_INDEX,
-        PC_DISPLACEMENT,
-        PC_INDEX,
         ABS_SHORT,
         ABS_LONG,
+        PC_DISPLACEMENT,
+        PC_INDEX,
         IMMEDIATE,
         UNKNOWN = -1
     };
@@ -286,6 +286,7 @@ public:
     void get_size1();
     void get_size3();
     void get_address_mode();
+    void get_address_mode2();
     int get_ea_cycles();
     uint32_t compute_ea();
     uint32_t read_ea();
@@ -309,4 +310,7 @@ public:
 
     static const uint8_t instructions[65536];
     static const std::array<uint8_t, 65536> instructions3;
+
+    static const std::array<std::array<uint8_t, 9>, 12> move_cycles;
+    static const std::array<std::array<uint8_t, 9>, 12> move_cycles_l;
 };
