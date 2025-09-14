@@ -874,7 +874,10 @@ void c_m68k::decode()
             required_cycles = 8;
         }
         else {
-            required_cycles = 12;
+            // https://wiki.neogeodev.org/index.php?title=68k_instructions_timings
+            // says 12 cycles for either size addq, but test rom disagrees.  May
+            // be an error.
+            required_cycles = op_size == SIZE_LONG ? 12 : 8;
             required_cycles += get_ea_cycles();
         }
         break;
@@ -1023,11 +1026,11 @@ void c_m68k::decode()
         break;
     case TRAP:
         opcode_fn = std::mem_fn(&c_m68k::TRAP_);
-        required_cycles = 38;
+        required_cycles = 34; //test rom
         break;
     case TRAPV:
         opcode_fn = std::mem_fn(&c_m68k::TRAPV_);
-        required_cycles = flag_v ? 38 : 4;
+        required_cycles = flag_v ? 34 : 4; //test rom
         break;
     case RESET:
         opcode_fn = std::mem_fn(&c_m68k::RESET_);
@@ -3040,33 +3043,18 @@ int c_m68k::get_ea_cycles()
 {
     assert(address_mode != ADDRESS_MODE::UNKNOWN);
     assert(op_size != SIZE_UNKNOWN);
-    switch (address_mode) {
-        case ADDRESS_MODE::DATA_REGISTER:
-            return 0;
-        case ADDRESS_MODE::ADDRESS_REGISTER:
-            return 0;
-        case ADDRESS_MODE::ADDRESS:
-            return op_size == SIZE_LONG ? 8 : 4;
-        case ADDRESS_MODE::ADDRESS_PREINCREMENT:
-            return op_size == SIZE_LONG ? 10 : 6;
-        case ADDRESS_MODE::ADDRESS_POSTINCREMENT:
-            return op_size == SIZE_LONG ? 8 : 4;
-        case ADDRESS_MODE::ADDRESS_DISPLACEMENT:
-            return op_size == SIZE_LONG ? 12 : 8;
-        case ADDRESS_MODE::ADDRESS_INDEX:
-            return op_size == SIZE_LONG ? 14 : 10;
-        case ADDRESS_MODE::ABS_SHORT:
-            return op_size == SIZE_LONG ? 12 : 8;
-        case ADDRESS_MODE::ABS_LONG:
-            return op_size == SIZE_LONG ? 16 : 12;
-        case ADDRESS_MODE::PC_DISPLACEMENT:
-            return op_size == SIZE_LONG ? 12 : 8;
-        case ADDRESS_MODE::PC_INDEX:
-            return op_size == SIZE_LONG ? 14 : 10;
-        case ADDRESS_MODE::IMMEDIATE:
-            return op_size == SIZE_LONG ? 8 : 4;
+
+    return get_ea_cycles(address_mode);
+}
+
+int c_m68k::get_ea_cycles(ADDRESS_MODE mode)
+{
+    static const uint8_t cycles[] = {0, 0, 4, 4, 6, 8, 10, 8, 12, 8, 10, 4};
+    int ret = cycles[(int)mode];
+    if (ret && op_size == SIZE_LONG) {
+        ret += 4;
     }
-    return 0;
+    return ret;
 }
 
 void c_m68k::get_address_mode()

@@ -99,7 +99,7 @@ public:
 
     enum class ADDRESS_MODE
     {
-        DATA_REGISTER,
+        DATA_REGISTER = 0,
         ADDRESS_REGISTER,
         ADDRESS,
         ADDRESS_POSTINCREMENT,
@@ -288,6 +288,7 @@ public:
     void get_address_mode();
     void get_address_mode2();
     int get_ea_cycles();
+    int get_ea_cycles(ADDRESS_MODE mode);
     uint32_t compute_ea();
     uint32_t read_ea();
     void write_ea(uint32_t value);
