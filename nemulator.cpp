@@ -272,7 +272,7 @@ void c_nemulator::configure_input()
         unsigned int default_key;
         int repeat_mode;
     };
-    static const unsigned int BUTTON = 0x80000000;
+    static const unsigned int ALIAS = 0x80000000;
     // clang-format off
     s_button_map button_map[] =
     {
@@ -287,7 +287,7 @@ void c_nemulator::configure_input()
         { BUTTON_1C,            "joy1",     "c",       0x43,                   0 },
         { BUTTON_1SELECT,       "joy1",     "select",  VK_OEM_4,               0 },
         { BUTTON_1START,        "joy1",     "start",   VK_OEM_6,               0 },
-        { BUTTON_SMS_PAUSE,     "joy1.sms", "pause",   BUTTON | BUTTON_1START, 0 },
+        { BUTTON_SMS_PAUSE,     "joy1.sms", "pause",   ALIAS | BUTTON_1START,  0 },
 
         { BUTTON_2LEFT,         "joy2",     "left",    0,                      1 },
         { BUTTON_2RIGHT,        "joy2",     "right",   0,                      1 },
@@ -337,9 +337,9 @@ void c_nemulator::configure_input()
         int default_key = button_map[i].default_key;
         int button = button_map[i].button;
         std::string key = button_map[i].config_base + "." + button_map[i].config_name;
-        if (default_key & BUTTON)
+        if (default_key & ALIAS)
         {
-            default_key &= BUTTON - 1;
+            default_key &= ALIAS - 1;
             for (int k = 0; k < num_buttons; k++)
             {
                 if (button_map[k].button == default_key)
@@ -360,6 +360,14 @@ void c_nemulator::configure_input()
         g_ih->set_button_joymap(button, config->get_int(joy_base, -1), config->get_int(joy_key, -1));
         g_ih->set_button_type(button, config->get_int(joy_key + ".type", 0));
     }
+
+    g_ih->set_button_group(BUTTON_UP, {BUTTON_1UP});
+    g_ih->set_button_group(BUTTON_DOWN, {BUTTON_1DOWN});
+    g_ih->set_button_group(BUTTON_LEFT, {BUTTON_1LEFT});
+    g_ih->set_button_group(BUTTON_RIGHT, {BUTTON_1RIGHT});
+    g_ih->set_button_group(BUTTON_CANCEL, {BUTTON_1B, BUTTON_ESCAPE});
+    g_ih->set_button_group(BUTTON_OK, {BUTTON_1A, BUTTON_1C, BUTTON_1START, BUTTON_RETURN});
+
 }
 
 void c_nemulator::resize()
@@ -678,12 +686,12 @@ const c_nemulator::s_button_handler c_nemulator::button_handlers[] =
     { SCOPE::GAMES_LOADED, {BUTTON_INC_SHARPNESS}, true, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_inc_sharpness },
     { SCOPE::GAMES_LOADED, {BUTTON_VOLUME_UP}, true, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_volume_up },
     { SCOPE::GAMES_LOADED, {BUTTON_VOLUME_DOWN}, true, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_volume_down },
-    { SCOPE::IN_MENU, {BUTTON_1RIGHT}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_right },
-    { SCOPE::IN_MENU, {BUTTON_1LEFT}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_left },
-    { SCOPE::IN_MENU, {BUTTON_1UP}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_up },
-    { SCOPE::IN_MENU, {BUTTON_1DOWN}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_down },
-    { SCOPE::IN_MENU | SCOPE::NO_GAMES_LOADED, {BUTTON_1B, BUTTON_ESCAPE, BUTTON_HOME}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_cancel },
-    { SCOPE::IN_MENU, {BUTTON_1A, BUTTON_1C, BUTTON_1START, BUTTON_RETURN}, true, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_ok },
+    { SCOPE::IN_MENU, {BUTTON_RIGHT}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_right },
+    { SCOPE::IN_MENU, {BUTTON_LEFT}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_left },
+    { SCOPE::IN_MENU, {BUTTON_UP}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_up },
+    { SCOPE::IN_MENU, {BUTTON_DOWN}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_down },
+    { SCOPE::IN_MENU | SCOPE::NO_GAMES_LOADED, {BUTTON_CANCEL}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_cancel },
+    { SCOPE::IN_MENU, {BUTTON_OK}, true, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_ok },
     { SCOPE::IN_MENU, {BUTTON_1SELECT}, true, RESULT_DOWN, &c_nemulator::handle_button_show_qam },
     { SCOPE::IN_GAME, {BUTTON_1A_TURBO, BUTTON_1B_TURBO, BUTTON_2A_TURBO, BUTTON_2B_TURBO}, false, RESULT_DOWN, &c_nemulator::handle_button_turbo },
     { SCOPE::IN_GAME, {BUTTON_ESCAPE, BUTTON_HOME}, false, RESULT_DOWN, &c_nemulator::handle_button_leave_game },

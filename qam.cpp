@@ -95,7 +95,7 @@ int c_qam::update(double dt, int child_result, void *params)
     {
         int result_mask = c_input_handler::RESULT_DOWN | c_input_handler::RESULT_REPEAT_SLOW | c_input_handler::RESULT_REPEAT_FAST /*| c_input_handler::RESULT_REPEAT_EXTRAFAST*/;
 
-        if (g_ih->get_result(BUTTON_1RIGHT, true) & result_mask)
+        if (g_ih->get_result(BUTTON_RIGHT, true) & result_mask)
         {
             do
             {
@@ -103,7 +103,7 @@ int c_qam::update(double dt, int child_result, void *params)
             } while (valid_chars[selected] == 0);
             //selected = ++selected % 27;
         }
-        else if (g_ih->get_result(BUTTON_1LEFT, true) & result_mask)
+        else if (g_ih->get_result(BUTTON_LEFT, true) & result_mask)
         {
             do
             {
@@ -113,10 +113,9 @@ int c_qam::update(double dt, int child_result, void *params)
             } while (valid_chars[selected] == 0);
             //selected = --selected % 27;
         }
-        else if ((g_ih->get_result(BUTTON_1SELECT, true) & c_input_handler::RESULT_DOWN) ||
-            (g_ih->get_result(BUTTON_1B, true) & c_input_handler::RESULT_DOWN) ||
-            (g_ih->get_result(BUTTON_1DOWN, true) & c_input_handler::RESULT_DOWN) ||
-            (g_ih->get_result(BUTTON_ESCAPE, true) & c_input_handler::RESULT_DOWN))
+        else if ((g_ih->get_result(BUTTON_CANCEL, true) & c_input_handler::RESULT_DOWN) ||
+                 (g_ih->get_result(BUTTON_DOWN, true) & c_input_handler::RESULT_DOWN) ||
+                 (g_ih->get_result(BUTTON_1SELECT, true) & c_input_handler::RESULT_DOWN))
         {
             state = STATE_SCROLL_OUT;
             scroll_timer = 0.0;
@@ -124,10 +123,7 @@ int c_qam::update(double dt, int child_result, void *params)
             //g_ih->ack();
             //return c_task::TASK_RESULT_CANCEL;
         }
-        else if ((g_ih->get_result(BUTTON_1START, true) & c_input_handler::RESULT_DOWN) ||
-            (g_ih->get_result(BUTTON_1A, true) & c_input_handler::RESULT_DOWN) ||
-            (g_ih->get_result(BUTTON_1C, true) & c_input_handler::RESULT_DOWN) ||
-            (g_ih->get_result(BUTTON_RETURN, true) & c_input_handler::RESULT_DOWN))
+        else if ((g_ih->get_result(BUTTON_OK, true) & c_input_handler::RESULT_DOWN))
         {
             //*(char *)params = c[selected];
             result = c[selected];

@@ -168,11 +168,27 @@ void c_input_handler::ack()
     ackd = true;
 }
 
+void c_input_handler::set_button_group(int group, std::vector<int> buttons)
+{
+    groups[group] = std::vector<int>(buttons);
+}
+
 int c_input_handler::get_result(int button, bool ack)
 {
     if (ackd)
         return 0;
-    int result = state[button].ack ? 0 : state[button].state_result;
+    int result = 0;
+    if (groups.find(button) != groups.end()) {
+        for (auto b : groups[button]) {
+            int r = state[b].ack ? 0 : state[b].state_result;
+            if (r && ack) {
+                state[b].ack = 1;
+            }
+            result |= r;
+        }
+        return result;
+    }
+    result = state[button].ack ? 0 : state[button].state_result;
     if (result && ack)
         state[button].ack = 1;
     return result;
