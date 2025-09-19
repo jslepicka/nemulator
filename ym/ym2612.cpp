@@ -208,7 +208,7 @@ void c_ym2612::write_global()
             if (reg_value & 0x10) {
                 status &= ~1;
             }
-            else if (reg_value & 0x20) {
+            if (reg_value & 0x20) {
                 status &= ~2;
             }
 
