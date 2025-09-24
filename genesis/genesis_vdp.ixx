@@ -22,9 +22,13 @@ export class c_vdp
     void ack_irq();
     void clear_hblank();
     void end_line();
+    uint32_t do_event();
+    int line;
 
   private:
+    int event;
     uint32_t x_res;
+    uint32_t next_x_res;
     uint32_t *stalled;
     read_word_t read_word_68k;
     mode_switch_callback_t mode_switch_callback;
@@ -32,7 +36,7 @@ export class c_vdp
     uint16_t control;
     uint16_t hv_counter;
     uint16_t data;
-    int line;
+
     uint8_t reg[32];
     int address_write;
     uint32_t address_reg;
@@ -94,16 +98,20 @@ export class c_vdp
     uint16_t get_hscroll_loc();
     static const std::array<std::array<uint32_t, 512>, 3> rgb_entries;
     constexpr static auto make_rgb_entries();
+    uint16_t vscroll_a;
+    uint16_t vscroll_b;
+    uint32_t event_index;
+    uint32_t current_cycle;
+
     uint8_t *plane_ptrs[4];
     alignas(64) uint8_t vram[64 * 1024];
-    alignas(64) uint8_t a_out[328] = {0};
-    alignas(64) uint8_t b_out[328] = {0};
-    alignas(64) uint8_t win_out[328] = {0};
-    alignas(64) uint8_t sprite_out[328] = {0};
-    uint8_t padding[48];
+    uint8_t a_out[328] = {0};
+    uint8_t b_out[328] = {0};
+    uint8_t win_out[328] = {0};
+    uint8_t sprite_out[328] = {0};
     uint8_t layer_priorities[336] = {0};
     uint8_t layer_visibility[336] = {0};
-    
+
     void eval_sprites();
     
     enum LAYER_PRIORITY

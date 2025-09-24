@@ -108,7 +108,6 @@ void c_m68k::reset()
     ssp |= read_word(2);
     pc = (read_word(4) << 16);
     pc |= read_word(6);
-    int x = 1;
     fetch_opcode = 1;
     available_cycles = 0;
     required_cycles = 0;
@@ -121,9 +120,6 @@ void c_m68k::execute(int cycles)
 {
     available_cycles += cycles;
     while (true) {
-        if (pc == 0x113A) {
-            int x = 1;
-        }
         if (*stalled) {
             available_cycles--;
             (*stalled)--;
@@ -133,9 +129,9 @@ void c_m68k::execute(int cycles)
             uint8_t i = *ipl & 0x7;
             uint8_t mask = (sr >> 8) & 0x7;
             if (i && i > mask) {
-                stopped = false;
                 interrupt = i;
                 required_cycles = 44;
+                stopped = false;
                 fetch_opcode = 0;
             }
             else if (!stopped) {
@@ -152,7 +148,6 @@ void c_m68k::execute(int cycles)
                 }
                 fetch_opcode = 0;
             }
-            //fetch_opcode = 0;
         }
         if (required_cycles <= available_cycles) {
             available_cycles -= required_cycles;
@@ -239,8 +234,6 @@ void c_m68k::decode()
     // addresisng mode
     // required number of cycles
     //
-    
-    uint16_t size_temp;
     switch (instruction) {
     case ASd:
         opcode_fn = std::mem_fn(&c_m68k::ASd_);
@@ -1477,9 +1470,7 @@ void c_m68k::MOVEP_()
     set_size(opmode & 0x1 ? SIZE_LONG : SIZE_WORD);
     if (opmode & 0x2) {
         //reg -> mem
-        int x = 1;
         if (op_size == SIZE_WORD) {
-            int x = 1;
             write_byte(address, data >> 8);
             write_byte(address + 2, data);
             
@@ -1493,7 +1484,6 @@ void c_m68k::MOVEP_()
     }
     else {
         //mem -> reg
-        int x = 1;
         if (op_size == SIZE_WORD) {
             uint16_t temp = read_byte(address) << 8;
             temp |= read_byte(address + 2);
@@ -1532,7 +1522,6 @@ void c_m68k::MOVEM_()
 
             if (op_word & 0x400) {
                 //memory to register
-                int x = 1;
                 uint32_t v = read_ea();
                 if (op_size == SIZE_WORD) {
                     v = (int32_t)(int16_t)v;
@@ -1541,7 +1530,6 @@ void c_m68k::MOVEM_()
             }
             else {
                 //register to memory
-                int x = 1;
                 write_ea(*r & mask);
             }
 
@@ -1762,9 +1750,6 @@ void c_m68k::CHK_()
         }
         do_trap(6);
         available_cycles -= 34;
-    }
-    else {
-        int x = 1;
     }
 }
 
@@ -2146,10 +2131,6 @@ void c_m68k::ROXd2_()
     uint32_t shift_count = (op_word >> 9) & 0x7;
     int register_index = op_word & 0x7;
 
-    if (op_word == 59939) {
-        int x = 1;
-    }
-
     if (source) {
         //register
         shift_count = *d[shift_count];
@@ -2258,10 +2239,6 @@ void c_m68k::ROd2_()
 
     uint32_t shift_count = (op_word >> 9) & 0x7;
     int register_index = op_word & 0x7;
-
-    if (op_word == 59939) {
-        int x = 1;
-    }
 
     if (source) {
         //register
@@ -2533,6 +2510,9 @@ uint32_t c_m68k::get_immediate()
         pc += 2;
         b |= read_word(pc);
         pc += 2;
+        break;
+    default:
+        assert(0);
         break;
     }
     return b;
@@ -2865,17 +2845,14 @@ void c_m68k::LSd_()
             flag_x = flag_c = result & highest_bit;
             result <<= 1;
             result &= mask;
-            int x = 1;
         }
     }
     else {
         for (int i = 0; i < shift_count; i++) {
             //this can be optimized, but doing it this way for now to simplify flag stuff
             flag_x = flag_c = result & 0x1;
-            //uint32_t high_bit = result & highest_bit;
             result >>= 1;
             result &= mask;
-            //result |= high_bit;
         }
     }
     flag_n = result & highest_bit;
@@ -2897,10 +2874,6 @@ void c_m68k::LSd2_()
 
     uint32_t shift_count = (op_word >> 9) & 0x7;
     int register_index = op_word & 0x7;
-
-    if (op_word == 59939) {
-        int x = 1;
-    }
 
     if (source) {
         //register
@@ -3312,19 +3285,14 @@ uint32_t c_m68k::compute_ea()
 void c_m68k::preincrement_ea()
 {
     if (address_increment < 0) {
-        uint32_t is_odd = ea & 0x1;
         ea += address_increment;
-        //*address_increment_target = ea;
     }
 }
 
 void c_m68k::postincrement_ea()
 {
     if (address_increment > 0) {
-        uint32_t is_odd = ea & 0x1;
-        //ea += address_increment;
         ea += address_increment;
-        //*address_increment_target = ea;
     }
 }
 

@@ -134,9 +134,6 @@ void c_system_container::DrawToTexture(ID3D10Texture2D *tex)
     auto &display_info = system_info.display_info;
     if (system && system->is_loaded())
     {
-        if (crop_changed()) {
-            create_vertex_buffer();
-        }
         int *fb_base = system->get_video();
         if (fb_base) {
             int y = 0;
@@ -163,7 +160,7 @@ void c_system_container::DrawToTexture(ID3D10Texture2D *tex)
             for (; y < tex_height; y++) {
                 p = (int *)map.pData + (y) * (map.RowPitch / 4);
                 for (int x = 0; x < tex_width; x++) {
-                    *p++ = 0xff000000;
+                    *p++ = 0xFF000000;
                 }
             }
         }
@@ -284,6 +281,9 @@ double c_system_container::get_height()
 
 ID3D10Buffer* c_system_container::get_vertex_buffer(int stretched)
 {
+    if (crop_changed()) {
+        create_vertex_buffer();
+    }
     if (system && !system->is_loaded()) {
         return unloaded_vertex_buffer;
     }

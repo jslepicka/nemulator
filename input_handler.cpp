@@ -137,7 +137,6 @@ int c_input_handler::get_joy_axis(int joy, int axis)
     if (joy_poll_result[joy] != JOYERR_NOERROR)
         return 0;
     signed char threshold = (axis >> 8) & 0xFF;
-    int temp = 0;
     int axis_value = 0;
     switch (axis & 0xFF)
     {

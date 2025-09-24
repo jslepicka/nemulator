@@ -38,7 +38,7 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
 
         return {
             {
-                .name = "Genesis",
+                .name = "Sega Genesis",
                 .identifier = "genesis",
                 .extension = "bin",
                 .display_info =
@@ -155,8 +155,7 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     {
         M68K_CLOCK,
         Z80_CLOCK,
-        VDP_HBLANK,
-        VDP_END_LINE,
+        VDP_PHASE,
         YM_CLOCK,
         PSG_CLOCK,
         END_FRAME = 7 //must be last
@@ -164,6 +163,11 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     void enable_z80();
     void disable_z80();
     bool z80_enabled;
+
+    static const uint32_t CYCLES_PER_M68K_CLOCK = 7;
+    static const uint32_t CYCLES_PER_Z80_CLOCK = 15;
+    static const uint32_t CYCLES_PER_PSG_CLOCK = 15 * 16;
+    static const uint32_t CYCLES_PER_YM_CLOCK = 7 * 6;
 };
 
 } //namespace genesis

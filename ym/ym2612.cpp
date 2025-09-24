@@ -1,5 +1,5 @@
 module;
-
+#include <cassert>
 module ym2612;
 
 static const std::array<uint32_t, 512> log_sin_table = [] {
@@ -401,12 +401,14 @@ void c_phase_generator::clock(uint8_t lfo_counter, uint8_t fm_level)
     uint8_t multiplier = vibrato_table[fm_level][lfo_fm_idx];
 
     uint32_t f_num_delta = 0;
-
-    for (int i = 4; i <= 10; i++) {
-        uint8_t bit = (f_number >> i) & 1;
-        uint8_t increment = multiplier >> (10 - i);
-        f_num_delta += bit * increment;
-    }
+    uint32_t f_bits = (f_number >> 4) & 0x7F;
+    f_num_delta += (f_bits & 0x01) ? (multiplier >> 6) : 0;
+    f_num_delta += (f_bits & 0x02) ? (multiplier >> 5) : 0;
+    f_num_delta += (f_bits & 0x04) ? (multiplier >> 4) : 0;
+    f_num_delta += (f_bits & 0x08) ? (multiplier >> 3) : 0;
+    f_num_delta += (f_bits & 0x10) ? (multiplier >> 2) : 0;
+    f_num_delta += (f_bits & 0x20) ? (multiplier >> 1) : 0;
+    f_num_delta += (f_bits & 0x40) ? (multiplier >> 0) : 0;
 
     uint32_t modulated_f_num = f_number << 1;
     if (lfo_high & (1 << 4)) {
