@@ -96,11 +96,7 @@ void c_apu::reset()
     a2 = regexprep(num2str(Hd.sosMatrix(17:20), '%.16ff '), '\s+', ',')
     a3 = regexprep(num2str(Hd.sosMatrix(21:24), '%.16ff '), '\s+', ',')
     */
-    lpf = std::make_unique<dsp::c_biquad4>(
-        std::array{0.5086284279823303f, 0.3313708603382111f, 0.1059221103787422f, 0.0055782101117074f},
-        std::array{-1.9872593879699707f, -1.9750031232833862f, -1.8231037855148315f, -1.9900115728378296f},
-        std::array{-1.9759204387664795f, -1.9602127075195313f, -1.9470522403717041f, -1.9888486862182617f},
-        std::array{0.9801648259162903f, 0.9627774357795715f, 0.9480593800544739f, 0.9940192103385925f});
+    lpf = std::make_unique<lpf_t>();
     /*
     post-filter is butterworth bandpass, 30Hz - 14kHz
     d = fdesign.bandpass('N,F3dB1,F3dB2', 2, 30, 14000, 48000);

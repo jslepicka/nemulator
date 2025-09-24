@@ -523,11 +523,10 @@
       <Filter>nes\mappers</Filter>
     </ClCompile>
     <ClCompile Include="dsp\first_order_bandpass.ixx" />
-    <ClCompile Include="ym\ym2612.cpp">
-      <Filter>ym2612</Filter>
-    </ClCompile>
-    <ClCompile Include="ym\ym2612.ixx">
-      <Filter>ym2612</Filter>
+    <ClCompile Include="ym2612\ym2612.cpp" />
+    <ClCompile Include="ym2612\ym2612.ixx" />
+    <ClCompile Include="dsp\biquad4_t.ixx">
+      <Filter>dsp</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

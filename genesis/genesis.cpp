@@ -74,17 +74,13 @@ c_genesis::c_genesis()
 
     struct
     {
-        std::unique_ptr<dsp::c_biquad4> *lpf;
+        std::unique_ptr<lpf> *lpf;
         std::unique_ptr<dsp::c_first_order_bandpass> *post_filter;
         std::unique_ptr<dsp::c_resampler> *resampler;
-    } filters[] = {{&lpf_l, &post_filter_l, &resampler_l}, {&lpf_r, &post_filter_r, &resampler_r}};
+    } filters[] = {{&lpf_l_t, &post_filter_l, &resampler_l}, {&lpf_r_t, &post_filter_r, &resampler_r}};
 
     for (auto &f : filters) {
-        *f.lpf = std::make_unique<dsp::c_biquad4>(
-            std::array{0.5068508386611939f, 0.3307863473892212f, 0.1168005615472794f, 0.0055816280655563f},
-            std::array{-1.9496889114379883f, -1.9021773338317871f, -1.3770858049392700f, -1.9604763984680176f},
-            std::array{-1.9442052841186523f, -1.9171522855758667f, -1.8950747251510620f, -1.9676681756973267f},
-            std::array{0.9609073400497437f, 0.9271715879440308f, 0.8989855647087097f, 0.9881398081779480f});
+        *f.lpf = std::make_unique<lpf>();
 
         //2Hz - 3390Hz
         *f.post_filter = std::make_unique<dsp::c_first_order_bandpass>(0.1840657775125092f, 0.1840657775125092f,

@@ -138,12 +138,17 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     int line;
     bool frame_complete;
 
+    using lpf = dsp::c_biquad4_t<
+        0.5068508387f, 0.3307863474f, 0.1168005615f, 0.0055816281f,
+       -1.9496889114f, -1.9021773338f, -1.3770858049f, -1.9604763985f,
+       -1.9442052841f, -1.9171522856f, -1.8950747252f, -1.9676681757f,
+        0.9609073400f,  0.9271715879f,  0.8989855647f,  0.9881398082f>;
 
-    std::unique_ptr<dsp::c_biquad4> lpf_l;
+    std::unique_ptr<lpf> lpf_l_t;
     std::unique_ptr<dsp::c_first_order_bandpass> post_filter_l;
     std::unique_ptr<dsp::c_resampler> resampler_l;
 
-    std::unique_ptr<dsp::c_biquad4> lpf_r;
+    std::unique_ptr<lpf> lpf_r_t;
     std::unique_ptr<dsp::c_first_order_bandpass> post_filter_r;
     std::unique_ptr<dsp::c_resampler> resampler_r;
 

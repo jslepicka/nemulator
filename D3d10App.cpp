@@ -168,7 +168,7 @@ int D3d10App::Run()
                 d3dDev->Flush();
 
                 swapChain->Present(vsync ? 1 : 0, 0);
-                d3dDev->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
+                //d3dDev->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
             }
             else
                 Sleep(250);
