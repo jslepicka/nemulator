@@ -4,7 +4,7 @@
 import D3d10App;
 import nemulator;
 
-const char *app_title = "nemulator 4.6";
+const char *app_title = "nemulator 5.0";
 
 struct s_cpu_info
 {

@@ -54,6 +54,7 @@ private:
     double splash_fade_timer;
     void configure_input();
     void adjust_sharpness(float value);
+    void adjust_volume(int value);
 
     struct s_button_handler_params {
         int button;
@@ -77,6 +78,8 @@ private:
     void handle_button_turbo(s_button_handler_params* params);
     void handle_button_leave_game(s_button_handler_params* params);
     void handle_button_switch_disk(s_button_handler_params *params);
+    void handle_button_volume_up(s_button_handler_params *params);
+    void handle_button_volume_down(s_button_handler_params *params);
 
     float fov_h;
     float eye_x;
@@ -195,4 +198,6 @@ private:
     unsigned int benchmark_frame_count = 0;
 
     static constexpr double fovy = std::numbers::pi / 4.0;
+
+    float master_volume;
 };

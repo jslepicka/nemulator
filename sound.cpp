@@ -29,10 +29,17 @@ c_sound::c_sound()
     first_b = 1;
     slope = 0.0;
     value_index = 0;
+    clips = 0;
 
     interleave_buffer = std::make_unique<uint32_t[]>(INTERLEAVE_BUFFER_LEN);
     buffer_wait_count = 0;
     memset(values, 0xFF, sizeof(values));
+
+    set_volume(master_volume);
+
+    average_db = 0.0f;
+    sample_sum = 0.0f;
+    sample_count = 0;
 }
 
 int c_sound::init_wasapi()
@@ -316,16 +323,49 @@ int c_sound::sync()
     return b;
 }
 
-int c_sound::copy(const short *left, const short *right, int numSamples)
+void c_sound::set_volume(int value)
+{
+    master_volume = value;
+    volume = /*master_volume == 0 ? 0.0f : */std::pow(10.0f, ((master_volume - 50) / 100.0f) * 3.0f * std::log10(2.0f));
+
+    if (value < 20) {
+        float fade = value / 20.0f;
+        fade = fade * fade;
+        volume *= fade;
+    }
+
+}
+
+int c_sound::copy(const float *left, const float *right, int numSamples, float system_volume)
 {
     int waited = 0;
     int src_len = numSamples * wf.nBlockAlign;
 
+    auto amplify = [&](float sample) {
+        sample = round(sample * 32767.0f * volume * system_volume);
+        if (sample > 32767.0f || sample < -32768.0f) {
+            clips++;
+        }
+        return (uint16_t)std::clamp((int)sample, -32768, 32767);
+    };
+ 
+
     uint32_t *ib = interleave_buffer.get();
-    const uint16_t *l = (uint16_t*)left;
-    const uint16_t *r = right != NULL ? (uint16_t*)right : (uint16_t*)left;
+    const float *l = left;
+    const float *r = right != NULL ? right : left;
+    double frame_average = 0.0f;
     for (int i = 0; i < numSamples; i++) {
-        *ib++ = *l++ | (*r++ << 16);
+        float amp = volume * system_volume;
+        frame_average += std::abs((*l * amp) + (*r * amp)) / 2.0;
+        *ib++ = amplify(*l++) | (amplify(*r++) << 16);
+    }
+    frame_average /= numSamples;
+    sample_sum += frame_average;
+    if (++sample_count == 60) {
+        sample_count = 0;
+        sample_sum /= 60.0f;
+        average_db = 20.0 * std::log10(sample_sum + 1e-10);
+        sample_sum = 0.0f;
     }
     while (get_max_write() < src_len) {
         waited = 1;

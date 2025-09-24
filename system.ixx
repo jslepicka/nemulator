@@ -17,7 +17,7 @@ public:
     virtual int emulate_frame() = 0;
     virtual int reset() = 0;
     int get_crc() { return crc32; }
-    virtual int get_sound_bufs(const short **buf_l, const short **buf_r) = 0;
+    virtual int get_sound_bufs(const float **buf_l, const float **buf_r) = 0;
     virtual void set_audio_freq(double freq) = 0;
     virtual void set_input(int input) = 0;
     virtual void enable_mixer() {}
@@ -37,6 +37,7 @@ public:
         //for consoles, identifier is the file extension (e.g., nes)
         //for arcade games, it's the name of the rom set (e.g., pacman)
         std::string identifier;
+        std::string extension;
         std::string title;
         struct s_display_info
         {
@@ -51,8 +52,13 @@ public:
         } display_info;
         std::vector<s_button_map> button_map;
         //std::function<c_system *()> constructor;
+        float volume = 1.0f;
         std::function <std::unique_ptr<c_system>()> constructor;
     };
+    int crop_left;
+    int crop_right;
+    int crop_top;
+    int crop_bottom;
 
   protected:
     int crc32 = 0;

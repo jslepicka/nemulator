@@ -30,9 +30,8 @@ c_psg::c_psg()
         std::array{-1.9496889114379883f, -1.9021773338317871f, -1.3770858049392700f, -1.9604763984680176f},
         std::array{-1.9442052841186523f, -1.9171522855758667f, -1.8950747251510620f, -1.9676681756973267f},
         std::array{0.9609073400497437f, 0.9271715879440308f, 0.8989855647087097f, 0.9881398081779480f});
-    post_filter = std::make_unique<dsp::c_biquad>(
-        0.5648277401924133f, std::array{1.0000000000000000f, 0.0000000000000000f, -1.0000000000000000f},
-        std::array{1.0000000000000000f, -0.8659016489982605f, -0.1296554803848267f});
+    post_filter =
+        std::make_unique<dsp::c_first_order_bandpass>();
     resampler = std::make_unique<dsp::c_resampler>((float)(((228.0 * 262.0 * 60.0) / 4.0) / 48000.0), lpf.get(),
                                                    post_filter.get());
     sound_buffer = std::make_unique<int32_t[]>(1024);
@@ -42,7 +41,7 @@ c_psg::~c_psg()
 {
 }
 
-int c_psg::get_buffer(const short **buf)
+int c_psg::get_buffer(const float **buf)
 {
     int num_samples = resampler->get_output_buf(buf);
     return num_samples;
@@ -71,6 +70,7 @@ void c_psg::reset()
     lfsr_out = 0;
     channel = 0;
     type = 0;
+    out = 0.0f;
     std::memset(sound_buffer.get(), 0, sizeof(int32_t) * 1024);
 }
 
@@ -100,7 +100,7 @@ void c_psg::clock(int cycles)
                 out += vol_table[vol[s]];
         }
         //noise
-        counter[3] = (counter[3] - 1) & 0x3FF;
+        
         if (counter[3] == 0) {
             output[3] ^= 1;
             switch (tone[3] & 0x3) {
@@ -135,9 +135,12 @@ void c_psg::clock(int cycles)
             }
             //printf("%2X\n", lfsr);
         }
+        else {
+            counter[3] = (counter[3] - 1) & 0x3FF;
+        }
         if (lfsr & 0x1)
             out += vol_table[vol[3]];
-
+        this->out = out / 4.0f;
         //resample(out / 4.0f);
         if (mixer_enabled) {
             for (int i = 0; i < 4; i++) {

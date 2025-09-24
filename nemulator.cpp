@@ -71,6 +71,8 @@ c_nemulator::c_nemulator()
     load_thread_handle = 0;
     show_suspend = false;
 
+    master_volume = 1.0f;
+
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
 }
@@ -270,7 +272,8 @@ void c_nemulator::configure_input()
         unsigned int default_key;
         int repeat_mode;
     };
-    static const unsigned int BUTTON = 0x80000000;
+    static const unsigned int ALIAS = 0x80000000;
+    // clang-format off
     s_button_map button_map[] =
     {
         { BUTTON_1LEFT,         "joy1",     "left",    VK_LEFT,                1 },
@@ -281,9 +284,10 @@ void c_nemulator::configure_input()
         { BUTTON_1A_TURBO,      "joy1",     "a_turbo", 0x53,                   0 },
         { BUTTON_1B,            "joy1",     "b",       90,                     0 },
         { BUTTON_1B_TURBO,      "joy1",     "b_turbo", 0x41,                   0 },
+        { BUTTON_1C,            "joy1",     "c",       0x43,                   0 },
         { BUTTON_1SELECT,       "joy1",     "select",  VK_OEM_4,               0 },
         { BUTTON_1START,        "joy1",     "start",   VK_OEM_6,               0 },
-        { BUTTON_SMS_PAUSE,     "joy1.sms", "pause",   BUTTON | BUTTON_1START, 0 },
+        { BUTTON_SMS_PAUSE,     "joy1.sms", "pause",   ALIAS | BUTTON_1START,  0 },
 
         { BUTTON_2LEFT,         "joy2",     "left",    0,                      1 },
         { BUTTON_2RIGHT,        "joy2",     "right",   0,                      1 },
@@ -311,7 +315,14 @@ void c_nemulator::configure_input()
 
         { BUTTON_1COIN,          "",        "",        0x31,                   0 },
         { BUTTON_SWITCH_DISK,    "",        "",        VK_F5,                  0 },
+
+        { BUTTON_VOLUME_UP,      "",        "",        VK_OEM_PLUS,            1 },
+        { BUTTON_VOLUME_DOWN,    "",        "",        VK_OEM_MINUS,           1 },
+
+        { BUTTON_HOME,           "joy1",    "home",    0,                      0 }
+
     };
+    // clang-format on
 
     int num_buttons = sizeof(button_map) / sizeof(s_button_map);
     g_ih = std::make_unique<c_input_handler>(BUTTON_COUNT);
@@ -326,9 +337,9 @@ void c_nemulator::configure_input()
         int default_key = button_map[i].default_key;
         int button = button_map[i].button;
         std::string key = button_map[i].config_base + "." + button_map[i].config_name;
-        if (default_key & BUTTON)
+        if (default_key & ALIAS)
         {
-            default_key &= BUTTON - 1;
+            default_key &= ALIAS - 1;
             for (int k = 0; k < num_buttons; k++)
             {
                 if (button_map[k].button == default_key)
@@ -349,6 +360,14 @@ void c_nemulator::configure_input()
         g_ih->set_button_joymap(button, config->get_int(joy_base, -1), config->get_int(joy_key, -1));
         g_ih->set_button_type(button, config->get_int(joy_key + ".type", 0));
     }
+
+    g_ih->set_button_group(BUTTON_UP, {BUTTON_1UP});
+    g_ih->set_button_group(BUTTON_DOWN, {BUTTON_1DOWN});
+    g_ih->set_button_group(BUTTON_LEFT, {BUTTON_1LEFT});
+    g_ih->set_button_group(BUTTON_RIGHT, {BUTTON_1RIGHT});
+    g_ih->set_button_group(BUTTON_CANCEL, {BUTTON_1B, BUTTON_ESCAPE});
+    g_ih->set_button_group(BUTTON_OK, {BUTTON_1A, BUTTON_1C, BUTTON_1START, BUTTON_RETURN});
+
 }
 
 void c_nemulator::resize()
@@ -479,6 +498,20 @@ void c_nemulator::adjust_sharpness(float value)
     status->add_message("set sharpness to " + std::string(buf));
 }
 
+void c_nemulator::adjust_volume(int value)
+{
+    const int min_volume = 0;
+    const int max_volume = 100;
+    if (value < 0 && sound->master_volume <= min_volume)
+        return;
+    if (value > 0 && sound->master_volume >= max_volume)
+        return;
+    sound->set_volume(sound->master_volume + value);
+    char buf[8];
+    sprintf_s(buf, sizeof(buf), "%d", sound->master_volume);
+    status->add_message("set volume to " + std::string(buf));
+}
+
 void c_nemulator::handle_button_dec_sharpness(s_button_handler_params *params)
 {
     adjust_sharpness(-0.025f);
@@ -487,6 +520,16 @@ void c_nemulator::handle_button_dec_sharpness(s_button_handler_params *params)
 void c_nemulator::handle_button_inc_sharpness(s_button_handler_params *params)
 {
     adjust_sharpness(.025f);
+}
+
+void c_nemulator::handle_button_volume_up(s_button_handler_params *params)
+{
+    adjust_volume(5);
+}
+
+void c_nemulator::handle_button_volume_down(s_button_handler_params *params)
+{
+    adjust_volume(-5);
 }
 
 
@@ -641,15 +684,17 @@ const c_nemulator::s_button_handler c_nemulator::button_handlers[] =
     { SCOPE::GAMES_LOADED, {BUTTON_SPRITE_LIMIT}, true, RESULT_DOWN, &c_nemulator::handle_button_sprite_limit },
     { SCOPE::GAMES_LOADED, {BUTTON_DEC_SHARPNESS}, true, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_dec_sharpness },
     { SCOPE::GAMES_LOADED, {BUTTON_INC_SHARPNESS}, true, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_inc_sharpness },
-    { SCOPE::IN_MENU, {BUTTON_1RIGHT}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_right },
-    { SCOPE::IN_MENU, {BUTTON_1LEFT}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_left },
-    { SCOPE::IN_MENU, {BUTTON_1UP}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_up },
-    { SCOPE::IN_MENU, {BUTTON_1DOWN}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_down },
-    { SCOPE::IN_MENU | SCOPE::NO_GAMES_LOADED, {BUTTON_1B, BUTTON_ESCAPE}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_cancel },
-    { SCOPE::IN_MENU, {BUTTON_1A, BUTTON_1START, BUTTON_RETURN}, true, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_ok },
+    { SCOPE::GAMES_LOADED, {BUTTON_VOLUME_UP}, true, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_volume_up },
+    { SCOPE::GAMES_LOADED, {BUTTON_VOLUME_DOWN}, true, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_volume_down },
+    { SCOPE::IN_MENU, {BUTTON_RIGHT}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_right },
+    { SCOPE::IN_MENU, {BUTTON_LEFT}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_left },
+    { SCOPE::IN_MENU, {BUTTON_UP}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_up },
+    { SCOPE::IN_MENU, {BUTTON_DOWN}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_down },
+    { SCOPE::IN_MENU | SCOPE::NO_GAMES_LOADED, {BUTTON_CANCEL}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_cancel },
+    { SCOPE::IN_MENU, {BUTTON_OK}, true, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_ok },
     { SCOPE::IN_MENU, {BUTTON_1SELECT}, true, RESULT_DOWN, &c_nemulator::handle_button_show_qam },
     { SCOPE::IN_GAME, {BUTTON_1A_TURBO, BUTTON_1B_TURBO, BUTTON_2A_TURBO, BUTTON_2B_TURBO}, false, RESULT_DOWN, &c_nemulator::handle_button_turbo },
-    { SCOPE::IN_GAME, {BUTTON_ESCAPE}, false, RESULT_DOWN, &c_nemulator::handle_button_leave_game },
+    { SCOPE::IN_GAME, {BUTTON_ESCAPE, BUTTON_HOME}, false, RESULT_DOWN, &c_nemulator::handle_button_leave_game },
     { SCOPE::IN_GAME, {BUTTON_SWITCH_DISK}, true, RESULT_DOWN, &c_nemulator::handle_button_switch_disk },
 };
 
@@ -1025,15 +1070,16 @@ void c_nemulator::UpdateScene(double dt)
     {
         if (inGame)
         {
-            c_system *system = ((c_system_container *)texturePanels[selectedPanel]->GetSelected())->system.get();
+            c_system_container *sc = (c_system_container *)texturePanels[selectedPanel]->GetSelected();
+            c_system *system = sc->system.get();
 
-            const short* buf_l;
-            const short* buf_r;
+            const float* buf_l;
+            const float* buf_r;
 
             int num_samples = system->get_sound_bufs(&buf_l, &buf_r);
             
             if (!benchmark_mode && !paused) {
-                sound->copy(buf_l, buf_r, num_samples);
+                sound->copy(buf_l, buf_r, num_samples, sc->get_volume());
                 s = sound->sync();
             }
             system->set_audio_freq(sound->get_requested_freq());
@@ -1087,6 +1133,8 @@ void c_nemulator::UpdateScene(double dt)
             stats->report_stat("audio_position", sound->audio_position);
             stats->report_stat("audio_position_diff", sound->audio_position_diff);
             stats->report_stat("audio state", sound->state);
+            stats->report_stat("audio.clips", sound->clips);
+            stats->report_stat("audio.avg_db", sound->average_db);
             std::ostringstream s;
             s << std::hex << std::uppercase << system->get_crc();
             stats->report_stat("CRC", s.str());
@@ -1296,6 +1344,7 @@ void c_nemulator::LoadGames()
 
     for (auto &li : loadinfo)
     {
+        std::string &extension = li.system_info.extension != "" ? li.system_info.extension : li.system_info.identifier;
         li.rom_path = config->get_string(li.rom_path_key, li.rom_path_default);
         li.save_path = config->get_string(li.save_path_key, li.rom_path_default);
         if (!std::filesystem::exists(li.save_path))
@@ -1310,7 +1359,7 @@ void c_nemulator::LoadGames()
         else {
             std::error_code ec;
             for (auto const &dir_entry : std::filesystem::directory_iterator(li.rom_path, ec)) {
-                if (dir_entry.is_regular_file() && dir_entry.path().extension() == "." + li.system_info.identifier) {
+                if (dir_entry.is_regular_file() && dir_entry.path().extension() == "." + extension) {
                     rom_count++;
                     li.file_list.push_back(dir_entry.path().filename().string());
                 }
@@ -1356,7 +1405,7 @@ void c_nemulator::LoadGames()
     std::sort(gameList.begin(), gameList.end(), [](const c_system_container* a, const c_system_container* b) {
         std::string a_title = a->title;
         std::string b_title = b->title;
-        auto fn = [](char c) { return toupper(c); };
+        auto fn = [](char c) { return (char)toupper(c); };
         std::transform(a_title.begin(), a_title.end(), a_title.begin(), fn);
         std::transform(b_title.begin(), b_title.end(), b_title.begin(), fn);
         return a_title < b_title;

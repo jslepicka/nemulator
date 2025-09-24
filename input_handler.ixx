@@ -23,6 +23,7 @@ public:
     void set_button_joymap(int button, int joy, int joy_button);
     void ack_button(int button);
     void set_button_type(int button, int type);
+    void set_button_group(int group, std::vector<int> buttons);
     uint32_t get_console_input(const std::vector<s_button_map> &button_map);
     
     //do something better here
@@ -113,4 +114,6 @@ public:
     unsigned char joymask;
     int repeat_mask;
     int extrafast_enabled;
+
+    std::map<int, std::vector<int>> groups;
 };

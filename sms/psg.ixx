@@ -8,12 +8,12 @@ import dsp;
 namespace sms
 {
 
-class c_psg
+export class c_psg
 {
   public:
     c_psg();
     ~c_psg();
-    int get_buffer(const short **buf);
+    int get_buffer(const float **buf);
     void clear_buffer();
     void clock(int cycles);
     void write(int data);
@@ -27,6 +27,8 @@ class c_psg
     {
         mixer_enabled = 0;
     };
+
+    float out;
 
   private:
     int available_cycles;
@@ -54,7 +56,7 @@ class c_psg
         TYPE_VOLUME = 0x10
     };
     std::unique_ptr<dsp::c_biquad4> lpf;
-    std::unique_ptr<dsp::c_biquad> post_filter;
+    std::unique_ptr<dsp::c_first_order_bandpass> post_filter;
     std::unique_ptr<int32_t[]> sound_buffer;
     std::unique_ptr<dsp::c_resampler> resampler;
 };

@@ -293,7 +293,7 @@ void c_pacman::write_port(uint8_t port, uint8_t data)
     }
 }
 
-int c_pacman::get_sound_bufs(const short **buf_l, const short **buf_r)
+int c_pacman::get_sound_bufs(const float **buf_l, const float **buf_r)
 {
     int num_samples = pacman_psg->get_buffer(buf_l);
     *buf_r = nullptr;

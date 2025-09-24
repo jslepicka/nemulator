@@ -13,13 +13,14 @@ export class c_sound
     int init();
     void play();
     void stop();
-    int copy(const short *left, const short *right, int numSamples);
+    int copy(const float *left, const float *right, int numSamples, float system_volume);
     double get_freq()
     {
         return freq;
     }
     int sync();
     int resets;
+    int clips;
     double max_freq;
     double min_freq;
     double slope;
@@ -35,11 +36,17 @@ export class c_sound
     UINT64 audio_position_diff = 0;
 
     std::string state = "";
+    void set_volume(int value);
+    int master_volume = 50;
+
+    float average_db;
 
   private:
+    float sample_sum;
+    float sample_count;
     double requested_freq;
     double default_freq;
-
+    float volume = .5f;
     double freq;
     int adjustPeriod;
     int lastb;

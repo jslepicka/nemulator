@@ -31,6 +31,10 @@ export class c_z80
     ~c_z80()
     {
     }
+    int get_required_cycles()
+    {
+        return required_cycles - available_cycles;
+    }
     int reset()
     {
         pending_ei = 0;
@@ -97,6 +101,9 @@ export class c_z80
         available_cycles += cycles;
         while (true) {
             if (fetch_opcode) {
+                if (PC == 0xaf8) {
+                    int x = 1;
+                }
                 inc_r();
                 ddfd_ptr = 0;
                 //dd = 0;
@@ -1303,12 +1310,14 @@ export class c_z80
                         tchar = tchar | (1 << y);
                         break;
                 }
-                if (z == 6) {
-                    write_byte(HL.word, tchar);
-                }
-                else {
-                    //todo: is this correct?
-                    *r[z] = tchar;
+                if (x != 1) {
+                    if (z == 6) {
+                        write_byte(HL.word, tchar);
+                    }
+                    else {
+                        //todo: is this correct?
+                        *r[z] = tchar;
+                    }
                 }
                 break;
 

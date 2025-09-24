@@ -33,9 +33,7 @@ c_pacman_psg::c_pacman_psg()
     b = regexprep(num2str(Hd.sosMatrix(1:3), '%.16ff '), '\s+', ',')
     a = regexprep(num2str(Hd.sosMatrix(4:6), '%.16ff '), '\s+', ',')
     */
-    post_filter =
-        new dsp::c_biquad(0.4990182518959045f, {1.0000000000000000f, 0.0000000000000000f, -1.0000000000000000f},
-                          {1.0000000000000000f, -0.9980365037918091f, 0.0019634978380054f});
+    post_filter = new dsp::c_first_order_bandpass();
     resampler = new dsp::c_resampler(audio_rate / 48000.0, lpf, post_filter);
     mixer_enabled = 0;
     reset();
@@ -55,7 +53,7 @@ void c_pacman_psg::set_audio_rate(double freq)
     resampler->set_m((float)x);
 }
 
-int c_pacman_psg::get_buffer(const short **buf)
+int c_pacman_psg::get_buffer(const float **buf)
 {
     int num_samples = resampler->get_output_buf(buf);
     return num_samples;

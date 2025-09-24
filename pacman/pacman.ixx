@@ -30,7 +30,7 @@ export class c_pacman : public c_system, register_class<system_registry, c_pacma
     int is_loaded();
     int emulate_frame();
     virtual int reset();
-    int get_sound_bufs(const short **buf_l, const short **buf_r);
+    int get_sound_bufs(const float **buf_l, const float **buf_r);
     void set_audio_freq(double freq);
     void set_input(int input);
     int *get_video();
@@ -76,6 +76,7 @@ export class c_pacman : public c_system, register_class<system_registry, c_pacma
                 .title = "Pac-Man",
                 .display_info = get_display_info(),
                 .button_map = get_button_map(),
+                .volume = .708f, //reduce by 3dB
                 .constructor = []() { return std::make_unique<c_pacman>(); },
             },
             {
@@ -85,6 +86,7 @@ export class c_pacman : public c_system, register_class<system_registry, c_pacma
                 .title = "Ms. Pac-Man (Bootleg)",
                 .display_info = get_display_info(),
                 .button_map = get_button_map(),
+                .volume = .708f, //reduce by 3dB
                 .constructor = []() { return std::make_unique<c_pacman>(PACMAN_MODEL::MSPACMAB); },
             },
         };

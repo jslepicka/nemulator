@@ -137,7 +137,6 @@ int c_input_handler::get_joy_axis(int joy, int axis)
     if (joy_poll_result[joy] != JOYERR_NOERROR)
         return 0;
     signed char threshold = (axis >> 8) & 0xFF;
-    int temp = 0;
     int axis_value = 0;
     switch (axis & 0xFF)
     {
@@ -168,11 +167,27 @@ void c_input_handler::ack()
     ackd = true;
 }
 
+void c_input_handler::set_button_group(int group, std::vector<int> buttons)
+{
+    groups[group] = std::vector<int>(buttons);
+}
+
 int c_input_handler::get_result(int button, bool ack)
 {
     if (ackd)
         return 0;
-    int result = state[button].ack ? 0 : state[button].state_result;
+    int result = 0;
+    if (groups.find(button) != groups.end()) {
+        for (auto b : groups[button]) {
+            int r = state[b].ack ? 0 : state[b].state_result;
+            if (r && ack) {
+                state[b].ack = 1;
+            }
+            result |= r;
+        }
+        return result;
+    }
+    result = state[button].ack ? 0 : state[button].state_result;
     if (result && ack)
         state[button].ack = 1;
     return result;

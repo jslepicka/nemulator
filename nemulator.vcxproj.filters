@@ -29,6 +29,15 @@
     <Filter Include="z80">
       <UniqueIdentifier>{e6e75d8d-f9fd-421c-98f5-1cfdd6d1e552}</UniqueIdentifier>
     </Filter>
+    <Filter Include="m68k">
+      <UniqueIdentifier>{5229e2fd-79e2-4922-8c50-fd803da97b13}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="genesis">
+      <UniqueIdentifier>{25d52904-4679-4fe9-994c-d51451e7fc94}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ym2612">
+      <UniqueIdentifier>{5ab49e7a-a977-4be1-9f0a-50098a8edd7e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="nes\cpu.cpp">
@@ -485,10 +494,40 @@
     <ClCompile Include="nes\mappers\mapper_nsf_rom.cpp">
       <Filter>nes\mappers</Filter>
     </ClCompile>
-    <ClCompile Include="nes\mappers\mapper52.ixx" />
     <ClCompile Include="std.ixx" />
     <ClCompile Include="nes\mappers\mapper_fds.ixx">
       <Filter>nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="m68k\m68k.cpp">
+      <Filter>m68k</Filter>
+    </ClCompile>
+    <ClCompile Include="m68k\m68k.ixx">
+      <Filter>m68k</Filter>
+    </ClCompile>
+    <ClCompile Include="m68k\m68k_decode.cpp">
+      <Filter>m68k</Filter>
+    </ClCompile>
+    <ClCompile Include="genesis\genesis.ixx">
+      <Filter>genesis</Filter>
+    </ClCompile>
+    <ClCompile Include="genesis\genesis.cpp">
+      <Filter>genesis</Filter>
+    </ClCompile>
+    <ClCompile Include="genesis\genesis_vdp.ixx">
+      <Filter>genesis</Filter>
+    </ClCompile>
+    <ClCompile Include="genesis\genesis_vdp.cpp">
+      <Filter>genesis</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\mappers\mapper52.ixx">
+      <Filter>nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="dsp\first_order_bandpass.ixx" />
+    <ClCompile Include="ym\ym2612.cpp">
+      <Filter>ym2612</Filter>
+    </ClCompile>
+    <ClCompile Include="ym\ym2612.ixx">
+      <Filter>ym2612</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

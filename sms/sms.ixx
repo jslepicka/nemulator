@@ -4,7 +4,7 @@ export module sms;
 import nemulator.std;
 
 import :vdp;
-import :psg;
+export import :psg;
 import :crc;
 import nemulator.buttons;
 import system;
@@ -56,6 +56,7 @@ export class c_sms : public c_system, register_class<system_registry, c_sms>
                         .crop_bottom = -14,
                     },
                 .button_map = button_map,
+                .volume = .708f,
                 .constructor = []() { return std::make_unique<c_sms>(SMS_MODEL::SMS); },
             },
             {
@@ -71,6 +72,7 @@ export class c_sms : public c_system, register_class<system_registry, c_sms>
                         .crop_bottom = 24,
                     },
                 .button_map = button_map,
+                .volume = .708f,
                 .constructor = []() { return std::make_unique<c_sms>(SMS_MODEL::GAMEGEAR); },
             },
         };
@@ -86,7 +88,7 @@ export class c_sms : public c_system, register_class<system_registry, c_sms>
     unsigned char read_port(int port);
     int reset();
     int *get_video();
-    int get_sound_bufs(const short **buf_l, const short **buf_r);
+    int get_sound_bufs(const float **buf_l, const float **buf_r);
     int irq;
     int nmi;
     void set_audio_freq(double freq);

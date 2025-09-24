@@ -16,7 +16,7 @@ class c_pacman_psg
     void write_byte(uint16_t address, uint8_t data);
     void execute(int cycles);
     void set_audio_rate(double freq);
-    int get_buffer(const short **buf);
+    int get_buffer(const float **buf);
     void clear_buffer();
     uint8_t *sound_rom;
     void mute(int muted);
@@ -36,7 +36,7 @@ class c_pacman_psg
 
     dsp::c_resampler *resampler;
     dsp::c_biquad4 *lpf;
-    dsp::c_biquad *post_filter;
+    dsp::c_first_order_bandpass *post_filter;
     int32_t *sound_buffer;
     int muted;
     int mixer_enabled;

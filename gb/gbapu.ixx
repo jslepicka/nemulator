@@ -21,7 +21,7 @@ class c_gbapu
     void mix();
     void enable_mixer();
     void disable_mixer();
-    int get_buffers(const short **buf_l, const short **buf_r);
+    int get_buffers(const float **buf_l, const float **buf_r);
     void clear_buffers();
     void set_audio_rate(double freq);
 
@@ -37,9 +37,9 @@ class c_gbapu
     std::unique_ptr<dsp::c_resampler> resampler_l;
     std::unique_ptr<dsp::c_resampler> resampler_r;
     std::unique_ptr<dsp::c_biquad4> lpf_l;
-    std::unique_ptr<dsp::c_biquad> post_filter_l;
+    std::unique_ptr<dsp::c_first_order_bandpass> post_filter_l;
     std::unique_ptr<dsp::c_biquad4> lpf_r;
-    std::unique_ptr<dsp::c_biquad> post_filter_r;
+    std::unique_ptr<dsp::c_first_order_bandpass> post_filter_r;
     std::unique_ptr<int32_t[]> sound_buffer;
 
     int mixer_enabled;

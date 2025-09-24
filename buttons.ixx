@@ -44,7 +44,20 @@ export enum BUTTONS
     BUTTON_SMS_PAUSE,
     BUTTON_1COIN,
     BUTTON_SWITCH_DISK,
-    BUTTON_COUNT
+    BUTTON_1C,
+    BUTTON_2C,
+    BUTTON_VOLUME_UP,
+    BUTTON_VOLUME_DOWN,
+    BUTTON_HOME,
+    //generic button aliases
+    BUTTON_UP,
+    BUTTON_DOWN,
+    BUTTON_LEFT,
+    BUTTON_RIGHT,
+    BUTTON_OK,
+    BUTTON_CANCEL,
+
+    BUTTON_COUNT,
 };
 
 

@@ -68,28 +68,25 @@ void c_menu::resize()
 
 int c_menu::update(double dt, int child_result, void *params)
 {
-    if (g_ih->get_result(BUTTON_1DOWN, true) & c_input_handler::RESULT_DOWN ||
+    if (g_ih->get_result(BUTTON_DOWN, true) & c_input_handler::RESULT_DOWN ||
         g_ih->get_result(BUTTON_1SELECT, true) & c_input_handler::RESULT_DOWN)
     {
         selected_item = ++selected_item % menu_items->num_items;
     }
-    else if (g_ih->get_result(BUTTON_1UP, true) & c_input_handler::RESULT_DOWN)
+    else if (g_ih->get_result(BUTTON_UP, true) & c_input_handler::RESULT_DOWN)
     {
         selected_item--;
         if (selected_item < 0)
             selected_item = menu_items->num_items - 1;
     }
-    else if (g_ih->get_result(BUTTON_1A, true) & c_input_handler::RESULT_DOWN ||
-        g_ih->get_result(BUTTON_1START, true) & c_input_handler::RESULT_DOWN ||
-        g_ih->get_result(BUTTON_RETURN, true) & c_input_handler::RESULT_DOWN)
+    else if (g_ih->get_result(BUTTON_OK, true) & c_input_handler::RESULT_DOWN)
     {
         *(int *)params = selected_item;
         dead = true;
         g_ih->ack();
         return c_task::TASK_RESULT_RETURN;
     }
-    else if ((g_ih->get_result(BUTTON_1B, true) & c_input_handler::RESULT_DOWN) ||
-        (g_ih->get_result(BUTTON_ESCAPE) & c_input_handler::RESULT_DOWN))
+    else if ((g_ih->get_result(BUTTON_CANCEL, true) & c_input_handler::RESULT_DOWN))
     {
         dead = true;
         g_ih->ack();

@@ -138,7 +138,7 @@
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -149,6 +149,7 @@
       <EnableModules>
       </EnableModules>
       <BuildStlModules>true</BuildStlModules>
+      <UseDynamicDebugging>false</UseDynamicDebugging>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>C:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -205,7 +206,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
       <AssemblerOutput>AssemblyAndSourceCode</AssemblerOutput>
@@ -221,6 +222,7 @@
       <EnableModules>
       </EnableModules>
       <BuildStlModules>true</BuildStlModules>
+      <UseDynamicDebugging>false</UseDynamicDebugging>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -238,14 +240,22 @@
     <ClCompile Include="dsp\biquad.ixx" />
     <ClCompile Include="dsp\biquad4.ixx" />
     <ClCompile Include="dsp\dsp.ixx" />
+    <ClCompile Include="dsp\first_order_bandpass.ixx" />
     <ClCompile Include="dsp\null_filter.ixx" />
     <ClCompile Include="dsp\resampler.ixx" />
     <ClCompile Include="gb\gbapu.cpp" />
     <ClCompile Include="gb\mbc2.cpp" />
     <ClCompile Include="gb\mbc5.cpp" />
+    <ClCompile Include="genesis\genesis.cpp" />
+    <ClCompile Include="genesis\genesis.ixx" />
+    <ClCompile Include="genesis\genesis_vdp.cpp" />
+    <ClCompile Include="genesis\genesis_vdp.ixx" />
     <ClCompile Include="interpolate.ixx" />
     <ClCompile Include="invaders\invaders.cpp" />
     <ClCompile Include="invaders\sample_channel.cpp" />
+    <ClCompile Include="m68k\m68k.cpp" />
+    <ClCompile Include="m68k\m68k.ixx" />
+    <ClCompile Include="m68k\m68k_decode.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="audio_info.cpp" />
     <ClCompile Include="config.cpp" />
@@ -364,6 +374,8 @@
     <ClCompile Include="nes\mapper.cpp" />
     <ClCompile Include="nes\nes.cpp" />
     <ClCompile Include="nes\ppu.cpp" />
+    <ClCompile Include="ym\ym2612.cpp" />
+    <ClCompile Include="ym\ym2612.ixx" />
     <ClCompile Include="z80\z80.ixx" />
   </ItemGroup>
   <ItemGroup>

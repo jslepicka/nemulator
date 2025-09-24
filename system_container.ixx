@@ -33,6 +33,7 @@ public:
     bool is_nes = false;
 
     std::string &get_system_name() { return system_info.name; }
+    float get_volume() { return system_info.volume; }
     const std::vector<s_button_map> &get_button_map() { return system_info.button_map; }
 
   private:
@@ -58,6 +59,13 @@ public:
     static const int tex_height = 512;
     static const int static_width = 256;
     static const int static_height = 256;
+
+    int crop_left;
+    int crop_right;
+    int crop_top;
+    int crop_bottom;
+
+    bool crop_changed();
 
     c_system::s_system_info &system_info;
 };
