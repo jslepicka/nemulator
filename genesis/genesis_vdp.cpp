@@ -141,6 +141,7 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
                     break;
                 case ADDRESS_TYPE::CRAM_WRITE:
                     a &= 0x7F;
+                    value &= 0xEEE;
                     cram[a] = value >> 8;
                     cram[a + 1] = value & 0xFF;
 #ifdef USE_BMI2
@@ -153,7 +154,7 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
                         color |= (((value >> 4) & 0xE) * 16) << 8;
                         color |= (((value >> 8) & 0xE) * 16) << 16;
                         color |= 0xFF000000;
-                        cram_entry[a >> 1] = color;
+                        cram_entries[1][a >> 1] = color;
                     }
 #endif
 
@@ -176,70 +177,71 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
         case 0x0C00004:
         case 0x0C00006:
             //control
-            if (value >> 14 == 0x02) {
-                uint8_t reg_number = (value >> 8) & 0x1F;
-                uint8_t reg_value = value & 0xFF;
-                address_type = ADDRESS_TYPE::INVALID;
-                reg[reg_number] = reg_value;
-                switch (reg_number) {
-                    case 0x00:
-                    case 0x01:
-                        //update_ipl();
-                        break;
-                    case 0x07:
-                        bg_color = reg_value & 0x3F;
-                        break;
-                    case 0x10:
-                        plane_width = 32 + (reg_value & 0x3) * 32;
-                        plane_height = 32 + ((reg_value >> 4) & 0x3) * 32;
-                        //Window distortion bug.bin uses invalid plane_width setting
-                        if (plane_width == 96) {
-                            plane_width = 32;
-                            plane_height = 1;
-                        }
-                        else if (plane_height == 96) {
-                            plane_height = 32;
-                        }
-                        break;
-                    case 0x0C:
-                        //update_x_res();
-                        next_x_res = reg[0x0C] & 1 ? 320 : 256;
-                        break;
-                    default:
-                        break;
+            if (address_write) {
+                //second word
+                address_reg = (address_reg & 0xFFFF0000) | value;
+                address_type = (ADDRESS_TYPE)((((address_reg & 0x30) | (address_reg >> 28)) >> 2) & 0xF);
+                _address = ((address_reg & 0x3) << 14) | ((address_reg >> 16) & 0x3FFF);
+                vram_to_vram_copy = address_reg & 0x40;
+                if (vram_to_vram_copy) {
+                    int x = 1;
                 }
+                dma_copy = address_reg & 0x80;
+                if (dma_copy) {
+                    if (reg[0x01] & 0x10) {
+                        status.dma = 1;
+                        if (!(reg[0x17] & 0x80)) {
+                            do_68k_dma();
+                        }
+                        else if ((reg[0x17] & 0xC0) == 0xC0) {
+                            OutputDebugString("VRAM to VRAM DMA\n");
+                        }
+                        else if ((reg[0x17] & 0xC0) == 0x80) {
+                            pending_fill = 1;
+                        }
+                    }
+                }
+                x = 1;
+                address_write = 0;
             }
             else {
-                if (address_write) {
-                    //second word
-                    address_reg = (address_reg & 0xFFFF0000) | value;
-                    address_type = (ADDRESS_TYPE)((((address_reg & 0x30) | (address_reg >> 28)) >> 2) & 0xF);
-                    _address = ((address_reg & 0x3) << 14) | ((address_reg >> 16) & 0x3FFF);
-                    vram_to_vram_copy = address_reg & 0x40;
-                    if (vram_to_vram_copy) {
-                        int x = 1;
+                address_reg = (address_reg & 0x0000FFFF) | (value << 16);
+                address_type = (ADDRESS_TYPE)((((address_reg & 0x30) | (address_reg >> 28)) >> 2) & 0xF);
+                _address = ((address_reg & 0x3) << 14) | ((address_reg >> 16) & 0x3FFF);
+
+                if (value >> 14 == 0x02) {
+                    uint8_t reg_number = (value >> 8) & 0x1F;
+                    uint8_t reg_value = value & 0xFF;
+                    address_type = ADDRESS_TYPE::INVALID;
+                    reg[reg_number] = reg_value;
+                    switch (reg_number) {
+                        case 0x00:
+                        case 0x01:
+                            //update_ipl();
+                            break;
+                        case 0x07:
+                            bg_color = reg_value & 0x3F;
+                            break;
+                        case 0x10:
+                            plane_width = 32 + (reg_value & 0x3) * 32;
+                            plane_height = 32 + ((reg_value >> 4) & 0x3) * 32;
+                            //Window distortion bug.bin uses invalid plane_width setting
+                            if (plane_width == 96) {
+                                plane_width = 32;
+                                plane_height = 1;
+                            }
+                            else if (plane_height == 96) {
+                                plane_height = 32;
+                            }
+                            break;
+                        case 0x0C:
+                            next_x_res = reg[0x0C] & 1 ? 320 : 256;
+                            break;
+                        default:
+                            break;
                     }
-                    dma_copy = address_reg & 0x80;
-                    if (dma_copy) {
-                        if (reg[0x01] & 0x10) {
-                            status.dma = 1;
-                            if (!(reg[0x17] & 0x80)) {
-                                do_68k_dma();
-                            }
-                            else if ((reg[0x17] & 0xC0) == 0xC0) {
-                                OutputDebugString("VRAM to VRAM DMA\n");
-                            }
-                            else if ((reg[0x17] & 0xC0) == 0x80) {
-                                pending_fill = 1;
-                            }
-                        }
-                    }
-                    x = 1;
-                    address_write = 0;
                 }
                 else {
-                    address_reg = (address_reg & 0x0000FFFF) | (value << 16);
-                    _address = ((address_reg & 0x3) << 14) | ((address_reg >> 16) & 0x3FFF);
                     address_write = 1;
                 }
             }
@@ -258,6 +260,7 @@ uint8_t c_vdp::read_byte(uint32_t address)
             ret = status.value & 0xFF;
             status.vint = 0;
             status.dma = 0;
+            address_write = 0;
             return ret;
         case 0x00C00008: {
             int r = line;
