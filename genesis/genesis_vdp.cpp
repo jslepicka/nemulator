@@ -78,6 +78,7 @@ void c_vdp::reset()
     vscroll_b = 0;
     event_index = 0;
     current_cycle = 0;
+    hpos = 0;
 }
 
 uint16_t c_vdp::read_word(uint32_t address)
@@ -104,7 +105,9 @@ uint16_t c_vdp::read_word(uint32_t address)
             address_write = 0;
             return ret;
         case 0x00C00008:
-            return (line > 0xEA ? line - 6 : line) << 8 | 0;
+            //hpos is inaccurate, but good enough to get comix zone to work
+            //need to revisit
+            return (line > 0xEA ? line - 6 : line) << 8 | (hpos >> 1);
         default:
             return 0;
     }
@@ -1026,6 +1029,7 @@ uint32_t c_vdp::do_event()
             break;
 
     }
+    hpos = current_cycle;
     int res = x_res == 256;
     uint32_t diff = events[res][event_index].next_mcycle - current_cycle;
     event = events[res][event_index].next_event;

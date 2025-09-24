@@ -102,6 +102,7 @@ export class c_vdp
     uint16_t vscroll_b;
     uint32_t event_index;
     uint32_t current_cycle;
+    uint32_t hpos;
 
     uint8_t *plane_ptrs[4];
     alignas(64) uint8_t vram[64 * 1024];
