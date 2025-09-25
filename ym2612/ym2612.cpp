@@ -424,7 +424,7 @@ void c_phase_generator::clock(uint8_t lfo_counter, uint8_t fm_level)
     uint32_t detune_increment_magnitude = detune_table[key_code][detune_magnitude];
 
     uint32_t detuned_f_num = 0;
-    if ((detune_increment_magnitude >> 2) & 0x1) {
+    if ((detune >> 2) & 0x1) {
         detuned_f_num = (shifted_f_num - detune_increment_magnitude) & 0x1FFFF;
     }
     else {
