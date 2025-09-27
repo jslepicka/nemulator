@@ -641,6 +641,7 @@ void c_gbppu::exec_mode2()
         lcd_paused = 0;
         eval_sprites(line);
         mode = 3;
+        update_stat();
         first_tile = 1;
         fetch_phase = 0;
         current_pixel = 0;
@@ -905,16 +906,18 @@ void c_gbppu::write_byte(uint16_t address, uint8_t data)
     else {
         switch (address) {
             case 0xFF40:
-                LCDC = data;
                 if (LCDC & 0x80 && !(data & 0x80)) {
                     LY = 0;
                     line = 0;
                     current_cycle = 0;
-                    memset(gb, 0xFF, 160 * 144 * sizeof(uint32_t));
+                    update_stat();
+                    std::fill_n(fb.get(), 160 * 144, palette[0]);
                 }
+                LCDC = data;
                 break;
             case 0xFF41:
                 STAT = data;
+                update_stat();
                 break;
             case 0xFF42:
                 SCY = data;
