@@ -833,10 +833,7 @@ uint8_t c_gbppu::read_byte(uint16_t address)
             case 0xFF40:
                 return LCDC;
             case 0xFF41:
-                if (mode == 0) {
-                    int x = 1;
-                }
-                return (STAT & ~0x3) | (mode & 0x3);
+                return (STAT & ~0x3) | (LCDC & 0x80 ? (mode & 0x3) : 0);
             case 0xFF42:
                 return SCY;
             case 0xFF43:
