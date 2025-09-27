@@ -149,6 +149,7 @@ int c_gb::load_sram()
     std::ifstream file;
     file.open(sram_path_file, std::fstream::in | std::fstream::binary);
     if (file.fail()) {
+        std::fill_n(mapper->ram.get(), ram_size, 0xFF);
         return 0;
     }
     file.seekg(0, std::ios_base::end);
@@ -246,10 +247,10 @@ uint8_t c_gb::read_io(uint16_t address)
                 case 0:
                     return read_joy();
                 case 1:
-      //serial
+                    //serial
                     return 0xFF;
                 case 2:
-      //serial
+                    //serial
                     return SC;
                 case 4:
                     return (divider & 0xFF00) >> 8;
@@ -294,11 +295,11 @@ void c_gb::write_io(uint16_t address, uint8_t data)
                     write_joy(data);
                     break;
                 case 1:
-      //serial
+                    //serial
                     SB = data;
                     break;
                 case 2:
-      //serial
+                    //serial
                     SC = data;
                     if ((SC & 0x81) == 0x81) {
                         serial_transfer_count = 8;
@@ -466,10 +467,10 @@ void c_gb::write_byte(uint16_t address, uint8_t data)
 
 void c_gb::clock_timer()
 {
-  //this is clocked @ 4.2MHz.  Should be ok to simply increment by 4
-  //since all CPU cycles are multiples of 4, and side effects of incrementing
-  //timer (register updates an interrupts) are only detectable on cpu cycle
-  //boundaries.
+    //this is clocked @ 4.2MHz.  Should be ok to simply increment by 4
+    //since all CPU cycles are multiples of 4, and side effects of incrementing
+    //timer (register updates an interrupts) are only detectable on cpu cycle
+    //boundaries.
 
     int TAC_out;
     int serial_clock;
@@ -477,13 +478,14 @@ void c_gb::clock_timer()
     divider += 4;
     TAC_out = divider & divisors[TAC & 0x3];
 
-   //clock serial output @ 8kHz
+    //clock serial output @ 8kHz
     serial_clock = divider & 0x100;
 
     if (last_serial_clock && (!serial_clock)) {
         if (serial_transfer_count) {
             if (--serial_transfer_count == 0) {
                 IF |= 0x8;
+                SC &= ~0x80;
             }
         }
     }
