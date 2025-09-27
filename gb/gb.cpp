@@ -45,7 +45,7 @@ int c_gb::reset()
     last_TAC_out = 0;
     next_input = input = -1;
 
-    JOY = 0xFF;
+    JOY = 0xCF;
     serial_transfer_count = 0;
     last_serial_clock = 0;
     wram_bank = 1;
@@ -206,20 +206,36 @@ void c_gb::write_wram(uint16_t address, uint8_t data)
 
 uint8_t c_gb::read_joy()
 {
-    if ((JOY & 0x30) == 0x20) {
-        return 0xE0 | (input & 0xF);// | (JOY & 0x30);
+    uint8_t prev = JOY & 0xF;
+    switch (JOY & 0x30) {
+        case 0x30:
+            JOY = (JOY & 0xF0) | 0xF;
+            break;
+        case 0x20:
+            JOY = (JOY & 0xF0) | (input & 0xF);
+            break;
+        case 0x10:
+            JOY = (JOY & 0xF0) | ((input >> 4) & 0xF);
+            break;
+        case 0:
+            JOY = (JOY & 0xF0) | ~((~(input & 0xF)) | (~((input >> 4) & 0xF)));
+            break;
     }
-    else if ((JOY & 0x30) == 0x10) {
-        return 0xD0 | ((input >> 4) & 0xF);// | (JOY & 0x30);
+    JOY |= 0xC0;
+
+    uint8_t next = JOY & 0xF;
+
+    if ((prev ^ next) & ~next) {
+        IF |= 0x10;
     }
-    else {
-        return 0xFF;
-    }
+
+    return JOY;
 }
 
 void c_gb::write_joy(uint8_t data)
 {
     JOY = (JOY & (~0x30)) | (data & 0x30);
+    read_joy();
 }
 
 uint8_t c_gb::read_io(uint16_t address)
@@ -494,26 +510,24 @@ int c_gb::emulate_frame()
 {
     static int frame_count = 0;
     apu->clear_buffers();
-  //70224 PPU cycles per scanline
-  //divided by 4 to get CPU clock
-  //for scanline renderer:
-  //456 PPU cycles
-  //114 CPU cycles
-  //154 times
-  //4.2MHz master clock
-  //    divided by 2 to get ppu memory clock = 2.1MHz
-  //    divided by 4 to get cpu clock = 1.05MHz
+    //70224 PPU cycles per scanline
+    //divided by 4 to get CPU clock
+    //for scanline renderer:
+    //456 PPU cycles
+    //114 CPU cycles
+    //154 times
+    //4.2MHz master clock
+    //    divided by 2 to get ppu memory clock = 2.1MHz
+    //    divided by 4 to get cpu clock = 1.05MHz
     for (int line = 0; line < 154; line++) {
-   //update input on line 144, right before vblank
-   //Wizards & Warriors reads input at line 16 and 144 when
-   //paused.  If input is updated too early, the second read at 144
-   //overwrites the change detected on line 16, and makes it
-   //impossible to resume from pause.
+        //update input on line 144, right before vblank
+        //Wizards & Warriors reads input at line 16 and 144 when
+        //paused.  If input is updated too early, the second read at 144
+        //overwrites the change detected on line 16, and makes it
+        //impossible to resume from pause.
         if (line == 0x90) {
             input = next_input;
-            if ((input & 0xFF) != 0xFF) {
-                IF |= 0x10;
-            }
+            read_joy();
         }
         ppu->execute(456);
     }
