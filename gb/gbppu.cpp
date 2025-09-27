@@ -887,6 +887,9 @@ uint8_t c_gbppu::read_byte(uint16_t address)
 
 void c_gbppu::write_byte(uint16_t address, uint8_t data)
 {
+    auto update_hdma_source = [&]() { hdma_source = ((HDMA1 << 8) | (HDMA2)) & 0xFFF0; };
+    auto update_hdma_dest = [&]() { hdma_dest = 0x8000 + (((HDMA3 << 8) | (HDMA4)) & 0x1FF0); };
+
     if (address < 0xA000) {
         if (gb->get_model() == GB_MODEL::CGB) {
             if (cgb_vram_bank & 0x1) {
@@ -911,7 +914,11 @@ void c_gbppu::write_byte(uint16_t address, uint8_t data)
                     line = 0;
                     current_cycle = 0;
                     update_stat();
-                    std::fill_n(fb.get(), 160 * 144, palette[0]);
+                    uint32_t col = palette[0];
+                    if (gb->get_model() == GB_MODEL::CGB) {
+                        col = 0xFFFFFFFF;
+                    }
+                    std::fill_n(fb.get(), 160 * 144, col);
                 }
                 LCDC = data;
                 break;
@@ -965,15 +972,19 @@ void c_gbppu::write_byte(uint16_t address, uint8_t data)
                 break;
             case 0xFF51: //HDMA1
                 HDMA1 = data;
+                update_hdma_source();
                 break;
             case 0xFF52: //HDMA2
                 HDMA2 = data;
+                update_hdma_source();
                 break;
             case 0xFF53: //HDMA3
                 HDMA3 = data;
+                update_hdma_dest();
                 break;
             case 0xFF54: //HDMA4
                 HDMA4 = data;
+                update_hdma_dest();
                 break;
             case 0xFF55: //HDMA5
             {
@@ -981,13 +992,17 @@ void c_gbppu::write_byte(uint16_t address, uint8_t data)
                 int x = 1;
                 int length = ((data & 0x7F) + 1) * 0x10;
                 if (data & 0x80) {
-                    hdma_hblank_count = length;
+                    if (mode == 0) {
+                        hdma_length = 16;
+                        hdma_hblank_count = length - 16;
+                    }
+                    else {
+                        hdma_hblank_count = length;
+                    }
                 }
                 else {
                     hdma_length = length;
                 }
-                hdma_source = ((HDMA1 << 8) | (HDMA2)) & 0xFFF0;
-                hdma_dest = 0x8000 + (((HDMA3 << 8) | (HDMA4)) & 0x1FF0);
 
             } break;
             case 0xFF68:
