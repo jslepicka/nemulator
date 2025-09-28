@@ -48,7 +48,7 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
                         .crop_right = -1,
                     },
                 .button_map = button_map,
-                .volume = 1.4125f, //boost by 3dB
+                .volume = pow(10.0f, 4.0f / 20.0f), //boost by 4dB
                 .constructor = []() { return std::make_unique<c_genesis>(); },
             }
         };

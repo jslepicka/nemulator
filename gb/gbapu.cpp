@@ -350,11 +350,8 @@ void c_gbapu::mix()
     left_sample = (left_sample / 60.0f) * 2.0f - 1.0f;
     right_sample = (right_sample / 60.0f) * 2.0f - 1.0f;
 
-    right_sample /= 16.0f;
-    left_sample /= 16.0f;
-
-    right_sample *= (right_vol + 1);
-    left_sample *= (left_vol + 1);
+    right_sample *= (right_vol + 1) / 8.0f;
+    left_sample *= (left_vol + 1) / 8.0f;
 
     resampler_l->process(left_sample);
     resampler_r->process(right_sample);

@@ -76,7 +76,7 @@ export class c_pacman : public c_system, register_class<system_registry, c_pacma
                 .title = "Pac-Man",
                 .display_info = get_display_info(),
                 .button_map = get_button_map(),
-                .volume = .708f, //reduce by 3dB
+                .volume = pow(10.0f, -3.0f / 20.0f), //reduce by 3dB
                 .constructor = []() { return std::make_unique<c_pacman>(); },
             },
             {
@@ -86,7 +86,7 @@ export class c_pacman : public c_system, register_class<system_registry, c_pacma
                 .title = "Ms. Pac-Man (Bootleg)",
                 .display_info = get_display_info(),
                 .button_map = get_button_map(),
-                .volume = .708f, //reduce by 3dB
+                .volume = pow(10.0f, -3.0f / 20.0f), //reduce by 3dB
                 .constructor = []() { return std::make_unique<c_pacman>(PACMAN_MODEL::MSPACMAB); },
             },
         };

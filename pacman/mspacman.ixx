@@ -21,7 +21,7 @@ class c_mspacman : public c_pacman, register_class<system_registry, c_mspacman>
                 .title = "Ms. Pac-Man",
                 .display_info = c_pacman::get_display_info(),
                 .button_map = c_pacman::get_button_map(),
-                .volume = .708f, //reduce by 3dB
+                .volume = pow(10.0f, -3.0f / 20.0f), //reduce by 3dB
                 .constructor = []() { return std::make_unique<c_mspacman>(PACMAN_MODEL::MSPACMAN); },
             },
             {
@@ -31,7 +31,7 @@ class c_mspacman : public c_pacman, register_class<system_registry, c_mspacman>
                 .title = "Ms. Pac-Man (Fast)",
                 .display_info = c_pacman::get_display_info(),
                 .button_map = c_pacman::get_button_map(),
-                .volume = .708f, //reduce by 3dB
+                .volume = pow(10.0f, -3.0f / 20.0f), //reduce by 3dB
                 .constructor = []() { return std::make_unique<c_mspacman>(PACMAN_MODEL::MSPACMNF); },
             },
         };
