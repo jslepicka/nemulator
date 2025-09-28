@@ -154,6 +154,7 @@ class c_gbapu
         void power_on();
         void trigger();
         int enabled;
+        int dac_power;
 
       private:
         c_timer timer;
@@ -172,7 +173,6 @@ class c_gbapu
         int period_lo;
         int envelope_period;
         int calc_sweep();
-        int dac_power;
         int clock_divider;
     };
 
@@ -190,6 +190,7 @@ class c_gbapu
         void clock_envelope();
         void power_on();
         int enabled;
+        int dac_power;
 
       private:
         int clock_shift;
@@ -202,7 +203,6 @@ class c_gbapu
         c_timer timer;
         c_length length;
         c_envelope envelope;
-        int dac_power;
         int clock_divider;
         int next_length = 64;
     };
@@ -221,6 +221,7 @@ class c_gbapu
         void clock_length();
         void power_on();
         int enabled;
+        int dac_power;
 
       private:
         int starting_volume;
@@ -233,7 +234,6 @@ class c_gbapu
         int wave_table[32];
         int wave_pos;
         int volume_shift;
-        int dac_power;
         int period_hi;
         int period_lo;
     };
