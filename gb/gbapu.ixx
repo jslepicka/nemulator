@@ -34,11 +34,17 @@ class c_gbapu
     //c_biquad4* lpf_r;
     //c_biquad* post_filter_r;
 
+    using lpf_t = dsp::c_biquad4_t<
+        0.5090923309326172f, 0.3317873477935791f, 0.1050286665558815f, 0.0055788583122194f,
+       -1.9908285140991211f, -1.9819903373718262f, -1.8711743354797363f, -1.9928110837936401f,
+       -1.9800899028778076f, -1.9664875268936157f, -1.9550460577011108f, -1.9912019968032837f,
+        0.9831480979919434f, 0.9683376550674439f, 0.9557733535766602f, 0.9949237704277039f>;
+
     std::unique_ptr<dsp::c_resampler> resampler_l;
     std::unique_ptr<dsp::c_resampler> resampler_r;
-    std::unique_ptr<dsp::c_biquad4> lpf_l;
+    std::unique_ptr<lpf_t> lpf_l;
     std::unique_ptr<dsp::c_first_order_bandpass> post_filter_l;
-    std::unique_ptr<dsp::c_biquad4> lpf_r;
+    std::unique_ptr<lpf_t> lpf_r;
     std::unique_ptr<dsp::c_first_order_bandpass> post_filter_r;
     std::unique_ptr<int32_t[]> sound_buffer;
 
@@ -50,8 +56,8 @@ class c_gbapu
     uint8_t NR50;
     uint8_t NR51;
     uint8_t NR52;
-    int left_vol;
-    int right_vol;
+    float left_vol;
+    float right_vol;
 
     int enable_n_l;
     int enable_n_r;
