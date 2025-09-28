@@ -333,10 +333,10 @@ void c_gbapu::mix()
     float right_sample = 0.0f;
 
     //output range of each channel is 0 - 15
-    float square1_out = (float)square1.get_output();
-    float square2_out = (float)square2.get_output();
-    float wave_out = (float)wave.get_output();
-    float noise_out = (float)noise.get_output();
+    float square1_out = square1.dac_power ? (float)square1.get_output() : 7.5f;
+    float square2_out = square2.dac_power ? (float)square2.get_output() : 7.5f;
+    float wave_out = wave.dac_power ? (float)wave.get_output() : 7.5f;
+    float noise_out = noise.dac_power ? (float)noise.get_output() : 7.5f;
 
     left_sample += square1_out * enable_1_l + square2_out * enable_2_l + wave_out * enable_w_l + noise_out * enable_n_l;
 
@@ -691,7 +691,7 @@ void c_gbapu::c_square::clock_sweep()
 
 int c_gbapu::c_square::get_output()
 {
-    if (enabled && dac_power && duty.get_output() /* && length.get_output()*/) {
+    if (enabled && duty.get_output() /* && length.get_output()*/) {
         return envelope.get_output();
     }
     return 0;
@@ -808,7 +808,7 @@ void c_gbapu::c_noise::clock_envelope()
 
 int c_gbapu::c_noise::get_output()
 {
-    if (enabled && dac_power) {
+    if (enabled) {
         if ((~lfsr) & 0x1) {
             return envelope.get_output();
         }
@@ -861,7 +861,7 @@ void c_gbapu::c_wave::clock()
 
 int c_gbapu::c_wave::get_output()
 {
-    if (enabled && dac_power) {
+    if (enabled) {
         return sample_buffer >> volume_shift;
     }
     return 0;
