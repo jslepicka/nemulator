@@ -1,0 +1,51 @@
+name: Windows Build
+
+on:
+  push:
+    branches: [ "gha-testing" ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install DirectX SDK (June 2010)
+        shell: powershell
+        run: |
+          $url = "https://download.microsoft.com/download/a/e/7/ae743f1f-632b-4809-87a9-aa1bb3458e31/DXSDK_Jun10.exe"
+          Invoke-WebRequest -Uri $url -OutFile DXSDK_Jun10.exe
+          Start-Process .\DXSDK_Jun10.exe -ArgumentList "/U", "/Q", "/T:DXSDK" -Wait
+          Start-Process .\DXSDK\DXSDK_Jun10.exe -ArgumentList "/Q" -Wait
+          
+          echo "DXSDK_DIR=C:\Program Files (x86)\Microsoft DirectX SDK (June 2010)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "INCLUDE=$env:DXSDK_DIR\Include;$env:INCLUDE" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "LIB=$env:DXSDK_DIR\Lib\x64;$env:LIB" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build Solution (Release x64, C++23)
+        shell: cmd
+        run: |
+          msbuild nemulator.sln /t:Build /p:Configuration=Release /p:Platform=x64 /p:LangVersion=preview
+
+      - name: Package Build Artifacts
+        shell: powershell
+        run: |
+          $sha = "${{ github.sha }}".Substring(0,7)
+          mkdir artifacts
+          # Adjust paths to where your binaries are output
+          Copy-Item "Release\nemulator.exe" "artifacts\nemulator-$sha.exe"
+
+      - name: Create or Update Preview Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Latest Preview Build"
+          prerelease: true
+          draft: true
+          files: artifacts/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
