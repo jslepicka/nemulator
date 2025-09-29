@@ -596,6 +596,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include=".clang-format" />
+    <None Include=".github\workflows\build.yml" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="nes_ELf_icon.ico" />

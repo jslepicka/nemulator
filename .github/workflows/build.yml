@@ -1,0 +1,71 @@
+name: Build on push to main
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache DXSDK
+        uses: actions/cache@v4
+        id: cache-dxsdk
+        with:
+         path: 'd:\a\dxsdk'
+         key: dxsdk
+
+      - name: Install 7zip
+        if: steps.cache-dxsdk.outputs.cache-hit != 'true'
+        uses: milliewalky/setup-7-zip@v2
+      
+      - name: DXSDK setup
+        if: steps.cache-dxsdk.outputs.cache-hit != 'true'
+        shell: powershell
+        run : |
+          $url = "https://download.microsoft.com/download/a/e/7/ae743f1f-632b-4809-87a9-aa1bb3458e31/DXSDK_Jun10.exe"
+          $output = "$env:TEMP\DXSDK_Jun10.exe"
+          $ProgressPreference = 'SilentlyContinue'
+          Write-Host "Downloading DirectX SDK..."
+          Invoke-WebRequest -Uri $url -OutFile $output
+
+          cd "$env:TEMP"
+          7z x DXSDK_Jun10.exe DXSDK\Include -o_DX2010_
+          7z x DXSDK_Jun10.exe DXSDK\Lib\x64 -o_DX2010_
+          move _DX2010_ d:\a\dxsdk
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+        # msbuild does not properly order the stl module build, so this needs to be done in a separate step.
+        # The compile options should (must?) match.  There doesn't seem to be a good way to do this other than
+        # manually copying over the options that msbuild uses for the primary build target.
+        # If any options change, this needs to be updated.
+      - name: Build Solution (Release x64, C++23)
+        shell: cmd
+        run: |
+          set DXSDK_DIR=d:\a\dxsdk\dxsdk\
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
+          CL.exe /c /I"C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um" /I"C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared" /I"C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\winrt" /I"C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\cppwinrt" /I"C:\Program Files (x86)\Windows Kits\NETFXSDK\4.8.1\Include\um" /Zi /nologo /W4 /WX- /diagnostics:column /MP /FS /O2 /Oi /GL /D WIN64 /D NDEBUG /D _WINDOWS /D _CRT_SECURE_NO_WARNINGS /Gm- /EHsc /MT /GS /Gy /arch:AVX /fp:fast /Zc:wchar_t /Zc:forScope /Zc:inline /std:c++latest /external:W4 /Gd /interface /wd4334 /FC /errorReport:queue  /TP "%VCToolsInstallDir%\modules\std.ixx"
+          msbuild nemulator.sln /t:Build /p:Configuration=Release /p:Platform=x64
+
+      - name: Package Build Artifacts
+        shell: powershell
+        run: |
+          $sha = "${{ github.sha }}".Substring(0,7)
+          mkdir artifacts
+          # Adjust paths to where your binaries are output
+          Copy-Item "Release\nemulator.exe" "artifacts\nemulator-$sha.exe"
+      
+      - name: Set short SHA
+        shell: powershell
+        run: echo "SHORT_SHA=$("${{ github.sha }}".SubString(0, 7))" >> $env:GITHUB_ENV
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nemulator-${{ env.SHORT_SHA }}
+          path: artifacts/
