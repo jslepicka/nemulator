@@ -27,7 +27,7 @@ jobs:
         shell: cmd
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
-          CL.exe /c /I"C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um" /I"C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared" /I"C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\winrt" /I"C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\cppwinrt" /I"C:\Program Files (x86)\Windows Kits\NETFXSDK\4.8.1\Include\um" /Zi /nologo /W4 /WX- /diagnostics:column /MP /FS /O2 /Oi /GL /D WIN64 /D NDEBUG /D _WINDOWS /D _CRT_SECURE_NO_WARNINGS /Gm- /EHsc /MT /GS /Gy /arch:AVX /fp:fast /Zc:wchar_t /Zc:forScope /Zc:inline /std:c++latest /FAs /Fa"Release\\" /scanDependencies "Release\\" /external:W4 /Gd /interface /wd4334 /FC /errorReport:queue  /TP "%VCToolsInstallDir%\modules\std.ixx"
+          CL.exe /c /I"C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um" /I"C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared" /I"C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\winrt" /I"C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\cppwinrt" /I"C:\Program Files (x86)\Windows Kits\NETFXSDK\4.8.1\Include\um" /Zi /nologo /W4 /WX- /diagnostics:column /MP /FS /O2 /Oi /GL /D WIN64 /D NDEBUG /D _WINDOWS /D _CRT_SECURE_NO_WARNINGS /Gm- /EHsc /MT /GS /Gy /arch:AVX /fp:fast /Zc:wchar_t /Zc:forScope /Zc:inline /std:c++latest /external:W4 /Gd /interface /wd4334 /FC /errorReport:queue  /TP "%VCToolsInstallDir%\modules\std.ixx"
           msbuild nemulator.sln /t:Build /p:Configuration=Release /p:Platform=x64 /p:LanguageStandard=stdcpplatest /p:EnableModules=true
 
       - name: Package Build Artifacts
