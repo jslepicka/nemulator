@@ -1,8 +1,8 @@
-name: Windows Build
+name: Build on push to main
 
 on:
   push:
-    branches: [ "gha-testing" ]
+    branches: [ "main" ]
 
 jobs:
   build:
