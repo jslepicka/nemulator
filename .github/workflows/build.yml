@@ -19,6 +19,19 @@ jobs:
         run: 7z --help
         shell: powershell
         
+      - name: dxsdk setup
+        shell: powershell
+        run : |
+          $url = "https://download.microsoft.com/download/a/e/7/ae743f1f-632b-4809-87a9-aa1bb3458e31/DXSDK_Jun10.exe"
+          $output = "$env:TEMP\DXSDK_Jun10.exe"
+    
+          Write-Host "Downloading DirectX SDK..."
+          Invoke-WebRequest -Uri $url -OutFile $output
+
+          cd "$env:TEMP"
+          7z x DXSDK_Jun10.exe DXSDK/Include -o_DX2010_
+          7z x DXSDK_Jun10.exe DXSDK/Lib/x64 -o_DX2010_
+          move _DX2010_ d:\a\dxsdk
 
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
