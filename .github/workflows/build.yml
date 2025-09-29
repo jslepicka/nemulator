@@ -23,6 +23,10 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
+      - name: Build c++23 std library module
+        shell: cmd
+        run: cl /std:c++latest /EHsc /nologo /W4 /c "%VCToolsInstallDir%\modules\std.ixx"
+
       - name: Build Solution (Release x64, C++23)
         shell: cmd
         run: |
