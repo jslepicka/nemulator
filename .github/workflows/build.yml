@@ -32,7 +32,7 @@ jobs:
       - name: Build Solution (Release x64, C++23)
         shell: cmd
         run: |
-          msbuild nemulator.sln /t:Build /p:Configuration=Release /p:Platform=x64 /p:LangVersion=preview
+          msbuild nemulator.sln /t:Build /p:Configuration=Release /p:Platform=x64 /p:LangVersion=stdcpplatest /p:BuildStlModules=true
 
       - name: Package Build Artifacts
         shell: powershell
