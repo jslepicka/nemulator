@@ -23,7 +23,7 @@ jobs:
         if: steps.cache-dxsdk.outputs.cache-hit != 'true'
         uses: milliewalky/setup-7-zip@v2
       
-      - name: dxsdk setup
+      - name: DXSDK setup
         if: steps.cache-dxsdk.outputs.cache-hit != 'true'
         shell: powershell
         run : |
@@ -61,7 +61,7 @@ jobs:
           # Adjust paths to where your binaries are output
           Copy-Item "Release\nemulator.exe" "artifacts\nemulator-$sha.exe"
       
-      - name: Set short sha
+      - name: Set short SHA
         shell: powershell
         run: echo "SHORT_SHA=$("${{ github.sha }}".SubString(0, 7))" >> $env:GITHUB_ENV
 
