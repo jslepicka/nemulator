@@ -49,12 +49,7 @@ jobs:
           # Adjust paths to where your binaries are output
           Copy-Item "Release\nemulator.exe" "artifacts\nemulator-$sha.exe"
 
-      - name: Create or Update Preview Release
-        uses: softprops/action-gh-release@v2
+      - uses: actions/upload-artifact@v4
         with:
-          name: "Latest Preview Build"
-          prerelease: true
-          draft: true
-          files: artifacts/*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: nemulator
+          path: artifacts/
