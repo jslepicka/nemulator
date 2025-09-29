@@ -14,11 +14,7 @@ jobs:
 
       - name: Install 7zip
         uses: milliewalky/setup-7-zip@v2
-
-      - name: Verify 7zip install
-        run: 7z --help
-        shell: powershell
-        
+      
       - name: dxsdk setup
         shell: powershell
         run : |
