@@ -26,7 +26,7 @@ jobs:
       - name: Build Solution (Release x64, C++23)
         shell: cmd
         run: |
-          msbuild nemulator.sln /t:Build /p:Configuration=Release /p:Platform=x64 /p:LangVersion=stdcpplatest /p:BuildStlModules=true
+          msbuild nemulator.sln /t:Build /p:Configuration=Release /p:Platform=x64 /p:LanguageStandard=stdcpplatest /p:BuildStlModules=true /p:AdditionalBMIDirectories=D:\a\nemulator\nemulator\Release\microsoft\STL
 
       - name: Package Build Artifacts
         shell: powershell
