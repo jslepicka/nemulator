@@ -31,7 +31,7 @@ jobs:
           cd "$env:TEMP"
           7z x DXSDK_Jun10.exe DXSDK\Include -o_DX2010_
           7z x DXSDK_Jun10.exe DXSDK\Lib\x64 -o_DX2010_
-          move _DX2010_ d:\a\dxsdk
+          move _DX2010_ d:\a
           dir d:\a\dxsdk
           dir d:\a\dxsdk\Include
 
