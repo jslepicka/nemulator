@@ -54,5 +54,5 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: nemulator
+          name: nemulator-${{ substring(github.sha, 0, 8) }}
           path: artifacts/
