@@ -17,7 +17,7 @@ jobs:
         id: cache-dxsdk
         with:
          path: 'd:\a\dxsdk'
-         key: cache
+         key: dxsdk
 
       - name: Install 7zip
         if: steps.cache-dxsdk.outputs.cache-hit != 'true'
