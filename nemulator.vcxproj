@@ -240,6 +240,7 @@
     <ClCompile Include="dsp\biquad.ixx" />
     <ClCompile Include="dsp\biquad4.ixx" />
     <ClCompile Include="dsp\biquad4_t.ixx" />
+    <ClCompile Include="dsp\biquad4_parallel.ixx" />
     <ClCompile Include="dsp\dsp.ixx" />
     <ClCompile Include="dsp\first_order_bandpass.ixx" />
     <ClCompile Include="dsp\null_filter.ixx" />
@@ -596,7 +597,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include=".clang-format" />
-    <None Include=".github\workflows\build.yml" />
+    <None Include=".github\workflows\build.yaml" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="nes_ELf_icon.ico" />
