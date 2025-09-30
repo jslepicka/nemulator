@@ -67,7 +67,7 @@ s_cpu_info get_cpu_info()
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdPline, int nShowCmd)
 {
 #ifdef PREVIEW_SHA
-    app_title += std::string(" PREVIEW BUILD [") + STRINGIFY(PREVIEW_SHA) + "]";
+    app_title += std::string(".") + STRINGIFY(PREVIEW_SHA);
 #endif
     g_cpu_info = get_cpu_info();
     std::unique_ptr<D3d10App> app = std::make_unique<D3d10App>(hInstance);
