@@ -1,10 +1,18 @@
 #include "Windows.h"
 #include <memory>
+#include <string>
 
 import D3d10App;
 import nemulator;
 
-const char *app_title = "nemulator 5.0";
+#define _STRINGIFY(x) #x
+#define STRINGIFY(x) _STRINGIFY(x)
+
+#ifdef PREVIEW_SHA
+std::string app_title = "nemulator " STRINGIFY(PREVIEW_SHA);
+#else
+std::string app_title = "nemulator 5.0";
+#endif
 
 struct s_cpu_info
 {
@@ -58,6 +66,7 @@ s_cpu_info get_cpu_info()
     }
     return ci;
 }
+
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdPline, int nShowCmd)
 {
