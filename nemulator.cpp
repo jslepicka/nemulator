@@ -30,7 +30,7 @@ extern bool startFullscreen;
 extern bool aspectLock;
 extern double aspectRatio;
 extern HWND hWnd;
-extern const char *app_title;
+extern std::string app_title;
 
 extern c_config *config;
 extern std::unique_ptr<c_input_handler> g_ih;
@@ -816,7 +816,7 @@ void c_nemulator::leave_game()
             nsf_stats = NULL;
         }
     }
-    SetWindowText(hWnd, app_title);
+    SetWindowText(hWnd, app_title.c_str());
 }
 
 void c_nemulator::start_game()
@@ -853,7 +853,7 @@ void c_nemulator::start_game()
 
         SetWindowText(
             hWnd,
-            (std::string(app_title) + " - " + title + " (" + system + ")").c_str());
+            (app_title + " - " + title + " (" + system + ")").c_str());
     }
 }
 
