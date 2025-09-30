@@ -6,7 +6,7 @@ import gb;
 namespace gb
 {
 
-constexpr double c_gbapu::GB_AUDIO_RATE = (456.0f * 154.0f * 60.0f) / 2.0f;
+constexpr double c_gbapu::GB_AUDIO_RATE = (456.0f * 154.0f * 60.0f) / 4.0f;
 
 c_gbapu::c_gbapu(c_gb *gb)
 {
@@ -217,6 +217,11 @@ void c_gbapu::write_byte(uint16_t address, uint8_t data)
 
 uint8_t c_gbapu::read_byte(uint16_t address)
 {
+    if ((address & 0xFFF0) == 0xFF30) {
+        if (wave.enabled) {
+            return 0xFF;
+        }
+    }
     if (address == 0xFF26) {
         //return NR52;
         uint8_t return_value = NR52 & 0xF0 | (square1.enabled ? 1 << 0 : 0) | (square2.enabled ? 1 << 1 : 0) |
@@ -301,9 +306,9 @@ void c_gbapu::clock()
             }
             frame_seq_step++;
         }
-        if (mixer_enabled) {
-            mix();
-        }
+    }
+    if (mixer_enabled) {
+        mix();
     }
     tick++;
 }
