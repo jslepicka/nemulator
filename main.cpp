@@ -5,8 +5,14 @@
 import D3d10App;
 import nemulator;
 
-//const char *app_title = "nemulator 5.0";
+#define _STRINGIFY(x) #x
+#define STRINGIFY(x) _STRINGIFY(x)
+
+#ifdef PREVIEW_SHA
+std::string app_title = "nemulator " STRINGIFY(PREVIEW_SHA);
+#else
 std::string app_title = "nemulator 5.0";
+#endif
 
 struct s_cpu_info
 {
@@ -61,14 +67,9 @@ s_cpu_info get_cpu_info()
     return ci;
 }
 
-#define _STRINGIFY(x) #x
-#define STRINGIFY(x) _STRINGIFY(x)
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdPline, int nShowCmd)
 {
-#ifdef PREVIEW_SHA
-    app_title += std::string(".") + STRINGIFY(PREVIEW_SHA);
-#endif
     g_cpu_info = get_cpu_info();
     std::unique_ptr<D3d10App> app = std::make_unique<D3d10App>(hInstance);
     app->Init((char*)"nemulator.ini", new c_nemulator(), NULL);
