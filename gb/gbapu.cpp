@@ -13,25 +13,7 @@ c_gbapu::c_gbapu(c_gb *gb)
     this->gb = gb;
     mixer_enabled = 0;
 
-    struct
-    {
-        std::unique_ptr<lpf_t> *lpf;
-        std::unique_ptr<dsp::c_first_order_bandpass> *post_filter;
-        std::unique_ptr<dsp::c_resampler> *resampler;
-    } filters[] = {
-        {&lpf_l, &post_filter_l, &resampler_l},
-        {&lpf_r, &post_filter_r, &resampler_r}
-    };
-
-    for (auto &f : filters) {
-        *f.lpf = std::make_unique<lpf_t>();
-        *f.post_filter = std::make_unique<dsp::c_first_order_bandpass>();
-        *f.resampler =
-            std::make_unique<dsp::c_resampler>((float)(GB_AUDIO_RATE / 48000.0), f.lpf->get(), f.post_filter->get());
-    }
-
-
-    sound_buffer = std::make_unique_for_overwrite<int32_t[]>(1024);
+    resampler = resampler_t::create((float)(GB_AUDIO_RATE / 48000.0));
 }
 
 c_gbapu::~c_gbapu()
@@ -83,15 +65,13 @@ void c_gbapu::reset()
     square2.reset();
     wave.reset();
     noise.reset();
-    std::memset(sound_buffer.get(), 0, sizeof(uint32_t) * 1024);
     std::memset(registers, 0, sizeof(uint32_t) * 64);
 }
 
 void c_gbapu::set_audio_rate(double freq)
 {
     double x = GB_AUDIO_RATE / freq;
-    resampler_l->set_m((float)x);
-    resampler_r->set_m((float)x);
+    resampler->set_m((float)x);
 }
 
 void c_gbapu::enable_mixer()
@@ -106,15 +86,14 @@ void c_gbapu::disable_mixer()
 
 int c_gbapu::get_buffers(const float **buf_l, const float **buf_r)
 {
-    int num_samples = resampler_l->get_output_buf(buf_l);
-    resampler_r->get_output_buf(buf_r);
+    int num_samples = resampler->get_output_buf(0, buf_l);
+    resampler->get_output_buf(1, buf_r);
     return num_samples;
 }
 
 void c_gbapu::clear_buffers()
 {
-    resampler_l->clear_buf();
-    resampler_r->clear_buf();
+    resampler->clear_buf();
 }
 
 void c_gbapu::write_byte(uint16_t address, uint8_t data)
@@ -349,8 +328,7 @@ void c_gbapu::mix()
     right_sample *= right_vol;
     left_sample *= left_vol;
 
-    resampler_l->process(left_sample);
-    resampler_r->process(right_sample);
+    resampler->process({left_sample, right_sample});
 }
 
 c_gbapu::c_timer::c_timer()

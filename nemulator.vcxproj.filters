@@ -543,6 +543,12 @@
     <ClCompile Include="ym2612\ym2612.ixx">
       <Filter>ym2612</Filter>
     </ClCompile>
+    <ClCompile Include="dsp\biquad4_t_stereo.ixx">
+      <Filter>dsp</Filter>
+    </ClCompile>
+    <ClCompile Include="dsp\resampler2.ixx">
+      <Filter>dsp</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="nes\mappers\vrc7_audio.h">

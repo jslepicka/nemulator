@@ -263,20 +263,17 @@ export class c_apu
 
   private:
     static const float NES_AUDIO_RATE;
-    //c_resampler* resampler;
-    //c_biquad4* lpf;
-    //c_biquad* post_filter;
-    std::unique_ptr<dsp::c_resampler> resampler;
 
     using lpf_t = dsp::c_biquad4_t<
         0.5086284279823303f, 0.3313708603382111f, 0.1059221103787422f, 0.0055782101117074f,
         -1.9872593879699707f, -1.9750031232833862f, -1.8231037855148315f, -1.9900115728378296f,
         -1.9759204387664795f, -1.9602127075195313f, -1.9470522403717041f, -1.9888486862182617f,
         0.9801648259162903f, 0.9627774357795715f, 0.9480593800544739f, 0.9940192103385925f>;
-
-    std::unique_ptr<lpf_t> lpf;
-    std::unique_ptr<dsp::c_first_order_bandpass> post_filter;
-    std::unique_ptr<int32_t[]> sound_buffer;
+    using bpf_t = dsp::c_first_order_bandpass<0.5000000000000000f, 0.5000000000000000f, -0.0000000000000001f,
+                                            0.9998691174378402f, -0.9998691174378402f, -0.9997382348756805f>;
+    using resampler_t = dsp::c_resampler2<1, lpf_t, bpf_t>;
+    std::unique_ptr<resampler_t> resampler;
+    
     static const int CLOCKS_PER_FRAME_SEQ = 89489;
     int mixer_enabled;
     int square_clock;

@@ -1,31 +1,29 @@
 module;
 #include <immintrin.h>
 
-export module dsp:resampler;
+export module dsp:resampler2;
 import nemulator.std;
 import :audio_filter;
 
 namespace dsp
 {
-export template<size_t channels>
-class c_resampler
+export template <size_t channels, typename pre_f_t, typename post_f_t> class c_resampler2
 {
   public:
-    static std::unique_ptr<c_resampler<channels>> create(float m,
-                                                         const std::array<i_audio_filter *, channels> &pre_filters,
-                                                         const std::array<i_audio_filter *, channels> &post_filters)
+    using resampler_t = c_resampler2<channels, pre_f_t, post_f_t>;
+    static std::unique_ptr<resampler_t> create(float m)
     {
-        return std::unique_ptr<c_resampler<channels>>(new c_resampler<channels>(m, pre_filters, post_filters));
+        return std::unique_ptr<resampler_t>(new resampler_t(m));
     }
 
-    void set_m(float m)
+    void set_m(float value)
     {
-        this->m = m;
+        m = value;
     }
     int get_output_buf(size_t channel, const float **sample_buf)
     {
-       *sample_buf = this->output_buf[channel].get();
-       return output_buf_index;
+        *sample_buf = this->output_buf[channel].get();
+        return output_buf_index;
     }
     void clear_buf()
     {
@@ -36,10 +34,8 @@ class c_resampler
     {
         for (int i = 0; i < channels; i++) {
             filtered_buf[i][filtered_buf_index] = filtered_buf[i][filtered_buf_index + FILTERED_BUF_LEN] =
-                pre_filter[i]->process(sample[i]);
+                pre_filters[i]->process(sample[i]);
         }
-
-        float pre_processed[channels];
 
         if (--samples_required == 0) {
             for (int i = 0; i < channels; i++) {
@@ -56,7 +52,7 @@ class c_resampler
                 float c2 = 1.0f / 2.0f * ym1py1 - y0;
                 float c3 = 1.0f / 2.0f * (y0 - y1) + 1.0f / 6.0f * (y2 - ym1);
                 float j = ((c3 * mf + c2) * mf + c1) * mf + c0;
-                output_buf[i][output_buf_index] = post_filter[i]->process(j);
+                output_buf[i][output_buf_index] = post_filters[i]->process(j);
             }
 
             output_buf_index++;
@@ -70,8 +66,7 @@ class c_resampler
     }
 
   private:
-    c_resampler(float m, const std::array<i_audio_filter *, channels> &pre_filter,
-                const std::array<i_audio_filter *, channels> &post_filter)
+    c_resampler2(float m)
     {
         this->m = m;
         mf = 0.0f;
@@ -87,9 +82,9 @@ class c_resampler
             for (int j = 0; j < FILTERED_BUF_LEN * 2; j++) {
                 filtered_buf[i][j] = 0.0f;
             }
+            pre_filters[i] = std::make_unique<pre_f_t>();
+            post_filters[i] = std::make_unique<post_f_t>();
         }
-        this->pre_filter = pre_filter;
-        this->post_filter = post_filter;
     }
     float m, mf;
     int samples_required;
@@ -101,8 +96,7 @@ class c_resampler
 
     std::array<std::unique_ptr<float[]>, channels> output_buf;
     std::array<std::unique_ptr<float[]>, channels> filtered_buf;
-
-    std::array<i_audio_filter *, channels> pre_filter;
-    std::array<i_audio_filter *, channels> post_filter;
+    std::array<std::unique_ptr<pre_f_t>, channels> pre_filters;
+    std::array<std::unique_ptr<post_f_t>, channels> post_filters;
 };
 } //namespace dsp

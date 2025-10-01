@@ -241,10 +241,12 @@
     <ClCompile Include="dsp\biquad4.ixx" />
     <ClCompile Include="dsp\biquad4_t.ixx" />
     <ClCompile Include="dsp\biquad4_parallel.ixx" />
+    <ClCompile Include="dsp\biquad4_t_stereo.ixx" />
     <ClCompile Include="dsp\dsp.ixx" />
     <ClCompile Include="dsp\first_order_bandpass.ixx" />
     <ClCompile Include="dsp\null_filter.ixx" />
     <ClCompile Include="dsp\resampler.ixx" />
+    <ClCompile Include="dsp\resampler2.ixx" />
     <ClCompile Include="gb\gbapu.cpp" />
     <ClCompile Include="gb\mbc2.cpp" />
     <ClCompile Include="gb\mbc5.cpp" />

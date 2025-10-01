@@ -55,10 +55,15 @@ export class c_psg
         TYPE_TONE = 0,
         TYPE_VOLUME = 0x10
     };
-    std::unique_ptr<dsp::c_biquad4> lpf;
-    std::unique_ptr<dsp::c_first_order_bandpass> post_filter;
-    std::unique_ptr<int32_t[]> sound_buffer;
-    std::unique_ptr<dsp::c_resampler> resampler;
+    
+    using lpf_t =
+        dsp::c_biquad4_t<0.5068508386611939f, 0.3307863473892212f, 0.1168005615472794f, 0.0055816280655563f,
+                         -1.9496889114379883f, -1.9021773338317871f, -1.3770858049392700f, -1.9604763984680176f,
+                         -1.9442052841186523f, -1.9171522855758667f, -1.8950747251510620f, -1.9676681756973267f,
+                         0.9609073400497437f, 0.9271715879440308f, 0.8989855647087097f, 0.9881398081779480f>;
+    using bpf_t = dsp::c_first_order_bandpass<>;
+    using resampler_t = dsp::c_resampler2<1, lpf_t, bpf_t>;
+    std::unique_ptr<resampler_t> resampler;
 };
 
 } //namespace sms

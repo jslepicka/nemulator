@@ -70,12 +70,16 @@ private:
     float out2[fft_length];
     double bucket_update_timer;
     double mag_adjust;
-    //c_biquad* biquad1;
-    //c_biquad* biquad2;
-    //c_biquad* biquad3;
-    std::unique_ptr<dsp::c_biquad> biquad1;
-    std::unique_ptr<dsp::c_biquad> biquad2;
-    std::unique_ptr<dsp::c_biquad> biquad3;
+    
+        
+    using bq1_t = dsp::c_biquad<1.0f, 0.197012037038803f, 0.394024074077606f, 0.197012037038803f,
+        1.0f, -0.224558457732201f, 0.012606625445187f>;
+    using bq2_t = dsp::c_biquad<1.0f, 1.0f, -2.0f, 1.0f, 1.0f, -1.893870472908020f, 0.895159780979157f>;
+    using bq3_t = dsp::c_biquad<1.0f, 1.0f, -2.0f, 1.0f, 1.0f, -1.994614481925964f, 0.994621694087982f>;
+
+    std::unique_ptr<bq1_t> biquad1;
+    std::unique_ptr<bq2_t> biquad2;
+    std::unique_ptr<bq3_t> biquad3;
     double scroll_timer;
     double scroll_offset;
     Meow_FFT_Complex* meow_out;
