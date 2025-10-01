@@ -25,7 +25,6 @@ c_apu::c_apu()
 #ifdef AUDIO_LOG
     file.open("c:\\log\\audio.out", std::ios_base::trunc | std::ios_base::binary);
 #endif
-    sound_buffer = std::make_unique<int32_t[]>(1024);
     build_lookup_tables();
 }
 
@@ -96,7 +95,6 @@ void c_apu::reset()
     a2 = regexprep(num2str(Hd.sosMatrix(17:20), '%.16ff '), '\s+', ',')
     a3 = regexprep(num2str(Hd.sosMatrix(21:24), '%.16ff '), '\s+', ',')
     */
-    lpf = std::make_unique<lpf_t>();
     /*
     post-filter is butterworth bandpass, 30Hz - 14kHz
     d = fdesign.bandpass('N,F3dB1,F3dB2', 2, 30, 14000, 48000);
@@ -132,16 +130,13 @@ void c_apu::reset()
     a1_h = num2str(a_h(2), '%.16ff');
     fprintf('%s, %s, %s, %s, %s, %s\n', b0_l, b1_l, a1_l, b0_h, b1_h, a1_h);
     */
-    post_filter =
-        std::make_unique<dsp::c_first_order_bandpass>(0.5000000000000000f, 0.5000000000000000f, -0.0000000000000001f,
-                                                      0.9998691174378402f, -0.9998691174378402f, -0.9997382348756805f);
 
-    resampler = std::make_unique<dsp::c_resampler>(NES_AUDIO_RATE / 48000.0f, lpf.get(), post_filter.get());
+    resampler = resampler_t::create(NES_AUDIO_RATE / 48000.0f);
 }
 
 int c_apu::get_buffer(const float** buf)
 {
-    int num_samples = resampler->get_output_buf(buf);
+    int num_samples = resampler->get_output_buf(0, buf);
     return num_samples;
 }
 
@@ -317,7 +312,7 @@ void c_apu::mix()
     float sample = square_out + tnd_out;
     /*if (nes->mapper->has_expansion_audio())*/
     sample = mapper->mix_audio(sample);
-    resampler->process(sample);
+    resampler->process({sample});
 }
 
 void c_apu::clock_timers()

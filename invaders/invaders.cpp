@@ -56,21 +56,13 @@ c_invaders::c_invaders()
     // b = regexprep(num2str(Hd.sosMatrix(1 : 3), '%.16ff '), '\s+', ',')
     // a = regexprep(num2str(Hd.sosMatrix(4 : 6), '%.16ff '), '\s+', ',')
 
-    post_filter =
-        new dsp::c_biquad(0.9972270727157593f, {1.0000000000000000f, -2.0000000000000000f, 1.0000000000000000f},
-                          {1.0000000000000000f, -1.9944463968276978f, 0.9944617748260498f});
 
-    //no need for low pass filter since we're playing back samples
-    null_filter = new dsp::c_null_filter();
-    resampler = new dsp::c_resampler((double)audio_freq / 48000.0, null_filter, post_filter);
+    resampler = resampler_t::create((double)audio_freq / 48000.0);
     mixer_enabled = 0;
 }
 
 c_invaders::~c_invaders()
 {
-    delete null_filter;
-    delete post_filter;
-    delete resampler;
 }
 
 int c_invaders::load_romset(std::vector<s_roms> &romset)
@@ -209,7 +201,7 @@ void c_invaders::clock_sound(int cycles)
         }
         if (mixer_enabled) {
             sample = std::min(std::max(sample, -1.0f), 1.0f);
-            resampler->process(sample);
+            resampler->process({sample});
         }
     }
 }
@@ -400,7 +392,7 @@ void c_invaders::write_port(uint8_t port, uint8_t data)
 
 int c_invaders::get_sound_bufs(const float **buf_l, const float **buf_r)
 {
-    int num_samples = resampler->get_output_buf(buf_l);
+    int num_samples = resampler->get_output_buf(0, buf_l);
     *buf_r = nullptr;
     return num_samples;
 }

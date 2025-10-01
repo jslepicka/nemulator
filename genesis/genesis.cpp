@@ -72,24 +72,7 @@ c_genesis::c_genesis()
 
     */
 
-    struct
-    {
-        std::unique_ptr<lpf> *lpf;
-        std::unique_ptr<dsp::c_first_order_bandpass> *post_filter;
-        std::unique_ptr<dsp::c_resampler> *resampler;
-    } filters[] = {{&lpf_l_t, &post_filter_l, &resampler_l}, {&lpf_r_t, &post_filter_r, &resampler_r}};
-
-    for (auto &f : filters) {
-        *f.lpf = std::make_unique<lpf>();
-
-        //2Hz - 3390Hz
-        *f.post_filter = std::make_unique<dsp::c_first_order_bandpass>(0.1840657775125092f, 0.1840657775125092f,
-                                                                       -0.6318684449749816f, 0.9998691174378402f,
-                                                                       -0.9998691174378402f, -0.9997382348756805f);
-
-        *f.resampler =
-            std::make_unique<dsp::c_resampler>((float)(BASE_AUDIO_FREQ / 48000.0), f.lpf->get(), f.post_filter->get());
-    }
+    resampler = resampler_t::create((float)(BASE_AUDIO_FREQ / 48000.0));
 }
 
 c_genesis::~c_genesis()
@@ -300,9 +283,8 @@ void c_genesis::disable_z80()
 int c_genesis::emulate_frame()
 {
     psg->clear_buffer();
-    resampler_l->clear_buf();
-    resampler_r->clear_buf();
-
+    resampler->clear_buf();
+    
     auto get_next_event = [&]() {
         uint64_t a = next_events[M68K_CLOCK];
         uint64_t b = next_events[Z80_CLOCK];
@@ -328,8 +310,8 @@ int c_genesis::emulate_frame()
             next_events[CYCLE_EVENT::YM_CLOCK] += CYCLES_PER_YM_CLOCK << 3;
             ym->clock(1);
             if (mixer_enabled) {
-                resampler_l->process(ym->out_l * (1.0f - 1.0f / 6.0f) + psg->out * (1.0f / 6.0f * 2.0f));
-                resampler_r->process(ym->out_r * (1.0f - 1.0f / 6.0f) + psg->out * (1.0f / 6.0f * 2.0f));
+                resampler->process({ym->out_l * (1.0f - 1.0f / 6.0f) + psg->out * (1.0f / 6.0f * 2.0f),
+                                    ym->out_r * (1.0f - 1.0f / 6.0f) + psg->out * (1.0f / 6.0f * 2.0f)});
             }
         }
         else if (event == CYCLE_EVENT::M68K_CLOCK) {
@@ -739,16 +721,15 @@ int *c_genesis::get_video()
 
 int c_genesis::get_sound_bufs(const float **buf_l, const float **buf_r)
 {
-    int num_samples = resampler_l->get_output_buf(buf_l);
-    resampler_r->get_output_buf(buf_r);
+    int num_samples = resampler->get_output_buf(0, buf_l);
+    resampler->get_output_buf(1, buf_r);
     return num_samples;
 
 }
 void c_genesis::set_audio_freq(double freq)
 {
     double m = BASE_AUDIO_FREQ / freq;
-    resampler_l->set_m(m);
-    resampler_r->set_m(m);
+    resampler->set_m(m);
 }
 
 void c_genesis::enable_mixer()

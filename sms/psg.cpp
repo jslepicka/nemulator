@@ -25,16 +25,7 @@ c_psg::c_psg()
     a2 = regexprep(num2str(Hd.sosMatrix(17:20), '%.16ff '), '\s+', ',')
     a3 = regexprep(num2str(Hd.sosMatrix(21:24), '%.16ff '), '\s+', ',')
     */
-    lpf = std::make_unique<dsp::c_biquad4>(
-        std::array{0.5068508386611939f, 0.3307863473892212f, 0.1168005615472794f, 0.0055816280655563f},
-        std::array{-1.9496889114379883f, -1.9021773338317871f, -1.3770858049392700f, -1.9604763984680176f},
-        std::array{-1.9442052841186523f, -1.9171522855758667f, -1.8950747251510620f, -1.9676681756973267f},
-        std::array{0.9609073400497437f, 0.9271715879440308f, 0.8989855647087097f, 0.9881398081779480f});
-    post_filter =
-        std::make_unique<dsp::c_first_order_bandpass>();
-    resampler = std::make_unique<dsp::c_resampler>((float)(((228.0 * 262.0 * 60.0) / 4.0) / 48000.0), lpf.get(),
-                                                   post_filter.get());
-    sound_buffer = std::make_unique<int32_t[]>(1024);
+    resampler = resampler_t::create((float)(((228.0 * 262.0 * 60.0) / 4.0) / 48000.0));
 }
 
 c_psg::~c_psg()
@@ -43,7 +34,7 @@ c_psg::~c_psg()
 
 int c_psg::get_buffer(const float **buf)
 {
-    int num_samples = resampler->get_output_buf(buf);
+    int num_samples = resampler->get_output_buf(0, buf);
     return num_samples;
 }
 
@@ -71,7 +62,6 @@ void c_psg::reset()
     channel = 0;
     type = 0;
     out = 0.0f;
-    std::memset(sound_buffer.get(), 0, sizeof(int32_t) * 1024);
 }
 
 void c_psg::set_audio_rate(double freq)
@@ -145,7 +135,7 @@ void c_psg::clock(int cycles)
         if (mixer_enabled) {
             for (int i = 0; i < 4; i++) {
                 float sample = out / 4.0f;
-                resampler->process(out / 4.0f);
+                resampler->process({out / 4.0f});
             }
         }
     }

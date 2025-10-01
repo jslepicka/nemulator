@@ -6,29 +6,25 @@ import :audio_filter;
 
 namespace dsp
 {
-export class c_biquad : public i_audio_filter
+export template <float g, float b0, float b1, float b2, float a0, float a1, float a2>
+class c_biquad : public i_audio_filter
 {
   public:
-    c_biquad(float g, const std::array<float, 3> &b, const std::array<float, 3> &a)
+    c_biquad()
     {
-        this->g = g;
-        this->b = b;
-        this->a = a;
     };
 
     __forceinline float process(float in)
     {
         in *= g;
-        float out = in * b[0] + z[0];
-        z[1] = in * b[2] - out * a[2];
-        z[0] = (in * b[1] + z[1]) - (out * a[1]);
+        float out = in * b0 + z0;
+        z1 = in * b2 - out * a2;
+        z0 = (in * b1 + z1) - (out * a1);
         return out;
     }
 
   private:
-    float g;
-    std::array<float, 3> b;
-    std::array<float, 3> a;
-    std::array<float, 2> z{0.0f, 0.0f};
+    float z0;
+    float z1;
 };
 } //namespace dsp

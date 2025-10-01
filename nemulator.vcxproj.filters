@@ -38,6 +38,12 @@
     <Filter Include="ym2612">
       <UniqueIdentifier>{5ab49e7a-a977-4be1-9f0a-50098a8edd7e}</UniqueIdentifier>
     </Filter>
+    <Filter Include=".github">
+      <UniqueIdentifier>{63d93076-4bf4-4300-a29d-c0092e0a1ffa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include=".github\workflows">
+      <UniqueIdentifier>{104eaf10-8f11-43ef-870e-7af948018f2a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="nes\cpu.cpp">
@@ -522,10 +528,25 @@
     <ClCompile Include="nes\mappers\mapper52.ixx">
       <Filter>nes\mappers</Filter>
     </ClCompile>
-    <ClCompile Include="dsp\first_order_bandpass.ixx" />
-    <ClCompile Include="ym2612\ym2612.cpp" />
-    <ClCompile Include="ym2612\ym2612.ixx" />
     <ClCompile Include="dsp\biquad4_t.ixx">
+      <Filter>dsp</Filter>
+    </ClCompile>
+    <ClCompile Include="dsp\biquad4_parallel.ixx">
+      <Filter>dsp</Filter>
+    </ClCompile>
+    <ClCompile Include="dsp\first_order_bandpass.ixx">
+      <Filter>dsp</Filter>
+    </ClCompile>
+    <ClCompile Include="ym2612\ym2612.cpp">
+      <Filter>ym2612</Filter>
+    </ClCompile>
+    <ClCompile Include="ym2612\ym2612.ixx">
+      <Filter>ym2612</Filter>
+    </ClCompile>
+    <ClCompile Include="dsp\biquad4_t_stereo.ixx">
+      <Filter>dsp</Filter>
+    </ClCompile>
+    <ClCompile Include="dsp\resampler2.ixx">
       <Filter>dsp</Filter>
     </ClCompile>
   </ItemGroup>
@@ -554,6 +575,9 @@
   <ItemGroup>
     <None Include=".clang-format">
       <Filter>Resource Files</Filter>
+    </None>
+    <None Include=".github\workflows\build.yaml">
+      <Filter>.github\workflows</Filter>
     </None>
   </ItemGroup>
 </Project>

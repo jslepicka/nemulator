@@ -6,7 +6,13 @@ import :audio_filter;
 
 namespace dsp
 {
-export class c_first_order_bandpass : public i_audio_filter
+export template <float b0_l = 0.5000000000000000f,
+                 float b1_l = 0.5000000000000000f,
+                 float a1_l = -0.0000000000000001f,
+                 float b0_h = 0.9998691174378402f,
+                 float b1_h = -0.9998691174378402f,
+                 float a1_h = -0.9997382348756805f>
+class c_first_order_bandpass : public i_audio_filter
 {
   public:
     // default to 2Hz-12kHz
@@ -23,25 +29,19 @@ export class c_first_order_bandpass : public i_audio_filter
     // b1_h = num2str(b_h(2), '%.16ff');
     // a1_h = num2str(a_h(2), '%.16ff');
     // fprintf('%s, %s, %s, %s, %s, %s\n', b0_l, b1_l, a1_l, b0_h, b1_h, a1_h);
-    c_first_order_bandpass() :
-        b0_l(0.5000000000000000f),
-        b1_l(0.5000000000000000f),
-        a1_l(-0.0000000000000001f),
-        b0_h(0.9998691174378402f),
-        b1_h(-0.9998691174378402f),
-        a1_h(-0.9997382348756805f),
-        w_l(0.0f),
-        w_h(0.0f)
-    {};
+    //c_first_order_bandpass() :
+    //    b0_l(0.5000000000000000f),
+    //    b1_l(0.5000000000000000f),
+    //    a1_l(-0.0000000000000001f),
+    //    b0_h(0.9998691174378402f),
+    //    b1_h(-0.9998691174378402f),
+    //    a1_h(-0.9997382348756805f),
+    //    w_l(0.0f),
+    //    w_h(0.0f)
+    //{};
     
-    c_first_order_bandpass(float b0_l, float b1_l, float a1_l, float b0_h, float b1_h, float a1_h)
+    c_first_order_bandpass()
     {
-        this->b0_l = b0_l;
-        this->b1_l = b1_l;
-        this->a1_l = a1_l;
-        this->b0_h = b0_h;
-        this->b1_h = b1_h;
-        this->a1_h = a1_h;
         w_l = 0.0f;
         w_h = 0.0f;
     };
@@ -61,11 +61,5 @@ export class c_first_order_bandpass : public i_audio_filter
   private:
     float w_l;
     float w_h;
-    float b0_l;
-    float b1_l;
-    float a1_l;
-    float b0_h;
-    float b1_h;
-    float a1_h;
 };
 } //namespace dsp

@@ -163,16 +163,10 @@ void c_nsf_stats::init(void* params)
     }
 
     //a weighting filter
-    biquad1 = std::make_unique<dsp::c_biquad>(1.0f,
-        std::array{ 0.197012037038803f, 0.394024074077606f, 0.197012037038803f },
-        std::array{ 1.0f, -0.224558457732201f, 0.012606625445187f });
-    biquad2 = std::make_unique<dsp::c_biquad>(1.0f,
-        std::array{ 1.0f, -2.0f, 1.0f },
-        std::array{ 1.0f, -1.893870472908020f, 0.895159780979157f });
-    biquad3 = std::make_unique<dsp::c_biquad>(1.0f,
-        std::array{ 1.0f, -2.0f, 1.0f },
-        std::array{ 1.0f, -1.994614481925964f, 0.994621694087982f });
-
+    biquad1 = std::make_unique<bq1_t>();
+    biquad2 = std::make_unique<bq2_t>();
+    biquad3 = std::make_unique<bq3_t>();
+    
     scroll_offset = 1.5;
     scroll_timer = 0.0;
     meow_out = (Meow_FFT_Complex*)malloc(sizeof(Meow_FFT_Complex) * fft_length);

@@ -138,21 +138,16 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     int line;
     bool frame_complete;
 
-    using lpf = dsp::c_biquad4_t<
+    using lpf_t = dsp::c_biquad4_t<
         0.5068508387f, 0.3307863474f, 0.1168005615f, 0.0055816281f,
        -1.9496889114f, -1.9021773338f, -1.3770858049f, -1.9604763985f,
        -1.9442052841f, -1.9171522856f, -1.8950747252f, -1.9676681757f,
         0.9609073400f,  0.9271715879f,  0.8989855647f,  0.9881398082f>;
+    using bpf_t = dsp::c_first_order_bandpass<0.1840657775125092f, 0.1840657775125092f, -0.6318684449749816f,
+                                            0.9998691174378402f, -0.9998691174378402f, -0.9997382348756805f>;
+    using resampler_t = dsp::c_resampler2<2, lpf_t, bpf_t>;
 
-    std::unique_ptr<lpf> lpf_l_t;
-    std::unique_ptr<dsp::c_first_order_bandpass> post_filter_l;
-    std::unique_ptr<dsp::c_resampler> resampler_l;
-
-    std::unique_ptr<lpf> lpf_r_t;
-    std::unique_ptr<dsp::c_first_order_bandpass> post_filter_r;
-    std::unique_ptr<dsp::c_resampler> resampler_r;
-
-    std::unique_ptr<dsp::c_null_filter> null_filter;
+    std::unique_ptr<resampler_t> resampler;
 
     static constexpr double BASE_AUDIO_FREQ=(488.0 * 262.0 * 60.0) / 6.0;
 

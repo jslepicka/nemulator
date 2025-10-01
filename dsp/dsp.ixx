@@ -4,5 +4,8 @@ export import :null_filter;
 export import :biquad;
 export import :biquad4;
 export import :biquad4_t;
+export import :biquad4_t_stereo;
+export import :biquad4_parallel;
 export import :resampler;
+export import :resampler2;
 export import :first_order_bandpass;

@@ -27,26 +27,17 @@ class c_gbapu
 
   private:
     c_gb *gb;
-    //c_resampler* resampler_l;
-    //c_resampler* resampler_r;
-    //c_biquad4* lpf_l;
-    //c_biquad* post_filter_l;
-    //c_biquad4* lpf_r;
-    //c_biquad* post_filter_r;
 
     using lpf_t = dsp::c_biquad4_t<
-        0.5090923309326172f, 0.3317873477935791f, 0.1050286665558815f, 0.0055788583122194f,
-       -1.9908285140991211f, -1.9819903373718262f, -1.8711743354797363f, -1.9928110837936401f,
-       -1.9800899028778076f, -1.9664875268936157f, -1.9550460577011108f, -1.9912019968032837f,
-        0.9831480979919434f, 0.9683376550674439f, 0.9557733535766602f, 0.9949237704277039f>;
+        0.5071556568145752f,0.3305769860744476f,0.1126436218619347f,0.0055792131461203f,
+       -1.9635004997253418f,-1.9287968873977661f,-1.5293598175048828f,-1.9713480472564697f,
+       -1.9545004367828369f,-1.9304054975509644f,-1.9105833768844604f,-1.9750583171844482f,
+        0.9666246175765991f,0.9376937150955200f,0.9134329557418823f,0.9898924231529236f>;
 
-    std::unique_ptr<dsp::c_resampler> resampler_l;
-    std::unique_ptr<dsp::c_resampler> resampler_r;
-    std::unique_ptr<lpf_t> lpf_l;
-    std::unique_ptr<dsp::c_first_order_bandpass> post_filter_l;
-    std::unique_ptr<lpf_t> lpf_r;
-    std::unique_ptr<dsp::c_first_order_bandpass> post_filter_r;
-    std::unique_ptr<int32_t[]> sound_buffer;
+    using bpf_t = dsp::c_first_order_bandpass<>;
+    using resampler_t = dsp::c_resampler2<2, lpf_t, bpf_t>;
+
+    std::unique_ptr<resampler_t> resampler;
 
     int mixer_enabled;
     int ticks;
