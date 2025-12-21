@@ -14,6 +14,15 @@ class c_z80;
 namespace pacman
 {
 
+export struct s_roms
+{
+    std::string filename;
+    uint32_t crc32;
+    uint32_t length;
+    uint32_t offset;
+    uint8_t *loc;
+};
+
 export enum class PACMAN_MODEL
 {
     PACMAN,
@@ -93,14 +102,6 @@ export class c_pacman : public c_system, register_class<system_registry, c_pacma
     }
 
   protected:
-    struct s_roms
-    {
-        std::string filename;
-        uint32_t crc32;
-        uint32_t length;
-        uint32_t offset;
-        uint8_t *loc;
-    };
     virtual uint8_t read_byte(uint16_t address);
     virtual void write_byte(uint16_t address, uint8_t data);
     uint8_t read_port(uint8_t port);

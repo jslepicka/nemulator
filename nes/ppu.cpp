@@ -603,18 +603,20 @@ INLINE void c_ppu::fetch()
 
             attribute_shift = ((vram_address >> 4) & 0x04) | (vram_address & 0x02);
 #ifdef NES_PPU_USE_SSE2
-            //load attribute and store 8 copies of it over 128-bit int
-            //only 64-bits are ultimately used
-            __m128i t = _mm_set1_epi8(mapper->ppu_read(attribute_address));
+            {
+                //load attribute and store 8 copies of it over 128-bit int
+                //only 64-bits are ultimately used
+                __m128i t = _mm_set1_epi8(mapper->ppu_read(attribute_address));
 
-            //shift all 16 attributes by attribute_shift
-            t = _mm_srli_epi64(t, attribute_shift);
-            //mask all 16 attributes with 0x3
-            t = _mm_and_si128(t, _mm_set1_epi8(0x3));
-            //shift all values left by 2
-            t = _mm_slli_epi64(t, 2);
-            //assign the lower 64-bits to attribute
-            attribute = _mm_cvtsi128_si64(t);
+                //shift all 16 attributes by attribute_shift
+                t = _mm_srli_epi64(t, attribute_shift);
+                //mask all 16 attributes with 0x3
+                t = _mm_and_si128(t, _mm_set1_epi8(0x3));
+                //shift all values left by 2
+                t = _mm_slli_epi64(t, 2);
+                //assign the lower 64-bits to attribute
+                attribute = _mm_cvtsi128_si64(t);
+            }
 #else
             attribute = mapper->ppu_read(attribute_address);
             attribute >>= attribute_shift;
