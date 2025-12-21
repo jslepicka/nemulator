@@ -117,7 +117,7 @@ export class c_ppu
         FETCH_IDLE = 3 << 3
     };
     bool limit_sprites;
-    union {
+    union u_ppuctrl {
         struct
         {
             unsigned char nt_base : 2;
@@ -130,7 +130,7 @@ export class c_ppu
         };
         unsigned char value;
     } PPUCTRL;
-    union {
+    union u_ppumask {
         struct
         {
             unsigned char greyscale : 1;
@@ -149,7 +149,7 @@ export class c_ppu
         };
         unsigned char value;
     } PPUMASK;
-    union {
+    union u_ppustatus {
         struct
         {
             unsigned char : 5;

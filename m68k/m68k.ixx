@@ -181,7 +181,7 @@ public:
     uint32_t highest_bit;
     uint32_t ea_indirect;
 
-    union {
+    union u_extension_word {
         struct {
 #pragma pack(push, 1)
             int8_t d8 : 8;

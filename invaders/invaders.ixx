@@ -78,7 +78,7 @@ export class c_invaders : public c_system, register_class<system_registry, c_inv
     int loaded;
     uint16_t shift_register;
     uint8_t shift_amount;
-    union {
+    union u_inp1 {
         struct
         {
             uint8_t credit : 1;
@@ -93,7 +93,7 @@ export class c_invaders : public c_system, register_class<system_registry, c_inv
         uint8_t value;
     } INP1;
 
-    union {
+    union u_inp2 {
         struct
         {
             uint8_t ships0 : 1; //ships0 << 1 | ships1

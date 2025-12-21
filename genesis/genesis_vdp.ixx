@@ -53,7 +53,7 @@ export class c_vdp
         CRAM_READ = 0b1000,
         INVALID = -1
     } address_type;
-    union {
+    union u_status {
         struct
         {
             uint8_t pal : 1;
