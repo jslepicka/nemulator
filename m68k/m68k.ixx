@@ -20,18 +20,12 @@ export class c_m68k
     typedef std::function<void(uint32_t, uint16_t)> write_word_t;
     typedef std::function<void()> ack_irq_t;
 
-    typedef std::function<void(c_m68k*)> opcode_t;
+    //typedef std::function<void(c_m68k*)> opcode_t;
+    using opcode_t = void (c_m68k::*)();
 
-public:
-    c_m68k(
-        read_word_t read_word,
-        write_word_t write_word,
-        read_byte_t read_byte,
-        write_byte_t write_byte,
-        ack_irq_t ack_irq,
-        uint8_t *ipl,
-        uint32_t *stalled
-    );
+  public:
+    c_m68k(read_word_t read_word, write_word_t write_word, read_byte_t read_byte, write_byte_t write_byte,
+           ack_irq_t ack_irq, uint8_t *ipl, uint32_t *stalled);
     void reset();
     bool test();
     void decode();
@@ -42,6 +36,7 @@ public:
     {
         return required_cycles - available_cycles;
     };
+
   private:
     uint8_t *ipl;
     uint32_t *stalled;
@@ -140,7 +135,7 @@ public:
     uint32_t ea;
     int32_t address_increment;
     uint32_t *address_increment_target;
-    uint32_t* register_target;
+    uint32_t *register_target;
 
     ADDRESS_MODE address_mode;
 
@@ -155,7 +150,7 @@ public:
     uint32_t d5;
     uint32_t d6;
     uint32_t d7;
-    uint32_t* d[8];
+    uint32_t *d[8];
 
     uint32_t a0;
     uint32_t a1;
@@ -164,7 +159,7 @@ public:
     uint32_t a4;
     uint32_t a5;
     uint32_t a6;
-    uint32_t* a[8];
+    uint32_t *a[8];
 
     uint32_t usp; //a7 or usp
     uint32_t ssp;
@@ -194,6 +189,7 @@ public:
         uint16_t value;
     } extension_word;
 
+
     void ASd_();
     void ASd2_();
     void AND_();
@@ -208,8 +204,8 @@ public:
     void NEGX_();
     void BTST_();
     void BTST2_();
-    void BITOP_(std::function<uint32_t(uint32_t,uint32_t)>);
-    void BITOP2_(std::function<uint32_t(uint32_t, uint32_t)>);
+    template <typename op> void BITOP_();
+    template <typename op> void BITOP2_();
     void CLR_();
     void EXG_();
     void TST_();
@@ -276,11 +272,11 @@ public:
     void MULS_();
     void DIVU_();
     void DIVS_();
-    void INTERRUPT_(int number);
+    //void INTERRUPT_(int number);
     void STOP_();
 
     void do_trap(uint32_t vector);
-    
+
     void set_size(int size);
 
     void get_size1();
@@ -290,6 +286,7 @@ public:
     int get_ea_cycles();
     int get_ea_cycles(ADDRESS_MODE mode);
     uint32_t compute_ea();
+
     uint32_t read_ea();
     void write_ea(uint32_t value);
     void preincrement_ea();
@@ -305,7 +302,7 @@ public:
     uint32_t Xn;
     uint32_t immediate_size;
     uint32_t movem_register_list;
-    
+
     uint8_t interrupt;
     bool stopped;
 
@@ -314,4 +311,27 @@ public:
 
     static const std::array<std::array<uint8_t, 9>, 12> move_cycles;
     static const std::array<std::array<uint8_t, 9>, 12> move_cycles_l;
+
+    struct op_set
+    {
+        static uint32_t calc(uint32_t a, uint32_t b)
+        {
+            return a | b;
+        }
+    };
+    struct op_clr
+    {
+        static uint32_t calc(uint32_t a, uint32_t b)
+        {
+            return a & ~b;
+        }
+    };
+    struct op_chg
+    {
+        static uint32_t calc(uint32_t a, uint32_t b)
+        {
+            return a ^ b;
+        }
+    };
 };
+

@@ -21,7 +21,7 @@ c_pacman::c_pacman(PACMAN_MODEL model)
         [this](uint8_t port, uint8_t data) { this->write_port(port, data); }, //write_port
         nullptr, //int_ack callback
         &nmi, &irq, &data_bus);
-    pacman_vid = std::make_unique<c_pacman_vid>(this, &irq);
+    pacman_vid = std::make_unique<c_pacman_vid>([this](int irq) { this->set_irq(irq); });
     pacman_psg = std::make_unique<c_pacman_psg>();
     loaded = 0;
     this->model = model;
@@ -33,7 +33,7 @@ c_pacman::~c_pacman()
 {
 }
 
-int c_pacman::load_romset(std::vector<s_roms> &romset)
+int c_pacman::load_romset(std::vector<pacman::s_roms> &romset)
 {
     for (auto &r : romset) {
         std::ifstream file;

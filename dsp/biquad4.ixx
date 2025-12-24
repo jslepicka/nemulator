@@ -48,7 +48,7 @@ export class c_biquad4 : public i_audio_filter
 
     __forceinline float process(float input)
     {
-        d.m128_f32[0] = input;
+        d = _mm_move_ss(d, _mm_set_ss(input));
         __m128 post_gain1 = _mm_mul_ps(d, g);
         __m128 out = _mm_add_ps(post_gain1, z1);
         __m128 t_z1_1 = _mm_mul_ps(post_gain1, b2);

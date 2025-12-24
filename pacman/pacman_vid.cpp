@@ -14,10 +14,9 @@ namespace pacman
 const uint8_t c_pacman_vid::rg_weights[] = {0x0, 0x21, 0x47, 0x68, 0x97, 0xB8, 0xDE, 0xFF};
 const uint8_t c_pacman_vid::b_weights[] = {0x0, 0x51, 0xAE, 0xFF};
 
-c_pacman_vid::c_pacman_vid(c_pacman *pacman, int *irq)
+c_pacman_vid::c_pacman_vid(irq_callback_t irq_callback)
 {
-    this->pacman = pacman;
-    this->irq = irq;
+    this->irq_callback = irq_callback;
     fb = std::make_unique<uint32_t[]>(288 * 224);
     vram = std::make_unique<uint8_t[]>(2048);
     sprite_ram = std::make_unique<uint8_t[]>(16);
@@ -234,10 +233,12 @@ void c_pacman_vid::execute(int cycles)
     };
 
     if (line == START_VBLANK) {
-        pacman->set_irq(1);
+        //pacman->set_irq(1);
+        irq_callback(1);
     }
     else if (line == END_VBLANK) {
-        pacman->set_irq(0);
+        //pacman->set_irq(0);
+        irq_callback(0);
     }
 
     //ignore cycles and just render a line

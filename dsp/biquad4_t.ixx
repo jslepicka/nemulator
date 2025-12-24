@@ -54,7 +54,7 @@ class c_biquad4_t : public i_audio_filter
         const __m128 a2 = _mm_set_ps(a2_3, a2_2, a2_1, a2_0);
         const __m128 a3 = _mm_set_ps(a3_3, a3_2, a3_1, a3_0);
 
-        d.m128_f32[0] = input;
+        d = _mm_move_ss(d, _mm_set_ss(input));
         __m128 post_gain1 = _mm_mul_ps(d, g);
         __m128 out = _mm_add_ps(post_gain1, z1);
         __m128 t_z1_1 = _mm_mul_ps(post_gain1, b2);
