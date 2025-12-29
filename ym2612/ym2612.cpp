@@ -398,25 +398,30 @@ void c_phase_generator::clock(uint8_t lfo_counter, uint8_t fm_level)
     if (lfo_high & (1 << 3)) {
         lfo_fm_idx ^= 7;
     }
-    uint8_t multiplier = vibrato_table[fm_level][lfo_fm_idx];
-
-    uint32_t f_num_delta = 0;
-    uint32_t f_bits = (f_number >> 4) & 0x7F;
-    f_num_delta += (f_bits & 0x01) ? (multiplier >> 6) : 0;
-    f_num_delta += (f_bits & 0x02) ? (multiplier >> 5) : 0;
-    f_num_delta += (f_bits & 0x04) ? (multiplier >> 4) : 0;
-    f_num_delta += (f_bits & 0x08) ? (multiplier >> 3) : 0;
-    f_num_delta += (f_bits & 0x10) ? (multiplier >> 2) : 0;
-    f_num_delta += (f_bits & 0x20) ? (multiplier >> 1) : 0;
-    f_num_delta += (f_bits & 0x40) ? (multiplier >> 0) : 0;
-
+    
     uint32_t modulated_f_num = f_number << 1;
-    if (lfo_high & (1 << 4)) {
-        modulated_f_num -= f_num_delta;
+
+    if (fm_level) {
+        uint32_t f_bits = (f_number >> 4) & 0x7F;
+        uint8_t multiplier = vibrato_table[fm_level][lfo_fm_idx];
+        if (multiplier) {
+            uint32_t f_num_delta = 0;
+            f_num_delta += (f_bits & 0x01) ? (multiplier >> 6) : 0;
+            f_num_delta += (f_bits & 0x02) ? (multiplier >> 5) : 0;
+            f_num_delta += (f_bits & 0x04) ? (multiplier >> 4) : 0;
+            f_num_delta += (f_bits & 0x08) ? (multiplier >> 3) : 0;
+            f_num_delta += (f_bits & 0x10) ? (multiplier >> 2) : 0;
+            f_num_delta += (f_bits & 0x20) ? (multiplier >> 1) : 0;
+            f_num_delta += (f_bits & 0x40) ? (multiplier >> 0) : 0;
+            if (lfo_high & (1 << 4)) {
+                modulated_f_num -= f_num_delta;
+            }
+            else {
+                modulated_f_num += f_num_delta;
+            }
+        }
     }
-    else {
-        modulated_f_num += f_num_delta;
-    }
+
     uint32_t shifted_f_num = (modulated_f_num << block) >> 2;
 
     uint32_t key_code = compute_key_code(f_number, block);

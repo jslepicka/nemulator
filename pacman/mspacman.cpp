@@ -2,7 +2,6 @@ module;
 
 module pacman:mspacman;
 
-import pacman;
 import :vid;
 import :psg;
 
