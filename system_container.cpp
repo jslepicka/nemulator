@@ -132,6 +132,7 @@ void c_system_container::DrawToTexture(ID3D10Texture2D *tex)
     tex->Map(0, D3D10_MAP_WRITE_DISCARD, NULL, &map);
     int* p;
     auto &display_info = system_info.display_info;
+    int pitch = map.RowPitch / 4;
     if (system && system->is_loaded())
     {
         int *fb_base = system->get_video();
@@ -139,28 +140,33 @@ void c_system_container::DrawToTexture(ID3D10Texture2D *tex)
             int y = 0;
             for (; y < display_info.fb_height; y++) {
                 int *fb = fb_base + (display_info.fb_width * y);
-                p = (int *)map.pData + (y) * (map.RowPitch / 4);
+                p = (int *)map.pData + (y) * pitch;
                 int x = 0;
                 int x_end = display_info.fb_width;
                 if (mask_sides) {
-                    for (int m = 0; m < 8; m++) {
-                        *p++ = 0xFF000000;
-                        fb++;
-                    }
+                    std::fill_n(p, 8, 0xFF000000);
+                    p += 8;
+                    fb += 8;
                     x += 8;
                     x_end -= 8;
                 }
-                for (; x < x_end; x++) {
-                    *p++ = *fb++;
-                }
-                for (; x < tex_width; x++) {
-                    *p++ = 0xFF000000;
+                size_t count = x_end - x;
+                std::copy_n(fb, count, p);
+                p += count;
+                count = tex_width - x_end;
+                if (count > 0) {
+                    std::fill_n(p, count, 0xFF000000);
+                    p += count;
                 }
             }
-            for (; y < tex_height; y++) {
-                p = (int *)map.pData + (y) * (map.RowPitch / 4);
-                for (int x = 0; x < tex_width; x++) {
-                    *p++ = 0xFF000000;
+            if (pitch == tex_width) {
+                std::fill_n(p, (tex_height - y) * tex_width, 0xFF000000);
+            }
+            else {
+                for (; y < tex_height; y++) {
+                    p = (int *)map.pData + (y)*pitch;
+                    std::fill_n(p, tex_width, 0xFF000000);
+                    p += tex_width;
                 }
             }
         }

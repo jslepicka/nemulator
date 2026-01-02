@@ -10,7 +10,7 @@ import texture_panel;
 // A container that decouples nemulator-specific code from emulation code
 export class c_system_container : public c_texture_panel_item
 {
-public:
+  public:
     c_system_container(c_system::s_system_info &system_info, std::string &path, std::string &filename, std::string &sram_path);
     ~c_system_container();
     //c_system* system;
