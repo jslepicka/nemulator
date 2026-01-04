@@ -1,25 +1,26 @@
 module;
 
 module pacman;
-import z80;
 import crc32;
-import :vid;
-import :psg;
 
 namespace pacman
 {
 
 c_pacman::c_pacman(PACMAN_MODEL model)
 {
+    bus.ctx = this;
+    bus.read_byte = &thunk<c_pacman, &c_pacman::read_byte>;
+    bus.write_byte = &thunk<c_pacman, &c_pacman::write_byte>;
+
+    io_bus.ctx = this;
+    io_bus.read_byte = &thunk<c_pacman, &c_pacman::read_port>;
+    io_bus.write_byte = &thunk<c_pacman, &c_pacman::write_port>;
+
     prg_rom = std::make_unique<uint8_t[]>(64 * 1024);
     work_ram = std::make_unique<uint8_t[]>(1 * 1024);
 
-    z80 = std::make_unique<c_z80>(
-        [this](uint16_t address) { return this->read_byte(address); }, //read_byte
-        [this](uint16_t address, uint8_t data) { this->write_byte(address, data); }, //write_byte
-        [this](uint8_t port) { return this->read_port(port); }, //read_port
-        [this](uint8_t port, uint8_t data) { this->write_port(port, data); }, //write_port
-        nullptr, //int_ack callback
+    z80 = std::make_unique<c_z80>(&bus,
+        &io_bus,
         &nmi, &irq, &data_bus);
     pacman_vid = std::make_unique<c_pacman_vid>([this](int irq) { this->set_irq(irq); });
     pacman_psg = std::make_unique<c_pacman_psg>();

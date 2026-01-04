@@ -234,6 +234,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="bus.ixx" />
     <ClCompile Include="class_registry.ixx" />
     <ClCompile Include="crc32.ixx" />
     <ClCompile Include="dsp\audio_filter.ixx" />

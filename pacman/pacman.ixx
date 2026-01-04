@@ -8,9 +8,8 @@ import :psg;
 import system;
 import class_registry;
 import nemulator.buttons;
-
-
-class c_z80;
+import bus;
+import z80;
 
 namespace pacman
 {
@@ -103,6 +102,9 @@ export class c_pacman : public c_system, register_class<system_registry, c_pacma
     }
 
   protected:
+    s_bus<uint16_t> bus;
+    s_bus<uint8_t> io_bus;
+
     virtual uint8_t read_byte(uint16_t address);
     virtual void write_byte(uint16_t address, uint8_t data);
     uint8_t read_port(uint8_t port);

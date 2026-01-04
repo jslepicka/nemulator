@@ -1,5 +1,6 @@
 module;
 export module m68k;
+import bus;
 
 import std;
 using int8_t = std::int8_t;
@@ -14,18 +15,13 @@ using uint64_t = std::uint64_t;
 
 export class c_m68k
 {
-    typedef std::function<uint8_t(uint32_t)> read_byte_t;
-    typedef std::function<void(uint32_t, uint8_t)> write_byte_t;
-    typedef std::function<uint16_t(uint32_t)> read_word_t;
-    typedef std::function<void(uint32_t, uint16_t)> write_word_t;
     typedef std::function<void()> ack_irq_t;
 
     //typedef std::function<void(c_m68k*)> opcode_t;
     using opcode_t = void (c_m68k::*)();
 
   public:
-    c_m68k(read_word_t read_word, write_word_t write_word, read_byte_t read_byte, write_byte_t write_byte,
-           ack_irq_t ack_irq, uint8_t *ipl, uint32_t *stalled);
+    c_m68k(s_bus<uint32_t> *bus, ack_irq_t ack_irq, uint8_t *ipl, uint32_t *stalled);
     void reset();
     bool test();
     void decode();
@@ -38,32 +34,29 @@ export class c_m68k
     };
 
   private:
+    s_bus<uint32_t> *bus;
     uint8_t *ipl;
     uint32_t *stalled;
     int available_cycles;
     int fetch_opcode;
     int required_cycles;
-    read_word_t read_word_cb;
-    write_word_t write_word_cb;
-    read_byte_t read_byte_cb;
-    write_byte_t write_byte_cb;
     ack_irq_t ack_irq;
 
     uint16_t read_word(uint32_t address)
     {
-        return read_word_cb(address & 0xFFFFFF);
+        return bus->read_word(bus->ctx, address & 0xFFFFFF);
     }
     uint8_t read_byte(uint32_t address)
     {
-        return read_byte_cb(address & 0xFFFFFF);
+        return bus->read_byte(bus->ctx, address & 0xFFFFFF);
     }
     void write_word(uint32_t address, uint16_t data)
     {
-        write_word_cb(address & 0xFFFFFF, data);
+        bus->write_word(bus->ctx, address & 0xFFFFFF, data);
     }
     void write_byte(uint32_t address, uint8_t data)
     {
-        write_byte_cb(address & 0xFFFFFF, data);
+        bus->write_byte(bus->ctx, address & 0xFFFFFF, data);
     }
 
     opcode_t opcode_fn;

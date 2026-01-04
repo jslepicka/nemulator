@@ -14,20 +14,27 @@ namespace genesis
 
 c_genesis::c_genesis()
 {
-    m68k = std::make_unique<c_m68k>([this](uint32_t address) { return this->read_word(address); },
-                                    [this](uint32_t address, uint16_t value) { this->write_word(address, value); },
-                                    [this](uint32_t address) { return this->read_byte(address); },
-                                    [this](uint32_t address, uint8_t value) { this->write_byte(address, value); },
-                                    [this]() { this->vdp->ack_irq(); }, &ipl, &stalled);
+    bus.ctx = this;
+    bus.read_word = &thunk<c_genesis, &c_genesis::read_word>;
+    bus.read_byte = &thunk<c_genesis, &c_genesis::read_byte>;
+    bus.write_word = &thunk<c_genesis, &c_genesis::write_word>;
+    bus.write_byte = &thunk<c_genesis, &c_genesis::write_byte>;
+
+    z80_bus.ctx = this;
+    z80_bus.read_byte = &thunk<c_genesis, &c_genesis::z80_read_byte>;
+    z80_bus.write_byte = &thunk<c_genesis, &c_genesis::z80_write_byte>;
+
+    z80_io_bus.ctx = this;
+    z80_io_bus.read_byte = &thunk<c_genesis, &c_genesis::z80_read_port>;
+    z80_io_bus.write_byte = &thunk<c_genesis, &c_genesis::z80_write_port>;
+
+    m68k = std::make_unique<c_m68k>(&bus, [this]() { this->vdp->ack_irq(); }, &ipl, &stalled);
     vdp = std::make_unique<c_vdp>(
         &ipl, [this](uint32_t address) { return this->read_word(address); },
         [this](int x_res) { this->on_mode_switch(x_res); }, &stalled);
     z80 =
-        std::make_unique<c_z80>([this](uint16_t address) { return this->z80_read_byte(address); },
-                                [this](uint16_t address, uint8_t value) { this->z80_write_byte(address, value); },
-                                [this](uint8_t port) { return this->z80_read_port(port); }, //read port
-                                [this](uint8_t port, uint8_t value) { this->z80_write_byte(port, value); }, //write port
-                                nullptr, //int ack
+        std::make_unique<c_z80>(&z80_bus,
+                                &z80_io_bus, //write port
                                 &z80_nmi, //nmi
                                 &z80_irq, //irq
                                 nullptr //data bus

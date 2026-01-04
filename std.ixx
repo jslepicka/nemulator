@@ -9,3 +9,9 @@ using uint8_t = std::uint8_t;
 using uint16_t = std::uint16_t;
 using uint32_t = std::uint32_t;
 using uint64_t = std::uint64_t;
+
+export template <typename T, auto method>
+auto thunk(void *ctx, auto... args)
+{
+    return (static_cast<T*>(ctx)->*method)(args...);
+}

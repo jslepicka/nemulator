@@ -9,11 +9,9 @@ import z80;
 import :vdp;
 import sms;
 import ym2612;
-
+import bus;
+import m68k;
 import dsp;
-
-class c_m68k;
-//class c_vdp;
 
 namespace genesis
 {
@@ -76,6 +74,10 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     void set_input(int input);
 
   private:
+    s_bus<uint32_t> bus;
+    s_bus<uint16_t> z80_bus;
+    s_bus<uint8_t> z80_io_bus;
+
     int loaded = 0;
     std::unique_ptr<c_m68k> m68k;
     //std::unique_ptr<uint8_t[]> ram;

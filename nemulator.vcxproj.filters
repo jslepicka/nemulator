@@ -549,6 +549,7 @@
     <ClCompile Include="genesis\genesis_vdp.cpp">
       <Filter>genesis</Filter>
     </ClCompile>
+    <ClCompile Include="bus.ixx" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="nes\mappers\vrc7_audio.h">

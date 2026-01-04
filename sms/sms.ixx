@@ -9,8 +9,8 @@ import :crc;
 import nemulator.buttons;
 import system;
 import class_registry;
-
-class c_z80;
+import bus;
+import z80;
 
 namespace sms
 {
@@ -80,12 +80,16 @@ export class c_sms : public c_system, register_class<system_registry, c_sms>
     c_sms(SMS_MODEL model);
     ~c_sms();
     int emulate_frame();
-    unsigned char read_byte(unsigned short address);
-    unsigned short read_word(unsigned short address);
-    void write_byte(unsigned short address, unsigned char value);
-    void write_word(unsigned short address, unsigned short value);
-    void write_port(int port, unsigned char value);
-    unsigned char read_port(int port);
+
+    s_bus<uint16_t> bus;
+    s_bus<uint8_t> io_bus;
+
+    uint8_t read_byte(uint16_t address);
+    void write_byte(uint16_t address, uint8_t value);
+    uint16_t read_word(uint16_t address);
+    void write_word(uint16_t address, uint16_t value);
+    void write_port(uint8_t port, uint8_t value);
+    uint8_t read_port(uint8_t port);
     int reset();
     int *get_video();
     int get_sound_bufs(const float **buf_l, const float **buf_r);

@@ -39,6 +39,21 @@ void c_pacman_vid::reset()
     state = 0;
     std::memset(sprite_locs.get(), 0, sizeof(uint8_t) * 16);
     std::memset(sprite_ram.get(), 0, sizeof(uint8_t) * 16);
+
+
+    for (int i = 0; i < 256; i++) {
+        uint32_t t = i;
+        uint32_t out = 0;
+        out = _pext_u32(t, 0x88);
+        t <<= 1;
+        out |= (_pext_u32(t, 0x88) << 2);
+        t <<= 1;
+        out |= (_pext_u32(t, 0x88) << 4);
+        t <<= 1;
+        out |= (_pext_u32(t, 0x88) << 6);
+        tile_lookup[i] = out;
+    }
+
 }
 
 uint8_t c_pacman_vid::read_byte(uint16_t address)
@@ -98,6 +113,27 @@ void c_pacman_vid::draw_background_line(int line)
     }
 }
 
+//void c_pacman_vid::draw_tile()
+//{
+//    uint8_t tile_number = vram[vid_address];
+//    uint8_t pal_number = vram[vid_address + 0x400] & 0x3F;
+//    uint32_t chr_loc = tile_number * 16;
+//    chr_loc += (line % 8);
+//    uint8_t c2 = tile_rom[chr_loc];
+//    uint8_t c1 = tile_rom[chr_loc + 8];
+//
+//    uint64_t c_low = _pdep_u64(((c1 & 0xF) << 4) | (c2 & 0xF), 0x0101010101010101);
+//    uint64_t c_high = _pdep_u64((c1 & 0xF0) | ((c2 & 0xF0) >> 4), 0x0202020202020202);
+//    uint64_t chr_data_64 = std::byteswap(c_low | c_high);
+//
+//    for (int i = 0; i < 8; i++) {
+//        uint8_t pixel = ((uint8_t *)&chr_data_64)[i];
+//        uint8_t color = lookup_color(pal_number, pixel);
+//        uint32_t rgb = colors[color];
+//        *f++ = rgb;
+//    }
+//}
+
 void c_pacman_vid::draw_tile()
 {
     uint8_t tile_number = vram[vid_address];
@@ -121,6 +157,52 @@ void c_pacman_vid::draw_tile()
         chr_data = tile_rom[chr_loc - 8];
     }
 }
+
+//void c_pacman_vid::draw_tile()
+//{
+//    uint8_t tile_number = vram[vid_address];
+//    uint8_t pal_number = vram[vid_address + 0x400] & 0x3F;
+//    uint32_t chr_loc = tile_number * 16;
+//    chr_loc += (line % 8) + 8;
+//    uint8_t chr_data = tile_rom[chr_loc];
+//    alignas(32) uint32_t out[8];
+//    for (int i = 0; i < 2; i++) {
+//        for (int x = 0; x < 4; x++) {
+//#ifdef USE_BMI
+//            uint32_t pixel = _pext_u32(chr_data, 0x88);
+//#else
+//            uint32_t pixel = ((chr_data & 0x8) >> 3) | ((chr_data & 0x80) >> 6);
+//#endif
+//            chr_data <<= 1;
+//            //lookup color
+//            uint8_t color = lookup_color(pal_number, pixel);
+//            out[x + i * 4] = color;
+//        }
+//        chr_data = tile_rom[chr_loc - 8];
+//    }
+//    __m256i vindex = _mm256_load_si256((__m256i *)out);
+//    __m256i o = _mm256_i32gather_epi32((const int *)colors, vindex, 4);
+//    _mm256_store_si256((__m256i *)f, o);
+//    f += 8;
+//}
+
+//void c_pacman_vid::draw_tile()
+//{
+//    uint8_t tile_number = vram[vid_address];
+//    uint8_t pal_number = vram[vid_address + 0x400] & 0x3F;
+//    uint32_t chr_loc = tile_number * 16;
+//    chr_loc += (line % 8) + 8;
+//    uint32_t chr_data = tile_lookup[tile_rom[chr_loc]];
+//    for (int i = 0; i < 2; i++) {
+//        for (int x = 0; x < 4; x++) {
+//            uint8_t color = lookup_color(pal_number, chr_data & 0x3);
+//            chr_data >>= 2;
+//            uint32_t rgb = colors[color];
+//            *f++ = rgb;
+//        }
+//        chr_data = tile_lookup[tile_rom[chr_loc - 8]];
+//    }
+//}
 
 void c_pacman_vid::draw_sprite_line(int line)
 {

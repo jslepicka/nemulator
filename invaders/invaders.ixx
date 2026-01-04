@@ -9,6 +9,7 @@ import class_registry;
 import nemulator.buttons;
 import dsp;
 import z80;
+import bus;
 
 namespace invaders
 {
@@ -59,8 +60,12 @@ export class c_invaders : public c_system, register_class<system_registry, c_inv
     static const int audio_divider = 4;
     static const int audio_freq = 1996800 / audio_divider;
     void clock_sound(int cycles);
-    virtual uint8_t read_byte(uint16_t address);
-    virtual void write_byte(uint16_t address, uint8_t data);
+
+    s_bus<uint16_t> bus;
+    s_bus<uint8_t> io_bus;
+
+    uint8_t read_byte(uint16_t address);
+    void write_byte(uint16_t address, uint8_t data);
     uint8_t read_port(uint8_t port);
 
     void write_port(uint8_t port, uint8_t data);

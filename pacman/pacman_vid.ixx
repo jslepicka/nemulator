@@ -48,5 +48,7 @@ class c_pacman_vid
     static const uint8_t b_weights[];
 
     uint32_t colors[32];
+
+    uint8_t tile_lookup[256];
 };
 } //namespace pacman

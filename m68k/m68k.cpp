@@ -36,10 +36,7 @@ const std::array<std::array<uint8_t, 9>, 12> c_m68k::move_cycles_l = {{
 // clang-format on
 
 c_m68k::c_m68k(
-    read_word_t read_word,
-    write_word_t write_word,
-    read_byte_t read_byte,
-    write_byte_t write_byte,
+    s_bus<uint32_t> *bus,
     ack_irq_t ack_irq,
     uint8_t *ipl,
     uint32_t *stalled
@@ -48,10 +45,7 @@ c_m68k::c_m68k(
     this->ack_irq = ack_irq;
     this->stalled = stalled;
     this->ipl = ipl;
-    this->read_word_cb = read_word;
-    this->write_word_cb = write_word;
-    this->read_byte_cb = read_byte;
-    this->write_byte_cb = write_byte;
+    this->bus = bus;
     d[0] = &d0;
     d[1] = &d1;
     d[2] = &d2;
