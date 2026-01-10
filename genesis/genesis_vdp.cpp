@@ -364,7 +364,7 @@ void c_vdp::draw_plane(uint8_t *out, uint32_t nt, uint32_t plane_width, uint32_t
         uint32_t pattern_address =
             tile_number * bytes_per_tile + (((y & 7) ^ v_flip) * bytes_per_tile_row);
 
-        uint32_t pattern = std::byteswap(*((uint32_t *)&vram[pattern_address]));  
+        uint32_t pattern = std::byteswap(*((uint32_t *)&vram[pattern_address]));
 
         #ifdef USE_BMI2
         uint64_t pattern_expanded = _pdep_u64(pattern, 0x0F0F0F0F0F0F0F0F);
@@ -440,7 +440,7 @@ void c_vdp::draw_scanline()
         std::fill_n(fb, 320, cram_entries[1][bg_color]);
         return;
     }
-
+    uint32_t shadow_highlight_mode_enabled = reg[0x0C] & 0x8;
     uint32_t vscroll_mode = reg[0x0B] & 0x4;
     uint32_t a_v_scroll = 0;
     uint32_t b_v_scroll = 0;
@@ -538,13 +538,16 @@ void c_vdp::draw_scanline()
             uint8_t visible_layers = layer_visibility[8 + i + j] & plane_mask;
             uint8_t out;
             int color_mode = 1;
-            if (visible_layers) {
+            if (!visible_layers) {
+                out = bg_color;
+            }
+            else {
                 uint32_t visible_layer = _tzcnt_u32(visible_layers);
                 out = plane_ptrs[visible_layer & 0x3][j + i];
 
                 //shadow/highlight mode
                 //https://gendev.spritesmind.net/forum/viewtopic.php?p=32174&sid=469a79afbb947556542ed3e4ff6c3f78#p32174
-                if (reg[0x0C] & 0x8) {
+                if (shadow_highlight_mode_enabled) {
                     uint8_t high_priority_layers = layer_priorities[8 + i + j] & plane_mask & 0xE;
                     color_mode = high_priority_layers ? 1 : 0;
 
@@ -577,11 +580,10 @@ void c_vdp::draw_scanline()
                     }
                 }
             }
-            else {
-                out = bg_color;
-            }
-            *fb++ = cram_entries[color_mode][out];
+            //*fb++ = cram_entries[color_mode][out];
+            out_buf[j] = cram_entries[color_mode][out];
         }
+        memcpy(&fb[i], out_buf, 16 * sizeof(uint32_t));
     }
 }
 
