@@ -11,7 +11,7 @@ import :mapper;
 
 namespace nes {
 
-const float c_apu::NES_AUDIO_RATE = 341.0f / 3.0f * 262.0f * 60.0f/* / 3.0f*/;
+const float c_apu::NES_AUDIO_RATE = (341.0f / 3.0f * 262.0f * 60.0f) / 4.0f;
 
 std::atomic<int> c_apu::lookup_tables_built = 0;
 float c_apu::square_lut[31];
@@ -85,6 +85,7 @@ void c_apu::reset()
     noise.reset();
     dmc.reset();
     square_clock = 0;
+    mix_clock = 0;
     /*
     lowpass elliptical, 20kHz
     d = fdesign.lowpass('N,Fp,Ap,Ast', 8, 20000, .1, 80, 1786840);
@@ -282,9 +283,11 @@ void c_apu::clock_once()
         clock_frame_seq();
     }
     clock_timers();
-    if (mixer_enabled)
-    {
-        mix();
+    if (++mix_clock == CLOCKS_PER_MIX) {
+        mix_clock = 0;
+        if (mixer_enabled) {
+            mix();
+        }
     }
 }
 

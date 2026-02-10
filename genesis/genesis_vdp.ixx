@@ -45,12 +45,12 @@ export class c_vdp
     uint32_t vram_to_vram_copy;
     enum class ADDRESS_TYPE
     {
-        VRAM_READ = 0b0000,
-        VRAM_WRITE = 0b0001,
-        CRAM_WRITE = 0b0011,
-        VSRAM_READ = 0b0100,
+        VRAM_READ =   0b0000,
+        VRAM_WRITE =  0b0001,
+        CRAM_WRITE =  0b0011,
+        VSRAM_READ =  0b0100,
         VSRAM_WRITE = 0b0101,
-        CRAM_READ = 0b1000,
+        CRAM_READ =   0b1000,
         INVALID = -1
     } address_type;
     union u_status {

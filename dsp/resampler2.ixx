@@ -1,5 +1,6 @@
 module;
 #include <immintrin.h>
+#include <cassert>
 
 export module dsp:resampler2;
 import nemulator.std;
@@ -56,10 +57,13 @@ export template <size_t channels, typename pre_f_t, typename post_f_t> class c_r
             }
 
             output_buf_index++;
-            float extra = 2.0f - mf;
-            float n = m - extra;
-            mf = n - (int)n;
-            samples_required = (int)n + 2;
+
+            mf += m;
+            samples_required = (int)mf;
+            mf -= samples_required;
+
+            assert(mf >= 0.0f);
+
         }
 
         filtered_buf_index = (filtered_buf_index - 1) & 0x3;

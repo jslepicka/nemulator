@@ -216,6 +216,8 @@ int c_genesis::reset()
     current_cycle = 0;
     z80_comp = 0;
 
+    mix_clock = 0;
+
     for (auto &n : next_events) {
         n = (uint64_t)-1;
     }
@@ -316,9 +318,12 @@ int c_genesis::emulate_frame()
         if (event == CYCLE_EVENT::YM_CLOCK) {
             next_events[CYCLE_EVENT::YM_CLOCK] += CYCLES_PER_YM_CLOCK << 3;
             ym->clock(1);
-            if (mixer_enabled) {
-                resampler->process({ym->out_l * (1.0f - 1.0f / 6.0f) + psg->out * (1.0f / 6.0f * 2.0f),
-                                    ym->out_r * (1.0f - 1.0f / 6.0f) + psg->out * (1.0f / 6.0f * 2.0f)});
+            if (++mix_clock == CLOCKS_PER_MIX) {
+                mix_clock = 0;
+                if (mixer_enabled) {
+                    resampler->process({ym->out_l * (1.0f - 1.0f / 6.0f) + psg->out * (1.0f / 6.0f * 2.0f),
+                                        ym->out_r * (1.0f - 1.0f / 6.0f) + psg->out * (1.0f / 6.0f * 2.0f)});
+                }
             }
         }
         else if (event == CYCLE_EVENT::M68K_CLOCK) {
@@ -741,13 +746,13 @@ void c_genesis::set_audio_freq(double freq)
 
 void c_genesis::enable_mixer()
 {
-    psg->enable_mixer();
+    //psg->enable_mixer();
     mixer_enabled = 1;
 }
 
 void c_genesis::disable_mixer()
 {
-    psg->disable_mixer();
+    //psg->disable_mixer();
     mixer_enabled = 0;
 }
 
