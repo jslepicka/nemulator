@@ -602,7 +602,7 @@ INLINE void c_ppu::fetch()
 #endif
 
             attribute_shift = ((vram_address >> 4) & 0x04) | (vram_address & 0x02);
-#ifdef NES_PPU_USE_SSE2x
+#ifdef NES_PPU_USE_SSE2
             {
                 //load attribute and store 8 copies of it over 128-bit int
                 //only 64-bits are ultimately used
