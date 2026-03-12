@@ -39,6 +39,7 @@ double aspectRatio;
 HWND hWnd;
 c_config *config = NULL;
 std::unique_ptr<c_input_handler> g_ih;
+bool vsync;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {

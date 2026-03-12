@@ -265,6 +265,7 @@
     <ClCompile Include="audio_info.cpp" />
     <ClCompile Include="config.cpp" />
     <ClCompile Include="D3d10App.cpp" />
+    <ClCompile Include="nes\mappers\fds_audio.ixx" />
     <ClCompile Include="nes\mappers\mapper0.ixx" />
     <ClCompile Include="nes\mappers\mapper1.ixx" />
     <ClCompile Include="nes\mappers\mapper10.ixx" />

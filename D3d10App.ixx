@@ -67,7 +67,7 @@ protected:
 	bool minimized;
 	bool maximized;
 	bool resizing;
-	bool vsync;
+	//bool vsync;
 	bool timer_sync;
 	bool pause_on_lost_focus;
 	int ignore_input;
