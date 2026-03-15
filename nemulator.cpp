@@ -35,8 +35,6 @@ extern std::string app_title;
 extern c_config *config;
 extern std::unique_ptr<c_input_handler> g_ih;
 
-extern bool vsync;
-
 HANDLE g_start_event;
 
 c_nemulator::c_nemulator()
@@ -991,7 +989,6 @@ int c_nemulator::update(double dt, int child_result, void *params)
         }
     }
 
-    vsync = false;
     if (splash_done) ProcessInput(dt);
     UpdateScene(dt);
     return 0;

@@ -18,195 +18,136 @@ class c_fds_audio
 
     void reset()
     {
-        std::memset(wavetable_ram, 0, sizeof(wavetable_ram));
-        std::memset(mod_table, 0, sizeof(mod_table));
-        mod_table_pos = 0;
-        vol_envelope = 0;
-        freq_low = 0;
-        freq_high = 0;
-        mod_envelope = 0;
-        mod_counter = 0;
-        mod_freq_low = 0;
-        mod_freq_high = 0;
-        mod_table_write = 0;
+        enabled = false;
+        envelopes_enabled = false;
         master_vol = 0;
-        env_speed = 0;
-        vol_gain = 0;
-        wav_accumulator = 0;
-        mod_gain = 0;
-        mod_accumulator = 0;
-        mod_result = 0;
-        mod_increment = 0;
-        wav_value = 0;
-        mod_value = 0;
-
-        wav_clock = 0;
-
-        _wav_accum = 0;
-        _mod_accum = 0;
-
-        output = 0;
         clock_divider = 0;
-
-        vol_envelope_counter = 0;
-        vol_envelope_reload = 0;
-        _next_vol_gain = 0;
-        _vol_gain = 0;
-
-        mod_envelope_counter = 0;
-        mod_envelope_reload = 0;
-        _next_mod_gain = 0;
-        _mod_gain = 0;
+        output = 0.0f;
+        std::memset(&op, 0, sizeof(op));
+        std::memset(&mod, 0, sizeof(mod));
+        std::memset(&wave, 0, sizeof(wave));
     }
 
     void clock()
     {
-        if (++clock_divider == 3) {
-            clock_divider = 0;
-            if (++wav_clock == 16) {
-                wav_clock = 0;
+        if (!enabled) {
+            return;
+        }
+        uint32_t freq = op.frequency;
+        if (envelopes_enabled && !wave.halt) {
+            op.clock_envelope();
+            if (mod.clock_envelope()) {
+                mod.update_output(freq);
+            }
+        }
 
-                //envelopes
+        if (mod.clock_mod()) {
+            mod.update_output(freq);
+        }
 
-                if (env_speed) {
-                    if (vol_envelope_counter && --vol_envelope_counter == 0) {
-                        if (vol_envelope & 0x40) {
-                            if (_next_vol_gain < 32) {
-                                _next_vol_gain += 1;
-                            }
-                        }
-                        else {
-                            if (_next_vol_gain > 0) {
-                                _next_vol_gain -= 1;
-                            }
-                        }
-                        vol_envelope_counter = vol_envelope_reload;
-                    }
-
-                    if (mod_envelope_counter && --mod_envelope_counter == 0) {
-                        if (mod_envelope & 0x40) {
-                            if (_mod_gain < 32) {
-                                _mod_gain += 1;
-                            }
-                        }
-                        else {
-                            if (_mod_gain > 0) {
-                                _mod_gain -= 1;
-                            }
-                        }
-                        mod_envelope_counter = mod_envelope_reload;
-                    }
-                }
-
-                if (!(mod_freq_high & 0x80)) {
-                    _mod_accum += mod_freq_low | ((mod_freq_high & 0xF) << 8);
-                }
-
-                uint8_t mi = (_mod_accum >> 13) & 0x1F;
-                if (mi == 0) {
-                    _vol_gain = _next_vol_gain;
-                }
-
-                uint8_t mod_index = mod_table[(_mod_accum >> 13) & 0x1F];
-                const int8_t mod_values[8] = {0, 1, 2, 4, 0, -4, -2, -1};
-                int8_t c = mod_values[mod_index];
-                mod_counter += c;
-                if (mod_counter > 63) {
-                    mod_counter -= 128;
-                }
-                else if (mod_counter < -64) {
-                    mod_counter += 128;
-                }
-                //modulation
-                int32_t temp = mod_counter * _mod_gain;
-                if ((temp & 0x0f) && !(temp & 0x800))
-                    temp += 0x20;
-                temp += 0x400;
-                temp = (temp >> 4) & 0xff;
-
-                uint32_t pitch = freq_low | ((freq_high & 0xF) << 8);
-                uint32_t wave_pitch = (pitch * temp) & 0xFFFFF;
-
-                //wave output
-                _wav_accum += wave_pitch;
-                if (!(master_vol & 0x80)) {
-                    
-
-                    output = wavetable_ram[(_wav_accum >> 18) & 0x3F];
-                }
-
-            
+        update_output();
+        if (!wave.halt && freq + mod.output > 0) {
+            wave.overflow += freq + mod.output;
+            if (wave.overflow < freq + mod.output) {
+                wave.index = (wave.index + 1) & 0x3F;
             }
         }
     }
 
+    void update_output()
+    {
+        if (wave.writable) {
+            return;
+        }
+
+        uint8_t g = std::min(op.gain, (uint8_t)32);
+        float sample = (float)((uint32_t)wave.data[wave.index] * g) / (63.0f * 63.0f);
+        const float volume[4] = {1.0f, 2.0f / 3.0f, 2.0f / 4.0f, 2.0f / 5.0f};
+
+        output = sample * volume[master_vol & 0x3];
+    }
+
     void write_byte(uint16_t address, uint8_t value)
     {
-        ods("fds audio write: %04X = %02X\n", address, value);
+        if (!enabled) {
+            return;
+        }
+        //ods("fds audio write: %04X = %02X\n", address, value);
         if (address >= 0x4040 && address < 0x4080) {
-            if (master_vol & 0x80) {
-                wavetable_ram[address - 0x4040] = value;
+            if (wave.writable) {
+                wave.data[address - 0x4040] = value & 0x3F;
             }
             return;
         }
         int x;
         switch (address) {
             case 0x4080: //vol envelope
-                vol_envelope = value;
-                if (vol_envelope & 0x80) {
-                    int x = 1;
-                    if ((value & 0x3F) == 0) {
-                        _vol_gain = 0;
-                    }
-                    _next_vol_gain = value & 0x3F;
+                op.speed = value & 0x3F;
+                op.direction = value & 0x40;
+                op.envelope_enabled = !(value & 0x80);
+                if (!op.envelope_enabled) {
+                    op.gain = op.speed;
                 }
-                vol_envelope_reload = 8 * ((vol_envelope & 0x3F) + 1) * (env_speed + 1);
-                vol_envelope_counter = vol_envelope_reload;
+                op.reload_period();
                 break;
             case 0x4082: //freq low
-                freq_low = value;
+                op.frequency = (op.frequency & 0x0F00) | value;
+                mod.update_output(op.frequency);
                 break;
             case 0x4083: //freq high
-                freq_high = value;
+                op.frequency = (op.frequency & 0xFF) | ((value & 0xF) << 8);
+                envelopes_enabled = !(value & 0x40);
+                wave.halt = value & 0x80;
+                if (wave.halt) {
+                    wave.index = 0;
+                }
+                if (!envelopes_enabled) {
+                    op.reload_period();
+                    mod.reload_period();
+                }
+                mod.update_output(op.frequency);
                 break;
             case 0x4084: //mod envelope
-                mod_envelope = value;
-                if (mod_envelope & 0x80) {
-                    int x = 1;
-                    if ((value & 0x3F) == 0) {
-                        _mod_gain = 0;
-                    }
-                    _next_mod_gain = value & 0x3F;
-                    //todo: does this get set immediately?
-                    _mod_gain = _next_mod_gain;
+                mod.speed = value & 0x3F;
+                mod.direction = value & 0x40;
+                mod.envelope_enabled = !(value & 0x80);
+                if (!mod.envelope_enabled) {
+                    mod.gain = mod.speed;
                 }
-                mod_envelope_reload = 8 * ((mod_envelope & 0x3F) + 1) * (env_speed + 1);
-                mod_envelope_counter = mod_envelope_reload;
+                mod.reload_period();
+                mod.update_output(op.frequency);
                 break;
             case 0x4085: //mod counter
-                mod_counter = (value & 0x7F);
-                if (mod_counter & 0x40) {
-                    mod_counter |= 0x80;
-                }
+                mod.update_counter(value & 0x7F);
+                mod.update_output(op.frequency);
                 break;
             case 0x4086: //mod freq low
-                mod_freq_low = value;
+                mod.frequency = (mod.frequency & 0x0F00) | value;
                 break;
             case 0x4087: //mod freq high
-                mod_freq_high = value;
+                mod.frequency = (mod.frequency & 0xFF) | ((value & 0xF) << 8);
+                mod.disabled = value & 0x80;
+                if (mod.disabled) {
+                    mod.overflow = 0;
+                }
+                mod.reload_period();
                 break;
             case 0x4088: //mod table write
-                if (mod_freq_high & 0x80) {
-                    mod_table[mod_table_pos] = value & 7;
-                    mod_table_pos = (mod_table_pos + 1) % 32;
+                if (!mod.disabled) {
+                    return;
                 }
-                //todo: Writing $4088 also increments the address (bits 13-17 of wave accumulator) when $4087.7=1.
+                mod.data[mod.index] = value & 0x7;
+                mod.index = (mod.index + 1) & 0x3F;
+                mod.data[mod.index] = value & 0x7;
+                mod.index = (mod.index + 1) & 0x3F;
                 break;
             case 0x4089: //wav write / master volume
-                master_vol = value;
+                master_vol = value & 0x3;
+                wave.writable = value & 0x80;
                 break;
             case 0x408A: //env speed
-                env_speed = value;
+                op.master_speed = value;
+                mod.master_speed = value;
                 break;
             case 0x4090: //vol gain
                 break;
@@ -232,8 +173,11 @@ class c_fds_audio
 
     uint8_t read_byte(uint16_t address)
     {
+        if (!enabled) {
+            return 0; //what should this return?
+        }
         if (address >= 0x4040 && address < 0x4080) {
-            return 0x40 | wavetable_ram[address - 0x4040];
+            return wave.data[address - 0x4040];
         }
         switch (address) {
             case 0x4080: //vol envelope
@@ -257,10 +201,12 @@ class c_fds_audio
             case 0x408A: //env speed
                 break;
             case 0x4090: //vol gain
+                return op.gain;
                 break;
             case 0x4091: //wave accumulator
                 break;
             case 0x4092: //mod gain
+                return mod.gain;
                 break;
             case 0x4093: //mod table address accumulator
                 break;
@@ -280,13 +226,10 @@ class c_fds_audio
 
     float get_sample()
     {
-        if (_vol_gain > 32) {
-            _vol_gain = 32;
+        if (!enabled) {
+            return 0.0f;
         }
-        float sample = (float)((uint32_t)output * _vol_gain) / (63.0f * 63.0f);
-        const float volume[4] = {1.0f, 2.0f / 3.0f, 2.0f / 4.0f, 2.0f / 5.0f};
-        
-        return sample * volume[master_vol & 0x3];
+        return output;
     }
 
     void enable(int value)
@@ -294,50 +237,136 @@ class c_fds_audio
         enabled = value;
     }
 
+    //operator
+
   private:
-    int enabled = 0;
-    uint8_t wavetable_ram[64];
-    uint8_t vol_envelope;
-    uint8_t freq_low;
-    uint8_t freq_high;
-    uint8_t mod_envelope;
-    int8_t mod_counter;
-    uint8_t mod_freq_low;
-    uint8_t mod_freq_high;
-    uint8_t mod_table_write;
+    bool enabled;
+    bool envelopes_enabled;
     uint8_t master_vol;
-    uint8_t env_speed;
-    uint8_t vol_gain;
-    uint8_t wav_accumulator;
-    uint8_t mod_gain;
-    uint8_t mod_accumulator;
-    uint8_t mod_result;
-    uint8_t mod_increment;
-    uint8_t wav_value;
-    uint8_t mod_value;
-    uint8_t wav_clock;
-    uint32_t _wav_accum;
-    uint32_t _mod_accum;
-    uint8_t output;
+    uint32_t clock_divider;
+    float output;
 
-    uint8_t mod_table[32];
-    uint8_t mod_table_pos;
+    struct s_operator
+    {
+        bool clock_envelope();
+        void reload_period();
 
-    int clock_divider;
+        uint8_t master_speed = 0xFF;
+        uint8_t speed;
+        uint8_t gain;
+        uint8_t direction;
+        uint8_t envelope_enabled;
+        uint16_t frequency;
+        uint32_t period;
+    } op;
 
-    uint32_t vol_envelope_counter;
-    uint32_t vol_envelope_reload;
-    uint32_t _next_vol_gain;
-    uint32_t _vol_gain;
+    struct s_modulator : s_operator
+    {
+        bool enabled();
+        bool clock_mod();
+        void update_output(uint16_t pitch);
+        void update_counter(int8_t value);
 
-    uint32_t mod_envelope_counter;
-    uint32_t mod_envelope_reload;
-    uint32_t _next_mod_gain;
-    uint32_t _mod_gain;
+        bool disabled;
+        int8_t counter;
+        uint16_t overflow;
+        int32_t output;
 
-    uint32_t _mod_counter;
+        uint8_t data[64];
+        uint8_t index;
 
+    } mod;
 
+    struct s_waveform
+    {
+        bool halt;
+        bool writable;
+        uint16_t overflow;
+        uint8_t data[64];
+        uint8_t index;
+    } wave;
 
 };
+
+
+bool nes::c_fds_audio::s_operator::clock_envelope()
+{
+    if (envelope_enabled && master_speed > 0 && !--period) {
+        reload_period();
+        if (direction) {
+            if (gain < 32) {
+                gain++;
+            }
+        }
+        else {
+            if (gain > 0) {
+                gain--;
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+void nes::c_fds_audio::s_operator::reload_period()
+{
+    period = 8 * (1 + speed) * master_speed;
+}
+
+bool nes::c_fds_audio::s_modulator::clock_mod()
+{
+    if (enabled()) {
+        overflow += frequency;
+        if (overflow < frequency) {
+            static const int8_t lookup[8] = {0, 1, 2, 4, -8, -4, -2, -1};
+            int32_t offset = lookup[data[index]];
+            update_counter(offset == -8 ? 0 : counter + offset);
+            index = (index + 1) & 0x3F;
+            return true;
+        }
+    }
+    return false;
+}
+
+void nes::c_fds_audio::s_modulator::update_output(uint16_t pitch)
+{
+    int32_t temp = counter * gain;
+    int32_t remainder = temp & 0xF;
+    temp >>= 4;
+    if (remainder > 0 && !(temp & 0x80)) {
+        temp += counter < 0 ? -1 : 2;
+    }
+
+    if (temp >= 192) {
+        temp -= 256;
+    }
+    else if (temp < -64) {
+        temp += 256;
+    }
+
+    temp *= pitch;
+    remainder = temp & 0x3F;
+    temp >>= 6;
+    if (remainder >= 32) {
+        temp++;
+    }
+    output = temp;
+}
+
+void nes::c_fds_audio::s_modulator::update_counter(int8_t value)
+{
+    counter = value;
+    if (counter >= 64) {
+        counter -= 128;
+    }
+    else if (counter < -64) {
+        counter += 128;
+    }
+}
+
+bool nes::c_fds_audio::s_modulator::enabled()
+{
+    return !disabled && frequency > 0;
+}
+
 } //namespace nes

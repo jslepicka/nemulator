@@ -41,8 +41,8 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
     float mix_audio(float sample) override
     {
         //return sample;
-        return sample + fds_audio.get_sample();
-        return fds_audio.get_sample();
+        return sample + fds_audio.get_sample() * .4f;
+        //return fds_audio.get_sample() * .5f;
     }
 
     int switch_disk()
@@ -100,6 +100,7 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
     {
         if (++ticks == 3) {
             ticks = 0;
+            fds_audio.clock();
 
             if (timer_control & 0x2) {
                 if (timer_counter) {
@@ -205,7 +206,6 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
                 delay = 149;
             }
         }
-        fds_audio.clock();
     }
 
   private:
