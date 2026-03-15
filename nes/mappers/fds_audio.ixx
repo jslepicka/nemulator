@@ -61,7 +61,7 @@ class c_fds_audio
         }
 
         uint8_t g = std::min(op.gain, (uint8_t)32);
-        float sample = (float)((uint32_t)wave.data[wave.index] * g) / (63.0f * 63.0f);
+        float sample = (float)((uint32_t)wave.data[wave.index] * g) / (63.0f * 32.0f);
         const float volume[4] = {1.0f, 2.0f / 3.0f, 2.0f / 4.0f, 2.0f / 5.0f};
 
         output = sample * volume[master_vol & 0x3];

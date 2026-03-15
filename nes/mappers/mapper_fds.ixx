@@ -41,7 +41,7 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
     float mix_audio(float sample) override
     {
         //return sample;
-        return sample + fds_audio.get_sample() * .4f;
+        return sample + fds_audio.get_sample() * .274f;
         //return fds_audio.get_sample() * .5f;
     }
 
