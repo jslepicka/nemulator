@@ -17,7 +17,7 @@ public:
     virtual int emulate_frame() = 0;
     virtual int reset() = 0;
     int get_crc() { return crc32; }
-    virtual int get_sound_bufs(const float **buf_l, const float **buf_r) = 0;
+    virtual int get_sound_buf(const float **buf) = 0;
     virtual void set_audio_freq(double freq) = 0;
     virtual void set_input(int input) = 0;
     virtual void enable_mixer() {}
@@ -51,7 +51,7 @@ public:
             double aspect_ratio = 4.0 / 3.0;
         } display_info;
         std::vector<s_button_map> button_map;
-        //std::function<c_system *()> constructor;
+        int num_sound_channels = 1;
         float volume = 1.0f;
         std::function <std::unique_ptr<c_system>()> constructor;
     };

@@ -135,8 +135,7 @@ void c_apu::reset()
 
 int c_apu::get_buffer(const float** buf)
 {
-    int num_samples = resampler->get_output_buf(0, buf);
-    return num_samples;
+    return resampler->get_output_buf(buf);
 }
 
 void c_apu::clear_buffer()

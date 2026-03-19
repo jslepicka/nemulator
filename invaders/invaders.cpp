@@ -394,11 +394,9 @@ void c_invaders::write_port(uint8_t port, uint8_t data)
     }
 }
 
-int c_invaders::get_sound_bufs(const float **buf_l, const float **buf_r)
+int c_invaders::get_sound_buf(const float **buf)
 {
-    int num_samples = resampler->get_output_buf(0, buf_l);
-    *buf_r = nullptr;
-    return num_samples;
+    return resampler->get_output_buf(buf);
 }
 
 void c_invaders::set_audio_freq(double freq)

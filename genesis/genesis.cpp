@@ -731,11 +731,9 @@ int *c_genesis::get_video()
     return (int*)vdp->frame_buffer;
 }
 
-int c_genesis::get_sound_bufs(const float **buf_l, const float **buf_r)
+int c_genesis::get_sound_buf(const float **buf)
 {
-    int num_samples = resampler->get_output_buf(0, buf_l);
-    resampler->get_output_buf(1, buf_r);
-    return num_samples;
+    return resampler->get_output_buf(buf);
 
 }
 void c_genesis::set_audio_freq(double freq)

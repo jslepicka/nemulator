@@ -13,7 +13,7 @@ export class c_sound
     int init();
     void play();
     void stop();
-    int copy(const float *left, const float *right, int numSamples, float system_volume);
+    int copy(const float *buf, int num_samples, float system_volume);
     double get_freq()
     {
         return freq;
@@ -41,7 +41,17 @@ export class c_sound
 
     float average_db;
 
+    bool set_num_channels(int num_channels)
+    {
+        if (num_channels >= 1 && num_channels <= 2) {
+            this->num_channels = num_channels;
+            return true;
+        }
+        return false;
+    }
+
   private:
+    int num_channels = 1; //default to mono
     float sample_sum;
     float sample_count;
     double requested_freq;
@@ -70,10 +80,6 @@ export class c_sound
 
     double ema;
     int first_b;
-
-    //uint32_t *interleave_buffer;
-    std::unique_ptr<uint32_t[]> interleave_buffer;
-    const int INTERLEAVE_BUFFER_LEN = 1024;
 
     const CLSID CLSID_MMDeviceEnumerator = __uuidof(MMDeviceEnumerator);
     const IID IID_IMMDeviceEnumerator = __uuidof(IMMDeviceEnumerator);

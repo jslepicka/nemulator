@@ -12,7 +12,6 @@ c_psg::c_psg()
         vol_table[i] = 1.0f * std::powf(db2, (float)i);
     }
     vol_table[15] = 0.0f;
-    int jdghkdjf = 1;
     sample_accumulator = 0.0f;
     resampler_count = 0;
     /*
@@ -34,8 +33,7 @@ c_psg::~c_psg()
 
 int c_psg::get_buffer(const float **buf)
 {
-    int num_samples = resampler->get_output_buf(0, buf);
-    return num_samples;
+    return resampler->get_output_buf(buf);
 }
 
 void c_psg::clear_buffer()

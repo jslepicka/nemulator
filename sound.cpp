@@ -31,7 +31,6 @@ c_sound::c_sound()
     value_index = 0;
     clips = 0;
 
-    interleave_buffer = std::make_unique<uint32_t[]>(INTERLEAVE_BUFFER_LEN);
     buffer_wait_count = 0;
     memset(values, 0xFF, sizeof(values));
 
@@ -336,10 +335,10 @@ void c_sound::set_volume(int value)
 
 }
 
-int c_sound::copy(const float *left, const float *right, int numSamples, float system_volume)
+int c_sound::copy(const float *buf, int num_samples, float system_volume)
 {
     int waited = 0;
-    int src_len = numSamples * wf.nBlockAlign;
+    int src_len = num_samples * wf.nBlockAlign;
 
     auto amplify = [&](float sample) {
         sample = round(sample * 32767.0f * volume * system_volume);
@@ -349,24 +348,12 @@ int c_sound::copy(const float *left, const float *right, int numSamples, float s
         return (uint16_t)std::clamp((int)sample, -32768, 32767);
     };
  
-
-    uint32_t *ib = interleave_buffer.get();
-    const float *l = left;
-    const float *r = right != NULL ? right : left;
     double frame_average = 0.0f;
-    for (int i = 0; i < numSamples; i++) {
-        float amp = volume * system_volume;
-        frame_average += std::abs((*l * amp) + (*r * amp)) / 2.0;
-        *ib++ = amplify(*l++) | (amplify(*r++) << 16);
-    }
-    frame_average /= numSamples;
-    sample_sum += frame_average;
-    if (++sample_count == 60) {
-        sample_count = 0;
-        sample_sum /= 60.0f;
-        average_db = 20.0 * std::log10(sample_sum + 1e-10);
-        sample_sum = 0.0f;
-    }
+    float amp = volume * system_volume;
+
+    auto update_average = [&](float sample) { frame_average += std::abs(sample * amp); };
+
+
     while (get_max_write() < src_len) {
         waited = 1;
     }
@@ -374,13 +361,38 @@ int c_sound::copy(const float *left, const float *right, int numSamples, float s
         buffer_wait_count++;
     }
     BYTE *wasapi_buffer;
-    render_client->GetBuffer(numSamples, &wasapi_buffer);
-    uint32_t *wasapi_out = (uint32_t *)wasapi_buffer;
-    ib = interleave_buffer.get();
-    for (int i = 0; i < numSamples; i++) {
-        *wasapi_out++ = *ib++;
+    render_client->GetBuffer(num_samples, &wasapi_buffer);
+    uint16_t *wasapi_out = (uint16_t *)wasapi_buffer;
+
+    if (num_channels == 1) {
+        for (int i = 0; i < num_samples; i++) {
+            uint16_t sample = amplify(*buf++);
+            *wasapi_out++ = sample;
+            *wasapi_out++ = sample;
+            update_average(sample);
+            update_average(sample);
+        }
     }
-    render_client->ReleaseBuffer(numSamples, 0);
+    else {
+        for (int i = 0; i < num_samples; i++) {
+            for (int channel = 0; channel < num_channels; channel++) {
+                uint16_t sample = amplify(*buf++);
+                *wasapi_out++ = sample;
+                update_average(sample);
+            }
+        }
+    }
+    render_client->ReleaseBuffer(num_samples, 0);
+
+    frame_average /= (num_samples * (num_channels == 1 ? 2 : num_channels));
+    sample_sum += frame_average;
+    if (++sample_count == 60) {
+        sample_count = 0;
+        sample_sum /= 60.0f;
+        average_db = 20.0 * std::log10(sample_sum + 1e-10);
+        sample_sum = 0.0f;
+    }
+
     return 0;    
 }
 

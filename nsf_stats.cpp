@@ -247,7 +247,11 @@ void c_nsf_stats::draw()
     const float* buf_l;
     const float* buf_r;
 
-    int num_samples = c->get_sound_bufs(&buf_l, &buf_r);
+    const float *buf;
+
+    //todo fix this
+
+    int num_samples = c->get_sound_buf(&buf);
 
     for (int i = 0; i < num_samples; i++) {
         //*sbp++ = *buf_l++;

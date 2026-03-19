@@ -46,6 +46,7 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
                         .crop_right = -1,
                     },
                 .button_map = button_map,
+                .num_sound_channels = 2,
                 .volume = pow(10.0f, 4.0f / 20.0f), //boost by 4dB
                 .constructor = []() { return std::make_unique<c_genesis>(); },
             }
@@ -60,7 +61,7 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     void write_word(uint32_t address, uint16_t value);
     int reset();
     int *get_video();
-    int get_sound_bufs(const float **buf_l, const float **buf_r);
+    int get_sound_buf(const float **buf);
     int irq;
     int nmi;
     void set_audio_freq(double freq);

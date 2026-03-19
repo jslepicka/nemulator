@@ -21,11 +21,13 @@ export template <size_t channels, typename pre_f_t, typename post_f_t> class c_r
     {
         m = value;
     }
-    int get_output_buf(size_t channel, const float **sample_buf)
+
+    int get_output_buf(const float **sample_buf)
     {
-        *sample_buf = this->output_buf[channel].get();
+        *sample_buf = (float*)&output_buf;
         return output_buf_index;
     }
+
     void clear_buf()
     {
         output_buf_index = 0;
@@ -64,7 +66,7 @@ export template <size_t channels, typename pre_f_t, typename post_f_t> class c_r
                 else {
                     static_assert(0);
                 }
-                output_buf[i][output_buf_index] = post_filters[i]->process(j);
+                output_buf[output_buf_index].channel[i] = post_filters[i]->process(j);
             }
 
             output_buf_index++;
@@ -92,15 +94,11 @@ export template <size_t channels, typename pre_f_t, typename post_f_t> class c_r
         samples_required = (int)m + 2;
 
         for (int i = 0; i < channels; i++) {
-            output_buf[i] = std::make_unique<float[]>(OUTPUT_BUF_LEN);
-            filtered_buf[i] = std::make_unique<float[]>(FILTERED_BUF_LEN * 2);
-            for (int j = 0; j < FILTERED_BUF_LEN * 2; j++) {
-                filtered_buf[i][j] = 0.0f;
-            }
             pre_filters[i] = std::make_unique<pre_f_t>();
             post_filters[i] = std::make_unique<post_f_t>();
         }
     }
+
     float m, mf;
     int samples_required;
     int output_buf_index;
@@ -109,8 +107,14 @@ export template <size_t channels, typename pre_f_t, typename post_f_t> class c_r
     static const int FILTERED_BUF_LEN = 4;
     int filtered_buf_index;
 
-    std::array<std::unique_ptr<float[]>, channels> output_buf;
-    std::array<std::unique_ptr<float[]>, channels> filtered_buf;
+    struct s_output_frame
+    {
+        float channel[channels];
+    };
+    
+    std::array<s_output_frame, OUTPUT_BUF_LEN> output_buf{};
+
+    std::array<float[FILTERED_BUF_LEN * 2], channels> filtered_buf{};
     std::array<std::unique_ptr<pre_f_t>, channels> pre_filters;
     std::array<std::unique_ptr<post_f_t>, channels> post_filters;
 

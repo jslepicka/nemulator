@@ -207,34 +207,34 @@ void c_sms::write_port(uint8_t port, uint8_t value)
     //printf("write %2X to port %2X\n", value, port);
     switch (port >> 6) {
         case 0:
-        //printf("Port write to I/O or memory\n");
+            //printf("Port write to I/O or memory\n");
             if (port == 0x3F) {
-            //printf("write %02X to nationalism\n", value);
+                //printf("write %02X to nationalism\n", value);
                 nationalism = value;
             }
             break;
         case 1:
-        //printf("Port write to PSG\n");
+            //printf("Port write to PSG\n");
             catchup_psg();
             psg->write(value);
             break;
         case 2:
             switch (port & 0x1) {
                 case 0: //VDP data
-            //printf("\tVDP data\n");
+                    //printf("\tVDP data\n");
                     vdp->write_data(value);
                     break;
                 case 1: //VDP control
-            //printf("\tVDP control\n");
+                    //printf("\tVDP control\n");
                     vdp->write_control(value);
                     break;
             }
             break;
         case 3:
-        //printf("Port write to joypad: %02X\n", port);
+            //printf("Port write to joypad: %02X\n", port);
             break;
         default:
-        //printf("Port write error\n");
+            //printf("Port write error\n");
             break;
     }
 }
@@ -243,47 +243,47 @@ uint8_t c_sms::read_port(uint8_t port)
 {
     switch (port >> 6) {
         case 0:
-        //printf("Port read from I/O or memory %2X\n", port);
+            //printf("Port read from I/O or memory %2X\n", port);
             if (model == SMS_MODEL::GAMEGEAR) {
                 return joy >> 31;
             }
             return 0;
         case 1:
-        //printf("Port read from PSG\n");
-        //TODO: need to differentiate between even and odd reads to return either h or v vdp counters
+            //printf("Port read from PSG\n");
+            //TODO: need to differentiate between even and odd reads to return either h or v vdp counters
             if (port & 0x1) {
                 int x = 1;
             }
             return vdp->get_scanline();
         case 2:
-        //printf("Port read from VDP\n");
+            //printf("Port read from VDP\n");
             switch (port & 0x1) {
                 case 0: //VDP data
-            //printf("Port write to VDP data\n");
+                    //printf("Port write to VDP data\n");
                     return vdp->read_data();
                 case 1: //VDP control
-            //printf("Port write to VDP control\n");
+                    //printf("Port write to VDP control\n");
                     return vdp->read_control();
             }
             return 0;
         case 3:
-        //printf("Port read from joypad: %02X\n", port);
+            //printf("Port read from joypad: %02X\n", port);
             if (port == 0xDC) {
                 return joy & 0xFF;
             }
             else if (port == 0xDD) {
-            //invert and select TH output enable bits
+                //invert and select TH output enable bits
                 int out = (nationalism ^ 0xFF) & 0xA;
-            //and TH bits with TH values
+                //and TH bits with TH values
                 out = nationalism & (out << 4);
-            //shift bits into position
+                //shift bits into position
                 out = (out & 0x80) | ((out << 1) & 0x40);
                 out = ((joy >> 8) & 0x3F) | out;
                 return out;
             }
             return 0xFF;
         default:
-        //printf("Port read error\n");
+            //printf("Port read error\n");
             return 0;
     }
 }
@@ -300,11 +300,9 @@ int *c_sms::get_video()
     return vdp->get_frame_buffer();
 }
 
-int c_sms::get_sound_bufs(const float **buf_l, const float **buf_r)
+int c_sms::get_sound_buf(const float **buf)
 {
-    int num_samples = psg->get_buffer(buf_l);
-    *buf_r = nullptr;
-    return num_samples;
+    return psg->get_buffer(buf);
 }
 void c_sms::set_audio_freq(double freq)
 {
