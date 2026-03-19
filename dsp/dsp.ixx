@@ -9,3 +9,4 @@ export import :biquad4_parallel;
 export import :resampler;
 export import :resampler2;
 export import :first_order_bandpass;
+export import :one_pole_lowpass;

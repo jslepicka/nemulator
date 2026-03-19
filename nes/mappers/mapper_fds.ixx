@@ -40,9 +40,10 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
 
     float mix_audio(float sample) override
     {
-        //return sample;
-        return sample + fds_audio.get_sample() * .274f;
-        //return fds_audio.get_sample() * .5f;
+        //max value of single square wave * 6.6dB (10^(6.6/20))
+        constexpr float fds_attenuation = 0.148815960 * 2.14;
+        //constexpr float fds_attenuation = .274f;
+        return sample + fds_audio.get_sample() * fds_attenuation;
     }
 
     int switch_disk()

@@ -11,8 +11,6 @@ import :mapper;
 
 namespace nes {
 
-const float c_apu::NES_AUDIO_RATE = (341.0f / 3.0f * 262.0f * 60.0f) / (float)CLOCKS_PER_MIX;
-
 std::atomic<int> c_apu::lookup_tables_built = 0;
 float c_apu::square_lut[31];
 float c_apu::tnd_lut[203];

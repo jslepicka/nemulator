@@ -553,6 +553,9 @@
     <ClCompile Include="nes\mappers\fds_audio.ixx">
       <Filter>nes\mappers</Filter>
     </ClCompile>
+    <ClCompile Include="dsp\one_pole_lowpass.ixx">
+      <Filter>dsp</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="nes\mappers\vrc7_audio.h">

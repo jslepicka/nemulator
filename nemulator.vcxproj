@@ -245,6 +245,7 @@
     <ClCompile Include="dsp\biquad4_t_stereo.ixx" />
     <ClCompile Include="dsp\dsp.ixx" />
     <ClCompile Include="dsp\first_order_bandpass.ixx" />
+    <ClCompile Include="dsp\one_pole_lowpass.ixx" />
     <ClCompile Include="dsp\null_filter.ixx" />
     <ClCompile Include="dsp\resampler.ixx" />
     <ClCompile Include="dsp\resampler2.ixx" />

@@ -261,8 +261,10 @@ export class c_apu
         c_timer timer;
     };
 
+    static constexpr int CLOCKS_PER_MIX = 1;
+    static constexpr float NES_AUDIO_RATE = (341.0f / 3.0f * 262.0f * 60.0f) / (float)CLOCKS_PER_MIX;
+
   private:
-    static const float NES_AUDIO_RATE;
 
     using lpf_t = dsp::c_biquad4_t<
         0.5086284279823303f, 0.3313708603382111f, 0.1059221103787422f, 0.0055782101117074f,
@@ -293,7 +295,6 @@ export class c_apu
     std::unique_ptr<resampler_t> resampler;
     
     static const int CLOCKS_PER_FRAME_SEQ = 89489;
-    static const int CLOCKS_PER_MIX = 1;
     int mixer_enabled;
     int mix_clock;
     int square_clock;

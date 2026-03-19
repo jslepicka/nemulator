@@ -1,7 +1,9 @@
 module;
-
+#include <cassert>
 export module nes:fds_audio;
 import nemulator.std;
+import dsp;
+import :apu; //for NES_AUDIO_RATE
 
 namespace nes
 {
@@ -26,30 +28,38 @@ class c_fds_audio
         std::memset(&op, 0, sizeof(op));
         std::memset(&mod, 0, sizeof(mod));
         std::memset(&wave, 0, sizeof(wave));
+        lowpass.reset();
+        op.master_speed = 0xFF;
     }
 
     void clock()
     {
-        if (!enabled) {
-            return;
-        }
-        uint32_t freq = op.frequency;
-        if (envelopes_enabled && !wave.halt) {
-            op.clock_envelope();
-            if (mod.clock_envelope()) {
-                mod.update_output(freq);
+        uint32_t clock_before = clock_divider;
+        clock_divider++;
+        uint32_t clock_xor = clock_before ^ clock_divider;
+        if (clock_xor & 0x8) {
+            if (!enabled) {
+                return;
             }
-        }
+            uint32_t freq = op.frequency;
+            if (envelopes_enabled && !wave.halt) {
+                op.clock_envelope();
+                if (mod.clock_envelope()) {
+                    mod.update_output(freq);
+                }
+            }
 
-        if (mod.clock_mod()) {
-            mod.update_output(freq);
-        }
+            if (clock_xor & 0x10) {
+                if (mod.clock_mod()) {
+                    mod.update_output(freq);
+                }
 
-        update_output();
-        if (!wave.halt && freq + mod.output > 0) {
-            wave.overflow += freq + mod.output;
-            if (wave.overflow < freq + mod.output) {
-                wave.index = (wave.index + 1) & 0x3F;
+                update_output();
+                if (!wave.halt) {
+                    uint32_t counter_before = wave.counter;
+                    wave.counter += mod.output;
+                    wave.index = ((wave.counter >> 18) & 0x3F);
+                }
             }
         }
     }
@@ -64,7 +74,7 @@ class c_fds_audio
         float sample = (float)((uint32_t)wave.data[wave.index] * g) / (63.0f * 32.0f);
         const float volume[4] = {1.0f, 2.0f / 3.0f, 2.0f / 4.0f, 2.0f / 5.0f};
 
-        output = sample * volume[master_vol & 0x3];
+        output = sample * volume[master_vol];
     }
 
     void write_byte(uint16_t address, uint8_t value)
@@ -79,7 +89,6 @@ class c_fds_audio
             }
             return;
         }
-        int x;
         switch (address) {
             case 0x4080: //vol envelope
                 op.speed = value & 0x3F;
@@ -100,6 +109,7 @@ class c_fds_audio
                 wave.halt = value & 0x80;
                 if (wave.halt) {
                     wave.index = 0;
+                    wave.counter = 0;
                 }
                 if (!envelopes_enabled) {
                     op.reload_period();
@@ -128,7 +138,7 @@ class c_fds_audio
                 mod.frequency = (mod.frequency & 0xFF) | ((value & 0xF) << 8);
                 mod.disabled = value & 0x80;
                 if (mod.disabled) {
-                    mod.overflow = 0;
+                    mod.mod_accum &= ~0x1FFF;
                 }
                 mod.reload_period();
                 break;
@@ -136,10 +146,8 @@ class c_fds_audio
                 if (!mod.disabled) {
                     return;
                 }
-                mod.data[mod.index] = value & 0x7;
-                mod.index = (mod.index + 1) & 0x3F;
-                mod.data[mod.index] = value & 0x7;
-                mod.index = (mod.index + 1) & 0x3F;
+                mod.data[(mod.mod_accum >> 13) & 0x1F] = value & 0x7;
+                mod.mod_accum = (mod.mod_accum + 0x2000) & 0x3FFFF;
                 break;
             case 0x4089: //wav write / master volume
                 master_vol = value & 0x3;
@@ -149,24 +157,8 @@ class c_fds_audio
                 op.master_speed = value;
                 mod.master_speed = value;
                 break;
-            case 0x4090: //vol gain
-                break;
-            case 0x4091: //wave accumulator
-                break;
-            case 0x4092: //mod gain
-                break;
-            case 0x4093: //mod table address accumulator
-                break;
-            case 0x4094: //mod counter * gain result
-                break;
-            case 0x4095: //mod counter increment
-                break;
-            case 0x4096: //wavetable value
-                break;
-            case 0x4097: //mod counter value
-                x = 1;
-                break;
             default:
+                assert(0);
                 break;
         }
     }
@@ -201,12 +193,10 @@ class c_fds_audio
             case 0x408A: //env speed
                 break;
             case 0x4090: //vol gain
-                return op.gain;
                 break;
             case 0x4091: //wave accumulator
                 break;
             case 0x4092: //mod gain
-                return mod.gain;
                 break;
             case 0x4093: //mod table address accumulator
                 break;
@@ -221,23 +211,19 @@ class c_fds_audio
             default:
                 break;
         }
+        assert(0);
         return 0;
     }
 
     float get_sample()
     {
-        if (!enabled) {
-            return 0.0f;
-        }
-        return output;
+        return lowpass.process(!enabled ? 0.0f : output);
     }
 
     void enable(int value)
     {
         enabled = value;
     }
-
-    //operator
 
   private:
     bool enabled;
@@ -246,18 +232,23 @@ class c_fds_audio
     uint32_t clock_divider;
     float output;
 
+    static constexpr float fs = c_apu::NES_AUDIO_RATE;
+    static constexpr float fc = 2190.0f;
+    dsp::c_one_pole_lowpass<fs, fc> lowpass;
+
     struct s_operator
     {
         bool clock_envelope();
         void reload_period();
 
-        uint8_t master_speed = 0xFF;
+        uint8_t master_speed;
         uint8_t speed;
         uint8_t gain;
         uint8_t direction;
         uint8_t envelope_enabled;
         uint16_t frequency;
         uint32_t period;
+        uint32_t accum;
     } op;
 
     struct s_modulator : s_operator
@@ -269,10 +260,9 @@ class c_fds_audio
 
         bool disabled;
         int8_t counter;
-        uint16_t overflow;
+        uint32_t mod_accum;
         int32_t output;
-
-        uint8_t data[64];
+        uint8_t data[32];
         uint8_t index;
 
     } mod;
@@ -281,15 +271,15 @@ class c_fds_audio
     {
         bool halt;
         bool writable;
-        uint16_t overflow;
         uint8_t data[64];
         uint8_t index;
+        uint32_t counter;
     } wave;
 
 };
 
 
-bool nes::c_fds_audio::s_operator::clock_envelope()
+bool c_fds_audio::s_operator::clock_envelope()
 {
     if (envelope_enabled && master_speed > 0 && !--period) {
         reload_period();
@@ -308,52 +298,39 @@ bool nes::c_fds_audio::s_operator::clock_envelope()
     return false;
 }
 
-void nes::c_fds_audio::s_operator::reload_period()
+void c_fds_audio::s_operator::reload_period()
 {
-    period = 8 * (1 + speed) * master_speed;
+    period = (1 + speed) * (master_speed + 1);
 }
 
-bool nes::c_fds_audio::s_modulator::clock_mod()
+bool c_fds_audio::s_modulator::clock_mod()
 {
     if (enabled()) {
-        overflow += frequency;
-        if (overflow < frequency) {
+        uint32_t accum_before = mod_accum;
+        mod_accum = (mod_accum + frequency) & 0x3FFFF;
+        if ((mod_accum ^ accum_before) & 0b1'0000'0000'0000) {
             static const int8_t lookup[8] = {0, 1, 2, 4, -8, -4, -2, -1};
             int32_t offset = lookup[data[index]];
             update_counter(offset == -8 ? 0 : counter + offset);
-            index = (index + 1) & 0x3F;
+            index = (mod_accum >> 13) & 0x1F;
             return true;
         }
     }
     return false;
 }
 
-void nes::c_fds_audio::s_modulator::update_output(uint16_t pitch)
+void c_fds_audio::s_modulator::update_output(uint16_t pitch)
 {
     int32_t temp = counter * gain;
-    int32_t remainder = temp & 0xF;
-    temp >>= 4;
-    if (remainder > 0 && !(temp & 0x80)) {
-        temp += counter < 0 ? -1 : 2;
+    if ((temp & 0x0F) && !(temp & 0x800)) {
+        temp += 0x20;
     }
-
-    if (temp >= 192) {
-        temp -= 256;
-    }
-    else if (temp < -64) {
-        temp += 256;
-    }
-
-    temp *= pitch;
-    remainder = temp & 0x3F;
-    temp >>= 6;
-    if (remainder >= 32) {
-        temp++;
-    }
-    output = temp;
+    temp += 0x400;
+    temp = (temp >> 4) & 0xFF;
+    output = (pitch * temp) & 0xFFFFF;
 }
 
-void nes::c_fds_audio::s_modulator::update_counter(int8_t value)
+void c_fds_audio::s_modulator::update_counter(int8_t value)
 {
     counter = value;
     if (counter >= 64) {
@@ -364,7 +341,7 @@ void nes::c_fds_audio::s_modulator::update_counter(int8_t value)
     }
 }
 
-bool nes::c_fds_audio::s_modulator::enabled()
+bool c_fds_audio::s_modulator::enabled()
 {
     return !disabled && frequency > 0;
 }
