@@ -1,5 +1,6 @@
 module;
 #include <immintrin.h>
+#include <cassert>
 
 export module dsp:resampler2;
 import nemulator.std;
@@ -51,15 +52,29 @@ export template <size_t channels, typename pre_f_t, typename post_f_t> class c_r
                 float c1 = 1.0f / 2.0f * (y1 - ym1);
                 float c2 = 1.0f / 2.0f * ym1py1 - y0;
                 float c3 = 1.0f / 2.0f * (y0 - y1) + 1.0f / 6.0f * (y2 - ym1);
-                float j = ((c3 * mf + c2) * mf + c1) * mf + c0;
+
+                float j;
+                if constexpr (method == COMPUTATION_METHOD::horner) {
+                    j = ((c3 * mf + c2) * mf + c1) * mf + c0;
+                }
+                else if constexpr (method == COMPUTATION_METHOD::estrin) {
+                    float t = mf * mf;
+                    j = (c0 + c1 * mf) + (c2 + c3 * mf) * t;
+                }
+                else {
+                    static_assert(0);
+                }
                 output_buf[i][output_buf_index] = post_filters[i]->process(j);
             }
 
             output_buf_index++;
-            float extra = 2.0f - mf;
-            float n = m - extra;
-            mf = n - (int)n;
-            samples_required = (int)n + 2;
+
+            mf += m;
+            samples_required = (int)mf;
+            mf -= samples_required;
+
+            assert(mf >= 0.0f);
+
         }
 
         filtered_buf_index = (filtered_buf_index - 1) & 0x3;
@@ -98,5 +113,13 @@ export template <size_t channels, typename pre_f_t, typename post_f_t> class c_r
     std::array<std::unique_ptr<float[]>, channels> filtered_buf;
     std::array<std::unique_ptr<pre_f_t>, channels> pre_filters;
     std::array<std::unique_ptr<post_f_t>, channels> post_filters;
+
+    enum class COMPUTATION_METHOD
+    {
+        horner,
+        estrin
+    };
+
+    static constexpr COMPUTATION_METHOD method = COMPUTATION_METHOD::estrin;
 };
 } //namespace dsp

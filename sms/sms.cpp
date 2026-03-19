@@ -1,7 +1,6 @@
 module;
 
 module sms;
-import z80;
 import crc32;
 
 namespace sms
@@ -9,13 +8,17 @@ namespace sms
 
 c_sms::c_sms(SMS_MODEL model)
 {
+    bus.ctx = this;
+    bus.read_byte = &thunk<c_sms, &c_sms::read_byte>;
+    bus.write_byte = &thunk<c_sms, &c_sms::write_byte>;
+
+    io_bus.ctx = this;
+    io_bus.read_byte = &thunk<c_sms, &c_sms::read_port>;
+    io_bus.write_byte = &thunk<c_sms, &c_sms::write_port>;
+
     this->model = model;
-    z80 = std::make_unique<c_z80>(
-        [this](uint16_t address) { return this->read_byte(address); }, //read_byte
-        [this](uint16_t address, uint8_t data) { this->write_byte(address, data); }, //write_byte
-        [this](uint8_t port) { return this->read_port(port); }, //read_port
-        [this](uint8_t port, uint8_t data) { this->write_port(port, data); }, //write_port
-        nullptr, //int_ack callback
+    z80 = std::make_unique<c_z80>(&bus,
+        &io_bus,
         &nmi, &irq, &data_bus);
     vdp = std::make_unique<c_vdp>(this);
     psg = std::make_unique<c_psg>();
@@ -130,7 +133,7 @@ int c_sms::emulate_frame()
     return 0;
 }
 
-unsigned char c_sms::read_byte(unsigned short address)
+uint8_t c_sms::read_byte(uint16_t address)
 {
     if (address < 0xC000) {
         if (address < 0x400) //always read first 1k from rom
@@ -150,14 +153,14 @@ unsigned char c_sms::read_byte(unsigned short address)
     }
 }
 
-unsigned short c_sms::read_word(unsigned short address)
+uint16_t c_sms::read_word(uint16_t address)
 {
     int lo = read_byte(address);
     int hi = read_byte(address + 1);
     return lo | (hi << 8);
 }
 
-void c_sms::write_byte(unsigned short address, unsigned char value)
+void c_sms::write_byte(uint16_t address, uint8_t value)
 {
     if (address < 0xC000) {
         if (address >= 0x8000 && (ram_select & 0x8)) {
@@ -186,7 +189,7 @@ void c_sms::write_byte(unsigned short address, unsigned char value)
     }
 }
 
-void c_sms::write_word(unsigned short address, unsigned short value)
+void c_sms::write_word(uint16_t address, uint16_t value)
 {
     write_byte(address, value & 0xFF);
     write_byte(address + 1, value >> 8);
@@ -199,7 +202,7 @@ void c_sms::catchup_psg()
     psg->clock(num_cycles);
 }
 
-void c_sms::write_port(int port, unsigned char value)
+void c_sms::write_port(uint8_t port, uint8_t value)
 {
     //printf("write %2X to port %2X\n", value, port);
     switch (port >> 6) {
@@ -236,7 +239,7 @@ void c_sms::write_port(int port, unsigned char value)
     }
 }
 
-unsigned char c_sms::read_port(int port)
+uint8_t c_sms::read_port(uint8_t port)
 {
     switch (port >> 6) {
         case 0:

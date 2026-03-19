@@ -736,7 +736,7 @@ void c_nemulator::ProcessInput(double dt)
                 for (auto button : bh.button_list) {
                     if (int result = g_ih->get_result(button, bh.ack) & bh.mask) {
                         s_button_handler_params p = { button, result };
-                        std::invoke(bh.func, this, &p);
+                        (this->*bh.func)(&p);
                         return;
                     }
                 }
@@ -988,6 +988,7 @@ int c_nemulator::update(double dt, int child_result, void *params)
             break;
         }
     }
+
     if (splash_done) ProcessInput(dt);
     UpdateScene(dt);
     return 0;

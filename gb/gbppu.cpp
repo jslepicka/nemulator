@@ -293,6 +293,13 @@ void c_gbppu::update_stat()
     if ((STAT & 0x44) == 0x44 || (mode == 0 && (STAT & 0x8)) || (mode == 1 && (STAT & 0x10)) ||
         (mode == 2 && (STAT & 0x20))) {
         stat_irq = 1;
+        //if (current_cycle == 0 && STAT != 0x44) {
+        //    int x = 1;
+        //    if (prev_stat_irq) {
+        //        int x = 1;
+        //        gb->set_stat_irq(1);
+        //    }
+        //}
         if (prev_stat_irq == 0) {
             gb->set_stat_irq(1);
         }
@@ -781,6 +788,7 @@ void c_gbppu::execute(int cycles)
                 }
                 else if (line < 144) {
                     mode = 2;
+                    //set_ly(line);
                     update_stat();
                 }
             }
@@ -862,7 +870,7 @@ uint8_t c_gbppu::read_byte(uint16_t address)
             case 0xFF55:
                 if (HDMA5 & 0x80 && hdma_hblank_count) {
                     int remaining_blocks = (hdma_hblank_count >> 4) - 1;
-                    return remaining_blocks;
+                    return remaining_blocks == 0 ? 0xFF : remaining_blocks;
                 }
                 return 0xFF;
             case 0xFF68:
@@ -992,7 +1000,7 @@ void c_gbppu::write_byte(uint16_t address, uint8_t data)
                 int x = 1;
                 int length = ((data & 0x7F) + 1) * 0x10;
                 if (data & 0x80) {
-                    if (mode == 0) {
+                    if (mode == 0 || !(LCDC & 0x80)) {
                         hdma_length = 16;
                         hdma_hblank_count = length - 16;
                     }

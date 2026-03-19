@@ -9,11 +9,9 @@ import z80;
 import :vdp;
 import sms;
 import ym2612;
-
+import bus;
+import m68k;
 import dsp;
-
-class c_m68k;
-//class c_vdp;
 
 namespace genesis
 {
@@ -76,7 +74,13 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     void set_input(int input);
 
   private:
+    s_bus<uint32_t> bus;
+    s_bus<uint16_t> z80_bus;
+    s_bus<uint8_t> z80_io_bus;
+
     int loaded = 0;
+    static const int CLOCKS_PER_MIX = 4;
+    int mix_clock;
     std::unique_ptr<c_m68k> m68k;
     //std::unique_ptr<uint8_t[]> ram;
     std::unique_ptr<uint8_t[]> rom;
@@ -138,18 +142,36 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     int line;
     bool frame_complete;
 
+    //using lpf_t = dsp::c_biquad4_t<
+    //    0.5068508387f, 0.3307863474f, 0.1168005615f, 0.0055816281f,
+    //   -1.9496889114f, -1.9021773338f, -1.3770858049f, -1.9604763985f,
+    //   -1.9442052841f, -1.9171522856f, -1.8950747252f, -1.9676681757f,
+    //    0.9609073400f,  0.9271715879f,  0.8989855647f,  0.9881398082f>;
+
+
+    /*
+    d = fdesign.lowpass('N,Fp,Ap,Ast', 8, 20000, .1, 80, 7671360/6/4);
+    Hd = design(d, 'ellip', 'FilterStructure', 'df2tsos');
+    set(Hd, 'Arithmetic', 'single');
+    g = regexprep(num2str(reshape(Hd.ScaleValues(1:4), [1 4]), '%.16ff '), '\s+', ',')
+    b2 = regexprep(num2str(Hd.sosMatrix(5:8), '%.16ff '), '\s+', ',')
+    a2 = regexprep(num2str(Hd.sosMatrix(17:20), '%.16ff '), '\s+', ',')
+    a3 = regexprep(num2str(Hd.sosMatrix(21:24), '%.16ff '), '\s+', ',')
+    */
+
     using lpf_t = dsp::c_biquad4_t<
-        0.5068508387f, 0.3307863474f, 0.1168005615f, 0.0055816281f,
-       -1.9496889114f, -1.9021773338f, -1.3770858049f, -1.9604763985f,
-       -1.9442052841f, -1.9171522856f, -1.8950747252f, -1.9676681757f,
-        0.9609073400f,  0.9271715879f,  0.8989855647f,  0.9881398082f>;
+        0.5179223418235779f, 0.3575305044651032f, 0.2226604372262955f, 0.0057023479603231f,
+        -1.6284488439559937f, -1.3291022777557373f, 0.3889163136482239f, -1.7029347419738770f,
+        -1.7699114084243774f, -1.7353214025497437f, -1.7109397649765015f, -1.8106834888458252f,
+        0.8959513902664185f, 0.8095921277999878f, 0.7395310401916504f, 0.9678796529769898f>;
+
     using bpf_t = dsp::c_first_order_bandpass<0.1840657775125092f, 0.1840657775125092f, -0.6318684449749816f,
                                             0.9998691174378402f, -0.9998691174378402f, -0.9997382348756805f>;
     using resampler_t = dsp::c_resampler2<2, lpf_t, bpf_t>;
 
     std::unique_ptr<resampler_t> resampler;
 
-    static constexpr double BASE_AUDIO_FREQ=(488.0 * 262.0 * 60.0) / 6.0;
+    static constexpr double BASE_AUDIO_FREQ = (488.0 * 262.0 * 60.0) / 6.0 / (double)CLOCKS_PER_MIX;
 
     enum CYCLE_EVENT
     {

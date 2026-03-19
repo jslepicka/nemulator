@@ -14,20 +14,27 @@ namespace genesis
 
 c_genesis::c_genesis()
 {
-    m68k = std::make_unique<c_m68k>([this](uint32_t address) { return this->read_word(address); },
-                                    [this](uint32_t address, uint16_t value) { this->write_word(address, value); },
-                                    [this](uint32_t address) { return this->read_byte(address); },
-                                    [this](uint32_t address, uint8_t value) { this->write_byte(address, value); },
-                                    [this]() { this->vdp->ack_irq(); }, &ipl, &stalled);
+    bus.ctx = this;
+    bus.read_word = &thunk<c_genesis, &c_genesis::read_word>;
+    bus.read_byte = &thunk<c_genesis, &c_genesis::read_byte>;
+    bus.write_word = &thunk<c_genesis, &c_genesis::write_word>;
+    bus.write_byte = &thunk<c_genesis, &c_genesis::write_byte>;
+
+    z80_bus.ctx = this;
+    z80_bus.read_byte = &thunk<c_genesis, &c_genesis::z80_read_byte>;
+    z80_bus.write_byte = &thunk<c_genesis, &c_genesis::z80_write_byte>;
+
+    z80_io_bus.ctx = this;
+    z80_io_bus.read_byte = &thunk<c_genesis, &c_genesis::z80_read_port>;
+    z80_io_bus.write_byte = &thunk<c_genesis, &c_genesis::z80_write_port>;
+
+    m68k = std::make_unique<c_m68k>(&bus, [this]() { this->vdp->ack_irq(); }, &ipl, &stalled);
     vdp = std::make_unique<c_vdp>(
         &ipl, [this](uint32_t address) { return this->read_word(address); },
         [this](int x_res) { this->on_mode_switch(x_res); }, &stalled);
     z80 =
-        std::make_unique<c_z80>([this](uint16_t address) { return this->z80_read_byte(address); },
-                                [this](uint16_t address, uint8_t value) { this->z80_write_byte(address, value); },
-                                [this](uint8_t port) { return this->z80_read_port(port); }, //read port
-                                [this](uint8_t port, uint8_t value) { this->z80_write_byte(port, value); }, //write port
-                                nullptr, //int ack
+        std::make_unique<c_z80>(&z80_bus,
+                                &z80_io_bus, //write port
                                 &z80_nmi, //nmi
                                 &z80_irq, //irq
                                 nullptr //data bus
@@ -209,6 +216,8 @@ int c_genesis::reset()
     current_cycle = 0;
     z80_comp = 0;
 
+    mix_clock = 0;
+
     for (auto &n : next_events) {
         n = (uint64_t)-1;
     }
@@ -309,9 +318,12 @@ int c_genesis::emulate_frame()
         if (event == CYCLE_EVENT::YM_CLOCK) {
             next_events[CYCLE_EVENT::YM_CLOCK] += CYCLES_PER_YM_CLOCK << 3;
             ym->clock(1);
-            if (mixer_enabled) {
-                resampler->process({ym->out_l * (1.0f - 1.0f / 6.0f) + psg->out * (1.0f / 6.0f * 2.0f),
-                                    ym->out_r * (1.0f - 1.0f / 6.0f) + psg->out * (1.0f / 6.0f * 2.0f)});
+            if (++mix_clock == CLOCKS_PER_MIX) {
+                mix_clock = 0;
+                if (mixer_enabled) {
+                    resampler->process({ym->out_l * (1.0f - 1.0f / 6.0f) + psg->out * (1.0f / 6.0f * 2.0f),
+                                        ym->out_r * (1.0f - 1.0f / 6.0f) + psg->out * (1.0f / 6.0f * 2.0f)});
+                }
             }
         }
         else if (event == CYCLE_EVENT::M68K_CLOCK) {
@@ -734,13 +746,13 @@ void c_genesis::set_audio_freq(double freq)
 
 void c_genesis::enable_mixer()
 {
-    psg->enable_mixer();
+    //psg->enable_mixer();
     mixer_enabled = 1;
 }
 
 void c_genesis::disable_mixer()
 {
-    psg->disable_mixer();
+    //psg->disable_mixer();
     mixer_enabled = 0;
 }
 

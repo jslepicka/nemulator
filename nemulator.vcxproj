@@ -234,6 +234,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="bus.ixx" />
     <ClCompile Include="class_registry.ixx" />
     <ClCompile Include="crc32.ixx" />
     <ClCompile Include="dsp\audio_filter.ixx" />
@@ -244,6 +245,7 @@
     <ClCompile Include="dsp\biquad4_t_stereo.ixx" />
     <ClCompile Include="dsp\dsp.ixx" />
     <ClCompile Include="dsp\first_order_bandpass.ixx" />
+    <ClCompile Include="dsp\one_pole_lowpass.ixx" />
     <ClCompile Include="dsp\null_filter.ixx" />
     <ClCompile Include="dsp\resampler.ixx" />
     <ClCompile Include="dsp\resampler2.ixx" />
@@ -264,6 +266,7 @@
     <ClCompile Include="audio_info.cpp" />
     <ClCompile Include="config.cpp" />
     <ClCompile Include="D3d10App.cpp" />
+    <ClCompile Include="nes\mappers\fds_audio.ixx" />
     <ClCompile Include="nes\mappers\mapper0.ixx" />
     <ClCompile Include="nes\mappers\mapper1.ixx" />
     <ClCompile Include="nes\mappers\mapper10.ixx" />

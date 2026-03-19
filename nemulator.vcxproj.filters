@@ -522,9 +522,6 @@
     <ClCompile Include="genesis\genesis_vdp.ixx">
       <Filter>genesis</Filter>
     </ClCompile>
-    <ClCompile Include="genesis\genesis_vdp.cpp">
-      <Filter>genesis</Filter>
-    </ClCompile>
     <ClCompile Include="nes\mappers\mapper52.ixx">
       <Filter>nes\mappers</Filter>
     </ClCompile>
@@ -547,6 +544,16 @@
       <Filter>dsp</Filter>
     </ClCompile>
     <ClCompile Include="dsp\resampler2.ixx">
+      <Filter>dsp</Filter>
+    </ClCompile>
+    <ClCompile Include="genesis\genesis_vdp.cpp">
+      <Filter>genesis</Filter>
+    </ClCompile>
+    <ClCompile Include="bus.ixx" />
+    <ClCompile Include="nes\mappers\fds_audio.ixx">
+      <Filter>nes\mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="dsp\one_pole_lowpass.ixx">
       <Filter>dsp</Filter>
     </ClCompile>
   </ItemGroup>

@@ -6,6 +6,7 @@ export module nes:mapper_fds;
 import :mapper;
 import class_registry;
 import nemulator.std;
+import :fds_audio;
 
 namespace nes
 {
@@ -35,6 +36,14 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
     ~c_mapper_fds()
     {
         save_overlay();
+    }
+
+    float mix_audio(float sample) override
+    {
+        //max value of single square wave * 6.6dB (10^(6.6/20))
+        constexpr float fds_attenuation = 0.148815960 * 2.14;
+        //constexpr float fds_attenuation = .274f;
+        return sample + fds_audio.get_sample() * fds_attenuation;
     }
 
     int switch_disk()
@@ -84,12 +93,15 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
         timer_control = 0;
 
         switching_disk = 0;
+
+        fds_audio.reset();
     }
 
     void clock(int cycles) override
     {
         if (++ticks == 3) {
             ticks = 0;
+            fds_audio.clock();
 
             if (timer_control & 0x2) {
                 if (timer_counter) {
@@ -246,6 +258,8 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
     std::map<uint32_t, uint8_t> dirty_blocks;
     std::map<uint32_t, uint8_t> dirty_blocks2;
 
+    c_fds_audio fds_audio;
+
     unsigned char read_byte(unsigned short address) override
     {
         uint8_t out = 0;
@@ -277,6 +291,9 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
                 case 0x4033:
                     return 0x80 | (external_connector & 0x7F);
                 default:
+                    if (address >= 0x4040) {
+                        return fds_audio.read_byte(address);
+                    }
                     return 0;
             }
         }
@@ -318,6 +335,7 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
                 case 0x4023:
                     enable_disk_io = (value >> 0) & 0x01;
                     enable_sound_io = (value >> 1) & 0x01;
+                    fds_audio.enable(enable_sound_io);
                     break;
                 case 0x4024:
                     write_data = value;
@@ -342,6 +360,9 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
                     external_connector = value;
                     break;
                 default:
+                    if (address >= 0x4040) {
+                        fds_audio.write_byte(address, value);
+                    }
                     break;
             }
         }

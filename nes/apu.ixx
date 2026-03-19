@@ -261,14 +261,34 @@ export class c_apu
         c_timer timer;
     };
 
+    static constexpr int CLOCKS_PER_MIX = 1;
+    static constexpr float NES_AUDIO_RATE = (341.0f / 3.0f * 262.0f * 60.0f) / (float)CLOCKS_PER_MIX;
+
   private:
-    static const float NES_AUDIO_RATE;
 
     using lpf_t = dsp::c_biquad4_t<
         0.5086284279823303f, 0.3313708603382111f, 0.1059221103787422f, 0.0055782101117074f,
         -1.9872593879699707f, -1.9750031232833862f, -1.8231037855148315f, -1.9900115728378296f,
         -1.9759204387664795f, -1.9602127075195313f, -1.9470522403717041f, -1.9888486862182617f,
         0.9801648259162903f, 0.9627774357795715f, 0.9480593800544739f, 0.9940192103385925f>;
+
+    /*
+    446710Hz sample rate
+    
+    d = fdesign.lowpass('N,Fp,Ap,Ast', 8, 20000, .1, 80, 1786840 / 4);
+    Hd = design(d, 'ellip', 'FilterStructure', 'df2tsos');
+    set(Hd, 'Arithmetic', 'single');
+    g = regexprep(num2str(reshape(Hd.ScaleValues(1 : 4), [1 4]), '%.16ff '), '\s+', ',')
+    b2 = regexprep(num2str(Hd.sosMatrix(5 : 8), '%.16ff '), '\s+', ',') a2 =
+    regexprep(num2str(Hd.sosMatrix(17 : 20), '%.16ff '), '\s+', ',') a3 =
+    regexprep(num2str(Hd.sosMatrix(21 : 24), '%.16ff '), '\s+', ',')
+    */
+    //using lpf_t = dsp::c_biquad4_t<
+    //    0.5097398161888123f, 0.3403680622577667f, 0.1636420488357544f, 0.0056284382008016f,
+    //    -1.8031320571899414f, -1.6301777362823486f, -0.2862609624862671f, -1.8441033363342285f,
+    //    -1.8579574823379517f, -1.8204880952835083f, -1.7917809486389160f, -1.8951735496520996f,
+    //    0.9236851930618286f, 0.8594634532928467f, 0.8068549633026123f, 0.9765991568565369f>;
+
     using bpf_t = dsp::c_first_order_bandpass<0.5000000000000000f, 0.5000000000000000f, -0.0000000000000001f,
                                             0.9998691174378402f, -0.9998691174378402f, -0.9997382348756805f>;
     using resampler_t = dsp::c_resampler2<1, lpf_t, bpf_t>;
@@ -276,6 +296,7 @@ export class c_apu
     
     static const int CLOCKS_PER_FRAME_SEQ = 89489;
     int mixer_enabled;
+    int mix_clock;
     int square_clock;
     c_nes *nes;
     c_mapper *mapper;

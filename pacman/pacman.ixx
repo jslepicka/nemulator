@@ -8,8 +8,8 @@ import :psg;
 import system;
 import class_registry;
 import nemulator.buttons;
-
-class c_z80;
+import bus;
+import z80;
 
 namespace pacman
 {
@@ -102,6 +102,9 @@ export class c_pacman : public c_system, register_class<system_registry, c_pacma
     }
 
   protected:
+    s_bus<uint16_t> bus;
+    s_bus<uint8_t> io_bus;
+
     virtual uint8_t read_byte(uint16_t address);
     virtual void write_byte(uint16_t address, uint8_t data);
     uint8_t read_port(uint8_t port);
@@ -111,7 +114,7 @@ export class c_pacman : public c_system, register_class<system_registry, c_pacma
     //void decrypt_rom(int src, int dst, int len, std::array<uint8_t, 16> addr_bits);
     //uint16_t bitswap(uint16_t in, std::array<uint8_t, 16>);
     //void check_mspacman_trap(uint16_t address);
-    int load_romset(std::vector<s_roms> &romset);
+    int load_romset(std::vector<pacman::s_roms> &romset);
 
     std::unique_ptr<c_z80> z80;
     std::unique_ptr<c_pacman_vid> pacman_vid;
@@ -134,4 +137,7 @@ export class c_pacman : public c_system, register_class<system_registry, c_pacma
     PACMAN_MODEL model;
     int prg_mask;
 };
+
+
+
 } //namespace pacman

@@ -3,30 +3,23 @@ module;
 export module z80;
 import nemulator.std;
 import random;
+import bus;
 
 export class c_z80
 {
-
-    typedef std::function<uint8_t(uint16_t)> read_byte_t;
-    typedef std::function<void(uint16_t, uint8_t)> write_byte_t;
-    typedef std::function<uint8_t(uint8_t)> read_port_t;
-    typedef std::function<void(uint8_t, uint8_t)> write_port_t;
     typedef std::function<void()> int_ack_t; //interrupt acknowledge callback
 
 
   public:
-    c_z80(read_byte_t read_byte, write_byte_t write_byte, read_port_t read_port, write_port_t write_port, int_ack_t int_ack, int *nmi,
+    c_z80(s_bus<uint16_t> *bus, s_bus<uint8_t> *io_bus, int *nmi,
           int *irq, uint8_t *data_bus)
     {
         int count = 0;
-        this->read_byte = read_byte;
-        this->write_byte = write_byte;
-        this->read_port = read_port;
-        this->write_port = write_port;
         this->nmi = nmi;
         this->irq = irq;
         this->data_bus = data_bus;
-        this->int_ack_callback = int_ack;
+        this->bus = bus;
+        this->io_bus = io_bus;
     }
     ~c_z80()
     {
@@ -136,7 +129,7 @@ export class c_z80
                     opcode = 0x103;
                 }
                 else {
-                    opcode = read_byte(PC++);
+                    opcode = bus->read_byte(bus->ctx, PC++);
                     if (pending_ei) {
                         IFF1 = IFF2 = 1;
                         pending_ei = 0;
@@ -149,7 +142,7 @@ export class c_z80
                     case 0xCB:
                         inc_r();
                         opcode <<= 8;
-                        opcode |= read_byte(PC++);
+                        opcode |= bus->read_byte(bus->ctx, PC++);
                         required_cycles += cb_cycle_table[opcode & 0xFF];
                         prefix = 0xCB;
                         break;
@@ -157,12 +150,12 @@ export class c_z80
                         inc_r();
                         ddfd_ptr = &IX.word;
                         opcode <<= 8;
-                        opcode |= read_byte(PC++);
+                        opcode |= bus->read_byte(bus->ctx, PC++);
                         if ((opcode & 0xFF) == 0xCB) {
                             opcode <<= 8;
-                            opcode |= read_byte(PC++);
+                            opcode |= bus->read_byte(bus->ctx, PC++);
                             opcode <<= 8;
-                            opcode |= read_byte(PC++);
+                            opcode |= bus->read_byte(bus->ctx, PC++);
                             required_cycles += ddcb_cycle_table[opcode & 0xFF];
                             prefix = 0xDDCB;
                         }
@@ -179,7 +172,7 @@ export class c_z80
                     case 0xED:
                         inc_r();
                         opcode <<= 8;
-                        opcode |= read_byte(PC++);
+                        opcode |= bus->read_byte(bus->ctx, PC++);
                         required_cycles += ed_cycle_table[opcode & 0xFF];
                         prefix = 0xED;
                         break;
@@ -187,12 +180,12 @@ export class c_z80
                         inc_r();
                         opcode <<= 8;
                         ddfd_ptr = &IY.word;
-                        opcode |= read_byte(PC++);
+                        opcode |= bus->read_byte(bus->ctx, PC++);
                         if ((opcode & 0xFF) == 0xCB) {
                             opcode <<= 8;
-                            opcode |= read_byte(PC++);
+                            opcode |= bus->read_byte(bus->ctx, PC++);
                             opcode <<= 8;
-                            opcode |= read_byte(PC++);
+                            opcode |= bus->read_byte(bus->ctx, PC++);
                             required_cycles += ddcb_cycle_table[opcode & 0xFF];
                             prefix = 0xDDCB;
                         }
@@ -233,6 +226,8 @@ export class c_z80
     uint64_t retired_cycles;
 
   private:
+    s_bus<uint16_t> *bus;
+    s_bus<uint8_t> *io_bus;
     unsigned short PC;
     int prev_nmi;
     int halted;
@@ -317,16 +312,10 @@ export class c_z80
 
     int *flag_ptrs[8] = {&flag_z, &flag_z, &flag_c, &flag_c, &flag_pv, &flag_pv, &flag_s, &flag_s};
 
-    read_byte_t read_byte;
-    write_byte_t write_byte;
-    read_port_t read_port;
-    write_port_t write_port;
-    int_ack_t int_ack_callback;
-
     void int_ack()
     {
-        if (int_ack_callback != nullptr) {
-            int_ack_callback();
+        if (bus->int_ack != nullptr) {
+            bus->int_ack(bus->ctx);
         }
     }
 
@@ -726,14 +715,14 @@ export class c_z80
     }
     uint16_t read_word(uint16_t address)
     {
-        uint16_t lo = read_byte(address);
-        uint16_t hi = read_byte(address + 1);
+        uint16_t lo = bus->read_byte(bus->ctx, address);
+        uint16_t hi = bus->read_byte(bus->ctx, address + 1);
         return lo | (hi << 8);
     }
     void write_word(uint16_t address, uint16_t data)
     {
-        write_byte(address, data & 0xFF);
-        write_byte(address + 1, data >> 8);
+        bus->write_byte(bus->ctx, address, data & 0xFF);
+        bus->write_byte(bus->ctx, address + 1, data >> 8);
     }
 
     void execute_opcode()
@@ -764,7 +753,7 @@ export class c_z80
                                         break;
                                     case 2:
                                         //DJNZ
-                                        d = (signed char)read_byte(PC++);
+                                        d = (signed char)bus->read_byte(bus->ctx, PC++);
                                         BC.byte.hi--;
                                         if (BC.byte.hi != 0) {
                                             required_cycles += 5;
@@ -773,7 +762,7 @@ export class c_z80
                                         break;
                                     case 3:
                                         //JR
-                                        d = (signed char)read_byte(PC++);
+                                        d = (signed char)bus->read_byte(bus->ctx, PC++);
                                         PC += d;
                                         break;
                                     case 4:
@@ -781,7 +770,7 @@ export class c_z80
                                     case 6:
                                     case 7:
                                         //JR cc[y-4], d
-                                        d = (signed char)read_byte(PC++);
+                                        d = (signed char)bus->read_byte(bus->ctx, PC++);
                                         if (test_flag(y - 4)) {
                                             PC += d;
                                             required_cycles += 5;
@@ -810,11 +799,11 @@ export class c_z80
                                         switch (p) {
                                             case 0:
                                                 //LD (BC), A
-                                                write_byte(BC.word, AF.byte.hi);
+                                                bus->write_byte(bus->ctx, BC.word, AF.byte.hi);
                                                 break;
                                             case 1:
                                                 //LD (DE), A
-                                                write_byte(DE.word, AF.byte.hi);
+                                                bus->write_byte(bus->ctx, DE.word, AF.byte.hi);
                                                 break;
                                             case 2:
                                                 //LD (nn), HL
@@ -826,7 +815,7 @@ export class c_z80
                                                 //LD (nn), A
                                                 temp = read_word(PC);
                                                 PC += 2;
-                                                write_byte(temp, AF.byte.hi);
+                                                bus->write_byte(bus->ctx, temp, AF.byte.hi);
                                                 break;
                                         }
                                         break;
@@ -834,11 +823,11 @@ export class c_z80
                                         switch (p) {
                                             case 0:
                                                 //LD A, (BC)
-                                                AF.byte.hi = read_byte(BC.word);
+                                                AF.byte.hi = bus->read_byte(bus->ctx, BC.word);
                                                 break;
                                             case 1:
                                                 //LD A, (DE)
-                                                AF.byte.hi = read_byte(DE.word);
+                                                AF.byte.hi = bus->read_byte(bus->ctx, DE.word);
                                                 break;
                                             case 2:
                                                  //LD HL, (nn)
@@ -850,7 +839,7 @@ export class c_z80
                                                 //LD A, (nn)
                                                 temp = read_word(PC);
                                                 PC += 2;
-                                                AF.byte.hi = read_byte(temp);
+                                                AF.byte.hi = bus->read_byte(bus->ctx, temp);
                                                 break;
                                         }
                                         break;
@@ -873,16 +862,16 @@ export class c_z80
                                 if (y == 6) {
                                     unsigned char temp;
                                     if (ddfd_ptr) {
-                                        d = (signed char)read_byte(PC++);
+                                        d = (signed char)bus->read_byte(bus->ctx, PC++);
                                         unsigned short loc = *ddfd_ptr + d;
-                                        temp = read_byte(loc);
+                                        temp = bus->read_byte(bus->ctx, loc);
                                         INC(&temp);
-                                        write_byte(loc, temp);
+                                        bus->write_byte(bus->ctx, loc, temp);
                                     }
                                     else {
-                                        temp = read_byte(*rp[2]);
+                                        temp = bus->read_byte(bus->ctx, *rp[2]);
                                         INC(&temp);
-                                        write_byte(*rp[2], temp);
+                                        bus->write_byte(bus->ctx, *rp[2], temp);
                                     }
                                 }
                                 else {
@@ -894,16 +883,16 @@ export class c_z80
                                 if (y == 6) {
                                     unsigned char temp;
                                     if (ddfd_ptr) {
-                                        d = (signed char)read_byte(PC++);
+                                        d = (signed char)bus->read_byte(bus->ctx, PC++);
                                         unsigned short loc = *ddfd_ptr + d;
-                                        temp = read_byte(loc);
+                                        temp = bus->read_byte(bus->ctx, loc);
                                         DEC(&temp);
-                                        write_byte(loc, temp);
+                                        bus->write_byte(bus->ctx, loc, temp);
                                     }
                                     else {
-                                        temp = read_byte(*rp[2]);
+                                        temp = bus->read_byte(bus->ctx, *rp[2]);
                                         DEC(&temp);
-                                        write_byte(*rp[2], temp);
+                                        bus->write_byte(bus->ctx, *rp[2], temp);
                                     }
                                 }
                                 else {
@@ -914,17 +903,17 @@ export class c_z80
                                 //LD r[y], n
                                 if (y == 6) {
                                     if (ddfd_ptr) {
-                                        d = (signed char)read_byte(PC++);
-                                        temp = read_byte(PC++);
-                                        write_byte(*ddfd_ptr + d, temp);
+                                        d = (signed char)bus->read_byte(bus->ctx, PC++);
+                                        temp = bus->read_byte(bus->ctx, PC++);
+                                        bus->write_byte(bus->ctx, *ddfd_ptr + d, temp);
                                     }
                                     else {
-                                        temp = read_byte(PC++);
-                                        write_byte(*rp[2], temp);
+                                        temp = bus->read_byte(bus->ctx, PC++);
+                                        bus->write_byte(bus->ctx, *rp[2], temp);
                                     }
                                 }
                                 else {
-                                    temp = read_byte(PC++);
+                                    temp = bus->read_byte(bus->ctx, PC++);
                                     *r[y] = temp;
                                 }
                                 break;
@@ -1026,11 +1015,11 @@ export class c_z80
 
                             if (z == 6) {
                                 if (ddfd_ptr) {
-                                    d = (signed char)read_byte(PC++);
-                                    src = read_byte(*ddfd_ptr + d);
+                                    d = (signed char)bus->read_byte(bus->ctx, PC++);
+                                    src = bus->read_byte(bus->ctx, *ddfd_ptr + d);
                                 }
                                 else {
-                                    src = read_byte(HL.word);
+                                    src = bus->read_byte(bus->ctx, HL.word);
                                 }
                             }
                             else {
@@ -1053,11 +1042,11 @@ export class c_z80
                             if (y == 6) //HL
                             {
                                 if (ddfd_ptr) {
-                                    d = (signed char)read_byte(PC++);
-                                    write_byte(*ddfd_ptr + d, src);
+                                    d = (signed char)bus->read_byte(bus->ctx, PC++);
+                                    bus->write_byte(bus->ctx, *ddfd_ptr + d, src);
                                 }
                                 else {
-                                    write_byte(*rp[2], src);
+                                    bus->write_byte(bus->ctx, *rp[2], src);
                                 }
                             }
                             else {
@@ -1082,11 +1071,11 @@ export class c_z80
                         //alu[y] r[z]
                         if (z == 6) {
                             if (ddfd_ptr) {
-                                d = (signed char)read_byte(PC++);
-                                alu((ALU_OP)y, read_byte(*ddfd_ptr + d));
+                                d = (signed char)bus->read_byte(bus->ctx, PC++);
+                                alu((ALU_OP)y, bus->read_byte(bus->ctx, *ddfd_ptr + d));
                             }
                             else {
-                                alu((ALU_OP)y, read_byte(*rp[2]));
+                                alu((ALU_OP)y, bus->read_byte(bus->ctx, *rp[2]));
                             }
                         }
                         else {
@@ -1152,21 +1141,21 @@ export class c_z80
                                         break;
                                     case 2:
                                         //OUT (n), A
-                                        temp = read_byte(PC++);
-                                        write_port(temp, AF.byte.hi);
+                                        temp = bus->read_byte(bus->ctx, PC++);
+                                        io_bus->write_byte(bus->ctx, temp, AF.byte.hi);
                                         break;
                                     case 3:
                                         //IN A, (n)
-                                        temp = read_byte(PC++);
-                                        AF.byte.hi = read_port(temp);
+                                        temp = bus->read_byte(bus->ctx, PC++);
+                                        AF.byte.hi = io_bus->read_byte(bus->ctx, temp);
                                         break;
                                     case 4:
                                         //EX (SP), HL
                                         {
-                                            int sp0 = read_byte(SP);
-                                            int sp1 = read_byte(SP + 1);
-                                            write_byte(SP, *r[5]);
-                                            write_byte(SP + 1, *r[4]);
+                                            int sp0 = bus->read_byte(bus->ctx, SP);
+                                            int sp1 = bus->read_byte(bus->ctx, SP + 1);
+                                            bus->write_byte(bus->ctx, SP, *r[5]);
+                                            bus->write_byte(bus->ctx, SP + 1, *r[4]);
                                             *r[5] = sp0;
                                             *r[4] = sp1;
                                         }
@@ -1237,7 +1226,7 @@ export class c_z80
                                 break;
                             case 6:
                                 //alu[y], n
-                                alu((ALU_OP)y, read_byte(PC++));
+                                alu((ALU_OP)y, bus->read_byte(bus->ctx, PC++));
                                 break;
                             case 7:
                                 //RST y*8
@@ -1287,7 +1276,7 @@ export class c_z80
 
             case 0xCB:
                 if (z == 6) {
-                    tchar = read_byte(HL.word);
+                    tchar = bus->read_byte(bus->ctx, HL.word);
                 }
                 else {
                     tchar = *r[z];
@@ -1312,7 +1301,7 @@ export class c_z80
                 }
                 if (x != 1) {
                     if (z == 6) {
-                        write_byte(HL.word, tchar);
+                        bus->write_byte(bus->ctx, HL.word, tchar);
                     }
                     else {
                         //todo: is this correct?
@@ -1332,7 +1321,7 @@ export class c_z80
                             case 0:
                                 if (y == 6) {
                                     //IN (C)
-                                    temp = read_port(BC.byte.lo);
+                                    temp = io_bus->read_byte(bus->ctx, BC.byte.lo);
                                     set_n(0);
                                     set_pv(get_parity(temp));
                                     set_h(0);
@@ -1341,7 +1330,7 @@ export class c_z80
                                 }
                                 else {
                                     //IN r[y], (C)
-                                    *r[y] = read_port(BC.byte.lo);
+                                    *r[y] = io_bus->read_byte(bus->ctx, BC.byte.lo);
                                     set_n(0);
                                     set_pv(get_parity(*r[y]));
                                     set_h(0);
@@ -1352,11 +1341,11 @@ export class c_z80
                             case 1:
                                 if (y == 6) {
                                     //OUT (C), 0
-                                    write_port(BC.byte.lo, 0);
+                                    io_bus->write_byte(bus->ctx, BC.byte.lo, 0);
                                 }
                                 else {
                                     //OUT (C), r[y]
-                                    write_port(BC.byte.lo, *r[y]);
+                                    io_bus->write_byte(bus->ctx, BC.byte.lo, *r[y]);
                                 }
                                 break;
                             case 2:
@@ -1451,11 +1440,11 @@ export class c_z80
                                     case 4:
                                         //RRD
                                         {
-                                            int x = read_byte(HL.word);
+                                            int x = bus->read_byte(bus->ctx, HL.word);
                                             int x_lo = x & 0xF;
                                             x >>= 4;
                                             x |= ((AF.byte.hi & 0xF) << 4);
-                                            write_byte(HL.word, x);
+                                            bus->write_byte(bus->ctx, HL.word, x);
                                             AF.byte.hi &= 0xF0;
                                             AF.byte.hi |= x_lo;
                                             set_s(AF.byte.hi & 0x80);
@@ -1468,11 +1457,11 @@ export class c_z80
                                     case 5:
                                         //RLD
                                         {
-                                            int x = read_byte(HL.word);
+                                            int x = bus->read_byte(bus->ctx, HL.word);
                                             int x_hi = x & 0xF0;
                                             x <<= 4;
                                             x |= (AF.byte.hi & 0xF);
-                                            write_byte(HL.word, x);
+                                            bus->write_byte(bus->ctx, HL.word, x);
                                             AF.byte.hi &= 0xF0;
                                             AF.byte.hi |= (x_hi >> 4);
                                             set_s(AF.byte.hi & 0x80);
@@ -1498,7 +1487,7 @@ export class c_z80
                                     switch (z) {
                                         case 0:
                                             //LDI
-                                            write_byte(DE.word, read_byte(HL.word));
+                                            bus->write_byte(bus->ctx, DE.word, bus->read_byte(bus->ctx, HL.word));
                                             HL.word++;
                                             DE.word++;
                                             BC.word--;
@@ -1509,7 +1498,7 @@ export class c_z80
                                         case 1:
                                             //CPI
                                             {
-                                                unsigned char s = read_byte(HL.word);
+                                                unsigned char s = bus->read_byte(bus->ctx, HL.word);
                                                 int z = AF.byte.hi == s;
                                                 int c = flag_c;
                                                 CP(s);
@@ -1522,7 +1511,7 @@ export class c_z80
                                             break;
                                         case 2:
                                             //INI
-                                            write_byte(HL.word, read_port(BC.byte.lo));
+                                            bus->write_byte(bus->ctx, HL.word, io_bus->read_byte(bus->ctx, BC.byte.lo));
                                             HL.word++;
                                             BC.byte.hi--;
                                             set_n(0);
@@ -1530,7 +1519,7 @@ export class c_z80
                                             break;
                                         case 3:
                                             //OUTI
-                                            write_port(BC.byte.lo, read_byte(HL.word));
+                                            io_bus->write_byte(bus->ctx, BC.byte.lo, bus->read_byte(bus->ctx, HL.word));
                                             HL.word++;
                                             BC.byte.hi--;
                                             set_n(1);
@@ -1542,7 +1531,7 @@ export class c_z80
                                     switch (z) {
                                         case 0:
                                             //LDD
-                                            write_byte(DE.word, read_byte(HL.word));
+                                            bus->write_byte(bus->ctx, DE.word, bus->read_byte(bus->ctx, HL.word));
                                             HL.word--;
                                             DE.word--;
                                             BC.word--;
@@ -1553,7 +1542,7 @@ export class c_z80
                                         case 1:
                                             //CPD
                                             {
-                                                unsigned char s = read_byte(HL.word);
+                                                unsigned char s = bus->read_byte(bus->ctx, HL.word);
                                                 int z = AF.byte.hi == s;
                                                 int c = flag_c;
                                                 CP(s);
@@ -1566,7 +1555,7 @@ export class c_z80
                                             break;
                                         case 2:
                                             //IND
-                                            write_byte(HL.word, read_port(BC.byte.lo));
+                                            bus->write_byte(bus->ctx, HL.word, io_bus->read_byte(bus->ctx, BC.byte.lo));
                                             HL.word--;
                                             BC.byte.hi--;
                                             set_n(1);
@@ -1574,7 +1563,7 @@ export class c_z80
                                             break;
                                         case 3:
                                             //OUTD
-                                            write_port(BC.byte.lo, read_byte(HL.word));
+                                            io_bus->write_byte(bus->ctx, BC.byte.lo, bus->read_byte(bus->ctx, HL.word));
                                             HL.word--;
                                             BC.byte.hi--;
                                             set_n(1);
@@ -1586,7 +1575,7 @@ export class c_z80
                                     switch (z) {
                                         case 0:
                                             //LDIR
-                                            write_byte(DE.word, read_byte(HL.word));
+                                            bus->write_byte(bus->ctx, DE.word, bus->read_byte(bus->ctx, HL.word));
                                             HL.word++;
                                             DE.word++;
                                             BC.word--;
@@ -1604,7 +1593,7 @@ export class c_z80
                                         case 1:
                                             //CPIR
                                             {
-                                                tchar = read_byte(HL.word);
+                                                tchar = bus->read_byte(bus->ctx, HL.word);
                                                 int z = AF.byte.hi == tchar;
                                                 int c = flag_c;
                                                 CP(tchar);
@@ -1621,7 +1610,7 @@ export class c_z80
                                             break;
                                         case 2:
                                             //INIR
-                                            write_byte(HL.word, read_port(BC.byte.lo));
+                                            bus->write_byte(bus->ctx, HL.word, io_bus->read_byte(bus->ctx, BC.byte.lo));
                                             HL.word++;
                                             BC.byte.hi--;
                                             set_z(BC.byte.hi == 0);
@@ -1633,7 +1622,7 @@ export class c_z80
                                             break;
                                         case 3:
                                             //OTIR
-                                            write_port(BC.byte.lo, read_byte(HL.word));
+                                            io_bus->write_byte(bus->ctx, BC.byte.lo, bus->read_byte(bus->ctx, HL.word));
                                             HL.word++;
                                             BC.byte.hi--;
                                             if (BC.byte.hi != 0) {
@@ -1649,7 +1638,7 @@ export class c_z80
                                     switch (z) {
                                         case 0:
                                             //LDDR
-                                            write_byte(DE.word, read_byte(HL.word));
+                                            bus->write_byte(bus->ctx, DE.word, bus->read_byte(bus->ctx, HL.word));
                                             DE.word--;
                                             HL.word--;
                                             BC.word--;
@@ -1667,7 +1656,7 @@ export class c_z80
                                         case 1:
                                             //CPDR
                                             {
-                                                tchar = read_byte(HL.word);
+                                                tchar = bus->read_byte(bus->ctx, HL.word);
                                                 int z = AF.byte.hi == tchar;
                                                 int c = flag_c;
                                                 CP(tchar);
@@ -1684,7 +1673,7 @@ export class c_z80
                                             break;
                                         case 2:
                                             //INDR
-                                            write_byte(HL.word, BC.byte.lo);
+                                            bus->write_byte(bus->ctx, HL.word, BC.byte.lo);
                                             HL.word--;
                                             BC.byte.hi--;
                                             set_z(BC.byte.hi == 0);
@@ -1696,7 +1685,7 @@ export class c_z80
                                             break;
                                         case 3:
                                             //OTDR
-                                            write_port(BC.byte.lo, read_byte(HL.word));
+                                            io_bus->write_byte(bus->ctx, BC.byte.lo, bus->read_byte(bus->ctx, HL.word));
                                             HL.word--;
                                             BC.byte.hi--;
                                             set_z(BC.byte.hi == 0);
@@ -1729,14 +1718,14 @@ export class c_z80
                             //rot[y] (IX+d)
                             //temp = dd ? IX.word : IY.word;
                             unsigned short loc = *ddfd_ptr + d;
-                            tchar = read_byte(loc);
+                            tchar = bus->read_byte(bus->ctx, loc);
                             ROT(y, &tchar);
-                            write_byte(loc, tchar);
+                            bus->write_byte(bus->ctx, loc, tchar);
                         }
                         break;
                     case 1:
                         //BIT y, r[z]
-                        BIT(y, read_byte(*ddfd_ptr + d));
+                        BIT(y, bus->read_byte(bus->ctx, *ddfd_ptr + d));
                         break;
                     case 2:
                         if (z != 6) {
@@ -1747,9 +1736,9 @@ export class c_z80
                             //RES y, (IX+d)
                             //temp = dd ? IX.word : IY.word;
                             unsigned short loc = *ddfd_ptr + d;
-                            temp = read_byte(loc);
+                            temp = bus->read_byte(bus->ctx, loc);
                             temp &= ~(1 << y);
-                            write_byte(loc, temp);
+                            bus->write_byte(bus->ctx, loc, temp);
                         }
                         break;
                     case 3:
@@ -1760,9 +1749,9 @@ export class c_z80
                         else {
                             //temp = dd ? IX.word : IY.word;
                             unsigned short loc = *ddfd_ptr + d;
-                            tchar = read_byte(loc);
+                            tchar = bus->read_byte(bus->ctx, loc);
                             tchar = tchar | (1 << y);
-                            write_byte(loc, tchar);
+                            bus->write_byte(bus->ctx, loc, tchar);
                         }
                         break;
                     default:
