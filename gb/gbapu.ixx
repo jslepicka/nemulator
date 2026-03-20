@@ -35,7 +35,7 @@ class c_gbapu
         0.9666246175765991f,0.9376937150955200f,0.9134329557418823f,0.9898924231529236f>;
 
     using bpf_t = dsp::c_first_order_bandpass<>;
-    using resampler_t = dsp::c_resampler2<2, lpf_t, bpf_t>;
+    using resampler_t = dsp::c_resampler<2, lpf_t, bpf_t>;
 
     std::unique_ptr<resampler_t> resampler;
 

@@ -168,7 +168,7 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
 
     using bpf_t = dsp::c_first_order_bandpass<0.1840657775125092f, 0.1840657775125092f, -0.6318684449749816f,
                                             0.9998691174378402f, -0.9998691174378402f, -0.9997382348756805f>;
-    using resampler_t = dsp::c_resampler2<2, lpf_t, bpf_t>;
+    using resampler_t = dsp::c_resampler<2, lpf_t, bpf_t>;
 
     std::unique_ptr<resampler_t> resampler;
 

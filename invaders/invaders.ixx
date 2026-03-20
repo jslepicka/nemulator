@@ -35,7 +35,7 @@ export class c_invaders : public c_system, register_class<system_registry, c_inv
   private:
     using hpf_t = dsp::c_biquad<0.9972270727157593f, 1.0000000000000000f, -2.0000000000000000f, 1.0000000000000000f,
                           1.0000000000000000f, -1.9944463968276978f, 0.9944617748260498f>;
-    using resampler_t = dsp::c_resampler2<1, dsp::c_null_filter, hpf_t>;
+    using resampler_t = dsp::c_resampler<1, dsp::c_null_filter, hpf_t>;
     std::unique_ptr<resampler_t> resampler;
     
     

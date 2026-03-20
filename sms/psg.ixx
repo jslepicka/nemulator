@@ -62,7 +62,7 @@ export class c_psg
                          -1.9442052841186523f, -1.9171522855758667f, -1.8950747251510620f, -1.9676681756973267f,
                          0.9609073400497437f, 0.9271715879440308f, 0.8989855647087097f, 0.9881398081779480f>;
     using bpf_t = dsp::c_first_order_bandpass<>;
-    using resampler_t = dsp::c_resampler2<1, lpf_t, bpf_t>;
+    using resampler_t = dsp::c_resampler<1, lpf_t, bpf_t>;
     std::unique_ptr<resampler_t> resampler;
 };
 

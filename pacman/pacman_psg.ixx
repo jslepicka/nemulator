@@ -40,7 +40,7 @@ class c_pacman_psg
                                  0.9541351795196533f, 0.9147564172744751f, 0.8819914460182190f, 0.9860565066337585f>;
     using bpf_t = dsp::c_first_order_bandpass<>;
 
-    using resampler_t = dsp::c_resampler2<1, lpf_t, bpf_t>;
+    using resampler_t = dsp::c_resampler<1, lpf_t, bpf_t>;
 
     std::unique_ptr<resampler_t> resampler;
 
