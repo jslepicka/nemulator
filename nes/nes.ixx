@@ -122,12 +122,37 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>, pu
     bool limit_sprites;
 
   public:
-    void _on_ppu_clock();
-    void _on_cpu_clock();
-    void _on_sprite_eval(bool in_eval);
-    void _on_nmi(bool nmi);
-    uint8_t _ppu_read(uint16_t address);
-    void _ppu_write(uint16_t address, uint8_t value);
+    void _on_ppu_clock()
+    {
+        mapper->clock(1);
+    }
+    void _on_cpu_clock()
+    {
+        cpu->execute();
+        cpu->odd_cycle ^= 1;
+        apu->clock_once();
+    }
+    void _on_sprite_eval(bool in_eval)
+    {
+        mapper->in_sprite_eval = in_eval;
+    }
+    void _on_nmi(bool nmi)
+    {
+        if (nmi) {
+            cpu->execute_nmi();
+        }
+        else {
+            cpu->clear_nmi();
+        }
+    }
+    uint8_t _ppu_read(uint16_t address)
+    {
+        return mapper->ppu_read(address);
+    }
+    void _ppu_write(uint16_t address, uint8_t value)
+    {
+        mapper->ppu_write(address, value);
+    }
     void _add_cycle()
     {
         cpu->add_cycle();

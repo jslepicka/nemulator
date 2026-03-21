@@ -18,9 +18,9 @@ namespace nes
 export template <typename Owner>
 class c_ppu
 {
-    Owner *owner;
+    Owner &owner;
   public:
-    c_ppu(Owner *owner) :
+    c_ppu(Owner &owner) :
         owner(owner)
     {
         //pSpriteMemory = 0;
@@ -55,12 +55,12 @@ class c_ppu
                         case 1:
                             temp &= ~0x80;
                             suppress_nmi = 1;
-                            owner->on_nmi(false);
+                            owner.on_nmi(false);
                             break;
                         case 2:
                         case 3:
                             temp |= 0x80;
-                            owner->on_nmi(false);
+                            owner.on_nmi(false);
                             break;
                         default:
                             break;
@@ -99,7 +99,7 @@ class c_ppu
             {
                 unsigned char temp = read_value;
                 if (!rendering)
-                    read_value = owner->ppu_read(vram_address);
+                    read_value = owner.ppu_read(vram_address);
 
         //palette reads are returned immediately
                 if ((vram_address & 0x3FFF) >= 0x3F00)
@@ -123,10 +123,10 @@ class c_ppu
             //if nmi enabled is false and incoming value enables it
             //AND if currently in NMI, then execute_nmi
                 if (!(PPUCTRL.nmi_enable) && (value & 0x80) && PPUSTATUS.in_vblank) {
-                    owner->on_nmi(true);
+                    owner.on_nmi(true);
                 }
                 if (current_scanline == 261 && (PPUCTRL.nmi_enable) && current_cycle < 4) {
-                    owner->on_nmi(false);
+                    owner.on_nmi(false);
                 }
 
                 PPUCTRL.value = value;
@@ -218,13 +218,13 @@ class c_ppu
                         if (!(pal_address & 0x03)) {
                             image_palette[pal_address ^ 0x10] = value;
                         }
-                        owner->ppu_read(vram_address);
+                        owner.ppu_read(vram_address);
                     }
                 }
                 else {
                     if (!rendering) {
                         //ppu_bus.write_byte(nes_ctx, vram_address, value);
-                        owner->ppu_write(vram_address, value);
+                        owner.ppu_write(vram_address, value);
                     }
                 }
                 update_vram_address();
@@ -283,7 +283,7 @@ class c_ppu
             return;
         sprite_here.reset();
         drawing_bg = false;
-        owner->on_sprite_eval(true);
+        owner.on_sprite_eval(true);
         int max_sprites = limit_sprites ? 8 : 64;
         int sprite0_x = -1;
         sprite0_index = -1;
@@ -323,9 +323,9 @@ class c_ppu
 
 #ifdef NES_PPU_USE_BMI2
                 uint64_t attr = (((uint64_t)sprite_data.attribute & 0x03) << 2) * 0x0101010101010101;
-                uint64_t p1 = _pdep_u64(owner->ppu_read(sprite_address),
+                uint64_t p1 = _pdep_u64(owner.ppu_read(sprite_address),
                                         0b00000001'00000001'00000001'00000001'00000001'00000001'00000001'00000001);
-                uint64_t p2 = _pdep_u64(owner->ppu_read(sprite_address + 8),
+                uint64_t p2 = _pdep_u64(owner.ppu_read(sprite_address + 8),
                                         0b00000010'00000010'00000010'00000010'00000010'00000010'00000010'00000010);
                 uint64_t c = p1 | p2 | attr;
                 if (!(sprite_data.attribute & 0x40)) {
@@ -334,8 +334,8 @@ class c_ppu
                 *(uint64_t *)&sprite_index_buffer[sprite_count * 8] = c;
 #else
                 int attr = ((sprite_data.attribute & 0x03) << 2) * 0x01010101;
-                int *p1 = (int *)morton_odd_64 + (uint64_t)owner->ppu_read(sprite_address) * 2;
-                int *p2 = (int *)morton_even_64 + (uint64_t)owner->ppu_read(sprite_address + 8) * 2;
+                int *p1 = (int *)morton_odd_64 + (uint64_t)owner.ppu_read(sprite_address) * 2;
+                int *p2 = (int *)morton_even_64 + (uint64_t)owner.ppu_read(sprite_address + 8) * 2;
                 int p[2] = {*p1++ | *p2++ | attr, *p1 | *p2 | attr};
 
                 if (sprite_data.attribute & 0x40) {
@@ -364,7 +364,7 @@ class c_ppu
                 sprite_here.set(loc & 0xFF);
             }
         }
-        owner->on_sprite_eval(false);
+        owner.on_sprite_eval(false);
         if (current_scanline == 261)
             sprite_count = 0;
         if (sprite_count) {
@@ -385,7 +385,7 @@ class c_ppu
         int *const p_frame = (int *const)&frame_buffer[256 * current_scanline];
         int x = 0;
         while (true) {
-            owner->add_cycle();
+            owner.add_cycle();
             if (!zero_cycle) [[likely]] {
                 //handle events that happen on specific cycles
                 last_cycle = do_cycle_events();
@@ -441,15 +441,14 @@ class c_ppu
                 if (vram_update_delay == 0) {
                     vram_address = vram_address_latch;
                     if (!rendering) {
-                        owner->ppu_read(vram_address);
+                        owner.ppu_read(vram_address);
                     }
                 }
             }
+            owner.on_ppu_clock();
 
-            owner->on_ppu_clock();
             if (--executed_cycles == 0) [[unlikely]] {
-                //cpu_clock_callback(nes_ctx);
-                owner->on_cpu_clock();
+                owner.on_cpu_clock();
                 executed_cycles = 3;
             };
             if (last_cycle) {
@@ -599,7 +598,7 @@ class c_ppu
         else {
             //update bus when not rendering
             vram_address = (vram_address + address_increment) & 0x7FFF;
-            owner->ppu_read(vram_address);
+            owner.ppu_read(vram_address);
         }
     }
     void build_lookup_tables()
@@ -710,7 +709,7 @@ class c_ppu
             if (!suppress_nmi) {
                 PPUSTATUS.in_vblank = true;
                 if (PPUCTRL.nmi_enable) {
-                    owner->on_nmi(true);
+                    owner.on_nmi(true);
                 }
             }
             else {
@@ -722,7 +721,7 @@ class c_ppu
     void end_vblank()
     {
         PPUSTATUS.in_vblank = false;
-        owner->on_nmi(false);
+        owner.on_nmi(false);
     }
 
     void fetch()
@@ -734,7 +733,7 @@ class c_ppu
                 break;
             case (1 | FETCH_BG): //NT byte 2
                 drawing_bg = true;
-                tile = owner->ppu_read(0x2000 | (vram_address & 0xFFF));
+                tile = owner.ppu_read(0x2000 | (vram_address & 0xFFF));
 #ifdef NES_PPU_USE_AVX2
                 pattern_address = (tile << 4) + _bextr_u32(vram_address, 12, 3) + (PPUCTRL.bg_pt_address * 0x1000);
 #else
@@ -758,7 +757,7 @@ class c_ppu
                 {
                     //load attribute and store 8 copies of it over 128-bit int
                     //only 64-bits are ultimately used
-                    __m128i t = _mm_set1_epi8(owner->ppu_read(attribute_address));
+                    __m128i t = _mm_set1_epi8(owner.ppu_read(attribute_address));
 
                     //shift all 16 attributes by attribute_shift
                     t = _mm_srli_epi64(t, attribute_shift);
@@ -770,7 +769,7 @@ class c_ppu
                     attribute = _mm_cvtsi128_si64(t);
                 }
 #else
-                attribute = owner->ppu_read(attribute_address);
+                attribute = owner.ppu_read(attribute_address);
                 attribute >>= attribute_shift;
                 attribute &= 0x03;
                 attribute *= 0x0404040404040404ULL;
@@ -781,10 +780,10 @@ class c_ppu
             case (5 | FETCH_BG): //Low BG byte 2
                 drawing_bg = true;
 #ifdef NES_PPU_USE_BMI2
-                pattern1 = _pdep_u64(owner->ppu_read(pattern_address),
+                pattern1 = _pdep_u64(owner.ppu_read(pattern_address),
                                      0b00000001'00000001'00000001'00000001'00000001'00000001'00000001'00000001);
 #else
-                pattern1 = owner->ppu_read(pattern_address);
+                pattern1 = owner.ppu_read(pattern_address);
 #endif
                 break;
             case (6 | FETCH_BG): //High BG byte 1
@@ -792,10 +791,10 @@ class c_ppu
             case (7 | FETCH_BG): //High BG byte 2
                 drawing_bg = true;
 #ifdef NES_PPU_USE_BMI2
-                pattern2 = _pdep_u64(owner->ppu_read(pattern_address + 8),
+                pattern2 = _pdep_u64(owner.ppu_read(pattern_address + 8),
                                      0b00000010'00000010'00000010'00000010'00000010'00000010'00000010'00000010);
 #else
-                pattern2 = owner->ppu_read(pattern_address + 8);
+                pattern2 = owner.ppu_read(pattern_address + 8);
 #endif
 
                 {
@@ -829,12 +828,12 @@ class c_ppu
                 }
                 break;
             case (1 | FETCH_SPRITE):
-                //tile = owner->ppu_read(0x2000 | (vram_address & 0xFFF));
+                //tile = owner.ppu_read(0x2000 | (vram_address & 0xFFF));
                 break;
             case (2 | FETCH_SPRITE):
                 break;
             case (3 | FETCH_SPRITE):
-                //tile = owner->ppu_read(0x2000 | (vram_address & 0xFFF));
+                //tile = owner.ppu_read(0x2000 | (vram_address & 0xFFF));
                 break;
             case (4 | FETCH_SPRITE):
                 break;
@@ -842,10 +841,10 @@ class c_ppu
                 drawing_bg = false;
                 if (PPUCTRL.sprite_size) {
                     int sprite_tile = sprite_buffer[(current_cycle - 261) / 8].tile;
-                    owner->ppu_read((sprite_tile & 0x1) * 0x1000);
+                    owner.ppu_read((sprite_tile & 0x1) * 0x1000);
                 }
                 else {
-                    owner->ppu_read(PPUCTRL.sprite_pt_address * 0x1000);
+                    owner.ppu_read(PPUCTRL.sprite_pt_address * 0x1000);
                 }
                 break;
             case (6 | FETCH_SPRITE):
@@ -854,10 +853,10 @@ class c_ppu
                 drawing_bg = false;
                 if (PPUCTRL.sprite_size) {
                     int sprite_tile = sprite_buffer[(current_cycle - 261) / 8 + 1].tile;
-                    owner->ppu_read((sprite_tile & 0x1) * 0x1000);
+                    owner.ppu_read((sprite_tile & 0x1) * 0x1000);
                 }
                 else {
-                    owner->ppu_read(PPUCTRL.sprite_pt_address * 0x1000);
+                    owner.ppu_read(PPUCTRL.sprite_pt_address * 0x1000);
                 }
                 break;
 
@@ -865,12 +864,12 @@ class c_ppu
             case (0 | FETCH_NT):
                 break;
             case (1 | FETCH_NT):
-                tile = owner->ppu_read(0x2000 | (vram_address & 0xFFF));
+                tile = owner.ppu_read(0x2000 | (vram_address & 0xFFF));
                 break;
             case (2 | FETCH_NT):
                 break;
             case (3 | FETCH_NT):
-                tile = owner->ppu_read(0x2000 | (vram_address & 0xFFF));
+                tile = owner.ppu_read(0x2000 | (vram_address & 0xFFF));
                 break;
             case (4 | FETCH_NT):
                 break;

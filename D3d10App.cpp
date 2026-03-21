@@ -220,7 +220,7 @@ void D3d10App::Init(char *config_file_name, c_task *init_task, void *params)
     aspectLock = config->get_bool("app.aspect_lock", true);
     startFullscreen = config->get_bool("app.fullscreen", true);
     vsync = config->get_bool("app.vsync", true);
-    if (benchmark_mode) {
+    if (benchmark_mode || timedemo) {
         vsync = false;
     }
     timer_sync = config->get_bool("app.timer_sync", false);
