@@ -1,6 +1,7 @@
 module;
 #include <Audioclient.h>
 #include <mmdeviceapi.h>
+#undef max
 module sound;
 
 import interpolate;
@@ -36,9 +37,12 @@ c_sound::c_sound()
 
     set_volume(master_volume);
 
-    average_db = 0.0f;
+    average_db = 20.0 * std::log10(0.0 + 1e-10);
+    _peak_db = 0.0;
+    peak_db = 20.0 * std::log10(0.0 + 1e-10);
     sample_sum = 0.0f;
     sample_count = 0;
+    sample_peak = _sample_peak = 0;
 }
 
 int c_sound::init_wasapi()
@@ -337,6 +341,9 @@ void c_sound::set_volume(int value)
 
 int c_sound::copy(const float *buf, int num_samples, float system_volume)
 {
+    if (num_samples == 0) {
+        return 1;
+    }
     int waited = 0;
     int src_len = num_samples * wf.nBlockAlign;
 
@@ -351,7 +358,12 @@ int c_sound::copy(const float *buf, int num_samples, float system_volume)
     double frame_average = 0.0f;
     float amp = volume * system_volume;
 
-    auto update_average = [&](float sample) { frame_average += std::abs(sample * amp); };
+    auto update_vu_meter = [&](float sample) {
+        double abs_amplified = std::abs(sample * amp);
+        _peak_db = std::max(_peak_db, abs_amplified);
+        frame_average += std::abs(sample * amp);
+        _sample_peak = std::max(_sample_peak, (int)(abs_amplified * 32767.0));
+    };
 
 
     while (get_max_write() < src_len) {
@@ -366,19 +378,23 @@ int c_sound::copy(const float *buf, int num_samples, float system_volume)
 
     if (num_channels == 1) {
         for (int i = 0; i < num_samples; i++) {
-            uint16_t sample = amplify(*buf++);
-            *wasapi_out++ = sample;
-            *wasapi_out++ = sample;
-            update_average(sample);
-            update_average(sample);
+            float sample = *buf++;
+            //call twice instead of multiplying by 2 because peak dBFS calculation
+            //occurs in function as well
+            update_vu_meter(sample);
+            update_vu_meter(sample);
+            uint16_t amplified = amplify(sample);
+            *wasapi_out++ = amplified;
+            *wasapi_out++ = amplified;
         }
     }
     else {
         for (int i = 0; i < num_samples; i++) {
             for (int channel = 0; channel < num_channels; channel++) {
-                uint16_t sample = amplify(*buf++);
-                *wasapi_out++ = sample;
-                update_average(sample);
+                float sample = *buf++;
+                update_vu_meter(sample);
+                uint16_t amplified = amplify(sample);
+                *wasapi_out++ = amplified;
             }
         }
     }
@@ -390,6 +406,10 @@ int c_sound::copy(const float *buf, int num_samples, float system_volume)
         sample_count = 0;
         sample_sum /= 60.0f;
         average_db = 20.0 * std::log10(sample_sum + 1e-10);
+        peak_db = 20.0 * std::log10(_peak_db + 1e-10);
+        sample_peak = _sample_peak;
+        _peak_db = 0.0;
+        _sample_peak = 0;
         sample_sum = 0.0f;
     }
 

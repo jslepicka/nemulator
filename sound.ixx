@@ -40,6 +40,8 @@ export class c_sound
     int master_volume = 50;
 
     float average_db;
+    float peak_db;
+    int sample_peak;
 
     bool set_num_channels(int num_channels)
     {
@@ -56,6 +58,8 @@ export class c_sound
     float sample_count;
     double requested_freq;
     double default_freq;
+    double _peak_db;
+    int _sample_peak;
     float volume = .5f;
     double freq;
     int adjustPeriod;

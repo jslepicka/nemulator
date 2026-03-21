@@ -1138,7 +1138,9 @@ void c_nemulator::UpdateScene(double dt)
             stats->report_stat("audio_position_diff", sound->audio_position_diff);
             stats->report_stat("audio state", sound->state);
             stats->report_stat("audio.clips", sound->clips);
-            stats->report_stat("audio.avg_db", sound->average_db);
+            stats->report_stat("audio.dBFS_avg", sound->average_db);
+            stats->report_stat("audio.dBFS_peak", sound->peak_db);
+            stats->report_stat("audio.sample_max", sound->sample_peak);
             std::ostringstream s;
             s << std::hex << std::uppercase << system->get_crc();
             stats->report_stat("CRC", s.str());

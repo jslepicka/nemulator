@@ -244,18 +244,15 @@ float c_nsf_stats::aweight_filter(float sample)
 void c_nsf_stats::draw()
 {
     draw_count++;
-    const float* buf_l;
-    const float* buf_r;
-
     const float *buf;
 
     //todo fix this
 
     int num_samples = c->get_sound_buf(&buf);
 
+    //this assumes input is mono, which is ok for nsf
     for (int i = 0; i < num_samples; i++) {
-        //*sbp++ = *buf_l++;
-        sb[(sb_index + i) & 8191] = (short)((*buf_l++) * 32767.0f);
+        sb[(sb_index + i) & 8191] = (short)((*buf++) * 32767.0f);
     }
 
     sb_index = (sb_index + num_samples) & 8191;
