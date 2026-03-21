@@ -1,6 +1,7 @@
 #include "Windows.h"
 #include <memory>
 #include <string>
+#include <chrono>
 
 import D3d10App;
 import nemulator;

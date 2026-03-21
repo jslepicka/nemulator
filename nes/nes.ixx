@@ -12,11 +12,13 @@ import class_registry;
 import :mapper;
 import :ines;
 import :game_genie;
+import bus;
+import :interfaces;
 
 namespace nes
 {
 
-export class c_nes : public c_system, register_class<system_registry, c_nes>
+export class c_nes : public c_system, register_class<system_registry, c_nes>, public i_nes_callbacks<c_nes>
 {
   public:
     c_nes();
@@ -43,7 +45,7 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>
     bool get_sprite_limit();
     void set_submapper(int submapper);
     std::unique_ptr<c_cpu> cpu;
-    std::unique_ptr<c_ppu> ppu;
+    std::unique_ptr<c_ppu<c_nes>> ppu;
     std::unique_ptr<c_mapper> mapper;
     void write_byte(unsigned short address, unsigned char value);
     unsigned char read_byte(unsigned short address);
@@ -118,6 +120,18 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>
     c_mapper::s_mapper_info *mapper_info;
     int file_length;
     bool limit_sprites;
-};
+
+  public:
+    void _on_ppu_clock();
+    void _on_cpu_clock();
+    void _on_sprite_eval(bool in_eval);
+    void _on_nmi(bool nmi);
+    uint8_t _ppu_read(uint16_t address);
+    void _ppu_write(uint16_t address, uint8_t value);
+    void _add_cycle()
+    {
+        cpu->add_cycle();
+    }
+    };
 
 } //namespace nes

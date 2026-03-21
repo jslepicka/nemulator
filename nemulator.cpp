@@ -406,7 +406,14 @@ void c_nemulator::RunGames()
         g->system->emulate_frame();
         if (benchmark_mode) {
             if (++benchmark_frame_count == benchmark_frames) {
-                exit(0);
+                auto end = clock::now();
+                auto elapsed = std::chrono::duration<double, std::milli>(end - start).count();
+                char buf[64];
+                double s = elapsed / 1000.0;
+                double fps = benchmark_frames / s;
+                sprintf(buf, "%i frames in %.2fs, %.2f fps", benchmark_frames, s, fps);
+                MessageBox(NULL, buf, "", MB_OK);
+                PostQuitMessage(0);
             }
         }
     }
@@ -1028,6 +1035,7 @@ void c_nemulator::UpdateScene(double dt)
                 if (benchmark_mode || disable_splash) {
                     splash_done = 1;
                     if (gameList.size() > 0 && benchmark_mode) {
+                        start = clock::now();
                         start_game();
                     }
                 }

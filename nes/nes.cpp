@@ -203,7 +203,9 @@ int c_nes::load()
 {
     int submapper = -1;
     cpu = std::make_unique<c_cpu>();
-    ppu = std::make_unique<c_ppu>();
+
+    ppu = std::make_unique<c_ppu<c_nes>>(this);
+
     joypad = std::make_unique<c_joypad>();
     apu = std::make_unique<c_apu>();
 
@@ -258,11 +260,9 @@ int c_nes::reset()
     mapper->close_sram();
     cpu->nes = this;
     apu->reset();
-    ppu->cpu = cpu.get();
     ppu->reset();
-    ppu->mapper = mapper.get();
+    //ppu->mapper = mapper.get();
 
-    ppu->apu = apu.get();
     ppu->set_sprite_limit(limit_sprites);
     mapper->execute_irq = [&]() { cpu.get()->execute_irq(); };
     mapper->clear_irq = [&]() { cpu.get()->clear_irq(); };
@@ -293,6 +293,43 @@ void c_nes::set_submapper(int submapper)
 int c_nes::get_nwc_time()
 {
     return mapper->get_nwc_time();
+}
+
+void c_nes::_on_ppu_clock()
+{
+    mapper->clock(1);
+}
+
+void c_nes::_on_cpu_clock()
+{
+    cpu->execute();
+    cpu->odd_cycle ^= 1;
+    apu->clock_once();
+}
+
+void c_nes::_on_nmi(bool nmi)
+{
+    if (nmi) {
+        cpu->execute_nmi();
+    }
+    else {
+        cpu->clear_nmi();
+    }
+}
+
+void c_nes::_on_sprite_eval(bool in_eval)
+{
+    mapper->in_sprite_eval = in_eval;
+}
+
+uint8_t c_nes::_ppu_read(uint16_t address)
+{
+    return mapper->ppu_read(address);
+}
+
+void c_nes::_ppu_write(uint16_t address, uint8_t value)
+{
+    mapper->ppu_write(address, value);
 }
 
 int c_nes::emulate_frame()

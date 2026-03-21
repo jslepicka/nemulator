@@ -7,6 +7,7 @@ module;
 #include <list>
 #include <numbers>
 #include <filesystem>
+#include <chrono>
 export module nemulator;
 import :qam;
 import :stats;
@@ -200,4 +201,7 @@ private:
     static constexpr double fovy = std::numbers::pi / 4.0;
 
     float master_volume;
+
+    using clock = std::chrono::high_resolution_clock;
+    std::chrono::steady_clock::time_point start;
 };

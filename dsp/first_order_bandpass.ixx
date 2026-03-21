@@ -16,19 +16,19 @@ class c_first_order_bandpass : public i_audio_filter
 {
   public:
     // default to 2Hz-12kHz
-    // Matlab:
-    // fs = 48000;
-    // fc_l = 12000;
-    // fc_h = 2;
-    // [ b_l, a_l ] = butter(1, fc_l / (fs / 2), 'low');
-    // [ b_h, a_h ] = butter(1, fc_h / (fs / 2), 'high');
-    // b0_l = num2str(b_l(1), '%.16ff');
-    // b1_l = num2str(b_l(2), '%.16ff');
-    // a1_l = num2str(a_l(2), '%.16ff');
-    // b0_h = num2str(b_h(1), '%.16ff');
-    // b1_h = num2str(b_h(2), '%.16ff');
-    // a1_h = num2str(a_h(2), '%.16ff');
-    // fprintf('%s, %s, %s, %s, %s, %s\n', b0_l, b1_l, a1_l, b0_h, b1_h, a1_h);
+     /*Matlab:
+     fs = 48000;
+     fc_l = 12000;
+     fc_h = 2;
+     [ b_l, a_l ] = butter(1, fc_l / (fs / 2), 'low');
+     [ b_h, a_h ] = butter(1, fc_h / (fs / 2), 'high');
+     b0_l = num2str(b_l(1), '%.16ff');
+     b1_l = num2str(b_l(2), '%.16ff');
+     a1_l = num2str(a_l(2), '%.16ff');
+     b0_h = num2str(b_h(1), '%.16ff');
+     b1_h = num2str(b_h(2), '%.16ff');
+     a1_h = num2str(a_h(2), '%.16ff');
+     fprintf('%s, %s, %s, %s, %s, %s\n', b0_l, b1_l, a1_l, b0_h, b1_h, a1_h);*/
     //c_first_order_bandpass() :
     //    b0_l(0.5000000000000000f),
     //    b1_l(0.5000000000000000f),

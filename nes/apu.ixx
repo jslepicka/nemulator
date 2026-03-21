@@ -289,8 +289,12 @@ export class c_apu
     //    -1.8579574823379517f, -1.8204880952835083f, -1.7917809486389160f, -1.8951735496520996f,
     //    0.9236851930618286f, 0.8594634532928467f, 0.8068549633026123f, 0.9765991568565369f>;
 
+    /*using bpf_t = dsp::c_first_order_bandpass<0.5000000000000000f, 0.5000000000000000f, -0.0000000000000001f,
+                                            0.9998691174378402f, -0.9998691174378402f, -0.9997382348756805f>;*/
+    
+    //37Hz - 12kHz
     using bpf_t = dsp::c_first_order_bandpass<0.5000000000000000f, 0.5000000000000000f, -0.0000000000000001f,
-                                            0.9998691174378402f, -0.9998691174378402f, -0.9997382348756805f>;
+                                              0.9975842011460978f, -0.9975842011460978f, -0.9951684022921957f>;
     using resampler_t = dsp::c_resampler<1, lpf_t, bpf_t>;
     std::unique_ptr<resampler_t> resampler;
     
@@ -303,8 +307,6 @@ export class c_apu
     int frame_irq_enable;
     int frame_irq_flag;
     int frame_irq_asserted;
-    int mix_external_audio;
-    float *external_audio;
 
     int ticks;
     int frame_seq_counter;
