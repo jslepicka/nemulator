@@ -84,11 +84,9 @@ void c_gbapu::disable_mixer()
     mixer_enabled = 0;
 }
 
-int c_gbapu::get_buffers(const float **buf_l, const float **buf_r)
+int c_gbapu::get_buffer(const float **buf)
 {
-    int num_samples = resampler->get_output_buf(0, buf_l);
-    resampler->get_output_buf(1, buf_r);
-    return num_samples;
+    return resampler->get_output_buf(buf);
 }
 
 void c_gbapu::clear_buffers()

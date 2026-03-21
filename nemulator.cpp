@@ -826,6 +826,7 @@ void c_nemulator::start_game()
     c_system *n = g->system.get();
     if (n && n->is_loaded())
     {
+        sound->set_num_channels(g->get_num_sound_channels());
         sound->play();
         inGame = true;
         n->enable_mixer();
@@ -1077,10 +1078,12 @@ void c_nemulator::UpdateScene(double dt)
             const float* buf_l;
             const float* buf_r;
 
-            int num_samples = system->get_sound_bufs(&buf_l, &buf_r);
+            const float *buf;
+
+            int num_samples = system->get_sound_buf(&buf);
             
             if (!benchmark_mode && !paused) {
-                sound->copy(buf_l, buf_r, num_samples, sc->get_volume());
+                sound->copy(buf, num_samples, sc->get_volume());
                 s = sound->sync();
             }
             system->set_audio_freq(sound->get_requested_freq());
@@ -1135,7 +1138,9 @@ void c_nemulator::UpdateScene(double dt)
             stats->report_stat("audio_position_diff", sound->audio_position_diff);
             stats->report_stat("audio state", sound->state);
             stats->report_stat("audio.clips", sound->clips);
-            stats->report_stat("audio.avg_db", sound->average_db);
+            stats->report_stat("audio.dBFS_avg", sound->average_db);
+            stats->report_stat("audio.dBFS_peak", sound->peak_db);
+            stats->report_stat("audio.sample_max", sound->sample_peak);
             std::ostringstream s;
             s << std::hex << std::uppercase << system->get_crc();
             stats->report_stat("CRC", s.str());

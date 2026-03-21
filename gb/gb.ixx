@@ -50,7 +50,7 @@ export class c_gb : public c_system, register_class<system_registry, c_gb>
 
     int *get_video();
 
-    int get_sound_bufs(const float **buf_l, const float **buf_r);
+    int get_sound_buf(const float **buf);
     void set_audio_freq(double freq);
 
     void enable_mixer();
@@ -86,6 +86,7 @@ export class c_gb : public c_system, register_class<system_registry, c_gb>
                 .identifier = "gb",
                 .display_info = display_info,
                 .button_map = button_map,
+                .num_sound_channels = 2,
                 .volume = pow(10.0f, -7.0f / 20.0f), //reduce by 7dB
                 .constructor = []() { return std::make_unique<c_gb>(GB_MODEL::DMG); },
             },
@@ -94,6 +95,7 @@ export class c_gb : public c_system, register_class<system_registry, c_gb>
                 .identifier = "gbc",
                 .display_info = display_info,
                 .button_map = button_map,
+                .num_sound_channels = 2,
                 .volume = pow(10.0f, -7.0f / 20.0f),
                 .constructor = []() { return std::make_unique<c_gb>(GB_MODEL::CGB); },
             },

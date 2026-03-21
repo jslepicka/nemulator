@@ -34,6 +34,7 @@ export class c_system_container : public c_texture_panel_item
 
     std::string &get_system_name() { return system_info.name; }
     float get_volume() { return system_info.volume; }
+    int get_num_sound_channels() { return system_info.num_sound_channels; }
     const std::vector<s_button_map> &get_button_map() { return system_info.button_map; }
 
   private:

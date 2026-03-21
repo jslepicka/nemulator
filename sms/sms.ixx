@@ -92,7 +92,7 @@ export class c_sms : public c_system, register_class<system_registry, c_sms>
     uint8_t read_port(uint8_t port);
     int reset();
     int *get_video();
-    int get_sound_bufs(const float **buf_l, const float **buf_r);
+    int get_sound_buf(const float **buf);
     int irq;
     int nmi;
     void set_audio_freq(double freq);

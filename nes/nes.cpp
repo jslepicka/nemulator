@@ -319,11 +319,9 @@ void c_nes::set_audio_freq(double freq)
     apu->set_audio_rate(freq);
 }
 
-int c_nes::get_sound_bufs(const float **buf_l, const float **buf_r)
+int c_nes::get_sound_buf(const float **buf)
 {
-    int num_samples = apu->get_buffer(buf_l);
-    *buf_r = nullptr;
-    return num_samples;
+    return apu->get_buffer(buf);
 }
 
 int c_nes::get_mapper_number()

@@ -46,8 +46,7 @@ void c_pacman_psg::set_audio_rate(double freq)
 
 int c_pacman_psg::get_buffer(const float **buf)
 {
-    int num_samples = resampler->get_output_buf(0, buf);
-    return num_samples;
+    return resampler->get_output_buf(buf);
 }
 
 void c_pacman_psg::clear_buffer()

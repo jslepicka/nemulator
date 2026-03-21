@@ -32,7 +32,7 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>
     void set_input(int input);
 
     int *get_video();
-    int get_sound_bufs(const float **buf_l, const float **buf_r);
+    int get_sound_buf(const float **buf);
     bool loaded;
     unsigned char dmc_read(unsigned short address);
     int load();

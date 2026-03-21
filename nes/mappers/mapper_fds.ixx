@@ -51,7 +51,7 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
         if (num_sides == 1) {
             return -1;
         }
-        switching_disk = 1790000 * 1; //wait approximately 1 second
+        switching_disk = DISK_SWITCH_DELAY;
         disk_not_inserted = 1;
 
         side_number = (side_number + 1) % num_sides;
@@ -215,6 +215,8 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
     std::unique_ptr<uint8_t[]> chr_ram;
     using disk_side_t = std::vector<uint8_t>;
     std::vector<disk_side_t> disk_sides;
+
+    static constexpr int DISK_SWITCH_DELAY = 1790000 * 2.0; //1 second is too fast for some games
 
     int disk_not_inserted;
     int scanning;
