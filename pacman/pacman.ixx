@@ -8,7 +8,6 @@ import :psg;
 import system;
 import class_registry;
 import nemulator.buttons;
-import bus;
 import z80;
 
 namespace pacman
@@ -31,8 +30,9 @@ export enum class PACMAN_MODEL
     MSPACMAB
 };
 
-export class c_pacman : public c_system, register_class<system_registry, c_pacman>
+export class c_pacman : public c_system, register_class<system_registry, c_pacman>, public i_z80_callbacks<c_pacman>
 {
+    friend class i_z80_callbacks<c_pacman>;
   public:
     c_pacman(PACMAN_MODEL model = PACMAN_MODEL::PACMAN);
     virtual int load();
@@ -102,12 +102,29 @@ export class c_pacman : public c_system, register_class<system_registry, c_pacma
     }
 
   protected:
-    s_bus<uint16_t> bus;
-    s_bus<uint8_t> io_bus;
-
     virtual uint8_t read_byte(uint16_t address);
     virtual void write_byte(uint16_t address, uint8_t data);
     uint8_t read_port(uint8_t port);
+
+    uint8_t _z80_read_byte(uint16_t address)
+    {
+        return read_byte(address);
+    }
+    void _z80_write_byte(uint16_t address, uint8_t data)
+    {
+        write_byte(address, data);
+    }
+    uint8_t _z80_read_port(uint8_t port)
+    {
+        return read_port(port);
+    }
+    void _z80_write_port(uint8_t port, uint8_t data)
+    {
+        write_port(port, data);
+    }
+    void _z80_int_ack()
+    {
+    }
 
     void write_port(uint8_t port, uint8_t data);
     //void decrypt_mspacman();
@@ -116,7 +133,7 @@ export class c_pacman : public c_system, register_class<system_registry, c_pacma
     //void check_mspacman_trap(uint16_t address);
     int load_romset(std::vector<pacman::s_roms> &romset);
 
-    std::unique_ptr<c_z80> z80;
+    std::unique_ptr<c_z80<c_pacman>> z80;
     std::unique_ptr<c_pacman_vid> pacman_vid;
     std::unique_ptr<c_pacman_psg> pacman_psg;
     std::unique_ptr<uint8_t[]> prg_rom;

@@ -15,7 +15,7 @@ using uint32_t = std::uint32_t;
 using uint64_t = std::uint64_t;
 
 export template <typename T, auto method>
-auto thunk(void *ctx, auto... args)
+auto thunk(void * const ctx, auto... args)
 {
     return (static_cast<T*>(ctx)->*method)(args...);
 }

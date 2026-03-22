@@ -20,21 +20,12 @@ c_genesis::c_genesis()
     bus.write_word = &thunk<c_genesis, &c_genesis::write_word>;
     bus.write_byte = &thunk<c_genesis, &c_genesis::write_byte>;
 
-    z80_bus.ctx = this;
-    z80_bus.read_byte = &thunk<c_genesis, &c_genesis::z80_read_byte>;
-    z80_bus.write_byte = &thunk<c_genesis, &c_genesis::z80_write_byte>;
-
-    z80_io_bus.ctx = this;
-    z80_io_bus.read_byte = &thunk<c_genesis, &c_genesis::z80_read_port>;
-    z80_io_bus.write_byte = &thunk<c_genesis, &c_genesis::z80_write_port>;
-
     m68k = std::make_unique<c_m68k>(&bus, [this]() { this->vdp->ack_irq(); }, &ipl, &stalled);
     vdp = std::make_unique<c_vdp>(
         &ipl, [this](uint32_t address) { return this->read_word(address); },
         [this](int x_res) { this->on_mode_switch(x_res); }, &stalled);
     z80 =
-        std::make_unique<c_z80>(&z80_bus,
-                                &z80_io_bus, //write port
+        std::make_unique<c_z80<c_genesis>>(*this,
                                 &z80_nmi, //nmi
                                 &z80_irq, //irq
                                 nullptr //data bus
@@ -87,12 +78,12 @@ c_genesis::~c_genesis()
     close_sram();
 }
 
-uint8_t c_genesis::z80_read_port(uint8_t port)
+uint8_t c_genesis::_z80_read_port(uint8_t port)
 {
     return 0;
 }
 
-void c_genesis::z80_write_port(uint8_t port, uint8_t value)
+void c_genesis::_z80_write_port(uint8_t port, uint8_t value)
 {
 }
 
@@ -358,7 +349,7 @@ int c_genesis::emulate_frame()
     return 0;
 }
 
-uint8_t c_genesis::z80_read_byte(uint16_t address)
+uint8_t c_genesis::_z80_read_byte(uint16_t address)
 {
     //char buf[256];
     //sprintf(buf, "z80 read from %x\n", address);
@@ -388,7 +379,7 @@ uint8_t c_genesis::z80_read_byte(uint16_t address)
     }
 }
 
-void c_genesis::z80_write_byte(uint16_t address, uint8_t value)
+void c_genesis::_z80_write_byte(uint16_t address, uint8_t value)
 {
     //char buf[256];
     //sprintf(buf, "z80 write %x to %x\n", value, address);

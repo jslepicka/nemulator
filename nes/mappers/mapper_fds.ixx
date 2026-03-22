@@ -97,7 +97,7 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
         fds_audio.reset();
     }
 
-    void clock(int cycles) override
+    void clock() override
     {
         if (++ticks == 3) {
             ticks = 0;

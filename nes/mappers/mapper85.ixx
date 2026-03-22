@@ -134,10 +134,9 @@ class c_mapper85 : public c_mapper, register_class<nes_mapper_registry, c_mapper
         }
     }
 
-    void clock(int cycles) override
+    void clock() override
     {
-        ticks += cycles;
-        while (ticks > 2) {
+        if (++ticks == 3) {
             if ((irq_control & 0x02) && ((irq_control & 0x04) || ((irq_scaler += 3) >= 341))) {
                 if (!(irq_control & 0x04)) {
                     irq_scaler -= 341;
@@ -152,7 +151,7 @@ class c_mapper85 : public c_mapper, register_class<nes_mapper_registry, c_mapper
                 else
                     irq_counter++;
             }
-            ticks -= 3;
+            ticks = 0;
             if (++audio_ticks == 36) {
                 va.clock(0);
                 //clock_audio();

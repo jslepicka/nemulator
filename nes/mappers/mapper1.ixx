@@ -55,7 +55,7 @@ export class c_mapper1 : public c_mapper, register_class<nes_mapper_registry, c_
         cycle_count = 1;
         Sync();
     }
-    void clock(int cycles)
+    void clock()
     {
         ignore_writes = 0;
     }

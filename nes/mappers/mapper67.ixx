@@ -91,11 +91,10 @@ class c_mapper67 : public c_mapper, register_class<nes_mapper_registry, c_mapper
         SetPrgBank16k(PRG_C000, prgRomPageCount16k - 1);
     }
 
-    void clock(int cycles) override
+    void clock() override
     {
         if (irq_enabled) {
-            ticks += cycles;
-            while (ticks > 2) {
+            if (++ticks == 3) {
                 int prev = irq_counter;
                 irq_counter = (irq_counter - 1) & 0xFFFF;
                 if (irq_counter > prev) // wrap around
@@ -103,7 +102,7 @@ class c_mapper67 : public c_mapper, register_class<nes_mapper_registry, c_mapper
                     execute_irq();
                     irq_enabled = 0;
                 }
-                ticks -= 3;
+                ticks = 0;
             }
         }
     }

@@ -404,9 +404,18 @@ void c_nemulator::RunGames()
         g->system->set_input(ih->get_console_input(button_map));
 
         g->system->emulate_frame();
-        if (benchmark_mode) {
+        if (benchmark_mode || timedemo) {
             if (++benchmark_frame_count == benchmark_frames) {
-                exit(0);
+                if (timedemo) {
+                    auto end = clock::now();
+                    auto elapsed = std::chrono::duration<double, std::milli>(end - start).count();
+                    char buf[64];
+                    double s = elapsed / 1000.0;
+                    double fps = benchmark_frames / s;
+                    sprintf(buf, "%i frames in %.2fs, %.2f fps", benchmark_frames, s, fps);
+                    MessageBox(NULL, buf, "", MB_OK);
+                }
+                PostQuitMessage(0);
             }
         }
     }
@@ -1025,9 +1034,10 @@ void c_nemulator::UpdateScene(double dt)
                 if (splash_timer < SPLASH_TIMER_FADE_DURATION)
                     splash_timer = SPLASH_TIMER_FADE_DURATION;
                 splash_stage++;
-                if (benchmark_mode || disable_splash) {
+                if (benchmark_mode || timedemo || disable_splash) {
                     splash_done = 1;
-                    if (gameList.size() > 0 && benchmark_mode) {
+                    if (gameList.size() > 0 && (benchmark_mode || timedemo)) {
+                        start = clock::now();
                         start_game();
                     }
                 }
@@ -1075,14 +1085,11 @@ void c_nemulator::UpdateScene(double dt)
             c_system_container *sc = (c_system_container *)texturePanels[selectedPanel]->GetSelected();
             c_system *system = sc->system.get();
 
-            const float* buf_l;
-            const float* buf_r;
-
             const float *buf;
 
             int num_samples = system->get_sound_buf(&buf);
             
-            if (!benchmark_mode && !paused) {
+            if (!benchmark_mode && !timedemo && !paused) {
                 sound->copy(buf, num_samples, sc->get_volume());
                 s = sound->sync();
             }
@@ -1109,7 +1116,7 @@ void c_nemulator::UpdateScene(double dt)
     if (elapsed >= 250.0)
     {
         double fps = framesDrawn / (elapsed / 1000.0);
-        if (benchmark_mode) {
+        if (benchmark_mode || timedemo) {
             fps_history[fps_index++ % fps_records] = fps;
             max_fps = 60.0;
             for (int i = 0; i < fps_records; i++)

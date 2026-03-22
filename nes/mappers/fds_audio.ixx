@@ -232,7 +232,7 @@ class c_fds_audio
     uint32_t clock_divider;
     float output;
 
-    static constexpr float fs = c_apu::NES_AUDIO_RATE;
+    static constexpr float fs = NES_AUDIO_RATE;
     static constexpr float fc = 2190.0f;
     dsp::c_one_pole_lowpass<fs, fc> lowpass;
 

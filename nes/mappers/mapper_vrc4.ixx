@@ -145,9 +145,9 @@ class c_mapper_vrc4 : public c_mapper, register_class<nes_mapper_registry, c_map
             swap_bits = 1;
     }
 
-    void clock(int cycles) override
+    void clock() override
     {
-        if ((irq_control & 0x02) && ((irq_control & 0x04) || ((irq_scaler += cycles) >= 341))) {
+        if ((irq_control & 0x02) && ((irq_control & 0x04) || ((irq_scaler += 1) >= 341))) {
             if (!(irq_control & 0x04)) {
                 irq_scaler -= 341;
             }

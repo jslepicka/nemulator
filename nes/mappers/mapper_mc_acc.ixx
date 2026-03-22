@@ -23,16 +23,16 @@ class c_mapper_mc_acc : public c_mapper4, register_class<nes_mapper_registry, c_
         };
     }
 
-    void clock(int cycles) override
+    void clock() override
     {
         if (irq_delay > 0) {
-            irq_delay -= cycles;
+            irq_delay -= 1;
             if (irq_delay <= 0) {
                 c_mapper4::fire_irq();
             }
         }
         if (!(current_address & 0x1000)) {
-            low_count -= cycles;
+            low_count -= 1;
             if (low_count < 0)
                 low_count = 0;
         }

@@ -1,6 +1,8 @@
 #include "Windows.h"
 #include <memory>
 #include <string>
+#include <chrono>
+#include "benchmark.h"
 
 import D3d10App;
 import nemulator;
@@ -67,9 +69,20 @@ s_cpu_info get_cpu_info()
     return ci;
 }
 
+bool has_flag(const std::string &flag)
+{
+    for (int i = 1; i < __argc; i++) {
+        if (_strcmpi(__argv[i], flag.c_str()) == 0)
+            return true;
+    }
+    return false;
+}
+
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdPline, int nShowCmd)
 {
+    timedemo = has_flag("-timedemo");
+    benchmark_mode = has_flag("-benchmark");
     g_cpu_info = get_cpu_info();
     std::unique_ptr<D3d10App> app = std::make_unique<D3d10App>(hInstance);
     app->Init((char*)"nemulator.ini", new c_nemulator(), NULL);

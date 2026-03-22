@@ -62,12 +62,11 @@ class c_mapper42 : public c_mapper, register_class<nes_mapper_registry, c_mapper
         SetPrgBank32k(prgRomPageCount32k - 1);
     }
 
-    void clock(int cycles) override
+    void clock() override
     {
         if (irq_enabled) {
-            ticks += cycles;
-            while (ticks > 2) {
-                ticks -= 3;
+            if (++ticks == 3) {
+                ticks = 0;
                 if (++irq_counter == 0x6000 && !irq_asserted) {
                     execute_irq();
                     irq_asserted = 1;

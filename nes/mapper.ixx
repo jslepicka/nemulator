@@ -24,7 +24,7 @@ export class c_mapper
     virtual ~c_mapper();
     virtual unsigned char read_byte(unsigned short address);
     virtual void write_byte(unsigned short address, unsigned char value);
-    virtual void clock(int cycles) {};
+    virtual void clock() {};
     virtual void reset();
     virtual int load_image();
     virtual float mix_audio(float sample);

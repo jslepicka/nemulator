@@ -37,17 +37,8 @@ std::vector<c_invaders::s_system_info> c_invaders::get_registry_info()
 
 c_invaders::c_invaders()
 {
-    bus.ctx = this;
-    bus.read_byte = &thunk<c_invaders, &c_invaders::read_byte>;
-    bus.write_byte = &thunk<c_invaders, &c_invaders::write_byte>;
-
-    io_bus.ctx = this;
-    io_bus.read_byte = &thunk<c_invaders, &c_invaders::read_port>;
-    io_bus.write_byte = &thunk<c_invaders, &c_invaders::write_port>;
-
     //real hardware uses an i8080, but z80, being (mostly) compatible, seems to work just fine
-    z80 = std::make_unique<c_z80>(&bus,
-        &io_bus,
+    z80 = std::make_unique<c_z80<c_invaders>>(*this,
         &nmi, &irq, &data_bus);
     loaded = 0;
     sample_channels[0].loop = 1;
