@@ -2,6 +2,7 @@ module;
 #include <memory>
 export module nes:mapper.mapper5;
 import :apu;
+import :apu_channels;
 import :mapper;
 import class_registry;
 import nemulator.std;
@@ -374,9 +375,8 @@ public:
     float mix_audio(float sample) override
     {
         int square_vol = squares[0].get_output_mmc5() + squares[1].get_output_mmc5();
-        float square_out = c_apu::square_lut[square_vol];
+        float square_out = square_lut[square_vol];
         float pcm_out = (float)pcm_data / 255.0f * .42f;
-
         return sample + -square_out + -pcm_out;
         //return sample * .5f + square_out * .5f;
     }
@@ -387,7 +387,7 @@ private:
     static const int CLOCKS_PER_FRAME_SEQ = 89489;
     
     int ticks;
-    c_apu::c_square squares[2];
+    c_square squares[2];
     enum {
         PCM_IRQ_MODE_WRITE,
         PCM_IRQ_MODE_READ

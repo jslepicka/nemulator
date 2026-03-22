@@ -46,19 +46,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="nes\cpu.cpp">
-      <Filter>nes</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\joypad.cpp">
-      <Filter>nes</Filter>
-    </ClCompile>
     <ClCompile Include="nes\mapper.cpp">
       <Filter>nes</Filter>
     </ClCompile>
     <ClCompile Include="nes\nes.cpp">
-      <Filter>nes</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\ppu.cpp">
       <Filter>nes</Filter>
     </ClCompile>
     <ClCompile Include="nes\mappers\vrc7_audio.cpp">
@@ -96,9 +87,6 @@
     </ClCompile>
     <ClCompile Include="gb\mbc2.cpp">
       <Filter>gb</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\game_genie.cpp">
-      <Filter>nes</Filter>
     </ClCompile>
     <ClCompile Include="gb\mbc5.cpp">
       <Filter>gb</Filter>
@@ -367,9 +355,6 @@
     <ClCompile Include="nes\mappers\mapper5.ixx">
       <Filter>nes\mappers</Filter>
     </ClCompile>
-    <ClCompile Include="nes\apu.cpp">
-      <Filter>nes</Filter>
-    </ClCompile>
     <ClCompile Include="nes\mapper.ixx">
       <Filter>nes</Filter>
     </ClCompile>
@@ -543,6 +528,10 @@
     </ClCompile>
     <ClCompile Include="dsp\one_pole_lowpass.ixx">
       <Filter>dsp</Filter>
+    </ClCompile>
+    <ClCompile Include="nes\nes_callbacks.ixx" />
+    <ClCompile Include="nes\apu_channels.ixx">
+      <Filter>nes</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

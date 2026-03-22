@@ -12,14 +12,14 @@ import class_registry;
 import :mapper;
 import :ines;
 import :game_genie;
-import bus;
-import :interfaces;
+import :callbacks;
 
 namespace nes
 {
 
 export class c_nes : public c_system, register_class<system_registry, c_nes>, public i_nes_callbacks<c_nes>
 {
+    friend class i_nes_callbacks<c_nes>;
   public:
     c_nes();
     ~c_nes();
@@ -36,7 +36,7 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>, pu
     int *get_video();
     int get_sound_buf(const float **buf);
     bool loaded;
-    unsigned char dmc_read(unsigned short address);
+    unsigned char _dmc_read(unsigned short address);
     int load();
     std::string &get_mapper_name();
     int get_mapper_number();
@@ -44,11 +44,64 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>, pu
     void set_sprite_limit(bool limit_sprites);
     bool get_sprite_limit();
     void set_submapper(int submapper);
-    std::unique_ptr<c_cpu> cpu;
+    std::unique_ptr<c_cpu<c_nes>> cpu;
     std::unique_ptr<c_ppu<c_nes>> ppu;
     std::unique_ptr<c_mapper> mapper;
-    void write_byte(unsigned short address, unsigned char value);
-    unsigned char read_byte(unsigned short address);
+    void _write_byte(uint16_t address, uint8_t value);
+    uint8_t _read_byte(uint16_t address)
+    {
+        //unlimited health in holy diver
+        //if (address == 0x0440) {
+        //    return 6;
+        //}
+        //start battletoads on level 2
+        //if (address == 0x8320) {
+        //    return 0x2;
+        //}
+        //journey to silius unlimited energy
+        //   if (address == 0x00B0) {
+        //       return 0x0F;
+        //   }
+        ////journey to silius unlimited gun power
+        //   if (address == 0x00B1) {
+        //       return 0x3F;
+        //   }
+        switch (address >> 12) {
+            case 0:
+            case 1:
+                return ram[address & 0x7FF];
+                break;
+            case 2:
+            case 3:
+            //if (address <= 0x2007)
+                return ppu->read_byte(address & 0x2007);
+                break;
+            case 4:
+                if (address >= 0x4020) {
+                    return mapper->read_byte(address);
+                }
+                switch (address) {
+                    case 0x4015:
+                        return apu->read_byte(address);
+                        break;
+                    case 0x4016:
+                    case 0x4017:
+                        return joypad->read_byte(address);
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            default:
+                unsigned char val = mapper->read_byte(address);
+                if (game_genie->count > 0) {
+                    val = game_genie->filter_read(address, val);
+                }
+                return val;
+                break;
+        }
+        return 0;
+    }
     iNesHeader *header;
     void enable_mixer();
     void disable_mixer();
@@ -110,7 +163,7 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>, pu
 
   private:
     int LoadImage(std::string &pathFile);
-    std::unique_ptr<c_apu> apu;
+    std::unique_ptr<c_apu<c_nes>> apu;
     std::unique_ptr<c_joypad> joypad;
     std::unique_ptr<c_game_genie> game_genie;
     std::unique_ptr<unsigned char[]> image;
@@ -120,8 +173,7 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>, pu
     c_mapper::s_mapper_info *mapper_info;
     int file_length;
     bool limit_sprites;
-
-  public:
+    
     void _on_ppu_clock()
     {
         mapper->clock();
@@ -131,7 +183,7 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>, pu
     {
         cpu->execute();
         cpu->odd_cycle ^= 1;
-        apu->clock_once();
+        apu->clock();
     }
     void _on_sprite_eval(bool in_eval)
     {
@@ -157,6 +209,19 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>, pu
     void _add_cycle()
     {
         cpu->add_cycle();
+    }
+    void _on_irq(bool irq)
+    {
+        if (irq) {
+            cpu->execute_irq();
+        }
+        else {
+            cpu->clear_irq();
+        }
+    }
+    float _mix_mapper_audio(float sample)
+    {
+        return mapper->mix_audio(sample);
     }
     };
 

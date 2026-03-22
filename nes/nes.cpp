@@ -49,69 +49,13 @@ bool c_nes::get_sprite_limit()
     return ppu->get_sprite_limit();
 }
 
-unsigned char c_nes::dmc_read(unsigned short address)
+unsigned char c_nes::_dmc_read(unsigned short address)
 {
-    //cpu->availableCycles -= 12;
     cpu->execute_apu_dma();
-    return read_byte(address);
+    return _read_byte(address);
 }
 
-unsigned char c_nes::read_byte(unsigned short address)
-{
-    //unlimited health in holy diver
-    //if (address == 0x0440) {
-    //    return 6;
-    //}
-    //start battletoads on level 2
-    //if (address == 0x8320) {
-    //    return 0x2;
-    //}
-    //journey to silius unlimited energy
-    //   if (address == 0x00B0) {
-    //       return 0x0F;
-    //   }
-    ////journey to silius unlimited gun power
-    //   if (address == 0x00B1) {
-    //       return 0x3F;
-    //   }
-    switch (address >> 12) {
-        case 0:
-        case 1:
-            return ram[address & 0x7FF];
-            break;
-        case 2:
-        case 3:
-        //if (address <= 0x2007)
-            return ppu->read_byte(address & 0x2007);
-            break;
-        case 4:
-            if (address >= 0x4020) {
-                return mapper->read_byte(address);
-            }
-            switch (address) {
-                case 0x4015:
-                    return apu->read_byte(address);
-                    break;
-                case 0x4016:
-                case 0x4017:
-                    return joypad->read_byte(address);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        default:
-            unsigned char val = mapper->read_byte(address);
-            if (game_genie->count > 0) {
-                val = game_genie->filter_read(address, val);
-            }
-            return val;
-            break;
-    }
-    return 0;
-}
-
-void c_nes::write_byte(unsigned short address, unsigned char value)
+void c_nes::_write_byte(uint16_t address, uint8_t value)
 {
     switch (address >> 12) {
         case 0:
@@ -202,12 +146,10 @@ int c_nes::LoadImage(std::string &pathFile)
 int c_nes::load()
 {
     int submapper = -1;
-    cpu = std::make_unique<c_cpu>();
-
+    cpu = std::make_unique<c_cpu<c_nes>>(*this);
     ppu = std::make_unique<c_ppu<c_nes>>(*this);
-
     joypad = std::make_unique<c_joypad>();
-    apu = std::make_unique<c_apu>();
+    apu = std::make_unique<c_apu<c_nes>>(*this);
 
     mapperNumber = LoadImage(path_file);
 
@@ -238,7 +180,7 @@ int c_nes::load()
         return 0;
     mapper = (m->second).constructor();
     mapper_info = &(m->second);
-    apu->set_nes(this);
+    //apu->set_nes(this);
     if (submapper != -1) {
         mapper->set_submapper(submapper);
     }
@@ -258,7 +200,6 @@ int c_nes::reset()
     std::memset(ram.get(), 0xFF, 2048);
 
     mapper->close_sram();
-    cpu->nes = this;
     apu->reset();
     ppu->reset();
     //ppu->mapper = mapper.get();

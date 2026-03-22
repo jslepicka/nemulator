@@ -1085,9 +1085,6 @@ void c_nemulator::UpdateScene(double dt)
             c_system_container *sc = (c_system_container *)texturePanels[selectedPanel]->GetSelected();
             c_system *system = sc->system.get();
 
-            const float* buf_l;
-            const float* buf_r;
-
             const float *buf;
 
             int num_samples = system->get_sound_buf(&buf);

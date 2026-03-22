@@ -262,6 +262,7 @@
     <ClCompile Include="audio_info.cpp" />
     <ClCompile Include="config.cpp" />
     <ClCompile Include="D3d10App.cpp" />
+    <ClCompile Include="nes\apu_channels.ixx" />
     <ClCompile Include="nes\mappers\fds_audio.ixx" />
     <ClCompile Include="nes\mappers\mapper0.ixx" />
     <ClCompile Include="nes\mappers\mapper1.ixx" />
@@ -342,7 +343,7 @@
     <ClCompile Include="nes\mappers\mapper_mmc6.ixx" />
     <ClCompile Include="nes\mappers\mapper_nsf.ixx" />
     <ClCompile Include="nes\mappers\mapper_vrc4.ixx" />
-    <ClCompile Include="nes\nes_interfaces.ixx" />
+    <ClCompile Include="nes\nes_callbacks.ixx" />
     <ClCompile Include="std.ixx" />
     <ClCompile Include="system_container.cpp" />
     <ClCompile Include="gb\gb.cpp" />
@@ -354,8 +355,6 @@
     <ClCompile Include="input_handler.cpp" />
     <ClCompile Include="menu.cpp" />
     <ClCompile Include="nemulator.cpp" />
-    <ClCompile Include="nes\apu.cpp" />
-    <ClCompile Include="nes\game_genie.cpp" />
     <ClCompile Include="nes\mappers\vrc7_audio.cpp" />
     <ClCompile Include="nsf_stats.cpp" />
     <ClCompile Include="pacman\mspacman.cpp" />
@@ -373,8 +372,6 @@
     <ClCompile Include="task.cpp" />
     <ClCompile Include="texture_panel.cpp" />
     <ClCompile Include="texture_panel_item.cpp" />
-    <ClCompile Include="nes\cpu.cpp" />
-    <ClCompile Include="nes\joypad.cpp" />
     <ClCompile Include="nes\mapper.cpp" />
     <ClCompile Include="nes\nes.cpp" />
     <ClCompile Include="ym2612\ym2612.cpp" />

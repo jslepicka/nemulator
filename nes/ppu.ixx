@@ -4,7 +4,7 @@ module;
 export module nes:ppu;
 import nemulator.std;
 import bus;
-import :interfaces;
+import :callbacks;
 
 namespace nes
 {
@@ -15,16 +15,134 @@ namespace nes
 #define NES_PPU_USE_BMI2
 #define NES_PPU_USE_AVX2
 
-export template <typename Owner>
+export template <typename Nes>
 class c_ppu
 {
-    Owner &owner;
   public:
-    c_ppu(Owner &owner) :
-        owner(owner)
+    int drawing_bg;
+
+  private:
+    Nes &nes;
+    int vram_update_delay;
+    //ppu updates apparently happen on ppu cycle following completion of a cpu write
+    //when wr/ce goes high.  This is effectively 3 cycles after wr/cr goes low on the
+    //last cycle of the cpu opcode (i.e., the write cycle)
+    static const int VRAM_UPDATE_DELAY = 1;// 3;
+    int suppress_nmi;
+    static inline uint64_t morton_odd_64[];
+    static inline uint64_t morton_even_64[];
+    static const int screen_offset = 2;
+    unsigned int current_cycle;
+    int current_scanline;
+    int warmed_up;
+    int sprite_mem_address;
+    static inline std::atomic<int> lookup_tables_built;
+    int fetch_state;
+    int on_screen;
+    unsigned char read_value;
+    bool hi;
+    bool nmi_pending;
+    int vram_address;
+    int vram_address_latch;
+    int fine_x;
+    int address_increment;
+
+    int update_rendering;
+    int next_rendering;
+    int hit;
+
+    int odd_frame;
+    int intensity;
+    int sprite_count;
+    int sprite0_index;
+    int rendering;
+
+    int tile;
+    int pattern_address;
+    int attribute_address;
+
+    uint64_t pattern1;
+    uint64_t pattern2;
+    uint64_t attribute;
+    int executed_cycles;
+    int palette_mask; //for monochrome display
+    int vid_out;
+    int reload_v;
+    int attribute_shift;
+    enum FETCH_STATE
     {
-        //pSpriteMemory = 0;
-        //mapper = 0;
+        FETCH_BG = 0 << 3,
+        FETCH_SPRITE = 1 << 3,
+        FETCH_NT = 2 << 3,
+        FETCH_IDLE = 3 << 3
+    };
+    bool limit_sprites;
+    union u_ppuctrl {
+        struct
+        {
+            unsigned char nt_base : 2;
+            bool address_increment : 1;
+            bool sprite_pt_address : 1;
+            bool bg_pt_address : 1;
+            bool sprite_size : 1;
+            bool master_slave_select : 1;
+            bool nmi_enable : 1;
+        };
+        unsigned char value;
+    } PPUCTRL;
+    union u_ppumask {
+        struct
+        {
+            unsigned char greyscale : 1;
+            bool left_bg_enable : 1;
+            bool left_sprite_enable : 1;
+            bool enable_bg : 1;
+            bool enable_sprites : 1;
+            bool red_emphasis : 1;
+            bool green_emphasis : 1;
+            bool blue_emphasis : 1;
+        };
+        struct
+        {
+            unsigned char : 5;
+            unsigned char emphasis : 3;
+        };
+        unsigned char value;
+    } PPUMASK;
+    union u_ppustatus {
+        struct
+        {
+            unsigned char : 5;
+            bool sprite_overflow : 1;
+            bool sprite0_hit : 1;
+            bool in_vblank : 1;
+        };
+        unsigned char value;
+    } PPUSTATUS;
+    struct s_sprite_data
+    {
+        uint8_t y;
+        uint8_t tile;
+        uint8_t attribute;
+        uint8_t x;
+    };
+
+    alignas(64) static inline uint32_t pal[512];
+    int (c_ppu::*p_output_pixel)();
+    std::bitset<256> sprite_here;
+    alignas(64) s_sprite_data sprite_buffer[64];
+    alignas(64) uint8_t sprite_memory[256];
+    alignas(64) uint8_t sprite_index_buffer[512];
+    alignas(64) uint8_t index_buffer[272];
+    uint8_t image_palette[32];
+    alignas(64) uint32_t frame_buffer[256 * 240];
+
+ ////////////////////////////
+
+  public:
+    c_ppu(Nes &nes) :
+        nes(nes)
+    {
         build_lookup_tables();
         limit_sprites = false; //don't change this on reset
         p_output_pixel = &c_ppu::output_pixel;
@@ -55,12 +173,12 @@ class c_ppu
                         case 1:
                             temp &= ~0x80;
                             suppress_nmi = 1;
-                            owner.on_nmi(false);
+                            nes.on_nmi(false);
                             break;
                         case 2:
                         case 3:
                             temp |= 0x80;
-                            owner.on_nmi(false);
+                            nes.on_nmi(false);
                             break;
                         default:
                             break;
@@ -99,7 +217,7 @@ class c_ppu
             {
                 unsigned char temp = read_value;
                 if (!rendering)
-                    read_value = owner.ppu_read(vram_address);
+                    read_value = nes.ppu_read(vram_address);
 
         //palette reads are returned immediately
                 if ((vram_address & 0x3FFF) >= 0x3F00)
@@ -115,18 +233,18 @@ class c_ppu
         }
         return return_value;
     }
+
     void write_byte(int address, unsigned char value)
     {
         switch (address) {
             case 0x2000:    //PPU Control Register 1
             {
-            //if nmi enabled is false and incoming value enables it
-            //AND if currently in NMI, then execute_nmi
-                if (!(PPUCTRL.nmi_enable) && (value & 0x80) && PPUSTATUS.in_vblank) {
-                    owner.on_nmi(true);
-                }
+        //if nmi enabled is false and incoming value enables it
+        //AND if currently in NMI, then execute_nmi
+                if (!(PPUCTRL.nmi_enable) && (value & 0x80) && PPUSTATUS.in_vblank)
+                    nes.on_nmi(true);
                 if (current_scanline == 261 && (PPUCTRL.nmi_enable) && current_cycle < 4) {
-                    owner.on_nmi(false);
+                    nes.on_nmi(false);
                 }
 
                 PPUCTRL.value = value;
@@ -218,77 +336,32 @@ class c_ppu
                         if (!(pal_address & 0x03)) {
                             image_palette[pal_address ^ 0x10] = value;
                         }
-                        owner.ppu_read(vram_address);
+                        nes.ppu_read(vram_address);
                     }
                 }
                 else {
                     if (!rendering) {
-                        //ppu_bus.write_byte(nes_ctx, vram_address, value);
-                        owner.ppu_write(vram_address, value);
+                        nes.ppu_write(vram_address, value);
                     }
                 }
                 update_vram_address();
             } break;
         }
     }
-    void reset()
-    {
-        warmed_up = 0;
-        odd_frame = 0;
-        intensity = 0;
-        palette_mask = 0xFF;
-        current_cycle = 0;
-        nmi_pending = false;
-        current_scanline = 0;
-        rendering = 0;
-        pattern_address = attribute_address = 0;
-        on_screen = 0;
 
-        std::memset(sprite_memory, 0, sizeof(sprite_memory));
-        std::memset(frame_buffer, 0, sizeof(frame_buffer));
-
-        read_value = 0;
-        PPUCTRL.value = 0;
-        PPUMASK.value = 0;
-        PPUSTATUS.value = 0;
-        hi = false;
-        sprite_mem_address = 0;
-        address_increment = 1;
-        vram_address = vram_address_latch = fine_x = 0;
-        drawing_bg = 0;
-        executed_cycles = 3;
-        pattern_address = attribute_address = 0;
-
-        std::memset(index_buffer, 0xFF, sizeof(index_buffer));
-        std::memset(image_palette, 0x3F, sizeof(image_palette));
-        std::memset(sprite_buffer, 0, sizeof(sprite_buffer));
-
-        fetch_state = FETCH_IDLE;
-        vram_update_delay = 0;
-        suppress_nmi = 0;
-        hit = 0;
-        update_rendering = 0;
-        next_rendering = 0;
-
-        reload_v = 0;
-        vid_out = 0;
-    }
-    int get_sprite_size()
-    {
-        return (int)PPUCTRL.sprite_size;
-    }
     void eval_sprites()
     {
         if (!rendering)
             return;
         sprite_here.reset();
         drawing_bg = false;
-        owner.on_sprite_eval(true);
+        //mapper->in_sprite_eval = 1;
+        nes.on_sprite_eval(true);
         int max_sprites = limit_sprites ? 8 : 64;
         int sprite0_x = -1;
         sprite0_index = -1;
         sprite_count = 0;
-        std::memset(sprite_buffer, 0xFF, sizeof(sprite_buffer));
+        memset(sprite_buffer, 0xFF, sizeof(sprite_buffer));
         int sprite_line = current_scanline;
         for (int i = 0; i < 64 /* && sprite_count < max_sprites*/; i++) {
             int sprite_offset = i * 4;
@@ -301,7 +374,7 @@ class c_ppu
                 if (i == 0) {
                     sprite0_index = sprite_count;
                 }
-            //memcpy(&sprite_buffer[sprite_count * 4], sprite_memory + sprite_offset, 4);
+                //memcpy(&sprite_buffer[sprite_count * 4], sprite_memory + sprite_offset, 4);
                 sprite_buffer[sprite_count] = sprite_data;
 
                 int sprite_y = (sprite_line)-y;
@@ -323,9 +396,9 @@ class c_ppu
 
 #ifdef NES_PPU_USE_BMI2
                 uint64_t attr = (((uint64_t)sprite_data.attribute & 0x03) << 2) * 0x0101010101010101;
-                uint64_t p1 = _pdep_u64(owner.ppu_read(sprite_address),
+                uint64_t p1 = _pdep_u64(nes.ppu_read(sprite_address),
                                         0b00000001'00000001'00000001'00000001'00000001'00000001'00000001'00000001);
-                uint64_t p2 = _pdep_u64(owner.ppu_read(sprite_address + 8),
+                uint64_t p2 = _pdep_u64(nes.ppu_read(sprite_address + 8),
                                         0b00000010'00000010'00000010'00000010'00000010'00000010'00000010'00000010);
                 uint64_t c = p1 | p2 | attr;
                 if (!(sprite_data.attribute & 0x40)) {
@@ -334,8 +407,8 @@ class c_ppu
                 *(uint64_t *)&sprite_index_buffer[sprite_count * 8] = c;
 #else
                 int attr = ((sprite_data.attribute & 0x03) << 2) * 0x01010101;
-                int *p1 = (int *)morton_odd_64 + (uint64_t)owner.ppu_read(sprite_address) * 2;
-                int *p2 = (int *)morton_even_64 + (uint64_t)owner.ppu_read(sprite_address + 8) * 2;
+                int *p1 = (int *)morton_odd_64 + (uint64_t)nes.ppu_read(sprite_address) * 2;
+                int *p2 = (int *)morton_even_64 + (uint64_t)nes.ppu_read(sprite_address + 8) * 2;
                 int p[2] = {*p1++ | *p2++ | attr, *p1 | *p2 | attr};
 
                 if (sprite_data.attribute & 0x40) {
@@ -357,14 +430,15 @@ class c_ppu
             }
         }
         for (int i = 0; i < sprite_count; i++) {
-        //int xx = sprite_buffer[i * 4 + 3];
+            //int xx = sprite_buffer[i * 4 + 3];
             int xx = sprite_buffer[i].x;
             for (int x = 0; x < 8; x++) {
                 int loc = xx + x;
                 sprite_here.set(loc & 0xFF);
             }
         }
-        owner.on_sprite_eval(false);
+        //mapper->in_sprite_eval = 0;
+        nes.on_sprite_eval(false);
         if (current_scanline == 261)
             sprite_count = 0;
         if (sprite_count) {
@@ -374,6 +448,75 @@ class c_ppu
             p_output_pixel = &c_ppu::output_pixel_no_sprites;
         }
     }
+
+    int get_sprite_size()
+    {
+        return (int)PPUCTRL.sprite_size;
+    }
+
+    void reset()
+    {
+        warmed_up = 0;
+        odd_frame = 0;
+        intensity = 0;
+        palette_mask = 0xFF;
+        current_cycle = 0;
+        nmi_pending = false;
+        current_scanline = 0;
+        rendering = 0;
+        pattern_address = attribute_address = 0;
+        on_screen = 0;
+
+        memset(sprite_memory, 0, sizeof(sprite_memory));
+        memset(frame_buffer, 0, sizeof(frame_buffer));
+
+        read_value = 0;
+        PPUCTRL.value = 0;
+        PPUMASK.value = 0;
+        PPUSTATUS.value = 0;
+        hi = false;
+        sprite_mem_address = 0;
+        address_increment = 1;
+        vram_address = vram_address_latch = fine_x = 0;
+        drawing_bg = 0;
+        executed_cycles = 3;
+        pattern_address = attribute_address = 0;
+
+        memset(index_buffer, 0xFF, sizeof(index_buffer));
+        memset(image_palette, 0x3F, sizeof(image_palette));
+        memset(sprite_buffer, 0, sizeof(sprite_buffer));
+
+        fetch_state = FETCH_IDLE;
+        vram_update_delay = 0;
+        suppress_nmi = 0;
+        hit = 0;
+        update_rendering = 0;
+        next_rendering = 0;
+
+        reload_v = 0;
+        vid_out = 0;
+    }
+
+    int *get_frame_buffer()
+    {
+        return (int *)frame_buffer;
+    }
+
+    bool get_sprite_limit()
+    {
+        return limit_sprites;
+    }
+
+    void set_sprite_limit(bool limit)
+    {
+        limit_sprites = limit;
+    }
+
+    uint8_t *get_sprite_memory()
+    {
+        return sprite_memory;
+    }
+
     void run_ppu_line()
     {
         int pixel_count = 0;
@@ -385,7 +528,7 @@ class c_ppu
         int *const p_frame = (int *const)&frame_buffer[256 * current_scanline];
         int x = 0;
         while (true) {
-            owner.add_cycle();
+            nes.add_cycle();
             if (!zero_cycle) [[likely]] {
                 //handle events that happen on specific cycles
                 last_cycle = do_cycle_events();
@@ -441,14 +584,14 @@ class c_ppu
                 if (vram_update_delay == 0) {
                     vram_address = vram_address_latch;
                     if (!rendering) {
-                        owner.ppu_read(vram_address);
+                        nes.ppu_read(vram_address);
                     }
                 }
             }
-            owner.on_ppu_clock();
 
+            nes.on_ppu_clock();
             if (--executed_cycles == 0) [[unlikely]] {
-                owner.on_cpu_clock();
+                nes.on_cpu_clock();
                 executed_cycles = 3;
             };
             if (last_cycle) {
@@ -467,52 +610,18 @@ class c_ppu
             current_cycle++;
         }
     }
-    int *get_frame_buffer()
-    {
-        return (int *)frame_buffer;
-    }
-    bool get_sprite_limit()
-    {
-        return limit_sprites;
-    }
-    void set_sprite_limit(bool limit)
-    {
-        limit_sprites = limit;
-    }
-    uint8_t *get_sprite_memory()
-    {
-        return sprite_memory;
-    }
 
-    int drawing_bg;
+
+
+
+
+
+
+
+
+
 
   private:
-    void inc_horizontal_address()
-    {
-        if ((vram_address & 0x1F) == 0x1F)
-            vram_address ^= 0x41F;
-        else
-            vram_address++;
-    }
-    void inc_vertical_address()
-    {
-        if ((vram_address & 0x7000) == 0x7000) {
-            int t = vram_address & 0x3E0;
-            vram_address &= 0xFFF;
-            switch (t) {
-                case 0x3A0:
-                    vram_address ^= 0xBA0;
-                    break;
-                case 0x3E0:
-                    vram_address ^= 0x3E0;
-                    break;
-                default:
-                    vram_address += 0x20;
-            }
-        }
-        else
-            vram_address += 0x1000;
-    }
     void generate_palette()
     {
         double saturation = 1.3;
@@ -546,38 +655,38 @@ class c_ppu
                 v *= brightness / 12.0;
 
                 y += v;
-                i += v * std::cos((std::numbers::pi / 6.0) * (p + hue_tweak));
-                q += v * std::sin((std::numbers::pi / 6.0) * (p + hue_tweak));
+                i += v * cos((std::numbers::pi / 6.0) * (p + hue_tweak));
+                q += v * sin((std::numbers::pi / 6.0) * (p + hue_tweak));
             }
 
             i *= saturation;
             q *= saturation;
 
-            //Y'IQ -> NTSC R'G'B'
-            //Adapted from http://en.wikipedia.org/wiki/YIQ, FCC matrix []^-1
+        //Y'IQ -> NTSC R'G'B'
+        //Adapted from http://en.wikipedia.org/wiki/YIQ, FCC matrix []^-1
             double ntsc_r = y + 0.956 * i + 0.620 * q;
             double ntsc_g = y + -0.272 * i + -0.647 * q;
             double ntsc_b = y + -1.108 * i + 1.705 * q;
 
-            //NTSC R'G'B' -> linear NTSC RGB
+        //NTSC R'G'B' -> linear NTSC RGB
             ntsc_r = pow(std::clamp(ntsc_r, 0.0, 1.0), 2.2);
             ntsc_g = pow(std::clamp(ntsc_g, 0.0, 1.0), 2.2);
             ntsc_b = pow(std::clamp(ntsc_b, 0.0, 1.0), 2.2);
 
-            //NTSC RGB (SMPTE-C) -> CIE XYZ
-            //conversion matrix from http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
+        //NTSC RGB (SMPTE-C) -> CIE XYZ
+        //conversion matrix from http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
             double cie_x = ntsc_r * 0.3935891 + ntsc_g * 0.3652497 + ntsc_b * 0.1916313;
             double cie_y = ntsc_r * 0.2124132 + ntsc_g * 0.7010437 + ntsc_b * 0.0865432;
             double cie_z = ntsc_r * 0.0187423 + ntsc_g * 0.1119313 + ntsc_b * 0.9581563;
 
-            //CIE XYZ -> linear sRGB
-            //Shader will return sR'G'B'
-            //conversion matrix from http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
+        //CIE XYZ -> linear sRGB
+        //Shader will return sR'G'B'
+        //conversion matrix from http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
             double srgb_r2 = cie_x * 3.2404542 + cie_y * -1.5371385 + cie_z * -0.4985314;
             double srgb_g2 = cie_x * -0.9692660 + cie_y * 1.8760108 + cie_z * 0.0415560;
             double srgb_b2 = cie_x * 0.0556434 + cie_y * -0.2040259 + cie_z * 1.0572252;
 
-            //linear RGB -> sRGB
+        //linear RGB -> sRGB
 
             srgb_r2 = std::clamp(pow(srgb_r2, 1.0 / 2.2), 0.0, 1.0);
             srgb_g2 = std::clamp(pow(srgb_g2, 1.0 / 2.2), 0.0, 1.0);
@@ -589,18 +698,7 @@ class c_ppu
             pal[pixel] = rgb | 0xFF000000;
         }
     }
-    void update_vram_address()
-    {
-        if (rendering) {
-            inc_horizontal_address();
-            inc_vertical_address();
-        }
-        else {
-            //update bus when not rendering
-            vram_address = (vram_address + address_increment) & 0x7FFF;
-            owner.ppu_read(vram_address);
-        }
-    }
+
     void build_lookup_tables()
     {
         int expected = 0;
@@ -620,22 +718,69 @@ class c_ppu
             generate_palette();
         }
     }
-    uint64_t interleave_bits_64(unsigned char odd, unsigned char even)
+
+    INLINE uint64_t interleave_bits_64(unsigned char odd, unsigned char even)
     {
         return morton_odd_64[odd] | morton_even_64[even];
     }
-    bool drawing_enabled()
+
+    void inc_horizontal_address()
     {
-        if (PPUMASK.enable_bg || PPUMASK.enable_sprites)
-            return true;
+        if ((vram_address & 0x1F) == 0x1F)
+            vram_address ^= 0x41F;
         else
-            return false;
+            vram_address++;
     }
-    int output_pixel_no_sprites()
+
+    void inc_vertical_address()
+    {
+        if ((vram_address & 0x7000) == 0x7000) {
+            int t = vram_address & 0x3E0;
+            vram_address &= 0xFFF;
+            switch (t) {
+                case 0x3A0:
+                    vram_address ^= 0xBA0;
+                    break;
+                case 0x3E0:
+                    vram_address ^= 0x3E0;
+                    break;
+                default:
+                    vram_address += 0x20;
+            }
+        }
+        else
+            vram_address += 0x1000;
+    }
+
+    struct s_bg_out
+    {
+        uint8_t bg_index;
+        uint32_t pixel;
+    };
+
+    INLINE s_bg_out get_bg()
+    {
+        s_bg_out ret = {0, 0};
+
+        if (PPUMASK.enable_bg && ((current_cycle >= 8 + screen_offset) || PPUMASK.left_bg_enable)) {
+            ret.bg_index = index_buffer[current_cycle - screen_offset + fine_x];
+        }
+
+        if (ret.bg_index & 0x03) {
+            ret.pixel = image_palette[ret.bg_index];
+        }
+        else {
+            ret.pixel = image_palette[0];
+        }
+        return ret;
+    }
+
+    INLINE int output_pixel_no_sprites()
     {
         return get_bg().pixel;
     }
-    int output_pixel()
+
+    INLINE int output_pixel()
     {
         s_bg_out bg_out = get_bg();
         int pixel = bg_out.pixel;
@@ -671,7 +816,8 @@ class c_ppu
         }
         return pixel;
     }
-    int output_blank_pixel()
+
+    INLINE int output_blank_pixel()
     {
         int pixel = 0;
         if ((vram_address & 0x3F00) == 0x3F00) {
@@ -682,34 +828,14 @@ class c_ppu
         }
         return pixel;
     }
-    struct s_bg_out
-    {
-        uint8_t bg_index;
-        uint32_t pixel;
-    };
-    s_bg_out get_bg()
-    {
-        s_bg_out ret = {0, 0};
 
-        if (PPUMASK.enable_bg && ((current_cycle >= 8 + screen_offset) || PPUMASK.left_bg_enable)) {
-            ret.bg_index = index_buffer[current_cycle - screen_offset + fine_x];
-        }
-
-        if (ret.bg_index & 0x03) {
-            ret.pixel = image_palette[ret.bg_index];
-        }
-        else {
-            ret.pixel = image_palette[0];
-        }
-        return ret;
-    }
     void begin_vblank()
     {
         if (warmed_up) {
             if (!suppress_nmi) {
                 PPUSTATUS.in_vblank = true;
                 if (PPUCTRL.nmi_enable) {
-                    owner.on_nmi(true);
+                    nes.on_nmi(true);
                 }
             }
             else {
@@ -718,171 +844,13 @@ class c_ppu
         }
         suppress_nmi = 0;
     }
+
     void end_vblank()
     {
         PPUSTATUS.in_vblank = false;
-        owner.on_nmi(false);
+        nes.on_nmi(false);
     }
 
-    void fetch()
-    {
-        unsigned int s = (((current_cycle - 1) & 0x7) | fetch_state);
-        switch (s) {
-                //Background fetch phase cycles 0-256, 321-336
-            case (0 | FETCH_BG): //NT byte 1
-                break;
-            case (1 | FETCH_BG): //NT byte 2
-                drawing_bg = true;
-                tile = owner.ppu_read(0x2000 | (vram_address & 0xFFF));
-#ifdef NES_PPU_USE_AVX2
-                pattern_address = (tile << 4) + _bextr_u32(vram_address, 12, 3) + (PPUCTRL.bg_pt_address * 0x1000);
-#else
-                pattern_address = (tile << 4) + ((vram_address & 0x7000) >> 12) + (PPUCTRL.bg_pt_address * 0x1000);
-#endif
-                break;
-
-            case (2 | FETCH_BG): //AT byte 1
-                break;
-            case (3 | FETCH_BG): //AT byte 2
-#ifdef false
-                                 //benchmarks show pext to be slower.  ???
-                attribute_address = 0x23C0 | (vram_address & 0xC00) | _pext_u32(vram_address, 0b0011'1001'1100);
-#else
-                attribute_address =
-                    0x23C0 | (vram_address & 0xC00) | ((vram_address >> 4) & 0x38) | ((vram_address >> 2) & 0x07);
-#endif
-
-                attribute_shift = ((vram_address >> 4) & 0x04) | (vram_address & 0x02);
-#ifdef NES_PPU_USE_SSE2
-                {
-                    //load attribute and store 8 copies of it over 128-bit int
-                    //only 64-bits are ultimately used
-                    __m128i t = _mm_set1_epi8(owner.ppu_read(attribute_address));
-
-                    //shift all 16 attributes by attribute_shift
-                    t = _mm_srli_epi64(t, attribute_shift);
-                    //mask all 16 attributes with 0x3
-                    t = _mm_and_si128(t, _mm_set1_epi8(0x3));
-                    //shift all values left by 2
-                    t = _mm_slli_epi64(t, 2);
-                    //assign the lower 64-bits to attribute
-                    attribute = _mm_cvtsi128_si64(t);
-                }
-#else
-                attribute = owner.ppu_read(attribute_address);
-                attribute >>= attribute_shift;
-                attribute &= 0x03;
-                attribute *= 0x0404040404040404ULL;
-#endif
-                break;
-            case (4 | FETCH_BG): //Low BG byte 1
-                break;
-            case (5 | FETCH_BG): //Low BG byte 2
-                drawing_bg = true;
-#ifdef NES_PPU_USE_BMI2
-                pattern1 = _pdep_u64(owner.ppu_read(pattern_address),
-                                     0b00000001'00000001'00000001'00000001'00000001'00000001'00000001'00000001);
-#else
-                pattern1 = owner.ppu_read(pattern_address);
-#endif
-                break;
-            case (6 | FETCH_BG): //High BG byte 1
-                break;
-            case (7 | FETCH_BG): //High BG byte 2
-                drawing_bg = true;
-#ifdef NES_PPU_USE_BMI2
-                pattern2 = _pdep_u64(owner.ppu_read(pattern_address + 8),
-                                     0b00000010'00000010'00000010'00000010'00000010'00000010'00000010'00000010);
-#else
-                pattern2 = owner.ppu_read(pattern_address + 8);
-#endif
-
-                {
-                    unsigned int l = current_cycle + 8;
-
-                    if (l >= 336)
-                        l -= 336;
-
-                    uint64_t *ib64 = (uint64_t *)&index_buffer[l];
-                    uint64_t c = 0;
-
-//pdep is slow on amd platforms < zen 3.  The lookup table approach should probably be default.
-#ifdef NES_PPU_USE_BMI2
-                    c = pattern1 | pattern2 | attribute;
-                    c = _byteswap_uint64(c);
-#else
-                    c = interleave_bits_64(pattern1, pattern2) | attribute;
-#endif
-                    *ib64 = c;
-                }
-                if (current_cycle == 256) {
-                    inc_vertical_address();
-                }
-                inc_horizontal_address();
-                break;
-
-                //Sprite fetch phase cycles 257-320
-            case (0 | FETCH_SPRITE):
-                if (current_cycle == 257) { //reload h
-                    vram_address = (vram_address & ~0x41F) | (vram_address_latch & 0x41F);
-                }
-                break;
-            case (1 | FETCH_SPRITE):
-                //tile = owner.ppu_read(0x2000 | (vram_address & 0xFFF));
-                break;
-            case (2 | FETCH_SPRITE):
-                break;
-            case (3 | FETCH_SPRITE):
-                //tile = owner.ppu_read(0x2000 | (vram_address & 0xFFF));
-                break;
-            case (4 | FETCH_SPRITE):
-                break;
-            case (5 | FETCH_SPRITE):
-                drawing_bg = false;
-                if (PPUCTRL.sprite_size) {
-                    int sprite_tile = sprite_buffer[(current_cycle - 261) / 8].tile;
-                    owner.ppu_read((sprite_tile & 0x1) * 0x1000);
-                }
-                else {
-                    owner.ppu_read(PPUCTRL.sprite_pt_address * 0x1000);
-                }
-                break;
-            case (6 | FETCH_SPRITE):
-                break;
-            case (7 | FETCH_SPRITE):
-                drawing_bg = false;
-                if (PPUCTRL.sprite_size) {
-                    int sprite_tile = sprite_buffer[(current_cycle - 261) / 8 + 1].tile;
-                    owner.ppu_read((sprite_tile & 0x1) * 0x1000);
-                }
-                else {
-                    owner.ppu_read(PPUCTRL.sprite_pt_address * 0x1000);
-                }
-                break;
-
-                //Unused NT fetch phase cycles 337-340
-            case (0 | FETCH_NT):
-                break;
-            case (1 | FETCH_NT):
-                tile = owner.ppu_read(0x2000 | (vram_address & 0xFFF));
-                break;
-            case (2 | FETCH_NT):
-                break;
-            case (3 | FETCH_NT):
-                tile = owner.ppu_read(0x2000 | (vram_address & 0xFFF));
-                break;
-            case (4 | FETCH_NT):
-                break;
-            case (5 | FETCH_NT):
-                break;
-            case (6 | FETCH_NT):
-                break;
-            case (7 | FETCH_NT):
-                break;
-            default:
-                __assume(0);
-        }
-    }
     int do_cycle_events()
     {
         switch (current_cycle) {
@@ -951,126 +919,186 @@ class c_ppu
         return 0;
     }
 
-    int vram_update_delay;
-    //ppu updates apparently happen on ppu cycle following completion of a cpu write
-    //when wr/ce goes high.  This is effectively 3 cycles after wr/cr goes low on the
-    //last cycle of the cpu opcode (i.e., the write cycle)
-    static const int VRAM_UPDATE_DELAY = 1;// 3;
-    int suppress_nmi;
-    static uint64_t morton_odd_64[];
-    static uint64_t morton_even_64[];
-    static const int screen_offset = 2;
-    unsigned int current_cycle;
-    int current_scanline;
-    int warmed_up;
-    int sprite_mem_address;
-    static std::atomic<int> lookup_tables_built;
-    int fetch_state;
-    int on_screen;
-    unsigned char read_value;
-    bool hi;
-    bool nmi_pending;
-    int vram_address;
-    int vram_address_latch;
-    int fine_x;
-    int address_increment;
-
-    int update_rendering;
-    int next_rendering;
-    int hit;
-
-    int odd_frame;
-    int intensity;
-    int sprite_count;
-    int sprite0_index;
-    int rendering;
-
-    int tile;
-    int pattern_address;
-    int attribute_address;
-
-    uint64_t pattern1;
-    uint64_t pattern2;
-    uint64_t attribute;
-    int executed_cycles;
-    int palette_mask; //for monochrome display
-    int vid_out;
-    int reload_v;
-    int attribute_shift;
-    enum FETCH_STATE
+    INLINE void fetch()
     {
-        FETCH_BG = 0 << 3,
-        FETCH_SPRITE = 1 << 3,
-        FETCH_NT = 2 << 3,
-        FETCH_IDLE = 3 << 3
-    };
-    bool limit_sprites;
-    union u_ppuctrl {
-        struct
-        {
-            unsigned char nt_base : 2;
-            bool address_increment : 1;
-            bool sprite_pt_address : 1;
-            bool bg_pt_address : 1;
-            bool sprite_size : 1;
-            bool master_slave_select : 1;
-            bool nmi_enable : 1;
-        };
-        unsigned char value;
-    } PPUCTRL;
-    union u_ppumask {
-        struct
-        {
-            unsigned char greyscale : 1;
-            bool left_bg_enable : 1;
-            bool left_sprite_enable : 1;
-            bool enable_bg : 1;
-            bool enable_sprites : 1;
-            bool red_emphasis : 1;
-            bool green_emphasis : 1;
-            bool blue_emphasis : 1;
-        };
-        struct
-        {
-            unsigned char : 5;
-            unsigned char emphasis : 3;
-        };
-        unsigned char value;
-    } PPUMASK;
-    union u_ppustatus {
-        struct
-        {
-            unsigned char : 5;
-            bool sprite_overflow : 1;
-            bool sprite0_hit : 1;
-            bool in_vblank : 1;
-        };
-        unsigned char value;
-    } PPUSTATUS;
-    struct s_sprite_data
+        unsigned int s = (((current_cycle - 1) & 0x7) | fetch_state);
+        switch (s) {
+                //Background fetch phase cycles 0-256, 321-336
+            case (0 | FETCH_BG): //NT byte 1
+                break;
+            case (1 | FETCH_BG): //NT byte 2
+                drawing_bg = true;
+                tile = nes.ppu_read(0x2000 | (vram_address & 0xFFF));
+#ifdef NES_PPU_USE_AVX2
+                pattern_address = (tile << 4) + _bextr_u32(vram_address, 12, 3) + (PPUCTRL.bg_pt_address * 0x1000);
+#else
+                pattern_address = (tile << 4) + ((vram_address & 0x7000) >> 12) + (PPUCTRL.bg_pt_address * 0x1000);
+#endif
+                break;
+
+            case (2 | FETCH_BG): //AT byte 1
+                break;
+            case (3 | FETCH_BG): //AT byte 2
+#ifdef false
+                                 //benchmarks show pext to be slower.  ???
+                attribute_address = 0x23C0 | (vram_address & 0xC00) | _pext_u32(vram_address, 0b0011'1001'1100);
+#else
+                attribute_address =
+                    0x23C0 | (vram_address & 0xC00) | ((vram_address >> 4) & 0x38) | ((vram_address >> 2) & 0x07);
+#endif
+
+                attribute_shift = ((vram_address >> 4) & 0x04) | (vram_address & 0x02);
+#ifdef NES_PPU_USE_SSE2
+                {
+                    //load attribute and store 8 copies of it over 128-bit int
+                    //only 64-bits are ultimately used
+                    __m128i t = _mm_set1_epi8(nes.ppu_read(attribute_address));
+
+                    //shift all 16 attributes by attribute_shift
+                    t = _mm_srli_epi64(t, attribute_shift);
+                    //mask all 16 attributes with 0x3
+                    t = _mm_and_si128(t, _mm_set1_epi8(0x3));
+                    //shift all values left by 2
+                    t = _mm_slli_epi64(t, 2);
+                    //assign the lower 64-bits to attribute
+                    attribute = _mm_cvtsi128_si64(t);
+                }
+#else
+                attribute = nes.ppu_read(attribute_address);
+                attribute >>= attribute_shift;
+                attribute &= 0x03;
+                attribute *= 0x0404040404040404ULL;
+#endif
+                break;
+            case (4 | FETCH_BG): //Low BG byte 1
+                break;
+            case (5 | FETCH_BG): //Low BG byte 2
+                drawing_bg = true;
+#ifdef NES_PPU_USE_BMI2
+                pattern1 = _pdep_u64(nes.ppu_read(pattern_address),
+                                     0b00000001'00000001'00000001'00000001'00000001'00000001'00000001'00000001);
+#else
+                pattern1 = nes.ppu_read(pattern_address);
+#endif
+                break;
+            case (6 | FETCH_BG): //High BG byte 1
+                break;
+            case (7 | FETCH_BG): //High BG byte 2
+                drawing_bg = true;
+#ifdef NES_PPU_USE_BMI2
+                pattern2 = _pdep_u64(nes.ppu_read(pattern_address + 8),
+                                     0b00000010'00000010'00000010'00000010'00000010'00000010'00000010'00000010);
+#else
+                pattern2 = nes.ppu_read(pattern_address + 8);
+#endif
+
+                {
+                    unsigned int l = current_cycle + 8;
+
+                    if (l >= 336)
+                        l -= 336;
+
+                    uint64_t *ib64 = (uint64_t *)&index_buffer[l];
+                    uint64_t c = 0;
+
+//pdep is slow on amd platforms < zen 3.  The lookup table approach should probably be default.
+#ifdef NES_PPU_USE_BMI2
+                    c = pattern1 | pattern2 | attribute;
+                    c = _byteswap_uint64(c);
+#else
+                    c = interleave_bits_64(pattern1, pattern2) | attribute;
+#endif
+                    *ib64 = c;
+                }
+                if (current_cycle == 256) {
+                    inc_vertical_address();
+                }
+                inc_horizontal_address();
+                break;
+
+                //Sprite fetch phase cycles 257-320
+            case (0 | FETCH_SPRITE):
+                if (current_cycle == 257) { //reload h
+                    vram_address = (vram_address & ~0x41F) | (vram_address_latch & 0x41F);
+                }
+                break;
+            case (1 | FETCH_SPRITE):
+                //tile = nes.ppu_read(0x2000 | (vram_address & 0xFFF));
+                break;
+            case (2 | FETCH_SPRITE):
+                break;
+            case (3 | FETCH_SPRITE):
+                //tile = nes.ppu_read(0x2000 | (vram_address & 0xFFF));
+                break;
+            case (4 | FETCH_SPRITE):
+                break;
+            case (5 | FETCH_SPRITE):
+                drawing_bg = false;
+                if (PPUCTRL.sprite_size) {
+                    int sprite_tile = sprite_buffer[(current_cycle - 261) / 8].tile;
+                    nes.ppu_read((sprite_tile & 0x1) * 0x1000);
+                }
+                else {
+                    nes.ppu_read(PPUCTRL.sprite_pt_address * 0x1000);
+                }
+                break;
+            case (6 | FETCH_SPRITE):
+                break;
+            case (7 | FETCH_SPRITE):
+                drawing_bg = false;
+                if (PPUCTRL.sprite_size) {
+                    int sprite_tile = sprite_buffer[(current_cycle - 261) / 8 + 1].tile;
+                    nes.ppu_read((sprite_tile & 0x1) * 0x1000);
+                }
+                else {
+                    nes.ppu_read(PPUCTRL.sprite_pt_address * 0x1000);
+                }
+                break;
+
+                //Unused NT fetch phase cycles 337-340
+            case (0 | FETCH_NT):
+                break;
+            case (1 | FETCH_NT):
+                tile = nes.ppu_read(0x2000 | (vram_address & 0xFFF));
+                break;
+            case (2 | FETCH_NT):
+                break;
+            case (3 | FETCH_NT):
+                tile = nes.ppu_read(0x2000 | (vram_address & 0xFFF));
+                break;
+            case (4 | FETCH_NT):
+                break;
+            case (5 | FETCH_NT):
+                break;
+            case (6 | FETCH_NT):
+                break;
+            case (7 | FETCH_NT):
+                break;
+            default:
+                __assume(0);
+        }
+    }
+
+    bool drawing_enabled()
     {
-        uint8_t y;
-        uint8_t tile;
-        uint8_t attribute;
-        uint8_t x;
-    };
+        if (PPUMASK.enable_bg || PPUMASK.enable_sprites)
+            return true;
+        else
+            return false;
+    }
 
-    alignas(64) static uint32_t pal[512];
-
-    int (c_ppu::*p_output_pixel)();
-    std::bitset<256> sprite_here;
-
-    alignas(64) s_sprite_data sprite_buffer[64];
-    alignas(64) uint8_t sprite_memory[256];
-    alignas(64) uint8_t sprite_index_buffer[512];
-    alignas(64) uint8_t index_buffer[272];
-    uint8_t image_palette[32];
-    alignas(64) uint32_t frame_buffer[256 * 240];
+    void update_vram_address()
+    {
+        if (rendering) {
+            inc_horizontal_address();
+            inc_vertical_address();
+        }
+        else {
+            //update bus when not rendering
+            vram_address = (vram_address + address_increment) & 0x7FFF;
+            nes.ppu_read(vram_address);
+        }
+    }
 };
-
-template <typename Owner> uint64_t c_ppu<Owner>::morton_odd_64[256];
-template <typename Owner> uint64_t c_ppu<Owner>::morton_even_64[256];
-template <typename Owner> alignas(64) uint32_t c_ppu<Owner>::pal[512];
-template <typename Owner> std::atomic<int> c_ppu<Owner>::lookup_tables_built = 0;
 
 } //namespace nes
