@@ -117,12 +117,12 @@ class c_z80
 
     typedef std::function<void()> int_ack_t; //interrupt acknowledge callback
 
-    Bus &new_bus;
+    Bus &bus;
 
   public:
-    c_z80(Bus &new_bus, int *nmi,
+    c_z80(Bus &bus, int *nmi,
           int *irq, uint8_t *data_bus) :
-        new_bus(new_bus)
+        bus(bus)
     {
         int count = 0;
         this->nmi = nmi;
@@ -237,7 +237,7 @@ class c_z80
                     opcode = 0x103;
                 }
                 else {
-                    opcode = new_bus.z80_read_byte(PC++);
+                    opcode = bus.z80_read_byte(PC++);
                     if (pending_ei) {
                         IFF1 = IFF2 = 1;
                         pending_ei = 0;
@@ -250,7 +250,7 @@ class c_z80
                     case 0xCB:
                         inc_r();
                         opcode <<= 8;
-                        opcode |= new_bus.z80_read_byte(PC++);
+                        opcode |= bus.z80_read_byte(PC++);
                         required_cycles += cb_cycle_table[opcode & 0xFF];
                         prefix = 0xCB;
                         break;
@@ -258,12 +258,12 @@ class c_z80
                         inc_r();
                         ddfd_ptr = &IX.word;
                         opcode <<= 8;
-                        opcode |= new_bus.z80_read_byte(PC++);
+                        opcode |= bus.z80_read_byte(PC++);
                         if ((opcode & 0xFF) == 0xCB) {
                             opcode <<= 8;
-                            opcode |= new_bus.z80_read_byte(PC++);
+                            opcode |= bus.z80_read_byte(PC++);
                             opcode <<= 8;
-                            opcode |= new_bus.z80_read_byte(PC++);
+                            opcode |= bus.z80_read_byte(PC++);
                             required_cycles += ddcb_cycle_table[opcode & 0xFF];
                             prefix = 0xDDCB;
                         }
@@ -280,7 +280,7 @@ class c_z80
                     case 0xED:
                         inc_r();
                         opcode <<= 8;
-                        opcode |= new_bus.z80_read_byte(PC++);
+                        opcode |= bus.z80_read_byte(PC++);
                         required_cycles += ed_cycle_table[opcode & 0xFF];
                         prefix = 0xED;
                         break;
@@ -288,12 +288,12 @@ class c_z80
                         inc_r();
                         opcode <<= 8;
                         ddfd_ptr = &IY.word;
-                        opcode |= new_bus.z80_read_byte(PC++);
+                        opcode |= bus.z80_read_byte(PC++);
                         if ((opcode & 0xFF) == 0xCB) {
                             opcode <<= 8;
-                            opcode |= new_bus.z80_read_byte(PC++);
+                            opcode |= bus.z80_read_byte(PC++);
                             opcode <<= 8;
-                            opcode |= new_bus.z80_read_byte(PC++);
+                            opcode |= bus.z80_read_byte(PC++);
                             required_cycles += ddcb_cycle_table[opcode & 0xFF];
                             prefix = 0xDDCB;
                         }
@@ -423,7 +423,7 @@ class c_z80
         //if (bus->int_ack != nullptr) {
         //    bus->int_ack(bus->ctx);
         //}
-        new_bus.z80_int_ack();
+        bus.z80_int_ack();
     }
 
     void alu(ALU_OP op, unsigned char operand)
@@ -822,14 +822,14 @@ class c_z80
     }
     uint16_t read_word(uint16_t address)
     {
-        uint16_t lo = new_bus.z80_read_byte(address);
-        uint16_t hi = new_bus.z80_read_byte(address + 1);
+        uint16_t lo = bus.z80_read_byte(address);
+        uint16_t hi = bus.z80_read_byte(address + 1);
         return lo | (hi << 8);
     }
     void write_word(uint16_t address, uint16_t data)
     {
-        new_bus.z80_write_byte(address, data & 0xFF);
-        new_bus.z80_write_byte(address + 1, data >> 8);
+        bus.z80_write_byte(address, data & 0xFF);
+        bus.z80_write_byte(address + 1, data >> 8);
     }
 
     void execute_opcode()
@@ -860,7 +860,7 @@ class c_z80
                                         break;
                                     case 2:
                                         //DJNZ
-                                        d = (signed char)new_bus.z80_read_byte(PC++);
+                                        d = (signed char)bus.z80_read_byte(PC++);
                                         BC.byte.hi--;
                                         if (BC.byte.hi != 0) {
                                             required_cycles += 5;
@@ -869,7 +869,7 @@ class c_z80
                                         break;
                                     case 3:
                                         //JR
-                                        d = (signed char)new_bus.z80_read_byte(PC++);
+                                        d = (signed char)bus.z80_read_byte(PC++);
                                         PC += d;
                                         break;
                                     case 4:
@@ -877,7 +877,7 @@ class c_z80
                                     case 6:
                                     case 7:
                                         //JR cc[y-4], d
-                                        d = (signed char)new_bus.z80_read_byte(PC++);
+                                        d = (signed char)bus.z80_read_byte(PC++);
                                         if (test_flag(y - 4)) {
                                             PC += d;
                                             required_cycles += 5;
@@ -906,11 +906,11 @@ class c_z80
                                         switch (p) {
                                             case 0:
                                                 //LD (BC), A
-                                                new_bus.z80_write_byte(BC.word, AF.byte.hi);
+                                                bus.z80_write_byte(BC.word, AF.byte.hi);
                                                 break;
                                             case 1:
                                                 //LD (DE), A
-                                                new_bus.z80_write_byte(DE.word, AF.byte.hi);
+                                                bus.z80_write_byte(DE.word, AF.byte.hi);
                                                 break;
                                             case 2:
                                                 //LD (nn), HL
@@ -922,7 +922,7 @@ class c_z80
                                                 //LD (nn), A
                                                 temp = read_word(PC);
                                                 PC += 2;
-                                                new_bus.z80_write_byte(temp, AF.byte.hi);
+                                                bus.z80_write_byte(temp, AF.byte.hi);
                                                 break;
                                         }
                                         break;
@@ -930,11 +930,11 @@ class c_z80
                                         switch (p) {
                                             case 0:
                                                 //LD A, (BC)
-                                                AF.byte.hi = new_bus.z80_read_byte(BC.word);
+                                                AF.byte.hi = bus.z80_read_byte(BC.word);
                                                 break;
                                             case 1:
                                                 //LD A, (DE)
-                                                AF.byte.hi = new_bus.z80_read_byte(DE.word);
+                                                AF.byte.hi = bus.z80_read_byte(DE.word);
                                                 break;
                                             case 2:
                                                  //LD HL, (nn)
@@ -946,7 +946,7 @@ class c_z80
                                                 //LD A, (nn)
                                                 temp = read_word(PC);
                                                 PC += 2;
-                                                AF.byte.hi = new_bus.z80_read_byte(temp);
+                                                AF.byte.hi = bus.z80_read_byte(temp);
                                                 break;
                                         }
                                         break;
@@ -969,16 +969,16 @@ class c_z80
                                 if (y == 6) {
                                     unsigned char temp;
                                     if (ddfd_ptr) {
-                                        d = (signed char)new_bus.z80_read_byte(PC++);
+                                        d = (signed char)bus.z80_read_byte(PC++);
                                         unsigned short loc = *ddfd_ptr + d;
-                                        temp = new_bus.z80_read_byte(loc);
+                                        temp = bus.z80_read_byte(loc);
                                         INC(&temp);
-                                        new_bus.z80_write_byte(loc, temp);
+                                        bus.z80_write_byte(loc, temp);
                                     }
                                     else {
-                                        temp = new_bus.z80_read_byte(*rp[2]);
+                                        temp = bus.z80_read_byte(*rp[2]);
                                         INC(&temp);
-                                        new_bus.z80_write_byte(*rp[2], temp);
+                                        bus.z80_write_byte(*rp[2], temp);
                                     }
                                 }
                                 else {
@@ -990,16 +990,16 @@ class c_z80
                                 if (y == 6) {
                                     unsigned char temp;
                                     if (ddfd_ptr) {
-                                        d = (signed char)new_bus.z80_read_byte(PC++);
+                                        d = (signed char)bus.z80_read_byte(PC++);
                                         unsigned short loc = *ddfd_ptr + d;
-                                        temp = new_bus.z80_read_byte(loc);
+                                        temp = bus.z80_read_byte(loc);
                                         DEC(&temp);
-                                        new_bus.z80_write_byte(loc, temp);
+                                        bus.z80_write_byte(loc, temp);
                                     }
                                     else {
-                                        temp = new_bus.z80_read_byte(*rp[2]);
+                                        temp = bus.z80_read_byte(*rp[2]);
                                         DEC(&temp);
-                                        new_bus.z80_write_byte(*rp[2], temp);
+                                        bus.z80_write_byte(*rp[2], temp);
                                     }
                                 }
                                 else {
@@ -1010,17 +1010,17 @@ class c_z80
                                 //LD r[y], n
                                 if (y == 6) {
                                     if (ddfd_ptr) {
-                                        d = (signed char)new_bus.z80_read_byte(PC++);
-                                        temp = new_bus.z80_read_byte(PC++);
-                                        new_bus.z80_write_byte(*ddfd_ptr + d, temp);
+                                        d = (signed char)bus.z80_read_byte(PC++);
+                                        temp = bus.z80_read_byte(PC++);
+                                        bus.z80_write_byte(*ddfd_ptr + d, temp);
                                     }
                                     else {
-                                        temp = new_bus.z80_read_byte(PC++);
-                                        new_bus.z80_write_byte(*rp[2], temp);
+                                        temp = bus.z80_read_byte(PC++);
+                                        bus.z80_write_byte(*rp[2], temp);
                                     }
                                 }
                                 else {
-                                    temp = new_bus.z80_read_byte(PC++);
+                                    temp = bus.z80_read_byte(PC++);
                                     *r[y] = temp;
                                 }
                                 break;
@@ -1122,11 +1122,11 @@ class c_z80
 
                             if (z == 6) {
                                 if (ddfd_ptr) {
-                                    d = (signed char)new_bus.z80_read_byte(PC++);
-                                    src = new_bus.z80_read_byte(*ddfd_ptr + d);
+                                    d = (signed char)bus.z80_read_byte(PC++);
+                                    src = bus.z80_read_byte(*ddfd_ptr + d);
                                 }
                                 else {
-                                    src = new_bus.z80_read_byte(HL.word);
+                                    src = bus.z80_read_byte(HL.word);
                                 }
                             }
                             else {
@@ -1149,11 +1149,11 @@ class c_z80
                             if (y == 6) //HL
                             {
                                 if (ddfd_ptr) {
-                                    d = (signed char)new_bus.z80_read_byte(PC++);
-                                    new_bus.z80_write_byte(*ddfd_ptr + d, src);
+                                    d = (signed char)bus.z80_read_byte(PC++);
+                                    bus.z80_write_byte(*ddfd_ptr + d, src);
                                 }
                                 else {
-                                    new_bus.z80_write_byte(*rp[2], src);
+                                    bus.z80_write_byte(*rp[2], src);
                                 }
                             }
                             else {
@@ -1178,11 +1178,11 @@ class c_z80
                         //alu[y] r[z]
                         if (z == 6) {
                             if (ddfd_ptr) {
-                                d = (signed char)new_bus.z80_read_byte(PC++);
-                                alu((ALU_OP)y, new_bus.z80_read_byte(*ddfd_ptr + d));
+                                d = (signed char)bus.z80_read_byte(PC++);
+                                alu((ALU_OP)y, bus.z80_read_byte(*ddfd_ptr + d));
                             }
                             else {
-                                alu((ALU_OP)y, new_bus.z80_read_byte(*rp[2]));
+                                alu((ALU_OP)y, bus.z80_read_byte(*rp[2]));
                             }
                         }
                         else {
@@ -1248,21 +1248,21 @@ class c_z80
                                         break;
                                     case 2:
                                         //OUT (n), A
-                                        temp = new_bus.z80_read_byte(PC++);
-                                        new_bus.z80_write_port(temp, AF.byte.hi);
+                                        temp = bus.z80_read_byte(PC++);
+                                        bus.z80_write_port(temp, AF.byte.hi);
                                         break;
                                     case 3:
                                         //IN A, (n)
-                                        temp = new_bus.z80_read_byte(PC++);
-                                        AF.byte.hi = new_bus.z80_read_port(temp);
+                                        temp = bus.z80_read_byte(PC++);
+                                        AF.byte.hi = bus.z80_read_port(temp);
                                         break;
                                     case 4:
                                         //EX (SP), HL
                                         {
-                                            int sp0 = new_bus.z80_read_byte(SP);
-                                            int sp1 = new_bus.z80_read_byte(SP + 1);
-                                            new_bus.z80_write_byte(SP, *r[5]);
-                                            new_bus.z80_write_byte(SP + 1, *r[4]);
+                                            int sp0 = bus.z80_read_byte(SP);
+                                            int sp1 = bus.z80_read_byte(SP + 1);
+                                            bus.z80_write_byte(SP, *r[5]);
+                                            bus.z80_write_byte(SP + 1, *r[4]);
                                             *r[5] = sp0;
                                             *r[4] = sp1;
                                         }
@@ -1333,7 +1333,7 @@ class c_z80
                                 break;
                             case 6:
                                 //alu[y], n
-                                alu((ALU_OP)y, new_bus.z80_read_byte(PC++));
+                                alu((ALU_OP)y, bus.z80_read_byte(PC++));
                                 break;
                             case 7:
                                 //RST y*8
@@ -1383,7 +1383,7 @@ class c_z80
 
             case 0xCB:
                 if (z == 6) {
-                    tchar = new_bus.z80_read_byte(HL.word);
+                    tchar = bus.z80_read_byte(HL.word);
                 }
                 else {
                     tchar = *r[z];
@@ -1408,7 +1408,7 @@ class c_z80
                 }
                 if (x != 1) {
                     if (z == 6) {
-                        new_bus.z80_write_byte(HL.word, tchar);
+                        bus.z80_write_byte(HL.word, tchar);
                     }
                     else {
                         //todo: is this correct?
@@ -1428,7 +1428,7 @@ class c_z80
                             case 0:
                                 if (y == 6) {
                                     //IN (C)
-                                    temp = new_bus.z80_read_port(BC.byte.lo);
+                                    temp = bus.z80_read_port(BC.byte.lo);
                                     set_n(0);
                                     set_pv(get_parity(temp));
                                     set_h(0);
@@ -1437,7 +1437,7 @@ class c_z80
                                 }
                                 else {
                                     //IN r[y], (C)
-                                    *r[y] = new_bus.z80_read_port(BC.byte.lo);
+                                    *r[y] = bus.z80_read_port(BC.byte.lo);
                                     set_n(0);
                                     set_pv(get_parity(*r[y]));
                                     set_h(0);
@@ -1448,11 +1448,11 @@ class c_z80
                             case 1:
                                 if (y == 6) {
                                     //OUT (C), 0
-                                    new_bus.z80_write_port(BC.byte.lo, 0);
+                                    bus.z80_write_port(BC.byte.lo, 0);
                                 }
                                 else {
                                     //OUT (C), r[y]
-                                    new_bus.z80_write_port(BC.byte.lo, *r[y]);
+                                    bus.z80_write_port(BC.byte.lo, *r[y]);
                                 }
                                 break;
                             case 2:
@@ -1547,11 +1547,11 @@ class c_z80
                                     case 4:
                                         //RRD
                                         {
-                                            int x = new_bus.z80_read_byte(HL.word);
+                                            int x = bus.z80_read_byte(HL.word);
                                             int x_lo = x & 0xF;
                                             x >>= 4;
                                             x |= ((AF.byte.hi & 0xF) << 4);
-                                            new_bus.z80_write_byte(HL.word, x);
+                                            bus.z80_write_byte(HL.word, x);
                                             AF.byte.hi &= 0xF0;
                                             AF.byte.hi |= x_lo;
                                             set_s(AF.byte.hi & 0x80);
@@ -1564,11 +1564,11 @@ class c_z80
                                     case 5:
                                         //RLD
                                         {
-                                            int x = new_bus.z80_read_byte(HL.word);
+                                            int x = bus.z80_read_byte(HL.word);
                                             int x_hi = x & 0xF0;
                                             x <<= 4;
                                             x |= (AF.byte.hi & 0xF);
-                                            new_bus.z80_write_byte(HL.word, x);
+                                            bus.z80_write_byte(HL.word, x);
                                             AF.byte.hi &= 0xF0;
                                             AF.byte.hi |= (x_hi >> 4);
                                             set_s(AF.byte.hi & 0x80);
@@ -1594,7 +1594,7 @@ class c_z80
                                     switch (z) {
                                         case 0:
                                             //LDI
-                                            new_bus.z80_write_byte(DE.word, new_bus.z80_read_byte(HL.word));
+                                            bus.z80_write_byte(DE.word, bus.z80_read_byte(HL.word));
                                             HL.word++;
                                             DE.word++;
                                             BC.word--;
@@ -1605,7 +1605,7 @@ class c_z80
                                         case 1:
                                             //CPI
                                             {
-                                                unsigned char s = new_bus.z80_read_byte(HL.word);
+                                                unsigned char s = bus.z80_read_byte(HL.word);
                                                 int z = AF.byte.hi == s;
                                                 int c = flag_c;
                                                 CP(s);
@@ -1618,7 +1618,7 @@ class c_z80
                                             break;
                                         case 2:
                                             //INI
-                                            new_bus.z80_write_byte(HL.word, new_bus.z80_read_port(BC.byte.lo));
+                                            bus.z80_write_byte(HL.word, bus.z80_read_port(BC.byte.lo));
                                             HL.word++;
                                             BC.byte.hi--;
                                             set_n(0);
@@ -1626,7 +1626,7 @@ class c_z80
                                             break;
                                         case 3:
                                             //OUTI
-                                            new_bus.z80_write_port(BC.byte.lo, new_bus.z80_read_byte(HL.word));
+                                            bus.z80_write_port(BC.byte.lo, bus.z80_read_byte(HL.word));
                                             HL.word++;
                                             BC.byte.hi--;
                                             set_n(1);
@@ -1638,7 +1638,7 @@ class c_z80
                                     switch (z) {
                                         case 0:
                                             //LDD
-                                            new_bus.z80_write_byte(DE.word, new_bus.z80_read_byte(HL.word));
+                                            bus.z80_write_byte(DE.word, bus.z80_read_byte(HL.word));
                                             HL.word--;
                                             DE.word--;
                                             BC.word--;
@@ -1649,7 +1649,7 @@ class c_z80
                                         case 1:
                                             //CPD
                                             {
-                                                unsigned char s = new_bus.z80_read_byte(HL.word);
+                                                unsigned char s = bus.z80_read_byte(HL.word);
                                                 int z = AF.byte.hi == s;
                                                 int c = flag_c;
                                                 CP(s);
@@ -1662,7 +1662,7 @@ class c_z80
                                             break;
                                         case 2:
                                             //IND
-                                            new_bus.z80_write_byte(HL.word, new_bus.z80_read_port(BC.byte.lo));
+                                            bus.z80_write_byte(HL.word, bus.z80_read_port(BC.byte.lo));
                                             HL.word--;
                                             BC.byte.hi--;
                                             set_n(1);
@@ -1670,7 +1670,7 @@ class c_z80
                                             break;
                                         case 3:
                                             //OUTD
-                                            new_bus.z80_write_port(BC.byte.lo, new_bus.z80_read_byte(HL.word));
+                                            bus.z80_write_port(BC.byte.lo, bus.z80_read_byte(HL.word));
                                             HL.word--;
                                             BC.byte.hi--;
                                             set_n(1);
@@ -1682,7 +1682,7 @@ class c_z80
                                     switch (z) {
                                         case 0:
                                             //LDIR
-                                            new_bus.z80_write_byte(DE.word, new_bus.z80_read_byte(HL.word));
+                                            bus.z80_write_byte(DE.word, bus.z80_read_byte(HL.word));
                                             HL.word++;
                                             DE.word++;
                                             BC.word--;
@@ -1700,7 +1700,7 @@ class c_z80
                                         case 1:
                                             //CPIR
                                             {
-                                                tchar = new_bus.z80_read_byte(HL.word);
+                                                tchar = bus.z80_read_byte(HL.word);
                                                 int z = AF.byte.hi == tchar;
                                                 int c = flag_c;
                                                 CP(tchar);
@@ -1717,7 +1717,7 @@ class c_z80
                                             break;
                                         case 2:
                                             //INIR
-                                            new_bus.z80_write_byte(HL.word, new_bus.z80_read_port(BC.byte.lo));
+                                            bus.z80_write_byte(HL.word, bus.z80_read_port(BC.byte.lo));
                                             HL.word++;
                                             BC.byte.hi--;
                                             set_z(BC.byte.hi == 0);
@@ -1729,7 +1729,7 @@ class c_z80
                                             break;
                                         case 3:
                                             //OTIR
-                                            new_bus.z80_write_port(BC.byte.lo, new_bus.z80_read_byte(HL.word));
+                                            bus.z80_write_port(BC.byte.lo, bus.z80_read_byte(HL.word));
                                             HL.word++;
                                             BC.byte.hi--;
                                             if (BC.byte.hi != 0) {
@@ -1745,7 +1745,7 @@ class c_z80
                                     switch (z) {
                                         case 0:
                                             //LDDR
-                                            new_bus.z80_write_byte(DE.word, new_bus.z80_read_byte(HL.word));
+                                            bus.z80_write_byte(DE.word, bus.z80_read_byte(HL.word));
                                             DE.word--;
                                             HL.word--;
                                             BC.word--;
@@ -1763,7 +1763,7 @@ class c_z80
                                         case 1:
                                             //CPDR
                                             {
-                                                tchar = new_bus.z80_read_byte(HL.word);
+                                                tchar = bus.z80_read_byte(HL.word);
                                                 int z = AF.byte.hi == tchar;
                                                 int c = flag_c;
                                                 CP(tchar);
@@ -1780,7 +1780,7 @@ class c_z80
                                             break;
                                         case 2:
                                             //INDR
-                                            new_bus.z80_write_byte(HL.word, BC.byte.lo);
+                                            bus.z80_write_byte(HL.word, BC.byte.lo);
                                             HL.word--;
                                             BC.byte.hi--;
                                             set_z(BC.byte.hi == 0);
@@ -1792,7 +1792,7 @@ class c_z80
                                             break;
                                         case 3:
                                             //OTDR
-                                            new_bus.z80_write_port(BC.byte.lo, new_bus.z80_read_byte(HL.word));
+                                            bus.z80_write_port(BC.byte.lo, bus.z80_read_byte(HL.word));
                                             HL.word--;
                                             BC.byte.hi--;
                                             set_z(BC.byte.hi == 0);
@@ -1825,14 +1825,14 @@ class c_z80
                             //rot[y] (IX+d)
                             //temp = dd ? IX.word : IY.word;
                             unsigned short loc = *ddfd_ptr + d;
-                            tchar = new_bus.z80_read_byte(loc);
+                            tchar = bus.z80_read_byte(loc);
                             ROT(y, &tchar);
-                            new_bus.z80_write_byte(loc, tchar);
+                            bus.z80_write_byte(loc, tchar);
                         }
                         break;
                     case 1:
                         //BIT y, r[z]
-                        BIT(y, new_bus.z80_read_byte(*ddfd_ptr + d));
+                        BIT(y, bus.z80_read_byte(*ddfd_ptr + d));
                         break;
                     case 2:
                         if (z != 6) {
@@ -1843,9 +1843,9 @@ class c_z80
                             //RES y, (IX+d)
                             //temp = dd ? IX.word : IY.word;
                             unsigned short loc = *ddfd_ptr + d;
-                            temp = new_bus.z80_read_byte(loc);
+                            temp = bus.z80_read_byte(loc);
                             temp &= ~(1 << y);
-                            new_bus.z80_write_byte(loc, temp);
+                            bus.z80_write_byte(loc, temp);
                         }
                         break;
                     case 3:
@@ -1856,9 +1856,9 @@ class c_z80
                         else {
                             //temp = dd ? IX.word : IY.word;
                             unsigned short loc = *ddfd_ptr + d;
-                            tchar = new_bus.z80_read_byte(loc);
+                            tchar = bus.z80_read_byte(loc);
                             tchar = tchar | (1 << y);
-                            new_bus.z80_write_byte(loc, tchar);
+                            bus.z80_write_byte(loc, tchar);
                         }
                         break;
                     default:
