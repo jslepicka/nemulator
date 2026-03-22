@@ -158,7 +158,7 @@ class c_mapper69 : public c_mapper, register_class<nes_mapper_registry, c_mapper
     void reset() override
     {
         command = 0;
-        tick = 0;
+        ticks = 0;
         prg_mode = 0;
         irq_control = 0;
         irq_counter = 0;
@@ -173,25 +173,23 @@ class c_mapper69 : public c_mapper, register_class<nes_mapper_registry, c_mapper
         memset(&audio_register, 0, sizeof(audio_register));
         memset(&squares, 0, sizeof(squares));
         audio_register[0x7] = -1;
-        audio_tick = 0;
+        audio_ticks = 0;
         squares_enabled = 0;
     }
 
-    void clock(int cycles) override
+    void clock() override
     {
-        tick += cycles;
-        while (tick > 2) {
+        if (++ticks == 3) {
             int prev_counter = irq_counter;
             if (irq_control & 0x80) {
                 irq_counter--;
                 if ((irq_counter > prev_counter) && (irq_control & 0x01))
                     execute_irq();
             }
-            tick -= 3;
+            ticks = 0;
         }
-        audio_tick += cycles;
-        while (audio_tick > 5) {
-            audio_tick -= 6;
+        if (++audio_ticks == 6) {
+            audio_ticks = 0;
             for (int i = 0; i < 3; i++) {
                 if (squares[i].target_period > 0) {
                     if (++squares[i].current_period >= squares[i].target_period) {
@@ -220,8 +218,8 @@ class c_mapper69 : public c_mapper, register_class<nes_mapper_registry, c_mapper
     }
 
   private:
-    int tick;
-    int audio_tick;
+    int ticks;
+    int audio_ticks;
     int command;
     int prg_mode;
     unsigned char *prg_6k;

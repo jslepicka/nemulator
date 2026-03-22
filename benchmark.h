@@ -1,5 +1,5 @@
 #pragma once
-inline constexpr int disable_splash = 0;
-inline constexpr int benchmark_mode = 1;
-inline constexpr int timedemo = 0;
-inline constexpr int benchmark_frames = 5000;
+inline bool disable_splash = false;
+inline bool benchmark_mode = false;
+inline bool timedemo = false;
+inline int benchmark_frames = 5000;

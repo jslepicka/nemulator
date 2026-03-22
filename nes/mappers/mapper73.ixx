@@ -68,12 +68,11 @@ class c_mapper73 : public c_mapper, register_class<nes_mapper_registry, c_mapper
         SetPrgBank16k(PRG_C000, prgRomPageCount16k - 1);
     }
 
-    void clock(int cycles) override
+    void clock() override
     {
         if (irq_enabled) {
-            ticks += cycles;
-            while (ticks > 2) {
-                ticks -= 3;
+            if (++ticks == 3) {
+                ticks = 0;
                 if (irq_mode) //8-bit
                 {
                     int temp = irq_counter & 0xFF;

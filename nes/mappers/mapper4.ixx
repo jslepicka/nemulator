@@ -174,10 +174,10 @@ export class c_mapper4 : public c_mapper, register_class<nes_mapper_registry, c_
         Sync();
     }
 
-    void clock(int cycles) override
+    void clock() override
     {
         if (!(current_address & 0x1000)) {
-            low_count -= cycles;
+            low_count -= 1;
             if (low_count < 0)
                 low_count = 0;
         }

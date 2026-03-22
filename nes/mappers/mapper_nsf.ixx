@@ -178,10 +178,10 @@ class c_mapper_nsf : public c_mapper, register_class<nes_mapper_registry, c_mapp
         return 0;
     }
 
-    void clock(int cycles) override
+    void clock() override
     {
         if (vrc7) {
-            vrc7->clock(cycles);
+            vrc7->clock();
         }
     }
 

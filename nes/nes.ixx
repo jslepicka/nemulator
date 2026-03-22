@@ -124,8 +124,9 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>, pu
   public:
     void _on_ppu_clock()
     {
-        mapper->clock(1);
+        mapper->clock();
     }
+
     void _on_cpu_clock()
     {
         cpu->execute();

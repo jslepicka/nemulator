@@ -28,10 +28,9 @@ class c_mapper105 : public c_mapper1, register_class<nes_mapper_registry, c_mapp
         ticks = 0;
     }
 
-    void clock(int cycles) override
+    void clock() override
     {
-        ticks += cycles;
-        while (ticks > 2) {
+        if (++ticks == 3) {
             if (regs[1] & 0x10) {
                 irq_counter = 0;
                 if (irq_asserted) {
@@ -46,9 +45,9 @@ class c_mapper105 : public c_mapper1, register_class<nes_mapper_registry, c_mapp
                     irq_asserted = 1;
                 }
             }
-            ticks -= 3;
+            ticks = 0;
         }
-        c_mapper1::clock(cycles);
+        c_mapper1::clock();
     }
 
     int get_nwc_time()

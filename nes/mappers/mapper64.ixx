@@ -138,18 +138,18 @@ class c_mapper64 : public c_mapper, register_class<nes_mapper_registry, c_mapper
         cycles_since_irq = 0;
     }
 
-    void clock(int cycles) override
+    void clock() override
     {
         if (!(current_address & 0x1000)) {
-            low_count -= cycles;
+            low_count -= 1;
             if (low_count < 0)
                 low_count = 0;
         }
         else
             low_count = 15;
-        cycles_since_irq += cycles;
+        cycles_since_irq += 1;
         if (irq_delay > 0) {
-            irq_delay -= cycles;
+            irq_delay -= 1;
             if (irq_delay <= 0) {
                 execute_irq();
                 irq_asserted = 1;
@@ -157,9 +157,8 @@ class c_mapper64 : public c_mapper, register_class<nes_mapper_registry, c_mapper
             }
         }
 
-        ticks += cycles;
-        while (ticks > 2) {
-            ticks -= 3;
+        if (++ticks == 3) {
+            ticks = 0;
             if (++cpu_divider == 4) {
                 if ((reg_c001 & 1) && irq_enabled) {
                     clock_irq_counter();

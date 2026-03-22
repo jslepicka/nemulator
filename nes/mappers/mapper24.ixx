@@ -157,16 +157,15 @@ class c_mapper24 : public c_mapper, register_class<nes_mapper_registry, c_mapper
         }
     }
 
-    void clock(int cycles) override
+    void clock() override
     {
-        ticks += cycles;
-        while (ticks > 2) {
+        if (++ticks == 3) {
             pulse1.clock();
             pulse2.clock();
             saw.clock();
-            ticks -= 3;
+            ticks = 0;
         }
-        if ((irq_control & 0x02) && ((irq_control & 0x04) || ((irq_scaler += cycles) >= 341))) {
+        if ((irq_control & 0x02) && ((irq_control & 0x04) || ((irq_scaler += 1) >= 341))) {
             if (!(irq_control & 0x04)) {
                 irq_scaler -= 341;
             }

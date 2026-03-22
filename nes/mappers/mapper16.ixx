@@ -98,11 +98,10 @@ class c_mapper16 : public c_mapper, register_class<nes_mapper_registry, c_mapper
         ticks = 0;
     }
 
-    void clock(int cycles) override
+    void clock() override
     {
-        ticks += cycles;
-        while (ticks > 2) {
-            ticks -= 3;
+        if (++ticks == 3) {
+            ticks = 0;
             if (irq_enabled) {
                 int prev_counter = irq_counter;
                 irq_counter--;

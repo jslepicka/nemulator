@@ -352,11 +352,10 @@ public:
         tile_fetch_count = 0;
     }
 
-    void clock(int cycles) override
+    void clock() override
     {
-        ticks += cycles;
-        while (ticks > 2) {
-            ticks -= 3;
+        if (++ticks == 3) {
+            ticks = 0;
             clock_frame();
 
             if (ppu_is_reading) {
