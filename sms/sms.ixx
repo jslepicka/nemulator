@@ -21,7 +21,7 @@ export enum class SMS_MODEL
     GAMEGEAR
 };
 
-export class c_sms : public c_system, register_class<system_registry, c_sms>
+export class c_sms : public c_system, register_class<system_registry, c_sms>, public i_z80_callbacks<c_sms>
 {
   public:
     static std::vector<s_system_info> get_registry_info()
@@ -90,6 +90,27 @@ export class c_sms : public c_system, register_class<system_registry, c_sms>
     void write_word(uint16_t address, uint16_t value);
     void write_port(uint8_t port, uint8_t value);
     uint8_t read_port(uint8_t port);
+
+    uint8_t _z80_read_byte(uint16_t address)
+    {
+        return read_byte(address);
+    }
+    void _z80_write_byte(uint16_t address, uint8_t data)
+    {
+        write_byte(address, data);
+    }
+    uint8_t _z80_read_port(uint8_t port)
+    {
+        return read_port(port);
+    }
+    void _z80_write_port(uint8_t port, uint8_t data)
+    {
+        write_port(port, data);
+    }
+    void _z80_int_ack()
+    {
+    }
+
     int reset();
     int *get_video();
     int get_sound_buf(const float **buf);
@@ -121,7 +142,7 @@ export class c_sms : public c_system, register_class<system_registry, c_sms>
     int ram_select;
     int nationalism;
     uint8_t data_bus = 0xFF;
-    std::unique_ptr<c_z80> z80;
+    std::unique_ptr<c_z80<c_sms>> z80;
     std::unique_ptr<c_vdp> vdp;
     std::unique_ptr<c_psg> psg;
     std::unique_ptr<unsigned char[]> ram;

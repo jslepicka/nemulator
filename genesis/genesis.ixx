@@ -16,8 +16,9 @@ import dsp;
 namespace genesis
 {
 
-export class c_genesis : public c_system, register_class<system_registry, c_genesis>
+export class c_genesis : public c_system, register_class<system_registry, c_genesis>, public i_z80_callbacks<c_genesis>
 {
+    friend class i_z80_callbacks<c_genesis>;
   public:
     static std::vector<s_system_info> get_registry_info()
     {
@@ -76,8 +77,6 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
 
   private:
     s_bus<uint32_t> bus;
-    s_bus<uint16_t> z80_bus;
-    s_bus<uint8_t> z80_io_bus;
 
     int loaded = 0;
     static const int CLOCKS_PER_MIX = 4;
@@ -87,7 +86,7 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     std::unique_ptr<uint8_t[]> rom;
     std::unique_ptr<uint8_t[]> cart_ram;
     std::unique_ptr<c_vdp> vdp;
-    std::unique_ptr<c_z80> z80;
+    std::unique_ptr<c_z80<c_genesis>> z80;
     std::unique_ptr<c_ym2612> ym;
     int file_length;
     uint8_t ipl;
@@ -124,10 +123,13 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     
 
     void on_mode_switch(int x_res);
-    uint8_t z80_read_byte(uint16_t address);
-    void z80_write_byte(uint16_t address, uint8_t value);
-    uint8_t z80_read_port(uint8_t port);
-    void z80_write_port(uint8_t port, uint8_t value);
+    uint8_t _z80_read_byte(uint16_t address);
+    void _z80_write_byte(uint16_t address, uint8_t value);
+    uint8_t _z80_read_port(uint8_t port);
+    void _z80_write_port(uint8_t port, uint8_t value);
+    void _z80_int_ack()
+    {
+    }
 
     std::unique_ptr<sms::c_psg> psg;
 

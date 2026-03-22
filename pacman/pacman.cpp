@@ -8,19 +8,10 @@ namespace pacman
 
 c_pacman::c_pacman(PACMAN_MODEL model)
 {
-    bus.ctx = this;
-    bus.read_byte = &thunk<c_pacman, &c_pacman::read_byte>;
-    bus.write_byte = &thunk<c_pacman, &c_pacman::write_byte>;
-
-    io_bus.ctx = this;
-    io_bus.read_byte = &thunk<c_pacman, &c_pacman::read_port>;
-    io_bus.write_byte = &thunk<c_pacman, &c_pacman::write_port>;
-
     prg_rom = std::make_unique<uint8_t[]>(64 * 1024);
     work_ram = std::make_unique<uint8_t[]>(1 * 1024);
 
-    z80 = std::make_unique<c_z80>(&bus,
-        &io_bus,
+    z80 = std::make_unique<c_z80<c_pacman>>(*this,
         &nmi, &irq, &data_bus);
     pacman_vid = std::make_unique<c_pacman_vid>([this](int irq) { this->set_irq(irq); });
     pacman_psg = std::make_unique<c_pacman_psg>();

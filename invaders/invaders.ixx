@@ -9,12 +9,12 @@ import class_registry;
 import nemulator.buttons;
 import dsp;
 import z80;
-import bus;
 
 namespace invaders
 {
-export class c_invaders : public c_system, register_class<system_registry, c_invaders>
+export class c_invaders : public c_system, register_class<system_registry, c_invaders>, public i_z80_callbacks<c_invaders>
 {
+    friend class i_z80_callbacks<c_invaders>;
   public:
     c_invaders();
     virtual int load();
@@ -61,9 +61,6 @@ export class c_invaders : public c_system, register_class<system_registry, c_inv
     static const int audio_freq = 1996800 / audio_divider;
     void clock_sound(int cycles);
 
-    s_bus<uint16_t> bus;
-    s_bus<uint8_t> io_bus;
-
     uint8_t read_byte(uint16_t address);
     void write_byte(uint16_t address, uint8_t data);
     uint8_t read_port(uint8_t port);
@@ -74,7 +71,28 @@ export class c_invaders : public c_system, register_class<system_registry, c_inv
 
     void int_ack();
 
-    std::unique_ptr<c_z80> z80;
+    uint8_t _z80_read_byte(uint16_t address)
+    {
+        return read_byte(address);
+    }
+    void _z80_write_byte(uint16_t address, uint8_t data)
+    {
+        write_byte(address, data);
+    }
+    uint8_t _z80_read_port(uint8_t port)
+    {
+        return read_port(port);
+    }
+    void _z80_write_port(uint8_t port, uint8_t data)
+    {
+        write_port(port, data);
+    }
+    void _z80_int_ack()
+    {
+        int_ack();
+    }
+
+    std::unique_ptr<c_z80<c_invaders>> z80;
 
     int nmi;
     int irq;

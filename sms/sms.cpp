@@ -17,8 +17,7 @@ c_sms::c_sms(SMS_MODEL model)
     io_bus.write_byte = &thunk<c_sms, &c_sms::write_port>;
 
     this->model = model;
-    z80 = std::make_unique<c_z80>(&bus,
-        &io_bus,
+    z80 = std::make_unique<c_z80<c_sms>>(*this,
         &nmi, &irq, &data_bus);
     vdp = std::make_unique<c_vdp>(this);
     psg = std::make_unique<c_psg>();
