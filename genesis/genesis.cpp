@@ -213,6 +213,7 @@ int c_genesis::reset()
     next_events[CYCLE_EVENT::YM_CLOCK] = (CYCLES_PER_YM_CLOCK << 3) | CYCLE_EVENT::YM_CLOCK;
     next_events[CYCLE_EVENT::Z80_CLOCK] = ((uint64_t)-1 << 3) | CYCLE_EVENT::Z80_CLOCK;
     next_events[CYCLE_EVENT::PSG_CLOCK] = (CYCLES_PER_PSG_CLOCK << 3) | CYCLE_EVENT::PSG_CLOCK;
+    update_event<CYCLE_EVENT::ALL>();
 
     //prep the z80 -- this is just for instruction cycle alignment purposes.  probably not necessary.
     z80->execute(0);
@@ -246,6 +247,7 @@ void c_genesis::enable_z80()
         next = current_cycle + z80_comp;
     }
     next_events[CYCLE_EVENT::Z80_CLOCK] = (next << 3) | CYCLE_EVENT::Z80_CLOCK;
+    update_event<CYCLE_EVENT::Z80_CLOCK>();
 }
 
 void c_genesis::disable_z80()
@@ -271,6 +273,53 @@ void c_genesis::disable_z80()
             }
         }
         next_events[CYCLE_EVENT::Z80_CLOCK] = ((uint64_t)-1 << 3) | CYCLE_EVENT::Z80_CLOCK;
+        update_event<CYCLE_EVENT::Z80_CLOCK>();
+    }
+}
+
+template <c_genesis::CYCLE_EVENT event> uint64_t c_genesis::update_event()
+{
+    uint64_t &a = next_events[END_FRAME];
+    uint64_t &b = next_events[Z80_CLOCK];
+    uint64_t &c = next_events[VDP_PHASE];
+    uint64_t &d = next_events[PSG_CLOCK];
+    uint64_t &e = next_events[YM_CLOCK];
+    uint64_t &f = next_events[M68K_CLOCK];
+
+    if constexpr (event == CYCLE_EVENT::PSG_CLOCK) {
+        m2 = std::min(c, d);
+        m12 = std::min(m1, m2);
+        return std::min(m12, m3);
+    }
+    else if constexpr (event == CYCLE_EVENT::END_FRAME) {
+        m1 = std::min(a, b);
+        m12 = std::min(m1, m2);
+        return std::min(m12, m3);
+    }
+    else if constexpr (event == CYCLE_EVENT::Z80_CLOCK) {
+        m1 = std::min(a, b);
+        m12 = std::min(m1, m2);
+        return std::min(m12, m3);
+    }
+    else if constexpr (event == CYCLE_EVENT::YM_CLOCK) {
+        m3 = std::min(e, f);
+        return std::min(m12, m3);
+    }
+    else if constexpr (event == CYCLE_EVENT::VDP_PHASE) {
+        m2 = std::min(c, d);
+        m12 = std::min(m1, m2);
+        return std::min(m12, m3);
+    }
+    else if constexpr (event == CYCLE_EVENT::M68K_CLOCK) {
+        m3 = std::min(e, f);
+        return std::min(m12, m3);
+    }
+    else if constexpr (event == CYCLE_EVENT::ALL) {
+        m1 = std::min(a, b);
+        m2 = std::min(c, d);
+        m3 = std::min(e, f);
+        m12 = std::min(m1, m2);
+        return std::min(m12, m3);
     }
 }
 
@@ -279,29 +328,13 @@ int c_genesis::emulate_frame()
     psg->clear_buffer();
     resampler->clear_buf();
     
-    auto get_next_event = [&]() {
-        uint64_t a = next_events[M68K_CLOCK];
-        uint64_t b = next_events[Z80_CLOCK];
-        uint64_t c = next_events[VDP_PHASE];
-        uint64_t d = next_events[YM_CLOCK];
-        uint64_t e = next_events[PSG_CLOCK];
-        uint64_t f = next_events[END_FRAME];
-
-        uint64_t m1 = std::min(a, b);
-        uint64_t m2 = std::min(c, d);
-        uint64_t m3 = std::min(e, f);
-
-        uint64_t m12 = std::min(m1, m2);
-
-        return std::min(m12, m3);
-    };
-
+    uint64_t next_event = update_event<CYCLE_EVENT::ALL>();
     while (true) {
-        uint64_t next_event = get_next_event();
         current_cycle = next_event >> 3;
         int event = next_event & 7;
         if (event == CYCLE_EVENT::YM_CLOCK) {
             next_events[CYCLE_EVENT::YM_CLOCK] += CYCLES_PER_YM_CLOCK << 3;
+            next_event = update_event<CYCLE_EVENT::YM_CLOCK>();
             ym->clock(1);
             if (++mix_clock == CLOCKS_PER_MIX) {
                 mix_clock = 0;
@@ -315,6 +348,7 @@ int c_genesis::emulate_frame()
             m68k->execute(m68k_required);
             m68k_required = m68k->get_required_cycles();
             next_events[CYCLE_EVENT::M68K_CLOCK] += (m68k_required * CYCLES_PER_M68K_CLOCK) << 3;
+            next_event = update_event<CYCLE_EVENT::M68K_CLOCK>();
         }
         else if (event == CYCLE_EVENT::Z80_CLOCK) {
             assert(!z80_was_reset);
@@ -324,18 +358,22 @@ int c_genesis::emulate_frame()
             z80_required = z80->get_required_cycles();
             assert(z80_required != 0);
             next_events[CYCLE_EVENT::Z80_CLOCK] += (z80_required * CYCLES_PER_Z80_CLOCK) << 3;
+            next_event = update_event<CYCLE_EVENT::Z80_CLOCK>();
         }
         else if (event == CYCLE_EVENT::PSG_CLOCK) {
             psg->clock(16);
             next_events[CYCLE_EVENT::PSG_CLOCK] += CYCLES_PER_PSG_CLOCK << 3;
+            next_event = update_event<CYCLE_EVENT::PSG_CLOCK>();
         }
         else if (event == CYCLE_EVENT::VDP_PHASE) {
             uint32_t next = vdp->do_event();
             next_events[CYCLE_EVENT::VDP_PHASE] += (next << 3);
+            next_event = update_event<CYCLE_EVENT::VDP_PHASE>();
             z80_irq = vdp->line == 224;
         }
         else if (event == CYCLE_EVENT::END_FRAME) {
             next_events[CYCLE_EVENT::END_FRAME] += (3420 * 262) << 3;
+            next_event = update_event<CYCLE_EVENT::END_FRAME>();
             break;
         }
     }

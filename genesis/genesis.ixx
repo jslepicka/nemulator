@@ -201,7 +201,9 @@ export class c_genesis : public c_system,
         VDP_PHASE,
         YM_CLOCK,
         PSG_CLOCK,
-        END_FRAME = 7 //must be last
+        END_FRAME = 7,
+        ALL = -1
+
     };
     void enable_z80();
     void disable_z80();
@@ -211,6 +213,9 @@ export class c_genesis : public c_system,
     static const uint32_t CYCLES_PER_Z80_CLOCK = 15;
     static const uint32_t CYCLES_PER_PSG_CLOCK = 15 * 16;
     static const uint32_t CYCLES_PER_YM_CLOCK = 7 * 6;
+
+    uint64_t m1, m2, m3, m12;
+    template <c_genesis::CYCLE_EVENT event> uint64_t update_event();
 };
 
 } //namespace genesis
