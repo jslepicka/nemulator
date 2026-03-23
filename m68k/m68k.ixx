@@ -50,15 +50,15 @@ class c_m68k
 
     // clang-format on
 
-    Bus &new_bus;
+    Bus &bus;
     typedef std::function<void()> ack_irq_t;
 
     //typedef std::function<void(c_m68k*)> opcode_t;
     using opcode_t = void (c_m68k::*)();
 
   public:
-    c_m68k(Bus &new_bus, ack_irq_t ack_irq, uint8_t *ipl, uint32_t *stalled)
-        : new_bus(new_bus)
+    c_m68k(Bus &bus, ack_irq_t ack_irq, uint8_t *ipl, uint32_t *stalled)
+        : bus(bus)
     {
         this->ack_irq = ack_irq;
         this->stalled = stalled;
@@ -1224,23 +1224,19 @@ class c_m68k
 
     uint16_t read_word(uint32_t address)
     {
-        //return bus->read_word(bus->ctx, address & 0xFFFFFF);
-        return new_bus.m68k_read_word(address & 0xFFFFFF);
+        return bus.m68k_read_word(address & 0xFFFFFF);
     }
     uint8_t read_byte(uint32_t address)
     {
-        //return bus->read_byte(bus->ctx, address & 0xFFFFFF);
-        return new_bus.read_byte(address & 0xFFFFFF);
+        return bus.read_byte(address & 0xFFFFFF);
     }
     void write_word(uint32_t address, uint16_t data)
     {
-        //bus->write_word(bus->ctx, address & 0xFFFFFF, data);
-        new_bus.write_word(address & 0xFFFFFF, data);
+        bus.write_word(address & 0xFFFFFF, data);
     }
     void write_byte(uint32_t address, uint8_t data)
     {
-        //bus->write_byte(bus->ctx, address & 0xFFFFFF, data);
-        new_bus.write_byte(address & 0xFFFFFF, data);
+        bus.write_byte(address & 0xFFFFFF, data);
     }
 
     opcode_t opcode_fn;

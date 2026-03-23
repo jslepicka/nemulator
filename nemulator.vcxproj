@@ -255,7 +255,6 @@
     <ClCompile Include="interpolate.ixx" />
     <ClCompile Include="invaders\invaders.cpp" />
     <ClCompile Include="invaders\sample_channel.cpp" />
-    <ClCompile Include="m68k\m68k.cpp" />
     <ClCompile Include="m68k\m68k.ixx" />
     <ClCompile Include="m68k\m68k_callbacks.ixx" />
     <ClCompile Include="main.cpp" />
