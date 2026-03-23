@@ -9,16 +9,19 @@ import z80;
 import :vdp;
 import sms;
 import ym2612;
-import bus;
 import m68k;
 import dsp;
 
 namespace genesis
 {
 
-export class c_genesis : public c_system, register_class<system_registry, c_genesis>, public i_z80_callbacks<c_genesis>
+export class c_genesis : public c_system,
+                         register_class<system_registry, c_genesis>,
+                         public i_z80_callbacks<c_genesis>,
+                         public i_m68k_callbacks<c_genesis>
 {
     friend class i_z80_callbacks<c_genesis>;
+    friend class i_m68k_callbacks<c_genesis>;
   public:
     static std::vector<s_system_info> get_registry_info()
     {
@@ -76,12 +79,10 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     void set_input(int input);
 
   private:
-    s_bus<uint32_t> bus;
-
     int loaded = 0;
     static const int CLOCKS_PER_MIX = 4;
     int mix_clock;
-    std::unique_ptr<c_m68k> m68k;
+    std::unique_ptr<c_m68k<c_genesis>> m68k;
     //std::unique_ptr<uint8_t[]> ram;
     std::unique_ptr<uint8_t[]> rom;
     std::unique_ptr<uint8_t[]> cart_ram;
@@ -129,6 +130,23 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     void _z80_write_port(uint8_t port, uint8_t value);
     void _z80_int_ack()
     {
+    }
+
+    uint8_t _m68k_read_byte(uint32_t address)
+    {
+        return read_byte(address);
+    }
+    uint16_t _m68k_read_word(uint32_t address)
+    {
+        return read_word(address);
+    }
+    void _m68k_write_byte(uint32_t address, uint8_t data)
+    {
+        write_byte(address, data); 
+    }
+    void _m68k_write_word(uint32_t address, uint16_t data)
+    {
+        write_word(address, data);
     }
 
     std::unique_ptr<sms::c_psg> psg;

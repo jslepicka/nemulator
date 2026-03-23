@@ -1,5 +1,4 @@
 export module nes:callbacks;
-import callback;
 import nemulator.std;
 
 //these are all of the callbacks from components thorugh the nes system
@@ -9,9 +8,16 @@ import nemulator.std;
 namespace nes
 {
 
-export template <typename Derived> class i_nes_callbacks : public i_callback<Derived>
+export template <typename Derived> class i_nes_callbacks
 {
-    using i_callback<Derived>::derived;
+    __forceinline Derived *derived() noexcept
+    {
+        //without this assume, the compiler generates null pointer checks before each
+        //call, reducing performance
+        __assume(this != nullptr);
+        Derived *d = static_cast<Derived *>(this);
+        return d;
+    }
   public:
     // clang-format off
     void on_ppu_clock() { derived()->_on_ppu_clock(); }

@@ -14,13 +14,7 @@ namespace genesis
 
 c_genesis::c_genesis()
 {
-    bus.ctx = this;
-    bus.read_word = &thunk<c_genesis, &c_genesis::read_word>;
-    bus.read_byte = &thunk<c_genesis, &c_genesis::read_byte>;
-    bus.write_word = &thunk<c_genesis, &c_genesis::write_word>;
-    bus.write_byte = &thunk<c_genesis, &c_genesis::write_byte>;
-
-    m68k = std::make_unique<c_m68k>(&bus, [this]() { this->vdp->ack_irq(); }, &ipl, &stalled);
+    m68k = std::make_unique<c_m68k<c_genesis>>(*this, [this]() { this->vdp->ack_irq(); }, &ipl, &stalled);
     vdp = std::make_unique<c_vdp>(
         &ipl, [this](uint32_t address) { return this->read_word(address); },
         [this](int x_res) { this->on_mode_switch(x_res); }, &stalled);

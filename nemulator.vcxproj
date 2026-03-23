@@ -235,7 +235,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="bus.ixx" />
-    <ClCompile Include="callback.ixx" />
     <ClCompile Include="class_registry.ixx" />
     <ClCompile Include="crc32.ixx" />
     <ClCompile Include="dsp\audio_filter.ixx" />
@@ -258,7 +257,7 @@
     <ClCompile Include="invaders\sample_channel.cpp" />
     <ClCompile Include="m68k\m68k.cpp" />
     <ClCompile Include="m68k\m68k.ixx" />
-    <ClCompile Include="m68k\m68k_decode.cpp" />
+    <ClCompile Include="m68k\m68k_callbacks.ixx" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="audio_info.cpp" />
     <ClCompile Include="config.cpp" />

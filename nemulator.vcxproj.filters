@@ -537,6 +537,9 @@
     <ClCompile Include="z80\z80_callbacks.ixx">
       <Filter>z80</Filter>
     </ClCompile>
+    <ClCompile Include="m68k\m68k_callbacks.ixx">
+      <Filter>m68k</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="nes\mappers\vrc7_audio.h">
