@@ -9,16 +9,19 @@ import z80;
 import :vdp;
 import sms;
 import ym2612;
-import bus;
 import m68k;
 import dsp;
 
 namespace genesis
 {
 
-export class c_genesis : public c_system, register_class<system_registry, c_genesis>, public i_z80_callbacks<c_genesis>
+export class c_genesis : public c_system,
+                         register_class<system_registry, c_genesis>,
+                         public i_z80_callbacks<c_genesis>,
+                         public i_m68k_callbacks<c_genesis>
 {
     friend class i_z80_callbacks<c_genesis>;
+    friend class i_m68k_callbacks<c_genesis>;
   public:
     static std::vector<s_system_info> get_registry_info()
     {
@@ -76,13 +79,10 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     void set_input(int input);
 
   private:
-    s_bus<uint32_t> bus;
-
     int loaded = 0;
     static const int CLOCKS_PER_MIX = 4;
     int mix_clock;
-    std::unique_ptr<c_m68k> m68k;
-    //std::unique_ptr<uint8_t[]> ram;
+    std::unique_ptr<c_m68k<c_genesis>> m68k;
     std::unique_ptr<uint8_t[]> rom;
     std::unique_ptr<uint8_t[]> cart_ram;
     std::unique_ptr<c_vdp> vdp;
@@ -90,6 +90,9 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     std::unique_ptr<c_ym2612> ym;
     int file_length;
     uint8_t ipl;
+    bool z80_was_reset;
+    bool frame_complete;
+    bool z80_enabled;
     int last_bus_request;
     int z80_reset;
     int z80_busreq;
@@ -114,14 +117,10 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     int is_ps4;
     int ps4_ram_access;
     uint32_t bank_register;
-    bool z80_was_reset;
 
     void open_sram();
     void close_sram();
-
     void write_bank_register(uint8_t value);
-    
-
     void on_mode_switch(int x_res);
     uint8_t _z80_read_byte(uint16_t address);
     void _z80_write_byte(uint16_t address, uint8_t value);
@@ -131,8 +130,24 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     {
     }
 
-    std::unique_ptr<sms::c_psg> psg;
+    uint8_t _m68k_read_byte(uint32_t address)
+    {
+        return read_byte(address);
+    }
+    uint16_t _m68k_read_word(uint32_t address)
+    {
+        return read_word(address);
+    }
+    void _m68k_write_byte(uint32_t address, uint8_t data)
+    {
+        write_byte(address, data); 
+    }
+    void _m68k_write_word(uint32_t address, uint16_t data)
+    {
+        write_word(address, data);
+    }
 
+    std::unique_ptr<sms::c_psg> psg;
     uint32_t m68k_required;
     uint32_t z80_required;
     uint64_t current_cycle;
@@ -141,9 +156,7 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
     uint64_t next_events[8];
 
     int mixer_enabled;
-
     int line;
-    bool frame_complete;
 
     //using lpf_t = dsp::c_biquad4_t<
     //    0.5068508387f, 0.3307863474f, 0.1168005615f, 0.0055816281f,
@@ -183,16 +196,20 @@ export class c_genesis : public c_system, register_class<system_registry, c_gene
         VDP_PHASE,
         YM_CLOCK,
         PSG_CLOCK,
-        END_FRAME = 7 //must be last
+        END_FRAME = 7,
+        ALL = -1
+
     };
     void enable_z80();
     void disable_z80();
-    bool z80_enabled;
 
     static const uint32_t CYCLES_PER_M68K_CLOCK = 7;
     static const uint32_t CYCLES_PER_Z80_CLOCK = 15;
     static const uint32_t CYCLES_PER_PSG_CLOCK = 15 * 16;
     static const uint32_t CYCLES_PER_YM_CLOCK = 7 * 6;
+
+    uint64_t m1, m2, m3, m12;
+    template <c_genesis::CYCLE_EVENT event> uint64_t update_event();
 };
 
 } //namespace genesis

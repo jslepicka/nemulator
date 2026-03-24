@@ -1399,7 +1399,8 @@ void c_nemulator::LoadGames()
                 }
             }
             c_system_container *g = new c_system_container(li.system_info, li.rom_path, fn, li.save_path);
-            if (li.system_info.name == "Nintendo NES") {
+            if (li.system_info.name == "Nintendo NES" ||
+                li.system_info.name == "Nintendo FDS") {
                 g->is_nes = true;
             }
 
