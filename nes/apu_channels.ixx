@@ -667,14 +667,12 @@ public:
                 timer.set_period(freq_table[freq_index] - 1);
                 if (!irq_asserted && irq_enable && irq_flag) {
                     irq_asserted = 1;
-                    //nes.on_irq(true);
-                    nes.on_irq(true);
+                    nes.irq(true);
                 }
                 else if (!irq_enable) {
                     if (irq_asserted) {
                         irq_asserted = 0;
-                        //nes.on_irq(false);
-                        nes.on_irq(false);
+                        nes.irq(false);
                     }
                     irq_flag = 0;
                 }
@@ -695,7 +693,7 @@ public:
     {
         irq_flag = 0;
         if (irq_asserted) {
-            nes.on_irq(false);
+            nes.irq(false);
             irq_asserted = 0;
         }
     }
@@ -743,8 +741,7 @@ public:
                     if (irq_enable) {
                         irq_flag = 1;
                         if (irq_flag && !irq_asserted) {
-                            //nes.on_irq(true);
-                            nes.on_irq(true);
+                            nes.irq(true);
                             irq_asserted = 1;
                         }
                     }

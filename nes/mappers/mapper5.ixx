@@ -17,6 +17,7 @@ public:
         return {{
             .number = 5,
             .name = "MMC5",
+            .clock_source = MAPPER_CLOCK_SOURCE::CPU,
             .constructor = []() { return std::make_unique<c_mapper5>(); },
         }};
     }
@@ -294,7 +295,6 @@ public:
     {
         for (int i = 0; i < 2; i++)
             squares[i].reset();
-        ticks = 0;
         frame_seq_counter = CLOCKS_PER_FRAME_SEQ;
         prg_reg[0] = 0;
         prg_reg[1] = 0;
@@ -353,23 +353,20 @@ public:
         tile_fetch_count = 0;
     }
 
-    void clock() override
+    void cpu_clock() override
     {
-        if (++ticks == 3) {
-            ticks = 0;
-            clock_frame();
+        clock_frame();
 
-            if (ppu_is_reading) {
-                idle_count = 0;
-            }
-            else {
-                if (++idle_count == 3) {
-                    inFrame = 0;
-                    last_address = 0;
-                }
-            }
-            ppu_is_reading = 0;
+        if (ppu_is_reading) {
+            idle_count = 0;
         }
+        else {
+            if (++idle_count == 3) {
+                inFrame = 0;
+                last_address = 0;
+            }
+        }
+        ppu_is_reading = 0;
     }
 
     float mix_audio(float sample) override
@@ -386,7 +383,6 @@ private:
     int frame_seq_counter;
     static const int CLOCKS_PER_FRAME_SEQ = 89489;
     
-    int ticks;
     c_square squares[2];
     enum {
         PCM_IRQ_MODE_WRITE,

@@ -45,7 +45,7 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>, pu
     bool get_sprite_limit();
     void set_submapper(int submapper);
     std::unique_ptr<c_cpu<c_nes>> cpu;
-    std::unique_ptr<c_ppu<c_nes>> ppu;
+    std::unique_ptr<i_ppu> ppu;
     std::unique_ptr<c_mapper> mapper;
     void _write_byte(uint16_t address, uint8_t value);
     uint8_t _read_byte(uint16_t address)
@@ -174,22 +174,25 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>, pu
     int file_length;
     bool limit_sprites;
     
-    void _on_ppu_clock()
+    void _mapper_cpu_clock()
     {
-        mapper->clock();
+        mapper->cpu_clock();
     }
-
-    void _on_cpu_clock()
+    void _mapper_ppu_clock()
+    {
+        mapper->ppu_clock();
+    }
+    void _cpu_clock()
     {
         cpu->execute();
         cpu->odd_cycle ^= 1;
         apu->clock();
     }
-    void _on_sprite_eval(bool in_eval)
+    void _sprite_eval(bool in_eval)
     {
         mapper->in_sprite_eval = in_eval;
     }
-    void _on_nmi(bool nmi)
+    void _nmi(bool nmi)
     {
         if (nmi) {
             cpu->execute_nmi();
@@ -210,7 +213,7 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>, pu
     {
         cpu->add_cycle();
     }
-    void _on_irq(bool irq)
+    void _irq(bool irq)
     {
         if (irq) {
             cpu->execute_irq();

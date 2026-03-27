@@ -19,10 +19,12 @@ class c_mapper16 : public c_mapper, register_class<nes_mapper_registry, c_mapper
         return {
             {
                 .number = 16,
+                .clock_source = MAPPER_CLOCK_SOURCE::CPU,
                 .constructor = []() { return std::make_unique<c_mapper16>(); },
             },
             {
                 .number = 159,
+                .clock_source = MAPPER_CLOCK_SOURCE::CPU,
                 .constructor = []() { return std::make_unique<c_mapper16>(1); },
             },
         };
@@ -95,22 +97,18 @@ class c_mapper16 : public c_mapper, register_class<nes_mapper_registry, c_mapper
         irq_counter = 0;
         irq_enabled = 0;
         irq_asserted = 0;
-        ticks = 0;
     }
 
-    void clock() override
+    void cpu_clock() override
     {
-        if (++ticks == 3) {
-            ticks = 0;
-            if (irq_enabled) {
-                int prev_counter = irq_counter;
-                irq_counter--;
+        if (irq_enabled) {
+            int prev_counter = irq_counter;
+            irq_counter--;
 
-                if (prev_counter == 1 && irq_counter == 0) {
-                    if (!irq_asserted) {
-                        execute_irq();
-                        irq_asserted = 1;
-                    }
+            if (prev_counter == 1 && irq_counter == 0) {
+                if (!irq_asserted) {
+                    execute_irq();
+                    irq_asserted = 1;
                 }
             }
         }
@@ -121,7 +119,6 @@ class c_mapper16 : public c_mapper, register_class<nes_mapper_registry, c_mapper
     int irq_counter;
     int irq_enabled;
     int irq_asserted;
-    int ticks;
 };
 
 } //namespace nes

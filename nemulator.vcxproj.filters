@@ -483,13 +483,7 @@
     <ClCompile Include="nes\mappers\mapper_fds.ixx">
       <Filter>nes\mappers</Filter>
     </ClCompile>
-    <ClCompile Include="m68k\m68k.cpp">
-      <Filter>m68k</Filter>
-    </ClCompile>
     <ClCompile Include="m68k\m68k.ixx">
-      <Filter>m68k</Filter>
-    </ClCompile>
-    <ClCompile Include="m68k\m68k_decode.cpp">
       <Filter>m68k</Filter>
     </ClCompile>
     <ClCompile Include="genesis\genesis.ixx">
@@ -533,7 +527,6 @@
     <ClCompile Include="nes\apu_channels.ixx">
       <Filter>nes</Filter>
     </ClCompile>
-    <ClCompile Include="callback.ixx" />
     <ClCompile Include="z80\z80_callbacks.ixx">
       <Filter>z80</Filter>
     </ClCompile>

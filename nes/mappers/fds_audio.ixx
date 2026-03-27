@@ -32,6 +32,7 @@ class c_fds_audio
         op.master_speed = 0xFF;
     }
 
+    //done
     void clock()
     {
         uint32_t clock_before = clock_divider;

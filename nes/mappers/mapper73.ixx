@@ -15,6 +15,7 @@ class c_mapper73 : public c_mapper, register_class<nes_mapper_registry, c_mapper
             {
                 .number = 73,
                 .name = "VRC3",
+                .clock_source = MAPPER_CLOCK_SOURCE::CPU,
                 .constructor = []() { return std::make_unique<c_mapper73>(); },
             },
         };
@@ -64,35 +65,31 @@ class c_mapper73 : public c_mapper, register_class<nes_mapper_registry, c_mapper
         irq_enabled = 0;
         irq_enable_on_ack = 0;
         irq_asserted = 0;
-        ticks = 0;
         SetPrgBank16k(PRG_C000, prgRomPageCount16k - 1);
     }
 
-    void clock() override
+    void cpu_clock() override
     {
         if (irq_enabled) {
-            if (++ticks == 3) {
-                ticks = 0;
-                if (irq_mode) //8-bit
-                {
-                    int temp = irq_counter & 0xFF;
-                    temp = ((temp + 1) & 0xFF);
-                    irq_counter = (irq_counter & 0xFF00) | temp;
-                    if (temp == 0) {
-                        if (!irq_asserted) {
-                            execute_irq();
-                            irq_asserted = 1;
-                        }
+            if (irq_mode) //8-bit
+            {
+                int temp = irq_counter & 0xFF;
+                temp = ((temp + 1) & 0xFF);
+                irq_counter = (irq_counter & 0xFF00) | temp;
+                if (temp == 0) {
+                    if (!irq_asserted) {
+                        execute_irq();
+                        irq_asserted = 1;
                     }
                 }
-                else //16-bit
-                {
-                    irq_counter = ((irq_counter + 1) & 0xFFFF);
-                    if (irq_counter == 0) {
-                        if (!irq_asserted) {
-                            execute_irq();
-                            irq_asserted = 1;
-                        }
+            }
+            else //16-bit
+            {
+                irq_counter = ((irq_counter + 1) & 0xFFFF);
+                if (irq_counter == 0) {
+                    if (!irq_asserted) {
+                        execute_irq();
+                        irq_asserted = 1;
                     }
                 }
             }
@@ -106,7 +103,6 @@ class c_mapper73 : public c_mapper, register_class<nes_mapper_registry, c_mapper
     int irq_enabled;
     int irq_enable_on_ack;
     int irq_asserted;
-    int ticks;
 
     void ack_irq()
     {

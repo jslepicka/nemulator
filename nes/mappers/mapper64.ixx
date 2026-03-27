@@ -17,6 +17,7 @@ class c_mapper64 : public c_mapper, register_class<nes_mapper_registry, c_mapper
             {
                 .number = 64,
                 .name = "RAMBO-1",
+                .clock_source = MAPPER_CLOCK_SOURCE::BOTH,
                 .constructor = []() { return std::make_unique<c_mapper64>(); },
             },
         };
@@ -130,7 +131,6 @@ class c_mapper64 : public c_mapper, register_class<nes_mapper_registry, c_mapper
         irq_asserted = 0;
         irq_delay = 0;
         clock_scale = 0;
-        ticks = 0;
         reload_cpu_counter = 0;
         cpu_divider = 0;
         irq_adjust = 0;
@@ -138,7 +138,19 @@ class c_mapper64 : public c_mapper, register_class<nes_mapper_registry, c_mapper
         cycles_since_irq = 0;
     }
 
-    void clock() override
+    void cpu_clock() override
+    {
+        if (++cpu_divider == 4) {
+            if ((reg_c001 & 1) && irq_enabled) {
+                clock_irq_counter();
+                //if (irq_delay > 0)
+                //    irq_delay = 24;
+            }
+            cpu_divider = 0;
+        }
+    }
+
+    void ppu_clock() override
     {
         if (!(current_address & 0x1000)) {
             low_count -= 1;
@@ -154,18 +166,6 @@ class c_mapper64 : public c_mapper, register_class<nes_mapper_registry, c_mapper
                 execute_irq();
                 irq_asserted = 1;
                 cycles_since_irq = 0;
-            }
-        }
-
-        if (++ticks == 3) {
-            ticks = 0;
-            if (++cpu_divider == 4) {
-                if ((reg_c001 & 1) && irq_enabled) {
-                    clock_irq_counter();
-                //if (irq_delay > 0)
-                //    irq_delay = 24;
-                }
-                cpu_divider = 0;
             }
         }
     }
@@ -188,7 +188,6 @@ class c_mapper64 : public c_mapper, register_class<nes_mapper_registry, c_mapper
     int irq_asserted;
     int irq_delay;
     int clock_scale;
-    int ticks;
     int reload_cpu_counter;
     int cpu_divider;
     int irq_adjust;

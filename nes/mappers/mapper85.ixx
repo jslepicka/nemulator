@@ -24,6 +24,7 @@ class c_mapper85 : public c_mapper, register_class<nes_mapper_registry, c_mapper
             {
                 .number = 85,
                 .name = "VRC7",
+                .clock_source = MAPPER_CLOCK_SOURCE::CPU,
                 .constructor = []() { return std::make_unique<c_mapper85>(); },
             },
         };
@@ -134,37 +135,27 @@ class c_mapper85 : public c_mapper, register_class<nes_mapper_registry, c_mapper
         }
     }
 
-    void clock() override
+    void cpu_clock() override
     {
-        if (++ticks == 3) {
-            if ((irq_control & 0x02) && ((irq_control & 0x04) || ((irq_scaler += 3) >= 341))) {
-                if (!(irq_control & 0x04)) {
-                    irq_scaler -= 341;
-                }
-                if (irq_counter == 0xFF) {
-                    irq_counter = irq_reload;
-                    if (!irq_asserted) {
-                        execute_irq();
-                        irq_asserted = 1;
-                    }
-                }
-                else
-                    irq_counter++;
+        if ((irq_control & 0x02) && ((irq_control & 0x04) || ((irq_scaler += 3) >= 341))) {
+            if (!(irq_control & 0x04)) {
+                irq_scaler -= 341;
             }
-            ticks = 0;
-            if (++audio_ticks == 36) {
-                va.clock(0);
-                //clock_audio();
-                audio_ticks = 0;
+            if (irq_counter == 0xFF) {
+                irq_counter = irq_reload;
+                if (!irq_asserted) {
+                    execute_irq();
+                    irq_asserted = 1;
+                }
             }
+            else
+                irq_counter++;
         }
-
-        //ticks += cycles;
-        //while (ticks >= 108)
-        //{
-        //    clock_audio();
-        //    ticks -= 108;
-        //}
+        if (++audio_ticks == 36) {
+            va.clock(0);
+            //clock_audio();
+            audio_ticks = 0;
+        }
     }
 
     void reset() override
@@ -180,7 +171,6 @@ class c_mapper85 : public c_mapper, register_class<nes_mapper_registry, c_mapper
         irq_reload = 0;
         irq_scaler = 0;
         audio_register_select = 0;
-        ticks = 0;
         audio_ticks = 0;
         memset(phase, 0, sizeof(phase));
         memset(phase_secondary, 0, sizeof(phase_secondary));
@@ -205,7 +195,6 @@ class c_mapper85 : public c_mapper, register_class<nes_mapper_registry, c_mapper
 
   private:
     schpune::Vrc7Audio va;
-    int ticks;
     int audio_ticks;
     int irq_counter;
     int irq_asserted;

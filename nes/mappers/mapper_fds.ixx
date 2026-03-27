@@ -19,6 +19,7 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
             {
                 .number = 0x103,
                 .name = "FDS",
+                .clock_source = MAPPER_CLOCK_SOURCE::CPU,
                 .constructor = []() { return std::make_unique<c_mapper_fds>(); },
             },
         };
@@ -61,7 +62,6 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
 
     void reset()
     {
-        ticks = 0;
         disk_not_inserted = 0;
         scanning = 0;
         gap_covered = 0;
@@ -97,126 +97,122 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
         fds_audio.reset();
     }
 
-    void clock() override
+    void cpu_clock() override
     {
-        if (++ticks == 3) {
-            ticks = 0;
-            fds_audio.clock();
+        fds_audio.clock();
 
-            if (timer_control & 0x2) {
-                if (timer_counter) {
-                    timer_counter--;
+        if (timer_control & 0x2) {
+            if (timer_counter) {
+                timer_counter--;
+            }
+            else {
+                timer_irq = 1;
+                execute_irq();
+                timer_counter = timer_reload;
+                if (!(timer_control & 0x1)) {
+                    timer_control &= ~0x2;
                 }
-                else {
-                    timer_irq = 1;
+            }
+        }
+
+        if (switching_disk) {
+            if (--switching_disk == 0) {
+                disk_not_inserted = 0;
+            }
+            else {
+                return;
+            }
+        }
+
+        if (dont_stop_motor == 0 || disk_not_inserted == 1) {
+            scanning = 0;
+            end_of_disk = 1;
+            return;
+        }
+
+        if (dont_scan_media == 1 && scanning == 0) {
+            return;
+        }
+
+        if (end_of_disk == 1) {
+            delay = 50000;
+            end_of_disk = 0;
+            disk_position = 0;
+            gap_covered = 0;
+        }
+
+        if (delay) {
+            delay--;
+            return;
+        }
+
+        scanning = 1;
+
+        if (dont_write == 1) {
+            shift_register = disk_sides[side_number][disk_position];
+            do_irq = disk_irq_enable;
+
+            if (in_data == 0) {
+                gap_covered = 0;
+            }
+            else if (!gap_covered && shift_register != 0x00) {
+                do_irq = 0;
+                gap_covered = 1;
+            }
+            if (gap_covered == 1) {
+                data_ready = 1;
+                read_data = shift_register;
+                if (do_irq) {
                     execute_irq();
-                    timer_counter = timer_reload;
-                    if (!(timer_control & 0x1)) {
-                        timer_control &= ~0x2;
-                    }
                 }
             }
-
-            if (switching_disk) {
-                if (--switching_disk == 0) {
-                    disk_not_inserted = 0;
-                }
-                else {
-                    return;
-                }
-            }
-
-            if (dont_stop_motor == 0 || disk_not_inserted == 1) {
-                scanning = 0;
-                end_of_disk = 1;
-                return;
-            }
-
-            if (dont_scan_media == 1 && scanning == 0) {
-                return;
-            }
-
-            if (end_of_disk == 1) {
-                delay = 50000;
-                end_of_disk = 0;
-                disk_position = 0;
-                gap_covered = 0;
-            }
-
-            if (delay) {
-                delay--;
-                return;
-            }
-
-            scanning = 1;
-
-            if (dont_write == 1) {
-                shift_register = disk_sides[side_number][disk_position];
+        }
+        else {
+            //write
+            if (transmit_crc == 0) {
+                data_ready = 1;
+                shift_register = write_data;
                 do_irq = disk_irq_enable;
+                if (do_irq) {
+                    execute_irq();
+                }
+            }
 
-                if (in_data == 0) {
-                    gap_covered = 0;
-                }
-                else if (!gap_covered && shift_register != 0x00) {
-                    do_irq = 0;
-                    gap_covered = 1;
-                }
-                if (gap_covered == 1) {
-                    data_ready = 1;
-                    read_data = shift_register;
-                    if (do_irq) {
-                        execute_irq();
-                    }
-                }
+            if (in_data == 0) {
+                shift_register = 0x00;
             }
             else {
-                //write
-                if (transmit_crc == 0) {
-                    data_ready = 1;
-                    shift_register = write_data;
-                    do_irq = disk_irq_enable;
-                    if (do_irq) {
-                        execute_irq();
-                    }
-                }
-
-                if (in_data == 0) {
-                    shift_register = 0x00;
-                }
-                else {
-                    int x = 1;
-                }
-                if (transmit_crc == 0) {
-                    //crc accumulator
-                }
-                else {
-                    //if (last_crc_flag == 0) {
-                    //    //finish crc calculation
-                    //}
-                    shift_register = 0x00; //should be crc calculation lower 8 bits
-                }
-                disk_sides[side_number][disk_position] = shift_register;
-                dirty_blocks[(side_number << 24) | disk_position] = shift_register;
-                gap_covered = 0;
+                int x = 1;
             }
-            disk_position++;
-            if (disk_position >= disk_sides[side_number].size()) {
-                dont_stop_motor = 0;
+            if (transmit_crc == 0) {
+                //crc accumulator
             }
             else {
-                delay = 149;
+                //if (last_crc_flag == 0) {
+                //    //finish crc calculation
+                //}
+                shift_register = 0x00; //should be crc calculation lower 8 bits
             }
+            disk_sides[side_number][disk_position] = shift_register;
+            dirty_blocks[(side_number << 24) | disk_position] = shift_register;
+            gap_covered = 0;
+        }
+        disk_position++;
+        if (disk_position >= disk_sides[side_number].size()) {
+            dont_stop_motor = 0;
+        }
+        else {
+            delay = 149;
         }
     }
 
   private:
-    int ticks;
     std::unique_ptr<uint8_t[]> ram;
     std::unique_ptr<uint8_t[]> chr_ram;
     using disk_side_t = std::vector<uint8_t>;
     std::vector<disk_side_t> disk_sides;
 
-    static constexpr int DISK_SWITCH_DELAY = 1790000 * 2.0; //1 second is too fast for some games
+    static constexpr int DISK_SWITCH_DELAY = 1790000 * 2; //1 second is too fast for some games
 
     int disk_not_inserted;
     int scanning;

@@ -20,6 +20,7 @@ class c_mapper18 : public c_mapper, register_class<nes_mapper_registry, c_mapper
         return {
             {
                 .number = 18,
+                .clock_source = MAPPER_CLOCK_SOURCE::CPU,
                 .constructor = []() { return std::make_unique<c_mapper18>(); },
             },
         };
@@ -145,7 +146,6 @@ class c_mapper18 : public c_mapper, register_class<nes_mapper_registry, c_mapper
 
     void reset() override
     {
-        ticks = 0;
         irq_enabled = 0;
         irq_counter = 0;
         irq_reload = 0;
@@ -159,25 +159,21 @@ class c_mapper18 : public c_mapper, register_class<nes_mapper_registry, c_mapper
         SetPrgBank8k(PRG_E000, prgRomPageCount8k - 1);
     }
 
-    void clock() override
+    void cpu_clock() override
     {
         if (irq_enabled) {
-            if (++ticks == 3) {
-                ticks = 0;
-                int temp = irq_counter & irq_mask;
-                temp--;
-                if ((temp & irq_mask) == irq_mask && !irq_asserted) {
-                    irq_asserted = 1;
-                    execute_irq();
-                }
-
-                irq_counter = (irq_counter & ~irq_mask) | (temp & irq_mask);
+            int temp = irq_counter & irq_mask;
+            temp--;
+            if ((temp & irq_mask) == irq_mask && !irq_asserted) {
+                irq_asserted = 1;
+                execute_irq();
             }
+
+            irq_counter = (irq_counter & ~irq_mask) | (temp & irq_mask);
         }
     }
 
   private:
-    int ticks;
     int irq_enabled;
     int irq_counter;
     int irq_reload;

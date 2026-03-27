@@ -5,6 +5,7 @@ export module nes:ppu;
 import nemulator.std;
 import bus;
 import :callbacks;
+import :mapper;
 
 namespace nes
 {
@@ -15,12 +16,32 @@ namespace nes
 #define NES_PPU_USE_BMI2
 #define NES_PPU_USE_AVX2
 
-export template <typename Nes>
-class c_ppu
+export class i_ppu
 {
   public:
     int drawing_bg;
+    virtual unsigned char read_byte(int address) = 0;
+    virtual void write_byte(int address, unsigned char value) = 0;
+    virtual void eval_sprites() = 0;
+    virtual int get_sprite_size() = 0;
+    virtual void reset() = 0;
+    virtual int *get_frame_buffer() = 0;
+    virtual bool get_sprite_limit() = 0;
+    virtual void set_sprite_limit(bool limit) = 0;
+    virtual uint8_t *get_sprite_memory() = 0;
+    virtual void run_ppu_line() = 0;
+    virtual ~i_ppu() = default;
 
+  protected:
+    static inline uint64_t morton_odd_64[256];
+    static inline uint64_t morton_even_64[256];
+    static inline uint32_t pal[512];
+    static inline std::atomic<int> lookup_tables_built;
+};
+
+export template <typename Nes, MAPPER_CLOCK_SOURCE clock_source>
+class c_ppu : public i_ppu
+{
   private:
     Nes &nes;
     int vram_update_delay;
@@ -29,14 +50,13 @@ class c_ppu
     //last cycle of the cpu opcode (i.e., the write cycle)
     static const int VRAM_UPDATE_DELAY = 1;// 3;
     int suppress_nmi;
-    static inline uint64_t morton_odd_64[];
-    static inline uint64_t morton_even_64[];
+
     static const int screen_offset = 2;
     unsigned int current_cycle;
     int current_scanline;
     int warmed_up;
     int sprite_mem_address;
-    static inline std::atomic<int> lookup_tables_built;
+    
     int fetch_state;
     int on_screen;
     unsigned char read_value;
@@ -127,7 +147,6 @@ class c_ppu
         uint8_t x;
     };
 
-    alignas(64) static inline uint32_t pal[512];
     int (c_ppu::*p_output_pixel)();
     std::bitset<256> sprite_here;
     alignas(64) s_sprite_data sprite_buffer[64];
@@ -173,12 +192,12 @@ class c_ppu
                         case 1:
                             temp &= ~0x80;
                             suppress_nmi = 1;
-                            nes.on_nmi(false);
+                            nes.nmi(false);
                             break;
                         case 2:
                         case 3:
                             temp |= 0x80;
-                            nes.on_nmi(false);
+                            nes.nmi(false);
                             break;
                         default:
                             break;
@@ -242,9 +261,9 @@ class c_ppu
         //if nmi enabled is false and incoming value enables it
         //AND if currently in NMI, then execute_nmi
                 if (!(PPUCTRL.nmi_enable) && (value & 0x80) && PPUSTATUS.in_vblank)
-                    nes.on_nmi(true);
+                    nes.nmi(true);
                 if (current_scanline == 261 && (PPUCTRL.nmi_enable) && current_cycle < 4) {
-                    nes.on_nmi(false);
+                    nes.nmi(false);
                 }
 
                 PPUCTRL.value = value;
@@ -355,8 +374,7 @@ class c_ppu
             return;
         sprite_here.reset();
         drawing_bg = false;
-        //mapper->in_sprite_eval = 1;
-        nes.on_sprite_eval(true);
+        nes.in_sprite_eval(true);
         int max_sprites = limit_sprites ? 8 : 64;
         int sprite0_x = -1;
         sprite0_index = -1;
@@ -437,8 +455,7 @@ class c_ppu
                 sprite_here.set(loc & 0xFF);
             }
         }
-        //mapper->in_sprite_eval = 0;
-        nes.on_sprite_eval(false);
+        nes.in_sprite_eval(false);
         if (current_scanline == 261)
             sprite_count = 0;
         if (sprite_count) {
@@ -519,6 +536,12 @@ class c_ppu
 
     void run_ppu_line()
     {
+        _run_ppu_line<clock_source>();
+    }
+
+    template <MAPPER_CLOCK_SOURCE clock_source>
+    void _run_ppu_line()
+    {
         int pixel_count = 0;
         int last_cycle = 0;
         vid_out = 0;
@@ -589,9 +612,14 @@ class c_ppu
                 }
             }
 
-            nes.on_ppu_clock();
+            if constexpr (clock_source == MAPPER_CLOCK_SOURCE::PPU || clock_source == MAPPER_CLOCK_SOURCE::BOTH) {
+                nes.mapper_ppu_clock();
+            }
             if (--executed_cycles == 0) [[unlikely]] {
-                nes.on_cpu_clock();
+                if constexpr (clock_source == MAPPER_CLOCK_SOURCE::CPU || clock_source == MAPPER_CLOCK_SOURCE::BOTH) {
+                    nes.mapper_cpu_clock();
+                }
+                nes.cpu_clock();
                 executed_cycles = 3;
             };
             if (last_cycle) {
@@ -610,16 +638,6 @@ class c_ppu
             current_cycle++;
         }
     }
-
-
-
-
-
-
-
-
-
-
 
   private:
     void generate_palette()
@@ -835,7 +853,7 @@ class c_ppu
             if (!suppress_nmi) {
                 PPUSTATUS.in_vblank = true;
                 if (PPUCTRL.nmi_enable) {
-                    nes.on_nmi(true);
+                    nes.nmi(true);
                 }
             }
             else {
@@ -848,7 +866,7 @@ class c_ppu
     void end_vblank()
     {
         PPUSTATUS.in_vblank = false;
-        nes.on_nmi(false);
+        nes.nmi(false);
     }
 
     int do_cycle_events()
