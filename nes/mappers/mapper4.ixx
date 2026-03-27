@@ -17,11 +17,13 @@ export class c_mapper4 : public c_mapper, register_class<nes_mapper_registry, c_
             {
                 .number = 4,
                 .name = "MMC3",
+                .clock_source = MAPPER_CLOCK_SOURCE::PPU,
                 .constructor = []() { return std::make_unique<c_mapper4>(); },
             },
             {
                 .number = 220,
                 .name = "MMC3 (FCEUX Debugging)",
+                .clock_source = MAPPER_CLOCK_SOURCE::PPU,
                 .constructor = []() { return std::make_unique<c_mapper4>(); },
             },
         };
@@ -174,7 +176,7 @@ export class c_mapper4 : public c_mapper, register_class<nes_mapper_registry, c_
         Sync();
     }
 
-    void clock() override
+    void ppu_clock() override
     {
         if (!(current_address & 0x1000)) {
             low_count -= 1;

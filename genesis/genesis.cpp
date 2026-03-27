@@ -286,6 +286,12 @@ template <c_genesis::CYCLE_EVENT event> uint64_t c_genesis::update_event()
     uint64_t &e = next_events[YM_CLOCK];
     uint64_t &f = next_events[M68K_CLOCK];
 
+    //  a, b -> m1 -+
+    //              |-> m12 -+
+    //  c, d -> m2 -+        |-> result
+    //                       |
+    //  e, f -> m3 ----------+
+
     if constexpr (event == CYCLE_EVENT::PSG_CLOCK) {
         m2 = std::min(c, d);
         m12 = std::min(m1, m2);

@@ -18,6 +18,7 @@ class c_mapper42 : public c_mapper, register_class<nes_mapper_registry, c_mapper
         return {
             {
                 .number = 42,
+                .clock_source = MAPPER_CLOCK_SOURCE::CPU,
                 .constructor = []() { return std::make_unique<c_mapper42>(); },
             },
         };
@@ -54,7 +55,6 @@ class c_mapper42 : public c_mapper, register_class<nes_mapper_registry, c_mapper
 
     void reset() override
     {
-        ticks = 0;
         irq_enabled = 0;
         irq_asserted = 0;
         irq_counter = 0;
@@ -62,15 +62,12 @@ class c_mapper42 : public c_mapper, register_class<nes_mapper_registry, c_mapper
         SetPrgBank32k(prgRomPageCount32k - 1);
     }
 
-    void clock() override
+    void cpu_clock() override
     {
         if (irq_enabled) {
-            if (++ticks == 3) {
-                ticks = 0;
-                if (++irq_counter == 0x6000 && !irq_asserted) {
-                    execute_irq();
-                    irq_asserted = 1;
-                }
+            if (++irq_counter == 0x6000 && !irq_asserted) {
+                execute_irq();
+                irq_asserted = 1;
             }
         }
     }
@@ -88,7 +85,6 @@ class c_mapper42 : public c_mapper, register_class<nes_mapper_registry, c_mapper
     int irq_enabled;
     int irq_asserted;
     int irq_counter;
-    int ticks;
     unsigned char *prg_6k;
 };
 

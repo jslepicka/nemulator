@@ -15,6 +15,7 @@ class c_mapper105 : public c_mapper1, register_class<nes_mapper_registry, c_mapp
             {
                 .number = 105,
                 .name = "NWC",
+                .clock_source = MAPPER_CLOCK_SOURCE::CPU,
                 .constructor = []() { return std::make_unique<c_mapper105>(); },
             },
         };
@@ -25,29 +26,25 @@ class c_mapper105 : public c_mapper1, register_class<nes_mapper_registry, c_mapp
         irq_counter = 0;
         irq_asserted = 0;
         init = 0;
-        ticks = 0;
     }
 
-    void clock() override
+    void cpu_clock() override
     {
-        if (++ticks == 3) {
-            if (regs[1] & 0x10) {
-                irq_counter = 0;
-                if (irq_asserted) {
-                    irq_asserted = 0;
-                    clear_irq();
-                }
+        if (regs[1] & 0x10) {
+            irq_counter = 0;
+            if (irq_asserted) {
+                irq_asserted = 0;
+                clear_irq();
             }
-            else {
-                irq_counter++;
-                if (irq_counter == irq_trigger && !irq_asserted) {
-                    execute_irq();
-                    irq_asserted = 1;
-                }
-            }
-            ticks = 0;
         }
-        c_mapper1::clock();
+        else {
+            irq_counter++;
+            if (irq_counter == irq_trigger && !irq_asserted) {
+                execute_irq();
+                irq_asserted = 1;
+            }
+        }
+        c_mapper1::cpu_clock();
     }
 
     int get_nwc_time()
@@ -60,7 +57,6 @@ class c_mapper105 : public c_mapper1, register_class<nes_mapper_registry, c_mapp
     int init;
     int irq_counter;
     int irq_asserted;
-    int ticks;
     static const int irq_trigger = 0x28000000;
     
     void sync_prg()

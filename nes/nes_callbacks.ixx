@@ -20,11 +20,12 @@ export template <typename Derived> class i_nes_callbacks
     }
   public:
     // clang-format off
-    void on_ppu_clock() { derived()->_on_ppu_clock(); }
-    void on_cpu_clock() { derived()->_on_cpu_clock(); }
-    void on_sprite_eval(bool in_eval) { derived()->_on_sprite_eval(in_eval); }
-    void on_nmi(bool nmi) { derived()->_on_nmi(nmi); }
-    void on_irq(bool irq) { derived()->_on_irq(irq); }
+    void mapper_cpu_clock() { derived()->_mapper_cpu_clock(); }
+    void mapper_ppu_clock() { derived()->_mapper_ppu_clock(); }
+    void cpu_clock() { derived()->_cpu_clock(); }
+    void in_sprite_eval(bool in_eval) { derived()->_sprite_eval(in_eval); }
+    void nmi(bool nmi) { derived()->_nmi(nmi); }
+    void irq(bool irq) { derived()->_irq(irq); }
     uint8_t ppu_read(uint16_t address) { return derived()->_ppu_read(address); }
     void ppu_write(uint16_t address, uint8_t values) { derived()->_ppu_write(address, values); }
     void add_cycle() { derived()->_add_cycle(); }

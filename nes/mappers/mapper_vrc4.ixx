@@ -18,21 +18,25 @@ class c_mapper_vrc4 : public c_mapper, register_class<nes_mapper_registry, c_map
             {
                 .number = 21,
                 .name = "VRC4",
+                .clock_source = MAPPER_CLOCK_SOURCE::PPU,
                 .constructor = []() { return std::make_unique<c_mapper_vrc4>(1); },
             },
             {
                 .number = 22,
                 .name = "VRC4",
+                .clock_source = MAPPER_CLOCK_SOURCE::PPU,
                 .constructor = []() { return std::make_unique<c_mapper_vrc4>(3); },
             },
             {
                 .number = 23,
                 .name = "VRC4",
+                .clock_source = MAPPER_CLOCK_SOURCE::PPU,
                 .constructor = []() { return std::make_unique<c_mapper_vrc4>(); },
             },
             {
                 .number = 25,
                 .name = "VRC4",
+                .clock_source = MAPPER_CLOCK_SOURCE::PPU,
                 .constructor = []() { return std::make_unique<c_mapper_vrc4>(2); },
             },
         };
@@ -145,7 +149,7 @@ class c_mapper_vrc4 : public c_mapper, register_class<nes_mapper_registry, c_map
             swap_bits = 1;
     }
 
-    void clock() override
+    void ppu_clock() override
     {
         if ((irq_control & 0x02) && ((irq_control & 0x04) || ((irq_scaler += 1) >= 341))) {
             if (!(irq_control & 0x04)) {

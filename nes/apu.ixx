@@ -67,7 +67,7 @@ class c_apu
             if (frame_irq_flag) {
                 frame_irq_flag = 0;
                 if (frame_irq_asserted) {
-                    nes.on_irq(false);
+                    nes.irq(false);
                     frame_irq_asserted = 0;
                 }
             }
@@ -184,13 +184,13 @@ class c_apu
                 frame_irq_enable = !(value & 0x40);
                 if (!frame_irq_enable && frame_irq_flag) {
                     if (frame_irq_asserted) {
-                        nes.on_irq(false);
+                        nes.irq(false);
                         frame_irq_asserted = 0;
                     }
                 }
                 else if (frame_irq_enable && frame_irq_flag) {
                     if (!frame_irq_asserted) {
-                        nes.on_irq(true);
+                        nes.irq(true);
                         frame_irq_asserted = 1;
                     }
                 }
@@ -363,7 +363,7 @@ class c_apu
                     frame_irq_flag = 1;
                     if (frame_irq_enable && !frame_irq_asserted) {
                         frame_irq_asserted = 1;
-                        nes.on_irq(true);
+                        nes.irq(true);
                     }
                     frame_seq_step = 0;
                     break;

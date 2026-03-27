@@ -19,11 +19,13 @@ class c_mapper24 : public c_mapper, register_class<nes_mapper_registry, c_mapper
             {
                 .number = 24,
                 .name = "VRC6",
+                .clock_source = MAPPER_CLOCK_SOURCE::BOTH,
                 .constructor = []() { return std::make_unique<c_mapper24>(); },
             },
             {
                 .number = 26,
                 .name = "VRC6",
+                .clock_source = MAPPER_CLOCK_SOURCE::BOTH,
                 .constructor = []() { return std::make_unique<c_mapper24>(1); },
             },
         };
@@ -157,14 +159,8 @@ class c_mapper24 : public c_mapper, register_class<nes_mapper_registry, c_mapper
         }
     }
 
-    void clock() override
+    void ppu_clock() override
     {
-        if (++ticks == 3) {
-            pulse1.clock();
-            pulse2.clock();
-            saw.clock();
-            ticks = 0;
-        }
         if ((irq_control & 0x02) && ((irq_control & 0x04) || ((irq_scaler += 1) >= 341))) {
             if (!(irq_control & 0x04)) {
                 irq_scaler -= 341;
@@ -181,6 +177,13 @@ class c_mapper24 : public c_mapper, register_class<nes_mapper_registry, c_mapper
         }
     }
 
+    void cpu_clock() override
+    {
+        pulse1.clock();
+        pulse2.clock();
+        saw.clock();
+    }
+
     void reset() override
     {
         SetPrgBank8k(PRG_E000, prgRomPageCount8k - 1);
@@ -190,7 +193,6 @@ class c_mapper24 : public c_mapper, register_class<nes_mapper_registry, c_mapper
         irq_reload = 0;
         irq_scaler = 0;
         audio_out = 0.0;
-        ticks = 0;
         freq_control = 0;
         pulse1.reset();
         pulse2.reset();
@@ -207,7 +209,6 @@ class c_mapper24 : public c_mapper, register_class<nes_mapper_registry, c_mapper
     }
 
   private:
-    int ticks;
     int irq_counter;
     int irq_asserted;
     int irq_control;

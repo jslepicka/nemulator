@@ -21,6 +21,7 @@ class c_mapper69 : public c_mapper, register_class<nes_mapper_registry, c_mapper
             {
                 .number = 69,
                 .name = "FME-7",
+                .clock_source = MAPPER_CLOCK_SOURCE::CPU,
                 .constructor = []() { return std::make_unique<c_mapper69>(); },
             },
         };
@@ -158,7 +159,6 @@ class c_mapper69 : public c_mapper, register_class<nes_mapper_registry, c_mapper
     void reset() override
     {
         command = 0;
-        ticks = 0;
         prg_mode = 0;
         irq_control = 0;
         irq_counter = 0;
@@ -177,18 +177,15 @@ class c_mapper69 : public c_mapper, register_class<nes_mapper_registry, c_mapper
         squares_enabled = 0;
     }
 
-    void clock() override
+    void cpu_clock() override
     {
-        if (++ticks == 3) {
-            int prev_counter = irq_counter;
-            if (irq_control & 0x80) {
-                irq_counter--;
-                if ((irq_counter > prev_counter) && (irq_control & 0x01))
-                    execute_irq();
-            }
-            ticks = 0;
+        int prev_counter = irq_counter;
+        if (irq_control & 0x80) {
+            irq_counter--;
+            if ((irq_counter > prev_counter) && (irq_control & 0x01))
+                execute_irq();
         }
-        if (++audio_ticks == 6) {
+        if (++audio_ticks == 2) {
             audio_ticks = 0;
             for (int i = 0; i < 3; i++) {
                 if (squares[i].target_period > 0) {
@@ -218,7 +215,6 @@ class c_mapper69 : public c_mapper, register_class<nes_mapper_registry, c_mapper
     }
 
   private:
-    int ticks;
     int audio_ticks;
     int command;
     int prg_mode;

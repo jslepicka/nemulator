@@ -1,5 +1,5 @@
 module;
-
+#include <cassert>
 module nes;
 import :cartdb;
 import :ines;
@@ -147,7 +147,6 @@ int c_nes::load()
 {
     int submapper = -1;
     cpu = std::make_unique<c_cpu<c_nes>>(*this);
-    ppu = std::make_unique<c_ppu<c_nes>>(*this);
     joypad = std::make_unique<c_joypad>();
     apu = std::make_unique<c_apu<c_nes>>(*this);
 
@@ -188,6 +187,23 @@ int c_nes::load()
     mapper->sramFilename = sram_path_file;
     mapper->crc32 = crc32;
     mapper->file_length = file_length;
+    switch (mapper_info->clock_source) {
+        case MAPPER_CLOCK_SOURCE::NONE:
+            ppu = std::make_unique<c_ppu<c_nes, MAPPER_CLOCK_SOURCE::NONE>>(*this);
+            break;
+        case MAPPER_CLOCK_SOURCE::PPU:
+            ppu = std::make_unique<c_ppu<c_nes, MAPPER_CLOCK_SOURCE::PPU>>(*this);
+            break;
+        case MAPPER_CLOCK_SOURCE::CPU:
+            ppu = std::make_unique<c_ppu<c_nes, MAPPER_CLOCK_SOURCE::CPU>>(*this);
+            break;
+        case MAPPER_CLOCK_SOURCE::BOTH:
+            ppu = std::make_unique<c_ppu<c_nes, MAPPER_CLOCK_SOURCE::BOTH>>(*this);
+            break;
+        default:
+            assert(0);
+    }
+
     reset();
     return 1;
 }

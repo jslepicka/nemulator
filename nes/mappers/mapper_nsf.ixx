@@ -19,6 +19,7 @@ class c_mapper_nsf : public c_mapper, register_class<nes_mapper_registry, c_mapp
             {
                 .number = 0x102,
                 .name = "NSF",
+                .clock_source = MAPPER_CLOCK_SOURCE::CPU,
                 .constructor = []() { return std::make_unique<c_mapper_nsf>(); },
             },
         };
@@ -178,10 +179,10 @@ class c_mapper_nsf : public c_mapper, register_class<nes_mapper_registry, c_mapp
         return 0;
     }
 
-    void clock() override
+    void cpu_clock() override
     {
         if (vrc7) {
-            vrc7->clock();
+            vrc7->cpu_clock();
         }
     }
 

@@ -14,6 +14,7 @@ class c_mapper40 : public c_mapper, register_class<nes_mapper_registry, c_mapper
         return {
             {
                 .number = 40,
+                .clock_source = MAPPER_CLOCK_SOURCE::CPU,
                 .constructor = []() { return std::make_unique<c_mapper40>(); },
             },
         };
@@ -60,21 +61,17 @@ class c_mapper40 : public c_mapper, register_class<nes_mapper_registry, c_mapper
     {
         irq_counter = 0;
         irq_enabled = 0;
-        ticks = 0;
         SetPrgBank8k(PRG_8000, 4);
         SetPrgBank8k(PRG_A000, 5);
         SetPrgBank8k(PRG_E000, prgRomPageCount8k - 1);
     }
 
-    void clock() override
+    void cpu_clock() override
     {
         if (irq_enabled) {
-            if (++ticks == 3) {
-                if (++irq_counter == 4096) {
-                    execute_irq();
-                    irq_counter = 0;
-                }
-                ticks = 0;
+            if (++irq_counter == 4096) {
+                execute_irq();
+                irq_counter = 0;
             }
         }
     }
@@ -82,7 +79,6 @@ class c_mapper40 : public c_mapper, register_class<nes_mapper_registry, c_mapper
   private:
     int irq_counter;
     int irq_enabled;
-    int ticks;
 };
 
 } //namespace nes

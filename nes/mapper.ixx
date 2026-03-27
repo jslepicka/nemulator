@@ -8,6 +8,14 @@ import nemulator.std;
 namespace nes
 {
 
+export enum class MAPPER_CLOCK_SOURCE
+{
+    NONE,
+    PPU,
+    CPU,
+    BOTH
+};
+
 export enum MIRRORING
 {
     MIRRORING_HORIZONTAL = 0,
@@ -24,7 +32,8 @@ export class c_mapper
     virtual ~c_mapper();
     virtual unsigned char read_byte(unsigned short address);
     virtual void write_byte(unsigned short address, unsigned char value);
-    virtual void clock() {};
+    virtual void ppu_clock() {};
+    virtual void cpu_clock() {};
     virtual void reset();
     virtual int load_image();
     virtual float mix_audio(float sample);
@@ -45,7 +54,6 @@ export class c_mapper
     }
     virtual int switch_disk() { return 0; };
     int in_sprite_eval;
-    //c_nes *nes;
     int get_mirroring();
     int file_length;
 
@@ -53,6 +61,7 @@ export class c_mapper
     {
         int number;
         std::string name;
+        MAPPER_CLOCK_SOURCE clock_source = MAPPER_CLOCK_SOURCE::NONE;
         std::function<std::unique_ptr<c_mapper>()> constructor;
     };
 

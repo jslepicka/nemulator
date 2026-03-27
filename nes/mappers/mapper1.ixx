@@ -16,6 +16,7 @@ export class c_mapper1 : public c_mapper, register_class<nes_mapper_registry, c_
         return {{
             .number = 1,
             .name = "MMC1",
+            .clock_source = MAPPER_CLOCK_SOURCE::CPU,
             .constructor = []() { return std::make_unique<c_mapper1>(); },
         }};
     }
@@ -55,7 +56,9 @@ export class c_mapper1 : public c_mapper, register_class<nes_mapper_registry, c_
         cycle_count = 1;
         Sync();
     }
-    void clock()
+    //ppu... but cpu should be fine - done
+    //check bill & ted
+    void cpu_clock() override
     {
         ignore_writes = 0;
     }
