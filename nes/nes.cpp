@@ -189,6 +189,8 @@ int c_nes::load()
     mapper->file_length = file_length;
     ppu = std::make_unique<c_ppu<c_nes>>(*this);
     ppu->mapper_clock_rate = mapper_info->clock_rate;
+    ppu->ppu_cycle = &ppu_cycle;
+    mapper->ppu_cycle = &ppu_cycle;
 
     reset();
     return 1;
@@ -224,7 +226,7 @@ int c_nes::reset()
     //game_genie->add_code("IPVGZGZE");
     //game_genie->add_code("LEIIXZ");
     //game_genie->add_code("GXVAAASA");
-
+    ppu_cycle = 0;
     return 1;
 }
 

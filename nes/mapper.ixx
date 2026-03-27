@@ -72,6 +72,7 @@ export class c_mapper
     std::function<void()> clear_irq = nullptr;
     std::function<int()> ppu_get_drawing_bg = nullptr;
     std::function<int()> ppu_get_sprite_size = nullptr;
+    uint64_t *ppu_cycle;
 
   protected:
     static const int CHR_0000 = 0;

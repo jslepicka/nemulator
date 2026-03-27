@@ -1,5 +1,5 @@
 module;
-
+#include <cassert>
 export module nes:mapper.mapper4;
 import :mapper;
 import class_registry;
@@ -174,6 +174,7 @@ export class c_mapper4 : public c_mapper, register_class<nes_mapper_registry, c_
         chr[4] = 6;
         chr[5] = 7;
         Sync();
+        last_hi = 0;
     }
 
     void ppu_clock() override
@@ -183,8 +184,10 @@ export class c_mapper4 : public c_mapper, register_class<nes_mapper_registry, c_
             if (low_count < 0)
                 low_count = 0;
         }
-        else
+        else {
             low_count = 12; //12 required for wario's woods
+            //last_hi = *ppu_cycle;
+        }
     }
 
   protected:
@@ -213,6 +216,7 @@ export class c_mapper4 : public c_mapper, register_class<nes_mapper_registry, c_
     int chr_mask;
     int last_prg_page;
     int four_screen = 0;
+    uint64_t last_hi;
 
     virtual void fire_irq()
     {
@@ -249,9 +253,23 @@ export class c_mapper4 : public c_mapper, register_class<nes_mapper_registry, c_
     void check_a12(int address)
     {
         current_address = address;
-
-        if ((address & 0x1000) && low_count == 0)
+        bool clocked = false;
+        if ((address & 0x1000) && low_count == 0) {
+            clocked = true;
             clock_irq_counter();
+        }
+
+        bool clocked2 = false;
+        if (address & 0x1000) {
+            if (*(ppu_cycle - last_hi) / 3 >= 4) {
+                clocked2 = true;
+            }
+        }
+        else {
+            last_hi = *ppu_cycle;
+        }
+
+        assert(clocked == clocked2);
     }
 
     virtual void Sync()

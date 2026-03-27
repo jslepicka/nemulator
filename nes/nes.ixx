@@ -162,6 +162,7 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>, pu
     }
 
   private:
+    uint64_t ppu_cycle;
     int LoadImage(std::string &pathFile);
     std::unique_ptr<c_apu<c_nes>> apu;
     std::unique_ptr<c_joypad> joypad;

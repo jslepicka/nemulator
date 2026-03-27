@@ -22,6 +22,7 @@ class c_ppu
   public:
     int drawing_bg;
     MAPPER_CLOCK_RATE mapper_clock_rate;
+    uint64_t *ppu_cycle;
 
   private:
     Nes &nes;
@@ -150,6 +151,7 @@ class c_ppu
         build_lookup_tables();
         limit_sprites = false; //don't change this on reset
         p_output_pixel = &c_ppu::output_pixel;
+        ppu_cycle = nullptr;
     }
     ~c_ppu()
     {
@@ -615,6 +617,7 @@ class c_ppu
                 return;
             }
             current_cycle++;
+            (*ppu_cycle)++;
         }
     }
 

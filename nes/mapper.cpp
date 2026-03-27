@@ -21,6 +21,7 @@ c_mapper::c_mapper()
         name_table[i] = vram;
     in_sprite_eval = 0;
     mirroring_mode = 0;
+    ppu_cycle = nullptr;
 }
 
 void c_mapper::set_submapper(int submapper)
