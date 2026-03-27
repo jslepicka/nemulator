@@ -15,7 +15,7 @@ class c_mapper105 : public c_mapper1, register_class<nes_mapper_registry, c_mapp
             {
                 .number = 105,
                 .name = "NWC",
-                .clock_source = MAPPER_CLOCK_SOURCE::CPU,
+                .clock_rate = MAPPER_CLOCK_RATE::CPU,
                 .constructor = []() { return std::make_unique<c_mapper105>(); },
             },
         };

@@ -17,13 +17,13 @@ export class c_mapper4 : public c_mapper, register_class<nes_mapper_registry, c_
             {
                 .number = 4,
                 .name = "MMC3",
-                .clock_source = MAPPER_CLOCK_SOURCE::PPU,
+                .clock_rate = MAPPER_CLOCK_RATE::PPU,
                 .constructor = []() { return std::make_unique<c_mapper4>(); },
             },
             {
                 .number = 220,
                 .name = "MMC3 (FCEUX Debugging)",
-                .clock_source = MAPPER_CLOCK_SOURCE::PPU,
+                .clock_rate = MAPPER_CLOCK_RATE::PPU,
                 .constructor = []() { return std::make_unique<c_mapper4>(); },
             },
         };

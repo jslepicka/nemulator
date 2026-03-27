@@ -18,7 +18,7 @@ class c_mapper_mc_acc : public c_mapper4, register_class<nes_mapper_registry, c_
             {
                 .number = 0x101,
                 .name = "MC-ACC",
-                .clock_source = MAPPER_CLOCK_SOURCE::PPU,
+                .clock_rate = MAPPER_CLOCK_RATE::PPU,
                 .constructor = []() { return std::make_unique<c_mapper_mc_acc>(); },
             },
         };

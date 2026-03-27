@@ -45,7 +45,7 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>, pu
     bool get_sprite_limit();
     void set_submapper(int submapper);
     std::unique_ptr<c_cpu<c_nes>> cpu;
-    std::unique_ptr<i_ppu> ppu;
+    std::unique_ptr<c_ppu<c_nes>> ppu;
     std::unique_ptr<c_mapper> mapper;
     void _write_byte(uint16_t address, uint8_t value);
     uint8_t _read_byte(uint16_t address)

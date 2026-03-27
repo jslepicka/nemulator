@@ -19,13 +19,13 @@ class c_mapper24 : public c_mapper, register_class<nes_mapper_registry, c_mapper
             {
                 .number = 24,
                 .name = "VRC6",
-                .clock_source = MAPPER_CLOCK_SOURCE::BOTH,
+                .clock_rate = MAPPER_CLOCK_RATE::BOTH,
                 .constructor = []() { return std::make_unique<c_mapper24>(); },
             },
             {
                 .number = 26,
                 .name = "VRC6",
-                .clock_source = MAPPER_CLOCK_SOURCE::BOTH,
+                .clock_rate = MAPPER_CLOCK_RATE::BOTH,
                 .constructor = []() { return std::make_unique<c_mapper24>(1); },
             },
         };

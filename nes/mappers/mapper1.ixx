@@ -16,7 +16,7 @@ export class c_mapper1 : public c_mapper, register_class<nes_mapper_registry, c_
         return {{
             .number = 1,
             .name = "MMC1",
-            .clock_source = MAPPER_CLOCK_SOURCE::CPU,
+            .clock_rate = MAPPER_CLOCK_RATE::CPU,
             .constructor = []() { return std::make_unique<c_mapper1>(); },
         }};
     }

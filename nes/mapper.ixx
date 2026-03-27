@@ -8,13 +8,16 @@ import nemulator.std;
 namespace nes
 {
 
-export enum class MAPPER_CLOCK_SOURCE
+export enum class MAPPER_CLOCK_RATE : int
 {
-    NONE,
-    PPU,
-    CPU,
-    BOTH
+    NONE = 0,
+    PPU = 1,
+    CPU = 2,
+    BOTH = 3,
 };
+
+static_assert(std::to_underlying(MAPPER_CLOCK_RATE::BOTH) == std::to_underlying(MAPPER_CLOCK_RATE::PPU) |
+              std::to_underlying(MAPPER_CLOCK_RATE::CPU));
 
 export enum MIRRORING
 {
@@ -61,7 +64,7 @@ export class c_mapper
     {
         int number;
         std::string name;
-        MAPPER_CLOCK_SOURCE clock_source = MAPPER_CLOCK_SOURCE::NONE;
+        MAPPER_CLOCK_RATE clock_rate = MAPPER_CLOCK_RATE::NONE;
         std::function<std::unique_ptr<c_mapper>()> constructor;
     };
 

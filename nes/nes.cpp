@@ -187,22 +187,8 @@ int c_nes::load()
     mapper->sramFilename = sram_path_file;
     mapper->crc32 = crc32;
     mapper->file_length = file_length;
-    switch (mapper_info->clock_source) {
-        case MAPPER_CLOCK_SOURCE::NONE:
-            ppu = std::make_unique<c_ppu<c_nes, MAPPER_CLOCK_SOURCE::NONE>>(*this);
-            break;
-        case MAPPER_CLOCK_SOURCE::PPU:
-            ppu = std::make_unique<c_ppu<c_nes, MAPPER_CLOCK_SOURCE::PPU>>(*this);
-            break;
-        case MAPPER_CLOCK_SOURCE::CPU:
-            ppu = std::make_unique<c_ppu<c_nes, MAPPER_CLOCK_SOURCE::CPU>>(*this);
-            break;
-        case MAPPER_CLOCK_SOURCE::BOTH:
-            ppu = std::make_unique<c_ppu<c_nes, MAPPER_CLOCK_SOURCE::BOTH>>(*this);
-            break;
-        default:
-            assert(0);
-    }
+    ppu = std::make_unique<c_ppu<c_nes>>(*this);
+    ppu->mapper_clock_rate = mapper_info->clock_rate;
 
     reset();
     return 1;

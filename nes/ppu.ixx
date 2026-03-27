@@ -16,32 +16,13 @@ namespace nes
 #define NES_PPU_USE_BMI2
 #define NES_PPU_USE_AVX2
 
-export class i_ppu
+export template <typename Nes>
+class c_ppu
 {
   public:
     int drawing_bg;
-    virtual unsigned char read_byte(int address) = 0;
-    virtual void write_byte(int address, unsigned char value) = 0;
-    virtual void eval_sprites() = 0;
-    virtual int get_sprite_size() = 0;
-    virtual void reset() = 0;
-    virtual int *get_frame_buffer() = 0;
-    virtual bool get_sprite_limit() = 0;
-    virtual void set_sprite_limit(bool limit) = 0;
-    virtual uint8_t *get_sprite_memory() = 0;
-    virtual void run_ppu_line() = 0;
-    virtual ~i_ppu() = default;
+    MAPPER_CLOCK_RATE mapper_clock_rate;
 
-  protected:
-    static inline uint64_t morton_odd_64[256];
-    static inline uint64_t morton_even_64[256];
-    static inline uint32_t pal[512];
-    static inline std::atomic<int> lookup_tables_built;
-};
-
-export template <typename Nes, MAPPER_CLOCK_SOURCE clock_source>
-class c_ppu : public i_ppu
-{
   private:
     Nes &nes;
     int vram_update_delay;
@@ -155,6 +136,10 @@ class c_ppu : public i_ppu
     alignas(64) uint8_t index_buffer[272];
     uint8_t image_palette[32];
     alignas(64) uint32_t frame_buffer[256 * 240];
+    static inline uint64_t morton_odd_64[256];
+    static inline uint64_t morton_even_64[256];
+    static inline uint32_t pal[512];
+    static inline std::atomic<int> lookup_tables_built;
 
  ////////////////////////////
 
@@ -536,12 +521,6 @@ class c_ppu : public i_ppu
 
     void run_ppu_line()
     {
-        _run_ppu_line<clock_source>();
-    }
-
-    template <MAPPER_CLOCK_SOURCE clock_source>
-    void _run_ppu_line()
-    {
         int pixel_count = 0;
         int last_cycle = 0;
         vid_out = 0;
@@ -612,11 +591,11 @@ class c_ppu : public i_ppu
                 }
             }
 
-            if constexpr (clock_source == MAPPER_CLOCK_SOURCE::PPU || clock_source == MAPPER_CLOCK_SOURCE::BOTH) {
+            if (std::to_underlying(mapper_clock_rate) & std::to_underlying(MAPPER_CLOCK_RATE::PPU)) {
                 nes.mapper_ppu_clock();
             }
             if (--executed_cycles == 0) [[unlikely]] {
-                if constexpr (clock_source == MAPPER_CLOCK_SOURCE::CPU || clock_source == MAPPER_CLOCK_SOURCE::BOTH) {
+                if (std::to_underlying(mapper_clock_rate) & std::to_underlying(MAPPER_CLOCK_RATE::CPU)) {
                     nes.mapper_cpu_clock();
                 }
                 nes.cpu_clock();

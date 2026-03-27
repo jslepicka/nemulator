@@ -17,7 +17,7 @@ public:
         return {{
             .number = 5,
             .name = "MMC5",
-            .clock_source = MAPPER_CLOCK_SOURCE::CPU,
+            .clock_rate = MAPPER_CLOCK_RATE::CPU,
             .constructor = []() { return std::make_unique<c_mapper5>(); },
         }};
     }

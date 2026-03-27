@@ -15,7 +15,7 @@ class c_mapper0 : public c_mapper, register_class<nes_mapper_registry, c_mapper0
             {
                 .number = 0,
                 .name = "NROM",
-                .clock_source = MAPPER_CLOCK_SOURCE::NONE,
+                .clock_rate = MAPPER_CLOCK_RATE::NONE,
                 .constructor = []() { return std::make_unique<c_mapper0>(); },
             },
         };
