@@ -24,6 +24,14 @@ class c_mapper_mc_acc : public c_mapper4, register_class<nes_mapper_registry, c_
         };
     }
 
+    c_mapper_mc_acc()
+    {
+        a12_low_time = 35;
+    }
+
+    //MC-ACC fires IRQ on trailing edge of A12 and games are sensitive
+    //to this timing.  Need to assert IRQ at the correct PPU cycle.
+    //There's probably a more efficient way to do this...
     void ppu_clock() override
     {
         if (irq_delay > 0) {
@@ -32,13 +40,6 @@ class c_mapper_mc_acc : public c_mapper4, register_class<nes_mapper_registry, c_
                 c_mapper4::fire_irq();
             }
         }
-        if (!(current_address & 0x1000)) {
-            low_count -= 1;
-            if (low_count < 0)
-                low_count = 0;
-        }
-        else
-            low_count = 35;
     }
 
     void reset() override
@@ -48,9 +49,9 @@ class c_mapper_mc_acc : public c_mapper4, register_class<nes_mapper_registry, c_
     }
 
   protected:
-    void fire_irq()
+    void fire_irq() override
     {
-        irq_delay = 4;
+        irq_delay = 3;
     }
 
   private:

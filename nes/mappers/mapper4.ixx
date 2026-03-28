@@ -17,13 +17,13 @@ export class c_mapper4 : public c_mapper, register_class<nes_mapper_registry, c_
             {
                 .number = 4,
                 .name = "MMC3",
-                .clock_rate = MAPPER_CLOCK_RATE::PPU,
+                .clock_rate = MAPPER_CLOCK_RATE::NONE,
                 .constructor = []() { return std::make_unique<c_mapper4>(); },
             },
             {
                 .number = 220,
                 .name = "MMC3 (FCEUX Debugging)",
-                .clock_rate = MAPPER_CLOCK_RATE::PPU,
+                .clock_rate = MAPPER_CLOCK_RATE::NONE,
                 .constructor = []() { return std::make_unique<c_mapper4>(); },
             },
         };
@@ -145,8 +145,6 @@ export class c_mapper4 : public c_mapper, register_class<nes_mapper_registry, c_
         irqReload = false;
         irqCounterReload = 0;
         fireIRQ = false;
-        previous_address = 0;
-        current_address = 100;
         low_count = 0;
         last_prg_page = prgRomPageCount8k - 1;
         irq_mode = 1;
@@ -174,26 +172,13 @@ export class c_mapper4 : public c_mapper, register_class<nes_mapper_registry, c_
         chr[4] = 6;
         chr[5] = 7;
         Sync();
-        last_hi = 0;
-    }
-
-    void ppu_clock() override
-    {
-        if (!(current_address & 0x1000)) {
-            low_count -= 1;
-            if (low_count < 0)
-                low_count = 0;
-        }
-        else {
-            low_count = 12; //12 required for wario's woods
-            //last_hi = *ppu_cycle;
-        }
+        last_a12_transition = 0;
+        last_address = 0;
     }
 
   protected:
     int irq_mode;
-    int current_address;
-    int previous_address;
+    uint16_t last_address;
     int low_count;
     bool prgSelect;
     bool chrXor;
@@ -216,7 +201,8 @@ export class c_mapper4 : public c_mapper, register_class<nes_mapper_registry, c_
     int chr_mask;
     int last_prg_page;
     int four_screen = 0;
-    uint64_t last_hi;
+    uint64_t last_a12_transition;
+    int a12_low_time = 12;
 
     virtual void fire_irq()
     {
@@ -250,26 +236,18 @@ export class c_mapper4 : public c_mapper, register_class<nes_mapper_registry, c_
         }
     }
 
-    void check_a12(int address)
+    virtual void check_a12(int address)
     {
-        current_address = address;
-        bool clocked = false;
-        if ((address & 0x1000) && low_count == 0) {
-            clocked = true;
-            clock_irq_counter();
-        }
-
-        bool clocked2 = false;
-        if (address & 0x1000) {
-            if (*(ppu_cycle - last_hi) / 3 >= 4) {
-                clocked2 = true;
+        //on A12 transition
+        if ((address ^ last_address) & 0x1000) {
+            //if A12 is high and the last transition was >= 12 ppu
+            //cycles ago, clock irq
+            if (address & 0x1000 && *ppu_cycle - last_a12_transition >= a12_low_time) {
+                clock_irq_counter();
             }
+            last_a12_transition = *ppu_cycle;
         }
-        else {
-            last_hi = *ppu_cycle;
-        }
-
-        assert(clocked == clocked2);
+        last_address = address;
     }
 
     virtual void Sync()
