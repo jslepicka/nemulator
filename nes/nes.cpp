@@ -46,7 +46,10 @@ void c_nes::set_sprite_limit(bool limit_sprites)
 
 bool c_nes::get_sprite_limit()
 {
-    return ppu->get_sprite_limit();
+    if (ppu) {
+        return ppu->get_sprite_limit();
+    }
+    return false;
 }
 
 unsigned char c_nes::_dmc_read(unsigned short address)
