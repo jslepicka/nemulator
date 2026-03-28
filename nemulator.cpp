@@ -1152,7 +1152,7 @@ void c_nemulator::UpdateScene(double dt)
             s << std::hex << std::uppercase << system->get_crc();
             stats->report_stat("CRC", s.str());
 
-            if (game->is_nes)
+            if (game->is_nes && game->system->is_loaded())
             {
                 nes::c_nes *n = (nes::c_nes *)system;
                 stats->report_stat("mapper #", n->get_mapper_number());
