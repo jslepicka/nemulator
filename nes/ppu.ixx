@@ -593,11 +593,8 @@ class c_ppu
                 }
             }
 
-            if (std::to_underlying(mapper_clock_rate) & std::to_underlying(MAPPER_CLOCK_RATE::PPU)) {
-                nes.mapper_ppu_clock();
-            }
             if (--executed_cycles == 0) [[unlikely]] {
-                if (std::to_underlying(mapper_clock_rate) & std::to_underlying(MAPPER_CLOCK_RATE::CPU)) {
+                if (mapper_clock_rate == MAPPER_CLOCK_RATE::CPU) {
                     nes.mapper_cpu_clock();
                 }
                 nes.cpu_clock();
@@ -662,31 +659,31 @@ class c_ppu
             i *= saturation;
             q *= saturation;
 
-        //Y'IQ -> NTSC R'G'B'
-        //Adapted from http://en.wikipedia.org/wiki/YIQ, FCC matrix []^-1
+            //Y'IQ -> NTSC R'G'B'
+            //Adapted from http://en.wikipedia.org/wiki/YIQ, FCC matrix []^-1
             double ntsc_r = y + 0.956 * i + 0.620 * q;
             double ntsc_g = y + -0.272 * i + -0.647 * q;
             double ntsc_b = y + -1.108 * i + 1.705 * q;
 
-        //NTSC R'G'B' -> linear NTSC RGB
+            //NTSC R'G'B' -> linear NTSC RGB
             ntsc_r = pow(std::clamp(ntsc_r, 0.0, 1.0), 2.2);
             ntsc_g = pow(std::clamp(ntsc_g, 0.0, 1.0), 2.2);
             ntsc_b = pow(std::clamp(ntsc_b, 0.0, 1.0), 2.2);
 
-        //NTSC RGB (SMPTE-C) -> CIE XYZ
-        //conversion matrix from http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
+            //NTSC RGB (SMPTE-C) -> CIE XYZ
+            //conversion matrix from http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
             double cie_x = ntsc_r * 0.3935891 + ntsc_g * 0.3652497 + ntsc_b * 0.1916313;
             double cie_y = ntsc_r * 0.2124132 + ntsc_g * 0.7010437 + ntsc_b * 0.0865432;
             double cie_z = ntsc_r * 0.0187423 + ntsc_g * 0.1119313 + ntsc_b * 0.9581563;
 
-        //CIE XYZ -> linear sRGB
-        //Shader will return sR'G'B'
-        //conversion matrix from http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
+            //CIE XYZ -> linear sRGB
+            //Shader will return sR'G'B'
+            //conversion matrix from http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
             double srgb_r2 = cie_x * 3.2404542 + cie_y * -1.5371385 + cie_z * -0.4985314;
             double srgb_g2 = cie_x * -0.9692660 + cie_y * 1.8760108 + cie_z * 0.0415560;
             double srgb_b2 = cie_x * 0.0556434 + cie_y * -0.2040259 + cie_z * 1.0572252;
 
-        //linear RGB -> sRGB
+            //linear RGB -> sRGB
 
             srgb_r2 = std::clamp(pow(srgb_r2, 1.0 / 2.2), 0.0, 1.0);
             srgb_g2 = std::clamp(pow(srgb_g2, 1.0 / 2.2), 0.0, 1.0);
@@ -1023,12 +1020,12 @@ class c_ppu
                 }
                 break;
             case (1 | FETCH_SPRITE):
-                //tile = nes.ppu_read(0x2000 | (vram_address & 0xFFF));
+                nes.ppu_read(0x2000 | (vram_address & 0xFFF));
                 break;
             case (2 | FETCH_SPRITE):
                 break;
             case (3 | FETCH_SPRITE):
-                //tile = nes.ppu_read(0x2000 | (vram_address & 0xFFF));
+                nes.ppu_read(0x2000 | (vram_address & 0xFFF));
                 break;
             case (4 | FETCH_SPRITE):
                 break;

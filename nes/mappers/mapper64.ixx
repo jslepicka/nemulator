@@ -1,5 +1,5 @@
 module;
-
+#include <cassert>
 export module nes:mapper.mapper64;
 import :mapper;
 import class_registry;
@@ -17,7 +17,7 @@ class c_mapper64 : public c_mapper, register_class<nes_mapper_registry, c_mapper
             {
                 .number = 64,
                 .name = "RAMBO-1",
-                .clock_rate = MAPPER_CLOCK_RATE::BOTH,
+                .clock_rate = MAPPER_CLOCK_RATE::CPU,
                 .constructor = []() { return std::make_unique<c_mapper64>(); },
             },
         };
@@ -74,6 +74,7 @@ class c_mapper64 : public c_mapper, register_class<nes_mapper_registry, c_mapper
                     if (irq_asserted) {
                         clear_irq();
                         irq_asserted = 0;
+                        assert(irq_pending == false);
                     }
                     irq_enabled = 0;
                     break;
@@ -136,6 +137,10 @@ class c_mapper64 : public c_mapper, register_class<nes_mapper_registry, c_mapper
         irq_adjust = 0;
 
         cycles_since_irq = 0;
+        last_address = 0;
+
+        irq_pending = false;
+        last_a12_transition = 0;
     }
 
     void cpu_clock() override
@@ -143,30 +148,8 @@ class c_mapper64 : public c_mapper, register_class<nes_mapper_registry, c_mapper
         if (++cpu_divider == 4) {
             if ((reg_c001 & 1) && irq_enabled) {
                 clock_irq_counter();
-                //if (irq_delay > 0)
-                //    irq_delay = 24;
             }
             cpu_divider = 0;
-        }
-    }
-
-    void ppu_clock() override
-    {
-        if (!(current_address & 0x1000)) {
-            low_count -= 1;
-            if (low_count < 0)
-                low_count = 0;
-        }
-        else
-            low_count = 15;
-        cycles_since_irq += 1;
-        if (irq_delay > 0) {
-            irq_delay -= 1;
-            if (irq_delay <= 0) {
-                execute_irq();
-                irq_asserted = 1;
-                cycles_since_irq = 0;
-            }
         }
     }
 
@@ -196,13 +179,12 @@ class c_mapper64 : public c_mapper, register_class<nes_mapper_registry, c_mapper
     int last_c000;
     int cycles_since_irq;
     int latched_value;
+    int last_address;
+    bool irq_pending;
+    uint64_t last_a12_transition;
 
     void clock_irq_counter()
     {
-        //if (!irq_enabled)
-        //    return;
-        //int x = ppu->current_cycle;
-        //int y = ppu->current_scanline;
         if (irq_counter_reload) {
             irq_counter = reg_c000 | 1;
             irq_counter_reload = 0;
@@ -214,9 +196,13 @@ class c_mapper64 : public c_mapper, register_class<nes_mapper_registry, c_mapper
             irq_counter--;
             if (irq_counter == 0 && irq_enabled) {
                 if (!irq_asserted) {
-                //int y = ppu->current_scanline;
-                //int x = ppu->current_cycle;
-                    fire_irq();
+                    if (reg_c001 & 1) {
+                        execute_irq();
+                        irq_asserted = 1;
+                    }
+                    else {
+                        irq_pending = true;
+                    }
                 }
             }
         }
@@ -284,18 +270,30 @@ class c_mapper64 : public c_mapper, register_class<nes_mapper_registry, c_mapper
         }
     }
 
-    void check_a12(int address)
+    virtual void check_a12(int address)
     {
-        current_address = address;
-        //    int x = ppu->current_cycle;
-        //int y = ppu->current_scanline;
-        if (!(reg_c001 & 1) && (address & 0x1000) && low_count == 0)
-            clock_irq_counter();
-    }
+        if (!(reg_c001 & 1)) {
+            //on A12 transition
+            if ((address ^ last_address) & 0x1000) {
+                if (address & 0x1000) {
+                    if (*ppu_cycle - last_a12_transition >= 12) {
+                        clock_irq_counter();
+                    }
+                }
+                else {
+                    //effectively 4 ppu cycle delay
+                    if (irq_pending) {
+                        execute_irq();
+                        irq_asserted = 1;
+                        cycles_since_irq = 0;
+                        irq_pending = false;
+                    }
+                }
+                last_a12_transition = *ppu_cycle;
+            }
+        }
+        last_address = address;
 
-    virtual void fire_irq()
-    {
-        irq_delay = 6;
     }
 };
 

@@ -19,13 +19,13 @@ class c_mapper24 : public c_mapper, register_class<nes_mapper_registry, c_mapper
             {
                 .number = 24,
                 .name = "VRC6",
-                .clock_rate = MAPPER_CLOCK_RATE::BOTH,
+                .clock_rate = MAPPER_CLOCK_RATE::CPU,
                 .constructor = []() { return std::make_unique<c_mapper24>(); },
             },
             {
                 .number = 26,
                 .name = "VRC6",
-                .clock_rate = MAPPER_CLOCK_RATE::BOTH,
+                .clock_rate = MAPPER_CLOCK_RATE::CPU,
                 .constructor = []() { return std::make_unique<c_mapper24>(1); },
             },
         };
@@ -159,9 +159,9 @@ class c_mapper24 : public c_mapper, register_class<nes_mapper_registry, c_mapper
         }
     }
 
-    void ppu_clock() override
+    void cpu_clock() override
     {
-        if ((irq_control & 0x02) && ((irq_control & 0x04) || ((irq_scaler += 1) >= 341))) {
+        if ((irq_control & 0x02) && ((irq_control & 0x04) || ((irq_scaler += 3) >= 341))) {
             if (!(irq_control & 0x04)) {
                 irq_scaler -= 341;
             }
@@ -175,10 +175,6 @@ class c_mapper24 : public c_mapper, register_class<nes_mapper_registry, c_mapper
             else
                 irq_counter++;
         }
-    }
-
-    void cpu_clock() override
-    {
         pulse1.clock();
         pulse2.clock();
         saw.clock();

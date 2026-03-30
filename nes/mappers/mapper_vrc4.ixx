@@ -18,25 +18,25 @@ class c_mapper_vrc4 : public c_mapper, register_class<nes_mapper_registry, c_map
             {
                 .number = 21,
                 .name = "VRC4",
-                .clock_rate = MAPPER_CLOCK_RATE::PPU,
+                .clock_rate = MAPPER_CLOCK_RATE::CPU,
                 .constructor = []() { return std::make_unique<c_mapper_vrc4>(1); },
             },
             {
                 .number = 22,
                 .name = "VRC4",
-                .clock_rate = MAPPER_CLOCK_RATE::PPU,
+                .clock_rate = MAPPER_CLOCK_RATE::CPU,
                 .constructor = []() { return std::make_unique<c_mapper_vrc4>(3); },
             },
             {
                 .number = 23,
                 .name = "VRC4",
-                .clock_rate = MAPPER_CLOCK_RATE::PPU,
+                .clock_rate = MAPPER_CLOCK_RATE::CPU,
                 .constructor = []() { return std::make_unique<c_mapper_vrc4>(); },
             },
             {
                 .number = 25,
                 .name = "VRC4",
-                .clock_rate = MAPPER_CLOCK_RATE::PPU,
+                .clock_rate = MAPPER_CLOCK_RATE::CPU,
                 .constructor = []() { return std::make_unique<c_mapper_vrc4>(2); },
             },
         };
@@ -149,10 +149,13 @@ class c_mapper_vrc4 : public c_mapper, register_class<nes_mapper_registry, c_map
             swap_bits = 1;
     }
 
-    void ppu_clock() override
+    void cpu_clock() override
     {
-        if ((irq_control & 0x02) && ((irq_control & 0x04) || ((irq_scaler += 1) >= 341))) {
-            if (!(irq_control & 0x04)) {
+        bool irq_enabled = irq_control & 0x02;
+        bool irq_cycle_mode = irq_control & 0x04;
+
+        if (irq_enabled && (irq_cycle_mode || ((irq_scaler += 3) >= 341))) {
+            if (!irq_cycle_mode) {
                 irq_scaler -= 341;
             }
             if (irq_counter == 0xFF) {
