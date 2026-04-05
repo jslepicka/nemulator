@@ -868,9 +868,12 @@ uint8_t c_gbppu::read_byte(uint16_t address)
             case 0xFF4F:
                 return 0xFE | (cgb_vram_bank & 0x1);
             case 0xFF55:
-                if (HDMA5 & 0x80 && hdma_hblank_count) {
-                    int remaining_blocks = (hdma_hblank_count >> 4) - 1;
-                    return remaining_blocks == 0 ? 0xFF : remaining_blocks;
+                if (HDMA5 & 0x80) {
+                    if (hdma_hblank_count) {
+                        int remaining_blocks = (hdma_hblank_count >> 4) - 1;
+                        return remaining_blocks & 0x7F;
+                    }
+                    return 0xFF;
                 }
                 return 0xFF;
             case 0xFF68:
@@ -997,7 +1000,6 @@ void c_gbppu::write_byte(uint16_t address, uint8_t data)
             case 0xFF55: //HDMA5
             {
                 HDMA5 = data;
-                int x = 1;
                 int length = ((data & 0x7F) + 1) * 0x10;
                 if (data & 0x80) {
                     if (mode == 0 || !(LCDC & 0x80)) {
@@ -1009,9 +1011,8 @@ void c_gbppu::write_byte(uint16_t address, uint8_t data)
                     }
                 }
                 else {
-                    hdma_length = length;
-                }
-
+                        hdma_length = length;
+                    }
             } break;
             case 0xFF68:
                 BCPS = data;

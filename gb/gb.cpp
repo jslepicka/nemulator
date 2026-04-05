@@ -1,5 +1,5 @@
 module;
-
+#include <cassert>
 module gb;
 
 namespace gb
