@@ -940,7 +940,7 @@ void c_gbppu::write_byte(uint16_t address, uint8_t data)
                     // OAM scan, HBlank, VBlank, or LY=LYC. It behaves as if $FF were written
                     // for one M-cycle, and then the written value were written the next
                     // M-cycle. Because the GBC in DMG mode does not have this quirk, two games
-                    // that depend on this quirk (Ocean’s Road Rash and Vic Tokai’s Xerd no 
+                    // that depend on this quirk (Ocean's Road Rash and Vic Tokai's Zerd no 
                     // Densetsu) will not run on a GBC.
                     STAT = 0xFF;
                     update_stat();

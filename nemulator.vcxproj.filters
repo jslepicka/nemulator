@@ -61,9 +61,6 @@
     <ClCompile Include="sms\sms.cpp">
       <Filter>sms</Filter>
     </ClCompile>
-    <ClCompile Include="sms\vdp.cpp">
-      <Filter>sms</Filter>
-    </ClCompile>
     <ClCompile Include="gb\gb.cpp">
       <Filter>gb</Filter>
     </ClCompile>
@@ -532,6 +529,9 @@
     </ClCompile>
     <ClCompile Include="m68k\m68k_callbacks.ixx">
       <Filter>m68k</Filter>
+    </ClCompile>
+    <ClCompile Include="sms\sms_common.ixx">
+      <Filter>sms</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

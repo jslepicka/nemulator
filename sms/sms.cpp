@@ -1,5 +1,5 @@
 module;
-
+#include <cassert>
 module sms;
 import crc32;
 
@@ -19,7 +19,16 @@ c_sms::c_sms(SMS_MODEL model)
     this->model = model;
     z80 = std::make_unique<c_z80<c_sms>>(*this,
         &nmi, &irq, &data_bus);
-    vdp = std::make_unique<c_vdp>(this);
+    if (model == SMS_MODEL::SMS) {
+        vdp = std::make_unique<c_vdp<SMS_MODEL::SMS>>(&irq);
+    }
+    else if (model == SMS_MODEL::GAMEGEAR) {
+        vdp = std::make_unique<c_vdp<SMS_MODEL::GAMEGEAR>>(&irq);
+    }
+    else {
+        assert(0);
+    }
+
     psg = std::make_unique<c_psg>();
     ram = std::make_unique<unsigned char[]>(8192);
 }

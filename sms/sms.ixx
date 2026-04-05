@@ -4,6 +4,7 @@ export module sms;
 import nemulator.std;
 
 import :vdp;
+import :common;
 export import :psg;
 import :crc;
 import nemulator.buttons;
@@ -14,12 +15,6 @@ import z80;
 
 namespace sms
 {
-
-export enum class SMS_MODEL
-{
-    SMS,
-    GAMEGEAR
-};
 
 export class c_sms : public c_system, register_class<system_registry, c_sms>, public i_z80_callbacks<c_sms>
 {
@@ -143,7 +138,7 @@ export class c_sms : public c_system, register_class<system_registry, c_sms>, pu
     int nationalism;
     uint8_t data_bus = 0xFF;
     std::unique_ptr<c_z80<c_sms>> z80;
-    std::unique_ptr<c_vdp> vdp;
+    std::unique_ptr<i_vdp> vdp;
     std::unique_ptr<c_psg> psg;
     std::unique_ptr<unsigned char[]> ram;
     std::unique_ptr<unsigned char[]> rom;

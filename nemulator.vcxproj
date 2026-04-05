@@ -344,6 +344,7 @@
     <ClCompile Include="nes\mappers\mapper_nsf.ixx" />
     <ClCompile Include="nes\mappers\mapper_vrc4.ixx" />
     <ClCompile Include="nes\nes_callbacks.ixx" />
+    <ClCompile Include="sms\sms_common.ixx" />
     <ClCompile Include="std.ixx" />
     <ClCompile Include="system_container.cpp" />
     <ClCompile Include="gb\gb.cpp" />
@@ -365,7 +366,6 @@
     <ClCompile Include="random.ixx" />
     <ClCompile Include="sms\psg.cpp" />
     <ClCompile Include="sms\sms.cpp" />
-    <ClCompile Include="sms\vdp.cpp" />
     <ClCompile Include="sound.cpp" />
     <ClCompile Include="stats.cpp" />
     <ClCompile Include="status.cpp" />
