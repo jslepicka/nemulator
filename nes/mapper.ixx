@@ -70,19 +70,25 @@ export class c_mapper
     uint64_t *ppu_cycle;
 
   protected:
-    static const int CHR_0000 = 0;
-    static const int CHR_0400 = 1;
-    static const int CHR_0800 = 2;
-    static const int CHR_0C00 = 3;
-    static const int CHR_1000 = 4;
-    static const int CHR_1400 = 5;
-    static const int CHR_1800 = 6;
-    static const int CHR_1C00 = 7;
+    enum
+    {
+        CHR_0000,
+        CHR_0400,
+        CHR_0800,
+        CHR_0C00,
+        CHR_1000,
+        CHR_1400,
+        CHR_1800,
+        CHR_1C00
+    };
 
-    static const int PRG_8000 = 0;
-    static const int PRG_A000 = 1;
-    static const int PRG_C000 = 2;
-    static const int PRG_E000 = 3;
+    enum
+    {
+        PRG_8000,
+        PRG_A000,
+        PRG_C000,
+        PRG_E000
+    };
 
     bool hasSram;
     bool writeProtectSram;

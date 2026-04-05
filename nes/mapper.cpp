@@ -40,7 +40,6 @@ unsigned char c_mapper::read_byte(unsigned short address)
 {
     if (address >= 0x6000 && address < 0x8000) {
         if (sram_enabled)
-            //return 0;
             return sram[address - 0x6000];
         else
             return 0;
