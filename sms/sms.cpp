@@ -31,6 +31,7 @@ c_sms::c_sms(SMS_MODEL model)
 
     psg = std::make_unique<c_psg>();
     ram = std::make_unique<unsigned char[]>(8192);
+    codemasters = 0;
 }
 
 c_sms::~c_sms()
@@ -68,6 +69,9 @@ int c_sms::load()
         if (c.crc == crc32 && c.has_sram) {
             has_sram = 1;
             load_sram();
+        }
+        if (c.crc == crc32 && c.codemasters) {
+            codemasters = 1;
         }
     }
 
@@ -170,6 +174,14 @@ uint16_t c_sms::read_word(uint16_t address)
 
 void c_sms::write_byte(uint16_t address, uint8_t value)
 {
+    if (codemasters) {
+        int reg = address >> 14;
+        if (reg < 3) {
+            int o = (0x4000 * (value)) % file_length;
+            page[reg] = rom.get() + o;
+            return;
+        }
+    }
     if (address < 0xC000) {
         if (address >= 0x8000 && (ram_select & 0x8)) {
             cart_ram[address & 0x1FFF] = value;
@@ -177,7 +189,7 @@ void c_sms::write_byte(uint16_t address, uint8_t value)
     }
     else {
         //ram
-        if (address >= 0xFFFC) {
+        if (!codemasters && address >= 0xFFFC) {
             //paging registers
             switch (address & 0x3) {
                 case 0:

@@ -149,6 +149,7 @@ export class c_sms : public c_system, register_class<system_registry, c_sms>, pu
     int save_sram();
     void catchup_psg();
     uint64_t last_psg_run;
+    int codemasters;
 };
 
 } //namespace sms

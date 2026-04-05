@@ -11,6 +11,7 @@ struct s_crc
 {
     uint32_t crc;
     int has_sram;
+    int codemasters = 0;
 } crc_table[] = {
     {0xC7DED988, 1}, // Golden Axe Warrior (UE) [!].sms
     {0xF424AD15, 1}, // Golden Axe Warrior (UE) [T+Bra].sms
@@ -48,6 +49,8 @@ struct s_crc
     {0x32759751, 1}, // Ys (J).sms
     {0xB33E2827, 1}, // Ys - The Vanished Omens (UE) [!].sms
     {0xAFD29460, 1}, // Ys - The Vanished Omens (UE) [T+Fre_Crispysix].sms
+    {0xF7C524F6, 0, 1}, // Micro Machines (E).gg
+    {0xA577CE46, 0, 1}, // Micro Machines (E) [!].sms
 };
 
 } //namespace sms
