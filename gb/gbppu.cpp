@@ -1011,8 +1011,16 @@ void c_gbppu::write_byte(uint16_t address, uint8_t data)
                     }
                 }
                 else {
+                    if (hdma_hblank_count) {
+                        // Cancel active HBDMA
+                        hdma_hblank_count = 0;
+                        hdma_length = 0;
+                    }
+                    else {
+                        // No active HBDMA: start GDMA
                         hdma_length = length;
                     }
+                }
             } break;
             case 0xFF68:
                 BCPS = data;
