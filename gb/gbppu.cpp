@@ -934,6 +934,17 @@ void c_gbppu::write_byte(uint16_t address, uint8_t data)
                 LCDC = data;
                 break;
             case 0xFF41:
+                if (gb->get_model() == GB_MODEL::DMG && (LCDC & 0x80)) {
+                    // A hardware quirk in the monochrome Game Boy makes the LCD interrupt
+                    // sometimes trigger when writing to STAT (including writing $00) during
+                    // OAM scan, HBlank, VBlank, or LY=LYC. It behaves as if $FF were written
+                    // for one M-cycle, and then the written value were written the next
+                    // M-cycle. Because the GBC in DMG mode does not have this quirk, two games
+                    // that depend on this quirk (Ocean’s Road Rash and Vic Tokai’s Xerd no 
+                    // Densetsu) will not run on a GBC.
+                    STAT = 0xFF;
+                    update_stat();
+                }
                 STAT = data;
                 update_stat();
                 break;
@@ -982,23 +993,39 @@ void c_gbppu::write_byte(uint16_t address, uint8_t data)
                 cgb_vram_bank = 0xFE | (data & 0x1);
                 break;
             case 0xFF51: //HDMA1
+                if (gb->get_model() != GB_MODEL::CGB) {
+                    break;
+                }
                 HDMA1 = data;
                 update_hdma_source();
                 break;
             case 0xFF52: //HDMA2
+                if (gb->get_model() != GB_MODEL::CGB) {
+                    break;
+                }
                 HDMA2 = data;
                 update_hdma_source();
                 break;
             case 0xFF53: //HDMA3
+                if (gb->get_model() != GB_MODEL::CGB) {
+                    break;
+                }
                 HDMA3 = data;
                 update_hdma_dest();
                 break;
             case 0xFF54: //HDMA4
+                if (gb->get_model() != GB_MODEL::CGB) {
+                    break;
+                }
                 HDMA4 = data;
                 update_hdma_dest();
                 break;
             case 0xFF55: //HDMA5
             {
+                if (gb->get_model() != GB_MODEL::CGB) {
+                    break;
+                }
+
                 HDMA5 = data;
                 int length = ((data & 0x7F) + 1) * 0x10;
                 if (data & 0x80) {
