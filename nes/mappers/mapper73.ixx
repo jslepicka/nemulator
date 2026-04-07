@@ -15,7 +15,7 @@ class c_mapper73 : public c_mapper, register_class<nes_mapper_registry, c_mapper
             {
                 .number = 73,
                 .name = "VRC3",
-                .clock_rate = MAPPER_CLOCK_RATE::CPU,
+                .needs_clock = true,
                 .constructor = []() { return std::make_unique<c_mapper73>(); },
             },
         };

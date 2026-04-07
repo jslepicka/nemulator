@@ -18,25 +18,25 @@ class c_mapper_vrc4 : public c_mapper, register_class<nes_mapper_registry, c_map
             {
                 .number = 21,
                 .name = "VRC4",
-                .clock_rate = MAPPER_CLOCK_RATE::CPU,
+                .needs_clock = true,
                 .constructor = []() { return std::make_unique<c_mapper_vrc4>(1); },
             },
             {
                 .number = 22,
                 .name = "VRC4",
-                .clock_rate = MAPPER_CLOCK_RATE::CPU,
+                .needs_clock = true,
                 .constructor = []() { return std::make_unique<c_mapper_vrc4>(3); },
             },
             {
                 .number = 23,
                 .name = "VRC4",
-                .clock_rate = MAPPER_CLOCK_RATE::CPU,
+                .needs_clock = true,
                 .constructor = []() { return std::make_unique<c_mapper_vrc4>(); },
             },
             {
                 .number = 25,
                 .name = "VRC4",
-                .clock_rate = MAPPER_CLOCK_RATE::CPU,
+                .needs_clock = true,
                 .constructor = []() { return std::make_unique<c_mapper_vrc4>(2); },
             },
         };

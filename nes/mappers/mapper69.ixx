@@ -21,7 +21,7 @@ class c_mapper69 : public c_mapper, register_class<nes_mapper_registry, c_mapper
             {
                 .number = 69,
                 .name = "FME-7",
-                .clock_rate = MAPPER_CLOCK_RATE::CPU,
+                .needs_clock = true,
                 .constructor = []() { return std::make_unique<c_mapper69>(); },
             },
         };

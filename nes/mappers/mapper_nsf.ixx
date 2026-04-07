@@ -19,7 +19,7 @@ class c_mapper_nsf : public c_mapper, register_class<nes_mapper_registry, c_mapp
             {
                 .number = 0x102,
                 .name = "NSF",
-                .clock_rate = MAPPER_CLOCK_RATE::CPU,
+                .needs_clock = true,
                 .constructor = []() { return std::make_unique<c_mapper_nsf>(); },
             },
         };

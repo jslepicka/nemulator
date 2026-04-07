@@ -25,6 +25,8 @@ export class i_vdp
     virtual int get_scanline() = 0;
     virtual void eval_sprites() = 0;
     virtual ~i_vdp() = default;
+
+  protected:
     static inline std::atomic<int> pal_built = 0;
     static inline uint32_t pal_sms[256];
     static inline uint32_t pal_gg[4096];
@@ -40,9 +42,6 @@ class c_vdp : public i_vdp
         frame_buffer = std::make_unique_for_overwrite<int[]>(256 * 256);
         generate_palette();
         this->irq = irq;
-    }
-    ~c_vdp(void)
-    {
     }
 
     void write_data(unsigned char value)
@@ -354,32 +353,6 @@ class c_vdp : public i_vdp
     }
 
   private:
-    int sprite_count; //number of sprites on line
-    struct
-    {
-        int x;
-        int y;
-        int pattern;
-        int pixels[8];
-    } sprite_data[8];
-    int line_number;
-    unsigned char line_counter;
-    int line_irq;
-    int frame_irq;
-    unsigned char status;
-    int control;
-    int address;
-    int address_latch_lo;
-    int address_latch_hi;
-    int address_flip_flop;
-    int registers[16];
-    int vram_write;
-    std::unique_ptr<unsigned char[]> vram;
-    std::unique_ptr<int[]> frame_buffer;
-    unsigned char cram[64];
-    unsigned char read_buffer;
-    int *irq;
-
     int lookup_color(int palette_index)
     {
         if constexpr (model == SMS_MODEL::SMS) {
@@ -434,6 +407,34 @@ class c_vdp : public i_vdp
             }
         }
     }
+
+  private:
+    int sprite_count; //number of sprites on line
+    struct
+    {
+        int x;
+        int y;
+        int pattern;
+        int pixels[8];
+    } sprite_data[8];
+    int line_number;
+    unsigned char line_counter;
+    int line_irq;
+    int frame_irq;
+    unsigned char status;
+    int control;
+    int address;
+    int address_latch_lo;
+    int address_latch_hi;
+    int address_flip_flop;
+    int registers[16];
+    int vram_write;
+    std::unique_ptr<unsigned char[]> vram;
+    std::unique_ptr<int[]> frame_buffer;
+    unsigned char cram[64];
+    unsigned char read_buffer;
+    int *irq;
+
 };
 
 } //namespace sms
