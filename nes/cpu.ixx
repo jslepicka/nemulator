@@ -2,7 +2,6 @@ module;
 
 export module nes:cpu;
 import nemulator.std;
-import bus;
 
 #define INLINE __forceinline
 

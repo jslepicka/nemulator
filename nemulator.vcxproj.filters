@@ -46,20 +46,8 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="nes\mapper.cpp">
-      <Filter>nes</Filter>
-    </ClCompile>
-    <ClCompile Include="nes\nes.cpp">
-      <Filter>nes</Filter>
-    </ClCompile>
     <ClCompile Include="nes\mappers\vrc7_audio.cpp">
       <Filter>nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="sms\psg.cpp">
-      <Filter>sms</Filter>
-    </ClCompile>
-    <ClCompile Include="sms\sms.cpp">
-      <Filter>sms</Filter>
     </ClCompile>
     <ClCompile Include="gb\gb.cpp">
       <Filter>gb</Filter>

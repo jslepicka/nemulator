@@ -11,7 +11,7 @@ export class c_system
 {
 public:
     c_system() {};
-    virtual ~c_system() {};
+    virtual ~c_system() = default;
     virtual int load() = 0;
     virtual int is_loaded() = 0;
     virtual int emulate_frame() = 0;

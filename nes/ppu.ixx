@@ -3,8 +3,6 @@ module;
 #include <immintrin.h>
 export module nes:ppu;
 import nemulator.std;
-import bus;
-import :callbacks;
 import :mapper;
 
 namespace nes
@@ -20,131 +18,6 @@ export template <typename Nes>
 class c_ppu
 {
   public:
-    int drawing_bg;
-    MAPPER_CLOCK_RATE mapper_clock_rate;
-    uint64_t *ppu_cycle;
-
-  private:
-    Nes &nes;
-    int vram_update_delay;
-    //ppu updates apparently happen on ppu cycle following completion of a cpu write
-    //when wr/ce goes high.  This is effectively 3 cycles after wr/cr goes low on the
-    //last cycle of the cpu opcode (i.e., the write cycle)
-    static const int VRAM_UPDATE_DELAY = 1;// 3;
-    int suppress_nmi;
-
-    static const int screen_offset = 2;
-    unsigned int current_cycle;
-    int current_scanline;
-    int warmed_up;
-    int sprite_mem_address;
-    
-    int fetch_state;
-    int on_screen;
-    unsigned char read_value;
-    bool hi;
-    bool nmi_pending;
-    int vram_address;
-    int vram_address_latch;
-    int fine_x;
-    int address_increment;
-
-    int update_rendering;
-    int next_rendering;
-    int hit;
-
-    int odd_frame;
-    int intensity;
-    int sprite_count;
-    int sprite0_index;
-    int rendering;
-
-    int tile;
-    int pattern_address;
-    int attribute_address;
-
-    uint64_t pattern1;
-    uint64_t pattern2;
-    uint64_t attribute;
-    int executed_cycles;
-    int palette_mask; //for monochrome display
-    int vid_out;
-    int reload_v;
-    int attribute_shift;
-    enum FETCH_STATE
-    {
-        FETCH_BG = 0 << 3,
-        FETCH_SPRITE = 1 << 3,
-        FETCH_NT = 2 << 3,
-        FETCH_IDLE = 3 << 3
-    };
-    bool limit_sprites;
-    union u_ppuctrl {
-        struct
-        {
-            unsigned char nt_base : 2;
-            bool address_increment : 1;
-            bool sprite_pt_address : 1;
-            bool bg_pt_address : 1;
-            bool sprite_size : 1;
-            bool master_slave_select : 1;
-            bool nmi_enable : 1;
-        };
-        unsigned char value;
-    } PPUCTRL;
-    union u_ppumask {
-        struct
-        {
-            unsigned char greyscale : 1;
-            bool left_bg_enable : 1;
-            bool left_sprite_enable : 1;
-            bool enable_bg : 1;
-            bool enable_sprites : 1;
-            bool red_emphasis : 1;
-            bool green_emphasis : 1;
-            bool blue_emphasis : 1;
-        };
-        struct
-        {
-            unsigned char : 5;
-            unsigned char emphasis : 3;
-        };
-        unsigned char value;
-    } PPUMASK;
-    union u_ppustatus {
-        struct
-        {
-            unsigned char : 5;
-            bool sprite_overflow : 1;
-            bool sprite0_hit : 1;
-            bool in_vblank : 1;
-        };
-        unsigned char value;
-    } PPUSTATUS;
-    struct s_sprite_data
-    {
-        uint8_t y;
-        uint8_t tile;
-        uint8_t attribute;
-        uint8_t x;
-    };
-
-    int (c_ppu::*p_output_pixel)();
-    std::bitset<256> sprite_here;
-    alignas(64) s_sprite_data sprite_buffer[64];
-    alignas(64) uint8_t sprite_memory[256];
-    alignas(64) uint8_t sprite_index_buffer[512];
-    alignas(64) uint8_t index_buffer[272];
-    uint8_t image_palette[32];
-    alignas(64) uint32_t frame_buffer[256 * 240];
-    static inline uint64_t morton_odd_64[256];
-    static inline uint64_t morton_even_64[256];
-    static inline uint32_t pal[512];
-    static inline std::atomic<int> lookup_tables_built;
-
- ////////////////////////////
-
-  public:
     c_ppu(Nes &nes) :
         nes(nes)
     {
@@ -152,10 +25,9 @@ class c_ppu
         limit_sprites = false; //don't change this on reset
         p_output_pixel = &c_ppu::output_pixel;
         ppu_cycle = nullptr;
+        clock_mapper = false;
     }
-    ~c_ppu()
-    {
-    }
+
     unsigned char read_byte(int address)
     {
         unsigned char return_value = 0;
@@ -201,7 +73,7 @@ class c_ppu
             }
             case 0x2004:    //Sprite Memory Data
             {
-        //return sprite memory
+                //return sprite memory
                 if (rendering) {
                     if (current_cycle == 0 || current_cycle >= 320) {
                         return_value = sprite_buffer[0].y;
@@ -225,7 +97,7 @@ class c_ppu
                 if (!rendering)
                     read_value = nes.ppu_read(vram_address);
 
-        //palette reads are returned immediately
+                //palette reads are returned immediately
                 if ((vram_address & 0x3FFF) >= 0x3F00)
                     temp = image_palette[vram_address & 0x1F];
 
@@ -245,8 +117,8 @@ class c_ppu
         switch (address) {
             case 0x2000:    //PPU Control Register 1
             {
-        //if nmi enabled is false and incoming value enables it
-        //AND if currently in NMI, then execute_nmi
+                //if nmi enabled is false and incoming value enables it
+                //AND if currently in NMI, then execute_nmi
                 if (!(PPUCTRL.nmi_enable) && (value & 0x80) && PPUSTATUS.in_vblank)
                     nes.nmi(true);
                 if (current_scanline == 261 && (PPUCTRL.nmi_enable) && current_cycle < 4) {
@@ -270,8 +142,8 @@ class c_ppu
                 if ((PPUMASK.enable_bg || PPUMASK.enable_sprites) &&
                     (current_scanline < 240 || current_scanline == 261)) {
                     next_rendering = 1;
-            //Battletoads debugging
-            //char x[256];
+                    //Battletoads debugging
+                    //char x[256];
                     //sprintf(x, "enabled rendering at scanline %d, cycle %d\n", current_scanline, current_cycle);
                     //OutputDebugString(x);
                 }
@@ -594,7 +466,7 @@ class c_ppu
             }
 
             if (--executed_cycles == 0) [[unlikely]] {
-                if (mapper_clock_rate == MAPPER_CLOCK_RATE::CPU) {
+                if (clock_mapper) {
                     nes.mapper_cpu_clock();
                 }
                 nes.cpu_clock();
@@ -998,7 +870,8 @@ class c_ppu
                     uint64_t *ib64 = (uint64_t *)&index_buffer[l];
                     uint64_t c = 0;
 
-//pdep is slow on amd platforms < zen 3.  The lookup table approach should probably be default.
+                    //pdep is slow on amd platforms < zen 3.  The lookup table approach should
+                    //probably be default.
 #ifdef NES_PPU_USE_BMI2
                     c = pattern1 | pattern2 | attribute;
                     c = _byteswap_uint64(c);
@@ -1096,6 +969,129 @@ class c_ppu
             nes.ppu_read(vram_address);
         }
     }
+
+  public:
+    int drawing_bg;
+    bool clock_mapper;
+    uint64_t *ppu_cycle;
+  
+  private:
+    Nes &nes;
+    int vram_update_delay;
+    //ppu updates apparently happen on ppu cycle following completion of a cpu write
+    //when wr/ce goes high.  This is effectively 3 cycles after wr/cr goes low on the
+    //last cycle of the cpu opcode (i.e., the write cycle)
+    static const int VRAM_UPDATE_DELAY = 1; // 3;
+    int suppress_nmi;
+
+    static const int screen_offset = 2;
+    unsigned int current_cycle;
+    int current_scanline;
+    int warmed_up;
+    int sprite_mem_address;
+
+    int fetch_state;
+    int on_screen;
+    unsigned char read_value;
+    bool hi;
+    bool nmi_pending;
+    int vram_address;
+    int vram_address_latch;
+    int fine_x;
+    int address_increment;
+
+    int update_rendering;
+    int next_rendering;
+    int hit;
+
+    int odd_frame;
+    int intensity;
+    int sprite_count;
+    int sprite0_index;
+    int rendering;
+
+    int tile;
+    int pattern_address;
+    int attribute_address;
+
+    uint64_t pattern1;
+    uint64_t pattern2;
+    uint64_t attribute;
+    int executed_cycles;
+    int palette_mask; //for monochrome display
+    int vid_out;
+    int reload_v;
+    int attribute_shift;
+    enum FETCH_STATE
+    {
+        FETCH_BG = 0 << 3,
+        FETCH_SPRITE = 1 << 3,
+        FETCH_NT = 2 << 3,
+        FETCH_IDLE = 3 << 3
+    };
+    bool limit_sprites;
+    union u_ppuctrl {
+        struct
+        {
+            unsigned char nt_base : 2;
+            bool address_increment : 1;
+            bool sprite_pt_address : 1;
+            bool bg_pt_address : 1;
+            bool sprite_size : 1;
+            bool master_slave_select : 1;
+            bool nmi_enable : 1;
+        };
+        unsigned char value;
+    } PPUCTRL;
+    union u_ppumask {
+        struct
+        {
+            unsigned char greyscale : 1;
+            bool left_bg_enable : 1;
+            bool left_sprite_enable : 1;
+            bool enable_bg : 1;
+            bool enable_sprites : 1;
+            bool red_emphasis : 1;
+            bool green_emphasis : 1;
+            bool blue_emphasis : 1;
+        };
+        struct
+        {
+            unsigned char : 5;
+            unsigned char emphasis : 3;
+        };
+        unsigned char value;
+    } PPUMASK;
+    union u_ppustatus {
+        struct
+        {
+            unsigned char : 5;
+            bool sprite_overflow : 1;
+            bool sprite0_hit : 1;
+            bool in_vblank : 1;
+        };
+        unsigned char value;
+    } PPUSTATUS;
+    struct s_sprite_data
+    {
+        uint8_t y;
+        uint8_t tile;
+        uint8_t attribute;
+        uint8_t x;
+    };
+
+    int (c_ppu::*p_output_pixel)();
+    std::bitset<256> sprite_here;
+    alignas(64) s_sprite_data sprite_buffer[64];
+    alignas(64) uint8_t sprite_memory[256];
+    alignas(64) uint8_t sprite_index_buffer[512];
+    alignas(64) uint8_t index_buffer[272];
+    uint8_t image_palette[32];
+    alignas(64) uint32_t frame_buffer[256 * 240];
+    static inline uint64_t morton_odd_64[256];
+    static inline uint64_t morton_even_64[256];
+    static inline uint32_t pal[512];
+    static inline std::atomic<int> lookup_tables_built;
 };
 
 } //namespace nes

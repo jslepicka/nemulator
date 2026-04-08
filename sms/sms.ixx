@@ -1,22 +1,21 @@
 module;
-
+#include <cassert>
 export module sms;
 import nemulator.std;
-
+import nemulator.buttons;
+import crc32;
 import :vdp;
 import :common;
-export import :psg;
 import :crc;
-import nemulator.buttons;
+export import :psg;
 import system;
 import class_registry;
-import bus;
 import z80;
 
 namespace sms
 {
 
-export class c_sms : public c_system, register_class<system_registry, c_sms>, public i_z80_callbacks<c_sms>
+export class c_sms : public c_system, register_class<system_registry, c_sms>
 {
   public:
     static std::vector<s_system_info> get_registry_info()
@@ -72,63 +71,357 @@ export class c_sms : public c_system, register_class<system_registry, c_sms>, pu
             },
         };
     }
-    c_sms(SMS_MODEL model);
-    ~c_sms();
-    int emulate_frame();
 
-    s_bus<uint16_t> bus;
-    s_bus<uint8_t> io_bus;
+    c_sms(SMS_MODEL model)
+    {
+        this->model = model;
+        z80 = std::make_unique<c_z80<c_sms>>(*this, &nmi, &irq, &data_bus);
+        if (model == SMS_MODEL::SMS) {
+            vdp = std::make_unique<c_vdp<SMS_MODEL::SMS>>(&irq);
+        }
+        else if (model == SMS_MODEL::GAMEGEAR) {
+            vdp = std::make_unique<c_vdp<SMS_MODEL::GAMEGEAR>>(&irq);
+        }
+        else {
+            assert(0);
+        }
 
-    uint8_t read_byte(uint16_t address);
-    void write_byte(uint16_t address, uint8_t value);
-    uint16_t read_word(uint16_t address);
-    void write_word(uint16_t address, uint16_t value);
-    void write_port(uint8_t port, uint8_t value);
-    uint8_t read_port(uint8_t port);
+        psg = std::make_unique<c_psg>();
+        ram = std::make_unique<unsigned char[]>(8192);
+        codemasters = 0;
+    }
 
-    uint8_t _z80_read_byte(uint16_t address)
+    ~c_sms()
+    {
+        if (has_sram)
+            save_sram();
+    }
+
+    int emulate_frame()
+    {
+        psg->clear_buffer();
+        for (int i = 0; i < 262; i++) {
+            z80->execute(228);
+            vdp->eval_sprites();
+            vdp->draw_scanline();
+        }
+        catchup_psg();
+        return 0;
+    }
+
+    uint8_t read_byte(uint16_t address)
+    {
+        if (address < 0xC000) {
+            if (address < 0x400) //always read first 1k from rom
+            {
+                return rom[address];
+            }
+            else {
+                int p = (address >> 14) & 0x3;
+                if (p == 2 && (ram_select & 0x8))
+                    return cart_ram[address & 0x1FFF];
+                __assume(p < 3);
+                return page[p][address & 0x3FFF];
+            }
+        }
+        else {
+            return ram[address & 0x1FFF];
+        }
+    }
+
+    void write_byte(uint16_t address, uint8_t value)
+    {
+        if (codemasters) {
+            int reg = address >> 14;
+            if (reg < 3) {
+                int o = (0x4000 * (value)) % file_length;
+                page[reg] = rom.get() + o;
+                return;
+            }
+        }
+        if (address < 0xC000) {
+            if (address >= 0x8000 && (ram_select & 0x8)) {
+                cart_ram[address & 0x1FFF] = value;
+            }
+        }
+        else {
+        //ram
+            if (!codemasters && address >= 0xFFFC) {
+            //paging registers
+                switch (address & 0x3) {
+                    case 0:
+                        ram_select = value;
+                        break;
+                    case 1:
+                    case 2:
+                    case 3: {
+                        int p = (address & 0x3) - 1;
+                        int o = (0x4000 * (value)) % file_length;
+                        page[p] = rom.get() + o;
+                    } break;
+                }
+            }
+            address &= 0x1FFF;
+            ram[address] = value;
+        }
+    }
+
+    uint16_t read_word(uint16_t address)
+    {
+        int lo = read_byte(address);
+        int hi = read_byte(address + 1);
+        return lo | (hi << 8);
+    }
+
+    void write_word(uint16_t address, uint16_t value)
+    {
+        write_byte(address, value & 0xFF);
+        write_byte(address + 1, value >> 8);
+    }
+
+    void write_port(uint8_t port, uint8_t value)
+    {
+        switch (port >> 6) {
+            case 0:
+                if (port == 0x3F) {
+                    nationalism = value;
+                }
+                break;
+            case 1:
+                catchup_psg();
+                psg->write(value);
+                break;
+            case 2:
+                switch (port & 0x1) {
+                    case 0: //VDP data
+                        vdp->write_data(value);
+                        break;
+                    case 1: //VDP control
+                        vdp->write_control(value);
+                        break;
+                }
+                break;
+            case 3:
+                //printf("Port write to joypad: %02X\n", port);
+                break;
+            default:
+                //printf("Port write error\n");
+                break;
+        }
+    }
+
+    uint8_t read_port(uint8_t port)
+    {
+        switch (port >> 6) {
+            case 0:
+                if (model == SMS_MODEL::GAMEGEAR) {
+                    return joy >> 31;
+                }
+                return 0;
+            case 1:
+                //TODO: need to differentiate between even and odd reads to return either h or v vdp counters
+                if (port & 0x1) {
+                    int x = 1;
+                }
+                return vdp->get_scanline();
+            case 2:
+                //printf("Port read from VDP\n");
+                switch (port & 0x1) {
+                    case 0: //VDP data
+                        //printf("Port write to VDP data\n");
+                        return vdp->read_data();
+                    case 1: //VDP control
+                        //printf("Port write to VDP control\n");
+                        return vdp->read_control();
+                }
+                return 0;
+            case 3:
+                //printf("Port read from joypad: %02X\n", port);
+                if (port == 0xDC) {
+                    return joy & 0xFF;
+                }
+                else if (port == 0xDD) {
+                    //invert and select TH output enable bits
+                    int out = (nationalism ^ 0xFF) & 0xA;
+                    //and TH bits with TH values
+                    out = nationalism & (out << 4);
+                    //shift bits into position
+                    out = (out & 0x80) | ((out << 1) & 0x40);
+                    out = ((joy >> 8) & 0x3F) | out;
+                    return out;
+                }
+                return 0xFF;
+            default:
+                //printf("Port read error\n");
+                return 0;
+        }
+    }
+
+    uint8_t z80_read_byte(uint16_t address)
     {
         return read_byte(address);
     }
-    void _z80_write_byte(uint16_t address, uint8_t data)
+    void z80_write_byte(uint16_t address, uint8_t data)
     {
         write_byte(address, data);
     }
-    uint8_t _z80_read_port(uint8_t port)
+    uint8_t z80_read_port(uint8_t port)
     {
         return read_port(port);
     }
-    void _z80_write_port(uint8_t port, uint8_t data)
+    void z80_write_port(uint8_t port, uint8_t data)
     {
         write_port(port, data);
     }
-    void _z80_int_ack()
+    void z80_int_ack()
     {
     }
 
-    int reset();
-    int *get_video();
-    int get_sound_buf(const float **buf);
-    int irq;
-    int nmi;
-    void set_audio_freq(double freq);
-    int load();
+    int reset()
+    {
+        z80->reset();
+        vdp->reset();
+        psg->reset();
+        std::memset(ram.get(), 0x00, 8192);
+        irq = 0;
+        nmi = 0;
+        page[0] = rom.get();
+        page[1] = file_length > 0x4000 ? rom.get() + 0x4000 : rom.get();
+        page[2] = file_length > 0x8000 ? rom.get() + 0x8000 : rom.get();
+        nationalism = 0;
+        ram_select = 0;
+        joy = 0xFFFF;
+        psg_cycles = 0;
+        last_psg_run = 0;
+        return 0;
+    }
+
+    int *get_video()
+    {
+        return vdp->get_frame_buffer();
+    }
+
+    int get_sound_buf(const float **buf)
+    {
+        return psg->get_buffer(buf);
+    }
+
+    void set_audio_freq(double freq)
+    {
+        psg->set_audio_rate(freq);
+    }
+    
+    int load()
+    {
+        std::ifstream file;
+        file.open(path_file, std::ios_base::in | std::ios_base::binary);
+        if (file.fail())
+            return 0;
+        file.seekg(0, std::ios_base::end);
+        file_length = (int)file.tellg();
+        int has_header = (file_length % 1024) != 0;
+        int offset = 0;
+        if (has_header) {
+            offset = file_length - ((file_length / 1024) * 1024);
+            file_length = file_length - offset;
+        }
+        file.seekg(offset, std::ios_base::beg);
+        if (file_length == 0 || (file_length & (file_length - 1)) || file_length < 0x2000) {
+            return 0;
+        }
+        int alloc_size = file_length < 0x4000 ? 0x4000 : file_length;
+        rom = std::make_unique_for_overwrite<unsigned char[]>(alloc_size);
+        file.read((char *)rom.get(), file_length);
+        file.close();
+        crc32 = get_crc32(rom.get(), file_length);
+
+        for (auto &c : crc_table) {
+            if (c.crc == crc32 && c.has_sram) {
+                has_sram = 1;
+                load_sram();
+            }
+            if (c.crc == crc32 && c.codemasters) {
+                codemasters = 1;
+            }
+        }
+
+        if (file_length == 0x2000) {
+            std::memcpy(rom.get() + 0x2000, rom.get(), 0x2000);
+        }
+        loaded = 1;
+        reset();
+        return file_length;
+    }
+    
     int is_loaded()
     {
         return loaded;
     }
-    void enable_mixer();
-    void disable_mixer();
-    void set_input(int input);
+
+    void enable_mixer()
+    {
+        psg->enable_mixer();
+    }
+
+    void disable_mixer()
+    {
+        psg->disable_mixer();
+    }
+
+    void set_input(int input)
+    {
+        if (model == SMS_MODEL::SMS)
+            nmi = input & 0x8000'0000;
+        joy = ~input;
+    }
+
     SMS_MODEL get_model() const
     {
         return model;
     }
 
-    //static std::vector<s_system_info> get_registry_info();
+  private:
+    int load_sram()
+    {
+        std::ifstream file;
+        file.open(sram_path_file, std::ios_base::in | std::ios_base::binary);
+        if (file.fail())
+            return 1;
 
+        file.seekg(0, std::ios_base::end);
+        int l = (int)file.tellg();
+
+        if (l != 8192)
+            return 1;
+
+        file.seekg(0, std::ios_base::beg);
+
+        file.read((char *)cart_ram, 8192);
+        file.close();
+        return 1;
+    }
+
+    int save_sram()
+    {
+        std::ofstream file;
+        file.open(sram_path_file, std::ios_base::out | std::ios_base::binary);
+        if (file.fail())
+            return 1;
+        file.write((char *)cart_ram, 8192);
+        file.close();
+        return 0;
+    }
+
+    void catchup_psg()
+    {
+        int num_cycles = (int)(z80->retired_cycles - last_psg_run);
+        last_psg_run = z80->retired_cycles;
+        psg->clock(num_cycles);
+    }
 
   private:
+    int irq;
+    int nmi;
     SMS_MODEL model;
     int psg_cycles;
     int has_sram = 0;
@@ -143,13 +436,11 @@ export class c_sms : public c_system, register_class<system_registry, c_sms>, pu
     std::unique_ptr<unsigned char[]> ram;
     std::unique_ptr<unsigned char[]> rom;
     int file_length;
+    int codemasters;
+    uint64_t last_psg_run;
     unsigned char *page[3];
     unsigned char cart_ram[16384];
-    int load_sram();
-    int save_sram();
-    void catchup_psg();
-    uint64_t last_psg_run;
-    int codemasters;
+
 };
 
 } //namespace sms

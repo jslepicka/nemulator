@@ -1,6 +1,5 @@
 export module nes:apu_channels;
 import nemulator.std;
-import :callbacks;
 
 class c_envelope
 {

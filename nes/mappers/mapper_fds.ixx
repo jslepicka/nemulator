@@ -19,7 +19,7 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
             {
                 .number = 0x103,
                 .name = "FDS",
-                .clock_rate = MAPPER_CLOCK_RATE::CPU,
+                .needs_clock = true,
                 .constructor = []() { return std::make_unique<c_mapper_fds>(); },
             },
         };

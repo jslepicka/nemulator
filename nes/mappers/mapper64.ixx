@@ -17,7 +17,7 @@ class c_mapper64 : public c_mapper, register_class<nes_mapper_registry, c_mapper
             {
                 .number = 64,
                 .name = "RAMBO-1",
-                .clock_rate = MAPPER_CLOCK_RATE::CPU,
+                .needs_clock = true,
                 .constructor = []() { return std::make_unique<c_mapper64>(); },
             },
         };
