@@ -290,9 +290,6 @@ class c_vdp : public i_vdp
         sprite_count = 0;
         int sat_base = registers[0x5] & ~0x81;
         sat_base <<= 7;
-        if (sat_base != 0) {
-            int x = 1;
-        }
         unsigned char *sat = &vram[sat_base];
         int sprite_height = registers[0x1] & 0x2 ? 16 : 8;
         if (registers[0x1] & 0x1) {

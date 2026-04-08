@@ -10,13 +10,12 @@ import :crc;
 export import :psg;
 import system;
 import class_registry;
-import bus;
 import z80;
 
 namespace sms
 {
 
-export class c_sms : public c_system, register_class<system_registry, c_sms>, public i_z80_callbacks<c_sms>
+export class c_sms : public c_system, register_class<system_registry, c_sms>
 {
   public:
     static std::vector<s_system_info> get_registry_info()
@@ -75,14 +74,6 @@ export class c_sms : public c_system, register_class<system_registry, c_sms>, pu
 
     c_sms(SMS_MODEL model)
     {
-        bus.ctx = this;
-        bus.read_byte = &thunk<c_sms, &c_sms::read_byte>;
-        bus.write_byte = &thunk<c_sms, &c_sms::write_byte>;
-
-        io_bus.ctx = this;
-        io_bus.read_byte = &thunk<c_sms, &c_sms::read_port>;
-        io_bus.write_byte = &thunk<c_sms, &c_sms::write_port>;
-
         this->model = model;
         z80 = std::make_unique<c_z80<c_sms>>(*this, &nmi, &irq, &data_bus);
         if (model == SMS_MODEL::SMS) {
@@ -266,23 +257,23 @@ export class c_sms : public c_system, register_class<system_registry, c_sms>, pu
         }
     }
 
-    uint8_t _z80_read_byte(uint16_t address)
+    uint8_t z80_read_byte(uint16_t address)
     {
         return read_byte(address);
     }
-    void _z80_write_byte(uint16_t address, uint8_t data)
+    void z80_write_byte(uint16_t address, uint8_t data)
     {
         write_byte(address, data);
     }
-    uint8_t _z80_read_port(uint8_t port)
+    uint8_t z80_read_port(uint8_t port)
     {
         return read_port(port);
     }
-    void _z80_write_port(uint8_t port, uint8_t data)
+    void z80_write_port(uint8_t port, uint8_t data)
     {
         write_port(port, data);
     }
-    void _z80_int_ack()
+    void z80_int_ack()
     {
     }
 
@@ -431,8 +422,6 @@ export class c_sms : public c_system, register_class<system_registry, c_sms>, pu
   private:
     int irq;
     int nmi;
-    s_bus<uint16_t> bus;
-    s_bus<uint8_t> io_bus;
     SMS_MODEL model;
     int psg_cycles;
     int has_sram = 0;

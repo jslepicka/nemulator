@@ -3,8 +3,6 @@ module;
 #include <immintrin.h>
 export module nes:ppu;
 import nemulator.std;
-import bus;
-import :callbacks;
 import :mapper;
 
 namespace nes
@@ -29,6 +27,7 @@ class c_ppu
         ppu_cycle = nullptr;
         clock_mapper = false;
     }
+
     unsigned char read_byte(int address)
     {
         unsigned char return_value = 0;
@@ -74,7 +73,7 @@ class c_ppu
             }
             case 0x2004:    //Sprite Memory Data
             {
-        //return sprite memory
+                //return sprite memory
                 if (rendering) {
                     if (current_cycle == 0 || current_cycle >= 320) {
                         return_value = sprite_buffer[0].y;
@@ -98,7 +97,7 @@ class c_ppu
                 if (!rendering)
                     read_value = nes.ppu_read(vram_address);
 
-        //palette reads are returned immediately
+                //palette reads are returned immediately
                 if ((vram_address & 0x3FFF) >= 0x3F00)
                     temp = image_palette[vram_address & 0x1F];
 
@@ -118,8 +117,8 @@ class c_ppu
         switch (address) {
             case 0x2000:    //PPU Control Register 1
             {
-        //if nmi enabled is false and incoming value enables it
-        //AND if currently in NMI, then execute_nmi
+                //if nmi enabled is false and incoming value enables it
+                //AND if currently in NMI, then execute_nmi
                 if (!(PPUCTRL.nmi_enable) && (value & 0x80) && PPUSTATUS.in_vblank)
                     nes.nmi(true);
                 if (current_scanline == 261 && (PPUCTRL.nmi_enable) && current_cycle < 4) {
@@ -143,8 +142,8 @@ class c_ppu
                 if ((PPUMASK.enable_bg || PPUMASK.enable_sprites) &&
                     (current_scanline < 240 || current_scanline == 261)) {
                     next_rendering = 1;
-            //Battletoads debugging
-            //char x[256];
+                    //Battletoads debugging
+                    //char x[256];
                     //sprintf(x, "enabled rendering at scanline %d, cycle %d\n", current_scanline, current_cycle);
                     //OutputDebugString(x);
                 }
@@ -871,7 +870,8 @@ class c_ppu
                     uint64_t *ib64 = (uint64_t *)&index_buffer[l];
                     uint64_t c = 0;
 
-//pdep is slow on amd platforms < zen 3.  The lookup table approach should probably be default.
+                    //pdep is slow on amd platforms < zen 3.  The lookup table approach should
+                    //probably be default.
 #ifdef NES_PPU_USE_BMI2
                     c = pattern1 | pattern2 | attribute;
                     c = _byteswap_uint64(c);

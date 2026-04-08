@@ -13,15 +13,13 @@ import class_registry;
 import :mapper;
 import :ines;
 import :game_genie;
-import :callbacks;
 import crc32;
 
 namespace nes
 {
 
-export class c_nes : public c_system, register_class<system_registry, c_nes>, public i_nes_callbacks<c_nes>
+export class c_nes : public c_system, register_class<system_registry, c_nes>
 {
-    friend class i_nes_callbacks<c_nes>;
   public:
     static std::vector<s_system_info> get_registry_info()
     {
@@ -172,10 +170,10 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>, pu
         return apu->get_buffer(buf);
     }
 
-    unsigned char _dmc_read(unsigned short address)
+    unsigned char dmc_read(unsigned short address)
     {
         cpu->execute_apu_dma();
-        return _read_byte(address);
+        return read_byte(address);
     }
 
     int load()
@@ -273,7 +271,7 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>, pu
         mapper->set_submapper(submapper);
     }
 
-    void _write_byte(uint16_t address, uint8_t value)
+    void write_byte(uint16_t address, uint8_t value)
     {
         switch (address >> 12) {
             case 0:
@@ -303,7 +301,7 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>, pu
         }
     }
 
-    uint8_t _read_byte(uint16_t address)
+    uint8_t read_byte(uint16_t address)
     {
         //unlimited health in holy diver
         //if (address == 0x0440) {
@@ -373,6 +371,68 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>, pu
         return mapper->switch_disk();
     }
 
+    void irq(bool irq)
+    {
+        if (irq) {
+            cpu->execute_irq();
+        }
+        else {
+            cpu->clear_irq();
+        }
+    }
+
+    void mapper_cpu_clock()
+    {
+        mapper->cpu_clock();
+    }
+
+    void mapper_ppu_clock()
+    {
+        mapper->ppu_clock();
+    }
+
+    void cpu_clock()
+    {
+        cpu->execute();
+        cpu->odd_cycle ^= 1;
+        apu->clock();
+    }
+
+    void in_sprite_eval(bool in_eval)
+    {
+        mapper->in_sprite_eval = in_eval;
+    }
+
+    void nmi(bool nmi)
+    {
+        if (nmi) {
+            cpu->execute_nmi();
+        }
+        else {
+            cpu->clear_nmi();
+        }
+    }
+
+    uint8_t ppu_read(uint16_t address)
+    {
+        return mapper->ppu_read(address);
+    }
+
+    void ppu_write(uint16_t address, uint8_t value)
+    {
+        mapper->ppu_write(address, value);
+    }
+
+    void add_cycle()
+    {
+        cpu->add_cycle();
+    }
+
+    float mix_mapper_audio(float sample)
+    {
+        return mapper->mix_audio(sample);
+    }
+
   private:
     int LoadImage(std::string &pathFile)
     {
@@ -429,59 +489,6 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>, pu
             crc32 = get_crc32((unsigned char *)image.get() + sizeof(iNesHeader), file_length - sizeof(iNesHeader));
         }
         return m;
-    }
-
-    void _mapper_cpu_clock()
-    {
-        mapper->cpu_clock();
-    }
-    void _mapper_ppu_clock()
-    {
-        mapper->ppu_clock();
-    }
-    void _cpu_clock()
-    {
-        cpu->execute();
-        cpu->odd_cycle ^= 1;
-        apu->clock();
-    }
-    void _sprite_eval(bool in_eval)
-    {
-        mapper->in_sprite_eval = in_eval;
-    }
-    void _nmi(bool nmi)
-    {
-        if (nmi) {
-            cpu->execute_nmi();
-        }
-        else {
-            cpu->clear_nmi();
-        }
-    }
-    uint8_t _ppu_read(uint16_t address)
-    {
-        return mapper->ppu_read(address);
-    }
-    void _ppu_write(uint16_t address, uint8_t value)
-    {
-        mapper->ppu_write(address, value);
-    }
-    void _add_cycle()
-    {
-        cpu->add_cycle();
-    }
-    void _irq(bool irq)
-    {
-        if (irq) {
-            cpu->execute_irq();
-        }
-        else {
-            cpu->clear_irq();
-        }
-    }
-    float _mix_mapper_audio(float sample)
-    {
-        return mapper->mix_audio(sample);
     }
 
   public:

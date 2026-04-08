@@ -1,7 +1,6 @@
 module;
 #include <cassert>
 export module m68k;
-export import :callbacks;
 
 import std;
 using int8_t = std::int8_t;

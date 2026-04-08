@@ -2,7 +2,6 @@ module;
 
 export module nes:apu;
 import nemulator.std;
-import :callbacks;
 import :apu_channels;
 
 import dsp;

@@ -3,7 +3,6 @@ module;
 export module z80;
 import nemulator.std;
 import random;
-export import :callbacks;
 
 export template <typename Bus>
 class c_z80
@@ -746,7 +745,6 @@ class c_z80
     {
         int c = operand + carry;
         int result = (int)AF.byte.hi - (int)c;
-        unsigned int uresult = (unsigned int)result;
         set_pv((AF.byte.hi ^ result) & (operand ^ AF.byte.hi) & 0x80);
         set_c(result < 0);
         set_n(1);

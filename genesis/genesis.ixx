@@ -17,12 +17,8 @@ namespace genesis
 {
 
 export class c_genesis : public c_system,
-                         register_class<system_registry, c_genesis>,
-                         public i_z80_callbacks<c_genesis>,
-                         public i_m68k_callbacks<c_genesis>
+                         register_class<system_registry, c_genesis>
 {
-    friend class i_z80_callbacks<c_genesis>;
-    friend class i_m68k_callbacks<c_genesis>;
     enum CYCLE_EVENT
     {
         M68K_CLOCK,
@@ -631,6 +627,96 @@ export class c_genesis : public c_system,
         joy1 = ~joy1;
     }
 
+        uint8_t z80_read_byte(uint16_t address)
+    {
+        //char buf[256];
+        //sprintf(buf, "z80 read from %x\n", address);
+        //OutputDebugString(buf);
+        if (address < 0x4000) {
+            return z80_ram[address & 0x1FFF];
+        }
+        else if (address < 0x6000) {
+            //ym2162
+            return ym->read(address);
+        }
+        else if (address < 0x6100) {
+            //bank register
+            return bank_register;
+        }
+        else if (address < 0x7F00) {
+            //unused
+            return 0;
+        }
+        else if (address < 0x8000) {
+            //vdp
+            return 0;
+        }
+        else {
+            uint32_t a = (bank_register << 15) | (address & 0x7FFF);
+            return read_byte(a);
+        }
+    }
+
+    void z80_write_byte(uint16_t address, uint8_t value)
+    {
+        //char buf[256];
+        //sprintf(buf, "z80 write %x to %x\n", value, address);
+        //OutputDebugString(buf);
+        if (address < 0x4000) {
+            z80_ram[address & 0x1FFF] = value;
+        }
+        else if (address < 0x6000) {
+            //ym2162
+            ym->write(address & 0x3, value);
+        }
+        else if (address < 0x6100) {
+            //bank register
+            write_bank_register(value);
+        }
+        else if (address < 0x7F00) {
+            //unused
+        }
+        else if (address < 0x8000) {
+            //vdp
+            if (address == 0x7F11) {
+                psg->write(value);
+            }
+        }
+    }
+
+    uint8_t z80_read_port(uint8_t port)
+    {
+        return 0;
+    }
+
+    void z80_write_port(uint8_t port, uint8_t value)
+    {
+    }
+
+    void z80_int_ack()
+    {
+    }
+
+    uint8_t m68k_read_byte(uint32_t address)
+    {
+        return read_byte(address);
+    }
+
+    uint16_t m68k_read_word(uint32_t address)
+    {
+        return read_word(address);
+    }
+
+    void m68k_write_byte(uint32_t address, uint8_t data)
+    {
+        write_byte(address, data);
+    }
+
+    void m68k_write_word(uint32_t address, uint16_t data)
+    {
+        write_word(address, data);
+    }
+
   private:
     void open_sram()
     {
@@ -671,93 +757,6 @@ export class c_genesis : public c_system,
     void on_mode_switch(int x_res)
     {
         crop_right = 320 - x_res;
-    }
-
-    uint8_t _z80_read_byte(uint16_t address)
-    {
-        //char buf[256];
-        //sprintf(buf, "z80 read from %x\n", address);
-        //OutputDebugString(buf);
-        if (address < 0x4000) {
-            return z80_ram[address & 0x1FFF];
-        }
-        else if (address < 0x6000) {
-            //ym2162
-            return ym->read(address);
-        }
-        else if (address < 0x6100) {
-            //bank register
-            return bank_register;
-        }
-        else if (address < 0x7F00) {
-            //unused
-            return 0;
-        }
-        else if (address < 0x8000) {
-            //vdp
-            return 0;
-        }
-        else {
-            uint32_t a = (bank_register << 15) | (address & 0x7FFF);
-            return read_byte(a);
-        }
-    }
-
-    void _z80_write_byte(uint16_t address, uint8_t value)
-    {    
-        //char buf[256];
-        //sprintf(buf, "z80 write %x to %x\n", value, address);
-        //OutputDebugString(buf);
-        if (address < 0x4000) {
-            z80_ram[address & 0x1FFF] = value;
-        }
-        else if (address < 0x6000) {
-            //ym2162
-            ym->write(address & 0x3, value);
-        }
-        else if (address < 0x6100) {
-            //bank register
-            write_bank_register(value);
-        }
-        else if (address < 0x7F00) {
-            //unused
-        }
-        else if (address < 0x8000) {
-            //vdp
-            if (address == 0x7F11) {
-                psg->write(value);
-            }
-        }
-    }
-
-    uint8_t _z80_read_port(uint8_t port)
-    {
-        return 0;
-    }
-    
-    void _z80_write_port(uint8_t port, uint8_t value)
-    {
-    }
-
-    void _z80_int_ack()
-    {
-    }
-
-    uint8_t _m68k_read_byte(uint32_t address)
-    {
-        return read_byte(address);
-    }
-    uint16_t _m68k_read_word(uint32_t address)
-    {
-        return read_word(address);
-    }
-    void _m68k_write_byte(uint32_t address, uint8_t data)
-    {
-        write_byte(address, data); 
-    }
-    void _m68k_write_word(uint32_t address, uint16_t data)
-    {
-        write_word(address, data);
     }
 
     void enable_z80()
