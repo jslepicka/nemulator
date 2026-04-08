@@ -121,17 +121,6 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
     switch (address) {
         case 0x0C00000:
         case 0x0C00002:
-            //data
-            if (pending_fill) {
-                pending_fill = 0;
-                uint16_t len = reg[0x13] | (reg[0x14] << 8);
-                vram[_address] = value & 0xFF;
-                do {
-                    vram[_address ^ 0x1] = (value >> 8) & 0xFF;
-                    _address += reg[0x0F];
-                } while (--len);
-                return;
-            }
             switch (address_type) {
                 case ADDRESS_TYPE::VRAM_WRITE:
                     assert(_address < 64 * 1024);
@@ -171,6 +160,17 @@ void c_vdp::write_word(uint32_t address, uint16_t value)
                     break;
             }
             _address += reg[0x0F];
+
+            if (pending_fill) {
+                pending_fill = 0;
+                uint16_t len = reg[0x13] | (reg[0x14] << 8);
+                vram[_address] = value & 0xFF;
+                do {
+                    vram[_address ^ 0x1] = (value >> 8) & 0xFF;
+                    _address += reg[0x0F];
+                } while (--len);
+                return;
+            }
             address_write = 0;
             break;
         case 0x0C00004:
