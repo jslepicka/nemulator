@@ -249,9 +249,7 @@
     <ClCompile Include="gb\gbapu.cpp" />
     <ClCompile Include="gb\mbc2.cpp" />
     <ClCompile Include="gb\mbc5.cpp" />
-    <ClCompile Include="genesis\genesis.cpp" />
     <ClCompile Include="genesis\genesis.ixx" />
-    <ClCompile Include="genesis\genesis_vdp.cpp" />
     <ClCompile Include="genesis\genesis_vdp.ixx" />
     <ClCompile Include="interpolate.ixx" />
     <ClCompile Include="invaders\invaders.cpp" />
