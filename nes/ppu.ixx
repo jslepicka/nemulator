@@ -12,7 +12,6 @@ namespace nes
 
 #define NES_PPU_USE_SSE2
 #define NES_PPU_USE_BMI2
-#define NES_PPU_USE_AVX2
 
 export template <typename Nes>
 class c_ppu
@@ -23,7 +22,6 @@ class c_ppu
     {
         build_lookup_tables();
         limit_sprites = false; //don't change this on reset
-        p_output_pixel = &c_ppu::output_pixel;
         ppu_cycle = nullptr;
         clock_mapper = false;
     }
@@ -317,12 +315,6 @@ class c_ppu
         nes.in_sprite_eval(false);
         if (current_scanline == 261)
             sprite_count = 0;
-        if (sprite_count) {
-            p_output_pixel = &c_ppu::output_pixel;
-        }
-        else {
-            p_output_pixel = &c_ppu::output_pixel_no_sprites;
-        }
     }
 
     int get_sprite_size()
@@ -415,7 +407,7 @@ class c_ppu
                     }
                     fetch();
                     if (on_screen) [[likely]] {
-                        int pixel = (this->*p_output_pixel)();
+                        int pixel = output_pixel();
                         pixel_pipeline |= (pixel << 16);
                     }
                 }
@@ -644,11 +636,6 @@ class c_ppu
         return ret;
     }
 
-    INLINE int output_pixel_no_sprites()
-    {
-        return get_bg().pixel;
-    }
-
     INLINE int output_pixel()
     {
         s_bg_out bg_out = get_bg();
@@ -798,46 +785,19 @@ class c_ppu
             case (1 | FETCH_BG): //NT byte 2
                 drawing_bg = true;
                 tile = nes.ppu_read(0x2000 | (vram_address & 0xFFF));
-#ifdef NES_PPU_USE_AVX2
-                pattern_address = (tile << 4) + _bextr_u32(vram_address, 12, 3) + (PPUCTRL.bg_pt_address * 0x1000);
-#else
                 pattern_address = (tile << 4) + ((vram_address & 0x7000) >> 12) + (PPUCTRL.bg_pt_address * 0x1000);
-#endif
                 break;
 
             case (2 | FETCH_BG): //AT byte 1
                 break;
             case (3 | FETCH_BG): //AT byte 2
-#ifdef false
-                                 //benchmarks show pext to be slower.  ???
-                attribute_address = 0x23C0 | (vram_address & 0xC00) | _pext_u32(vram_address, 0b0011'1001'1100);
-#else
                 attribute_address =
                     0x23C0 | (vram_address & 0xC00) | ((vram_address >> 4) & 0x38) | ((vram_address >> 2) & 0x07);
-#endif
-
                 attribute_shift = ((vram_address >> 4) & 0x04) | (vram_address & 0x02);
-#ifdef NES_PPU_USE_SSE2
-                {
-                    //load attribute and store 8 copies of it over 128-bit int
-                    //only 64-bits are ultimately used
-                    __m128i t = _mm_set1_epi8(nes.ppu_read(attribute_address));
-
-                    //shift all 16 attributes by attribute_shift
-                    t = _mm_srli_epi64(t, attribute_shift);
-                    //mask all 16 attributes with 0x3
-                    t = _mm_and_si128(t, _mm_set1_epi8(0x3));
-                    //shift all values left by 2
-                    t = _mm_slli_epi64(t, 2);
-                    //assign the lower 64-bits to attribute
-                    attribute = _mm_cvtsi128_si64(t);
-                }
-#else
                 attribute = nes.ppu_read(attribute_address);
                 attribute >>= attribute_shift;
                 attribute &= 0x03;
                 attribute *= 0x0404040404040404ULL;
-#endif
                 break;
             case (4 | FETCH_BG): //Low BG byte 1
                 break;
@@ -1080,7 +1040,6 @@ class c_ppu
         uint8_t x;
     };
 
-    int (c_ppu::*p_output_pixel)();
     std::bitset<256> sprite_here;
     alignas(64) s_sprite_data sprite_buffer[64];
     alignas(64) uint8_t sprite_memory[256];
