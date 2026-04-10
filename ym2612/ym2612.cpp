@@ -158,8 +158,8 @@ void c_ym2612::mix()
             sample = std::clamp(sample, (int32_t)(-0x2000 & mask), (int32_t)(0x1FFF & mask));
             return (float)sample / 8192.0f;
         };
-        out_l += output_ladder(sample, channels[i].panning & 0x1);
-        out_r += output_ladder(sample, channels[i].panning & 0x2);
+        out_l += output_ladder(sample, channels[i].panning & 0x2);
+        out_r += output_ladder(sample, channels[i].panning & 0x1);
     }
     out_l /= 6.0f;
     out_r /= 6.0f;
