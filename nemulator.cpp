@@ -218,7 +218,7 @@ void c_nemulator::Init()
     sharpness = (float)std::clamp(config->get_double("sharpness", .8), 0.0, 1.0);
     mainPanel2->set_sharpness(sharpness);
     texturePanels[0] = mainPanel2.get();
-
+    mainPanel2->scanlines = config->get_bool("scanlines", true);
 
     QueryPerformanceFrequency(&liFreq);
 
@@ -319,7 +319,8 @@ void c_nemulator::configure_input()
         { BUTTON_VOLUME_UP,      "",        "",        VK_OEM_PLUS,            1 },
         { BUTTON_VOLUME_DOWN,    "",        "",        VK_OEM_MINUS,           1 },
 
-        { BUTTON_HOME,           "joy1",    "home",    0,                      0 }
+        { BUTTON_HOME,           "joy1",    "home",    0,                      0 },
+        { BUTTON_SCANLINES,      "",        "",        VK_F12,                 0 }
 
     };
     // clang-format on
@@ -488,6 +489,13 @@ void c_nemulator::handle_button_sprite_limit(s_button_handler_params *params)
         else
             status->add_message("sprites unlimited");
     }
+}
+
+void c_nemulator::handle_button_scanlines(s_button_handler_params *params)
+{
+    auto &t = texturePanels[selectedPanel]->scanlines;
+    t = !t;
+    status->add_message(std::string("scanlines ") + (t ? "enabled" : "disabled"));
 }
 
 void c_nemulator::adjust_sharpness(float value)
@@ -695,6 +703,7 @@ const c_nemulator::s_button_handler c_nemulator::button_handlers[] =
     { SCOPE::GAMES_LOADED, {BUTTON_INC_SHARPNESS}, true, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_inc_sharpness },
     { SCOPE::GAMES_LOADED, {BUTTON_VOLUME_UP}, true, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_volume_up },
     { SCOPE::GAMES_LOADED, {BUTTON_VOLUME_DOWN}, true, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_volume_down },
+    { SCOPE::GAMES_LOADED, {BUTTON_SCANLINES}, true, RESULT_DOWN, &c_nemulator::handle_button_scanlines },
     { SCOPE::IN_MENU, {BUTTON_RIGHT}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_right },
     { SCOPE::IN_MENU, {BUTTON_LEFT}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_left },
     { SCOPE::IN_MENU, {BUTTON_UP}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_up },

@@ -40,9 +40,7 @@ public:
     float zoomDestX;
     float zoomDestY;
     float zoomDestZ;
-    //void Suspend();
-    //void Resume();
-    //void OnResize();
+    bool scanlines;
 
     static const int STATE_NULL = 0;
     static const int STATE_MENU = 1;
@@ -136,8 +134,6 @@ private:
 
     double borderTimer;
     int borderDir;
-
-    bool scanlines;
 
     HRESULT hr;
 

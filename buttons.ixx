@@ -49,6 +49,7 @@ export enum BUTTONS
     BUTTON_VOLUME_UP,
     BUTTON_VOLUME_DOWN,
     BUTTON_HOME,
+    BUTTON_SCANLINES,
     //generic button aliases
     BUTTON_UP,
     BUTTON_DOWN,

@@ -74,7 +74,7 @@ c_texture_panel::c_texture_panel(int rows, int columns)
     scrolls = 0;
     selectable = false;
 
-    scanlines = true;
+    scanlines = false;
 
     //todo: document where these coords come from
     //doesn't really matter since they're recalculated before use in nemulator.cpp

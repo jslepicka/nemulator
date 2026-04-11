@@ -81,6 +81,7 @@ private:
     void handle_button_switch_disk(s_button_handler_params *params);
     void handle_button_volume_up(s_button_handler_params *params);
     void handle_button_volume_down(s_button_handler_params *params);
+    void handle_button_scanlines(s_button_handler_params *params);
 
     float fov_h;
     float eye_x;
