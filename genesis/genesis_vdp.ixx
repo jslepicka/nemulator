@@ -1,6 +1,7 @@
 module;
 #include <cassert>
 #include <immintrin.h>
+#include <cstdio>
 export module genesis:vdp;
 import nemulator.std;
 
@@ -103,10 +104,17 @@ export class c_vdp
                 status.vint = 0;
                 address_write = 0;
                 return ret;
-            case 0x00C00008:
+            case 0x00C00008: {
                 //hpos is inaccurate, but good enough to get comix zone to work
                 //need to revisit
-                return (line > 0xEA ? line - 6 : line) << 8 | (hpos >> 1);
+                int hp = (*global_cycle % 3420) * 420 / 3420;
+                {
+                    int vp = line > 0xEA ? line - 6 : line;
+
+                    //printf("line %d cycle %llu: read vpos %d hpos %d\n", line, *global_cycle % 3420, vp, hp);
+                }
+                return (line > 0xEA ? line - 6 : line) << 8 | (hp >> 1);
+            }
             default:
                 return 0;
         }
@@ -129,9 +137,13 @@ export class c_vdp
                 if (r > 234) {
                     r -= 6;
                 }
+
+                //printf("line %d cycle %llu: read vpos %d\n", line, *global_cycle % 3420, r);
+
                 return r & 0xFF;
             }
             case 0x00C00009:
+                //printf("read byte from 0xc00009\n");
                 return 0;
             default:
                 return 0;
@@ -308,6 +320,10 @@ export class c_vdp
         uint32_t a_v_scroll = 0;
         uint32_t b_v_scroll = 0;
         if (vscroll_mode == 0) {
+            //need to check vscroll latching -- this fixes bram stoker's dracula scroll glitch
+            //in start of level book page turn
+            //vscroll_a = std::byteswap(*(uint16_t *)&vsram[0]) & 0x3FF;
+            //vscroll_b = std::byteswap(*(uint16_t *)&vsram[2]) & 0x3FF;
             a_v_scroll = vscroll_a;
             b_v_scroll = vscroll_b;
         }
@@ -396,7 +412,6 @@ export class c_vdp
                 }
             }
 
-            alignas(32) uint32_t out_buf[16];
             for (int j = 0; j < 16; j++) {
                 uint8_t visible_layers = layer_visibility[8 + i + j] & plane_mask;
                 uint8_t out;
@@ -443,10 +458,8 @@ export class c_vdp
                         }
                     }
                 }
-                //*fb++ = cram_entries[color_mode][out];
-                out_buf[j] = cram_entries[color_mode][out];
+                *fb++ = cram_entries[color_mode][out];
             }
-            std::memcpy(&fb[i], out_buf, 16 * sizeof(uint32_t));
         }
     }
 
@@ -468,31 +481,31 @@ export class c_vdp
         update_ipl();
     }
 
-    void end_line()
-    {
-        clear_hblank();
-        if (line == 223) {
-            status.vblank = 1;
-            if (reg[0x01] & 0x20) {
-                status.vint = 1;
-                asserting_vblank = 1;
-                status.vblank = 1;
-                update_ipl();
-            }
-        }
+    //void end_line()
+    //{
+    //    clear_hblank();
+    //    if (line == 223) {
+    //        status.vblank = 1;
+    //        if (reg[0x01] & 0x20) {
+    //            status.vint = 1;
+    //            asserting_vblank = 1;
+    //            status.vblank = 1;
+    //            update_ipl();
+    //        }
+    //    }
 
-        if (line == 261) {
-            line = 0;
-            hint_counter = reg[0x0A];
-        }
-        else {
-            line++;
-            if (line == 261) {
-                status.vblank = 0;
-                status.vint = 0;
-            }
-        }
-    }
+    //    if (line == 261) {
+    //        line = 0;
+    //        hint_counter = reg[0x0A];
+    //    }
+    //    else {
+    //        line++;
+    //        if (line == 261) {
+    //            status.vblank = 0;
+    //            status.vint = 0;
+    //        }
+    //    }
+    //}
 
     //Analog screen sections in relation to HCounter (H32 mode):
     //-----------------------------------------------------------------
@@ -697,7 +710,6 @@ export class c_vdp
             uint32_t next_mcycle;
             uint8_t next_event;
         };
-
         static const s_events events[][5] = {{
                                                  {0xA * 8, HBLANK_CLEAR},
                                                  {0x149 * 8, HINT},
@@ -736,6 +748,8 @@ export class c_vdp
             case HINT:
                 if (line < 224) {
                     draw_scanline();
+                }
+                if (line <= 224) {
                     if (--hint_counter == 0xFF) {
                         if (reg[0x00] & 0x10) {
                             asserting_hblank = 1;
@@ -834,6 +848,9 @@ export class c_vdp
     void update_ipl()
     {
         if (asserting_vblank) {
+            if (*ipl != 6) {
+                //printf("frame %llu line %d cycle %llu: assert vblank\n", *global_cycle / (3420 * 262), line, *global_cycle % 3420);
+            }
             *ipl = 6;
         }
         else if (asserting_hblank) {
@@ -1070,6 +1087,8 @@ export class c_vdp
   public:
     int freeze_cpu;
     int line;
+
+    uint64_t *global_cycle;
 
   private:
     int event;

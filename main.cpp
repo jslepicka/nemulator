@@ -83,6 +83,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdPlin
 {
     timedemo = has_flag("-timedemo");
     benchmark_mode = has_flag("-benchmark");
+    if (IsDebuggerPresent()) {
+        AllocConsole();
+        freopen("CONOUT$", "w", stdout);
+        printf("Running under debugger\n");
+    }
     g_cpu_info = get_cpu_info();
     std::unique_ptr<D3d10App> app = std::make_unique<D3d10App>(hInstance);
     app->Init((char*)"nemulator.ini", new c_nemulator(), NULL);

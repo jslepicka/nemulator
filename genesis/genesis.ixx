@@ -84,6 +84,7 @@ export class c_genesis : public c_system,
             &z80_irq, //irq
             nullptr //data bus
         );
+        vdp->global_cycle = &current_cycle;
         ym = std::make_unique<c_ym2612>();
         cart_ram_start = 0;
         cart_ram_end = 0;
