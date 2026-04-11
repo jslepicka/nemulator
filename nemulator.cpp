@@ -218,7 +218,7 @@ void c_nemulator::Init()
     sharpness = (float)std::clamp(config->get_double("sharpness", .8), 0.0, 1.0);
     mainPanel2->set_sharpness(sharpness);
     texturePanels[0] = mainPanel2.get();
-    mainPanel2->scanlines = config->get_bool("scanlines", true);
+    mainPanel2->scanlines = config->get_bool("scanlines", false);
 
     QueryPerformanceFrequency(&liFreq);
 
