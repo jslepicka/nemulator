@@ -74,6 +74,8 @@ c_texture_panel::c_texture_panel(int rows, int columns)
     scrolls = 0;
     selectable = false;
 
+    scanlines = true;
+
     //todo: document where these coords come from
     //doesn't really matter since they're recalculated before use in nemulator.cpp
     zoomDestX = 16.2f;
@@ -148,6 +150,7 @@ void c_texture_panel::Init()
     var_sharpness = effect->GetVariableByName("sharpness")->AsScalar();
     var_max_y = effect->GetVariableByName("max_y")->AsScalar();
     var_max_x = effect->GetVariableByName("max_x")->AsScalar();
+    var_scanlines = effect->GetVariableByName("scanlines")->AsScalar();
 
     D3D10_PASS_DESC passDesc;
     technique->GetPassByIndex(0)->GetDesc(&passDesc);
@@ -213,7 +216,8 @@ void c_texture_panel::Init()
     varView->SetMatrix((float*)&matrixView);
     varProj->SetMatrix((float*)&matrixProj);
     varTex->SetResource(texRv);
-
+    var_scanlines->SetBool(false);
+    
     set_sharpness(0.0f);
 }
 
@@ -474,6 +478,7 @@ void c_texture_panel::Draw()
     case STATE_ZOOMING:
         for (int i = first_item; i < last_item; ++i) {
             c_item_container *p = item_containers[i];
+            var_scanlines->SetBool(false);
             if (in_focus && i == selected_item) {
                 var_border_color->SetFloatVector((float *)(p->item->Selectable() ? &border_color : &invalid_border_color));
                 DrawItem(p, state != STATE_ZOOMING, p->pos.x, p->pos.y, p->pos.z, 1.0f);
@@ -485,6 +490,7 @@ void c_texture_panel::Draw()
         break;
     case STATE_ZOOMED:
         if (in_focus) {
+            var_scanlines->SetBool(scanlines);
             c_item_container *p = item_containers[selected_item];
             DrawItem(p, 0, p->pos.x, p->pos.y, p->pos.z);
         }

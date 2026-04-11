@@ -137,6 +137,8 @@ private:
     double borderTimer;
     int borderDir;
 
+    bool scanlines;
+
     HRESULT hr;
 
     ID3D10Effect *effect;
@@ -153,6 +155,7 @@ private:
     ID3D10EffectScalarVariable *var_sharpness;
     ID3D10EffectScalarVariable *var_max_y;
     ID3D10EffectScalarVariable *var_max_x;
+    ID3D10EffectScalarVariable *var_scanlines;
 
     ID3D10EffectShaderResourceVariable *varTex;
 
