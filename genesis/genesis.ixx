@@ -90,9 +90,8 @@ export class c_genesis : public c_system,
         cart_ram_end = 0;
         z80_has_bus = 1;
         z80_reset = 1;
-        has_sram = 0;
-        is_ps4 = 0;
-        ps4_ram_access = 0;
+        has_sram = false;
+        cart_ram_enabled = false;
         bank_register = 0;
         psg = std::make_unique<sms::c_psg>();
         mixer_enabled = 0;
@@ -194,20 +193,12 @@ export class c_genesis : public c_system,
     uint8_t read_byte(uint32_t address)
     {
         if (address < 0x400000) {
-            if (is_ps4) {
-                if (ps4_ram_access && address >= cart_ram_start && address <= cart_ram_end) {
+            if (cart_ram_start && address >= cart_ram_start && address <= cart_ram_end) {
+                if (rom_size <= 0x200000 || (rom_size > 0x200000 && cart_ram_enabled)) {
                     return cart_ram[address - cart_ram_start];
                 }
-                else {
-                    return rom[address & rom_mask];
-                }
             }
-            if (cart_ram_start && address >= cart_ram_start && address <= cart_ram_end) {
-                return cart_ram[address - cart_ram_start];
-            }
-            else {
-                return rom[address & rom_mask];
-            }
+            return rom[address & rom_mask];
         }
         else if (address >= 0x00C00000 && address <= 0xC0001E) {
             return vdp->read_byte(address);
@@ -272,23 +263,12 @@ export class c_genesis : public c_system,
     {
         assert(!(address & 1));
         if (address < 0x400000) {
-            if (is_ps4) {
-                if (ps4_ram_access && address >= cart_ram_start && address <= cart_ram_end) {
+            if (cart_ram_start && address >= cart_ram_start && address <= cart_ram_end) {
+                if (rom_size <= 0x200000 || (rom_size > 0x200000 && cart_ram_enabled)) {
                     return std::byteswap(*(uint16_t *)(cart_ram.get() + address - cart_ram_start));
                 }
-                else {
-                    address &= rom_mask;
-                    return std::byteswap(*((uint16_t *)(rom.get() + address)));
-                }
             }
-            if (cart_ram_start && address >= cart_ram_start && address <= cart_ram_end) {
-                //assert(0);
-                return std::byteswap(*(uint16_t *)(cart_ram.get() + address - cart_ram_start));
-            }
-            else {
-                address &= rom_mask;
-                return std::byteswap(*((uint16_t *)(rom.get() + address)));
-            }
+            return std::byteswap(*((uint16_t *)(rom.get() + (address & rom_mask))));
         }
         else if (address >= 0x00C00000 && address <= 0xC0001E) {
             return vdp->read_word(address);
@@ -328,13 +308,10 @@ export class c_genesis : public c_system,
     void write_byte(uint32_t address, uint8_t value)
     {
         if (address < 0x400000) {
-            if (is_ps4) {
-                if (ps4_ram_access && address >= cart_ram_start && address <= cart_ram_end) {
+            if (cart_ram_start && address >= cart_ram_start && address <= cart_ram_end) {
+                if (rom_size <= 0x200000 || (rom_size > 0x200000 && cart_ram_enabled)) {
                     cart_ram[address - cart_ram_start] = value;
                 }
-            }
-            else if (cart_ram_start && address >= cart_ram_start && address <= cart_ram_end) {
-                cart_ram[address - cart_ram_start] = value;
             }
         }
         else if (address >= 0x00C00000 && address < 0xC00011) {
@@ -396,7 +373,7 @@ export class c_genesis : public c_system,
                     }
                     break;
                 case 0xA130F1:
-                    ps4_ram_access = value & 0x1;
+                    cart_ram_enabled = value & 0x1;
                     break;
                 default:
                     break;
@@ -411,17 +388,11 @@ export class c_genesis : public c_system,
     {
         assert(!(address & 1));
         if (address < 0x400000) {
-            if (is_ps4) {
-                if (ps4_ram_access && address >= cart_ram_start && address <= cart_ram_end) {
-                    //assert(0);
+            if (cart_ram_start && address >= cart_ram_start && address <= cart_ram_end) {
+                if (rom_size <= 0x200000 || (rom_size > 0x200000 && cart_ram_enabled)) {
                     cart_ram[address - cart_ram_start] = value >> 8;
                     cart_ram[address - cart_ram_start + 1] = value & 0xFF;
                 }
-            }
-            else if (cart_ram_start && address >= cart_ram_start && address <= cart_ram_end) {
-                //assert(0);
-                cart_ram[address - cart_ram_start] = value >> 8;
-                cart_ram[address - cart_ram_start + 1] = value & 0xFF;
             }
         }
         else if (address >= 0x00C00000 && address < 0xC00011) {
@@ -590,16 +561,9 @@ export class c_genesis : public c_system,
             cart_ram_size = cart_ram_end - cart_ram_start + 1;
             cart_ram = std::make_unique<uint8_t[]>(cart_ram_size);
             if (rom[0x1B2] & 0x40) {
-                has_sram = 1;
+                has_sram = true;
                 open_sram();
             }
-        }
-        const char ps4_title[] = "PHANTASY STAR The end of the millennium";
-        if (std::memcmp(&rom[0x120], ps4_title, sizeof(ps4_title) - 1) == 0) {
-            is_ps4 = 1;
-        }
-        if (cart_ram_start && cart_ram_start < rom_size) {
-            is_ps4 = 1;
         }
 
         reset();
@@ -884,6 +848,8 @@ export class c_genesis : public c_system,
     bool z80_was_reset;
     bool frame_complete;
     bool z80_enabled;
+    bool has_sram;
+    bool cart_ram_enabled;
     int last_bus_request;
     int z80_reset;
     int z80_busreq;
@@ -904,9 +870,6 @@ export class c_genesis : public c_system,
     uint32_t cart_ram_start;
     uint32_t cart_ram_end;
     uint32_t cart_ram_size;
-    uint32_t has_sram;
-    int is_ps4;
-    int ps4_ram_access;
     uint32_t bank_register;
     std::unique_ptr<sms::c_psg> psg;
     uint32_t m68k_required;
