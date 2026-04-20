@@ -247,6 +247,7 @@
     <ClCompile Include="dsp\resampler.ixx" />
     <ClCompile Include="gb\gbapu_channels.ixx" />
     <ClCompile Include="gb\gb_common.ixx" />
+    <ClCompile Include="genesis\genesis_db.ixx" />
     <ClCompile Include="genesis\genesis.ixx" />
     <ClCompile Include="genesis\genesis_vdp.ixx" />
     <ClCompile Include="interpolate.ixx" />

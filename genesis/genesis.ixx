@@ -12,6 +12,7 @@ import ym2612;
 import m68k;
 import dsp;
 import crc32;
+import :db;
 
 namespace genesis
 {
@@ -95,6 +96,7 @@ export class c_genesis : public c_system,
         bank_register = 0;
         psg = std::make_unique<sms::c_psg>();
         mixer_enabled = 0;
+        region = REGION::US;
 
         /*
         lowpass 20kHz
@@ -218,7 +220,12 @@ export class c_genesis : public c_system,
         else if (address < 0xE00000) {
             switch (address) {
                 case 0xA10001:
-                    return 0xA0;
+                    if (region == REGION::JAPAN) {
+                        return 0x20;
+                    }
+                    else {
+                        return 0xA0;
+                    }
                 case 0xA10003:
                     if (th1 & 0x40) {
                         uint16_t ret = 0x40 | (joy1 & 0x3F);
@@ -566,6 +573,11 @@ export class c_genesis : public c_system,
             }
         }
 
+        if (db.contains(crc32)) {
+            auto entry = db.at(crc32);
+            region = entry.region;
+        }
+
         reset();
         loaded = 1;
         return 1;
@@ -834,6 +846,7 @@ export class c_genesis : public c_system,
     int nmi;
 
   private:
+    REGION region;
     int loaded = 0;
     static const int CLOCKS_PER_MIX = 4;
     int mix_clock;
