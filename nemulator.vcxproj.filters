@@ -44,46 +44,13 @@
     <Filter Include=".github\workflows">
       <UniqueIdentifier>{104eaf10-8f11-43ef-870e-7af948018f2a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="tg16">
+      <UniqueIdentifier>{d3108a2e-17eb-4dad-a132-4a41ba70e9b5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="nes\mappers\vrc7_audio.cpp">
       <Filter>nes\mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="gb\gb.cpp">
-      <Filter>gb</Filter>
-    </ClCompile>
-    <ClCompile Include="gb\gbmapper.cpp">
-      <Filter>gb</Filter>
-    </ClCompile>
-    <ClCompile Include="gb\gbppu.cpp">
-      <Filter>gb</Filter>
-    </ClCompile>
-    <ClCompile Include="gb\sm83.cpp">
-      <Filter>gb</Filter>
-    </ClCompile>
-    <ClCompile Include="gb\mbc1.cpp">
-      <Filter>gb</Filter>
-    </ClCompile>
-    <ClCompile Include="gb\mbc3.cpp">
-      <Filter>gb</Filter>
-    </ClCompile>
-    <ClCompile Include="gb\gbapu.cpp">
-      <Filter>gb</Filter>
-    </ClCompile>
-    <ClCompile Include="gb\mbc2.cpp">
-      <Filter>gb</Filter>
-    </ClCompile>
-    <ClCompile Include="gb\mbc5.cpp">
-      <Filter>gb</Filter>
-    </ClCompile>
-    <ClCompile Include="pacman\pacman.cpp">
-      <Filter>pacman</Filter>
-    </ClCompile>
-    <ClCompile Include="pacman\pacman_vid.cpp">
-      <Filter>pacman</Filter>
-    </ClCompile>
-    <ClCompile Include="pacman\pacman_psg.cpp">
-      <Filter>pacman</Filter>
     </ClCompile>
     <ClCompile Include="z80\z80.ixx">
       <Filter>z80</Filter>
@@ -97,17 +64,8 @@
     <ClCompile Include="dsp\audio_filter.ixx">
       <Filter>dsp</Filter>
     </ClCompile>
-    <ClCompile Include="pacman\mspacman.cpp">
-      <Filter>pacman</Filter>
-    </ClCompile>
-    <ClCompile Include="invaders\invaders.cpp">
-      <Filter>invaders</Filter>
-    </ClCompile>
     <ClCompile Include="dsp\null_filter.ixx">
       <Filter>dsp</Filter>
-    </ClCompile>
-    <ClCompile Include="invaders\sample_channel.cpp">
-      <Filter>invaders</Filter>
     </ClCompile>
     <ClCompile Include="nes\mappers\mapper212.ixx">
       <Filter>nes\mappers</Filter>
@@ -474,9 +432,6 @@
     <ClCompile Include="genesis\genesis.ixx">
       <Filter>genesis</Filter>
     </ClCompile>
-    <ClCompile Include="genesis\genesis.cpp">
-      <Filter>genesis</Filter>
-    </ClCompile>
     <ClCompile Include="genesis\genesis_vdp.ixx">
       <Filter>genesis</Filter>
     </ClCompile>
@@ -498,28 +453,25 @@
     <ClCompile Include="dsp\resampler.ixx">
       <Filter>dsp</Filter>
     </ClCompile>
-    <ClCompile Include="genesis\genesis_vdp.cpp">
-      <Filter>genesis</Filter>
-    </ClCompile>
-    <ClCompile Include="bus.ixx" />
     <ClCompile Include="nes\mappers\fds_audio.ixx">
       <Filter>nes\mappers</Filter>
     </ClCompile>
     <ClCompile Include="dsp\one_pole_lowpass.ixx">
       <Filter>dsp</Filter>
     </ClCompile>
-    <ClCompile Include="nes\nes_callbacks.ixx" />
     <ClCompile Include="nes\apu_channels.ixx">
       <Filter>nes</Filter>
     </ClCompile>
-    <ClCompile Include="z80\z80_callbacks.ixx">
-      <Filter>z80</Filter>
-    </ClCompile>
-    <ClCompile Include="m68k\m68k_callbacks.ixx">
-      <Filter>m68k</Filter>
-    </ClCompile>
     <ClCompile Include="sms\sms_common.ixx">
       <Filter>sms</Filter>
+    </ClCompile>
+    <ClCompile Include="gb\gbapu_channels.ixx" />
+    <ClCompile Include="gb\gb_common.ixx" />
+    <ClCompile Include="tg16\tg16.ixx">
+      <Filter>tg16</Filter>
+    </ClCompile>
+    <ClCompile Include="tg16\huc6280.ixx">
+      <Filter>tg16</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
