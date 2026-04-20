@@ -72,41 +72,46 @@ export template <typename Sys> class c_huc6280
 
     void execute()
     {
-        if (fetch_opcode) {
-            if (do_apu_dma) {
-                opcode = 0x103;
-                do_apu_dma--;
-            }
-            else if (dma_pos) {
-                opcode = 0x102;
-            }
-            else if (do_nmi && nmi_delay == 0) {
-                opcode = 0x100;
-                do_nmi = false;
-                nmi_delay = 0;
-            }
-            else if (do_irq && irq_delay == 0 && !SR.I) {
-                opcode = 0x101;
+        while (true) {
+            if (fetch_opcode) {
+                if (do_apu_dma) {
+                    opcode = 0x103;
+                    do_apu_dma--;
+                }
+                else if (dma_pos) {
+                    opcode = 0x102;
+                }
+                else if (do_nmi && nmi_delay == 0) {
+                    opcode = 0x100;
+                    do_nmi = false;
+                    nmi_delay = 0;
+                }
+                else if (do_irq && irq_delay == 0 && !SR.I) {
+                    opcode = 0x101;
+                    irq_delay = 0;
+                }
+                else {
+                    if (PC == 0xE0A2) {
+                        int x = 1;
+                    }
+
+                    opcode = read_byte(PC++);
+                    std::printf("%4X: %2X\n", PC - 1, opcode);
+                }
                 irq_delay = 0;
+                nmi_delay = 0;
+                required_cycles += cycle_table[opcode];
+                fetch_opcode = false;
+            }
+            if (required_cycles <= available_cycles) {
+                available_cycles -= required_cycles;
+                required_cycles = 0;
+                fetch_opcode = true;
+                execute_opcode();
             }
             else {
-                if (PC == 0xE0A2) {
-                    int x = 1;
-                }
-
-                opcode = read_byte(PC++);
-                std::printf("%4X: %2X\n", PC - 1, opcode);
+                return;
             }
-            irq_delay = 0;
-            nmi_delay = 0;
-            required_cycles += cycle_table[opcode];
-            fetch_opcode = false;
-        }
-        if (required_cycles <= available_cycles) {
-            available_cycles -= required_cycles;
-            required_cycles = 0;
-            fetch_opcode = true;
-            execute_opcode();
         }
     }
 
@@ -319,7 +324,7 @@ export template <typename Sys> class c_huc6280
             case 0x61: indirect_x(); ADC(); break;
             case 0x62: CLA(); break;
             case 0x63: assert(0); break;
-            case 0x64: assert(0); break; //unofficial d NOP
+            case 0x64: zeropage_ea(); STZ(); break; //unofficial d NOP
             case 0x65: zeropage(); ADC(); break;
             case 0x66: zeropage(); ROR(); break;
             case 0x67: assert(0); break;
@@ -341,7 +346,7 @@ export template <typename Sys> class c_huc6280
             case 0x77: assert(0); break;
             case 0x78: SEI(); break;
             case 0x79: absolute_y_pc(); ADC(); break;
-            case 0x7A: assert(0); break; //unofficial NOP
+            case 0x7A: PLY(); break; //unofficial NOP
             case 0x7B: assert(0); break;
             case 0x7C: assert(0); break; //unofficial a,x NOP
             case 0x7D: absolute_x_pc(); ADC(); break;
@@ -349,7 +354,7 @@ export template <typename Sys> class c_huc6280
             case 0x7F: assert(0); break;
             case 0x80: BRA(); break; //branch relative
             case 0x81: indirect_x_ea(); STA(); break;
-            case 0x82: assert(0); break; //unofficial i NOP
+            case 0x82: CLX(); break; //unofficial i NOP
             case 0x83: assert(0); break;
             case 0x84: zeropage_ea(); STY(); break;
             case 0x85: zeropage_ea(); STA(); break;
@@ -375,7 +380,7 @@ export template <typename Sys> class c_huc6280
             case 0x99: absolute_y_ea(); STA(); break;
             case 0x9A: TXS(); break;
             case 0x9B: absolute_y(); TAS(); break;
-            case 0x9C: assert(0); break;
+            case 0x9C: absolute_ea(); STZ(); break;
             case 0x9D: absolute_x_ea(); STA(); break;
             case 0x9E: assert(0); break;
             case 0x9F: assert(0); break;
@@ -469,7 +474,7 @@ export template <typename Sys> class c_huc6280
             case 0xF7: assert(0); break;
             case 0xF8: SED(); break;
             case 0xF9: absolute_y_pc(); SBC(); break;
-            case 0xFA: assert(0); break; //unofficial NOP
+            case 0xFA: PLX(); break; //unofficial NOP
             case 0xFB: assert(0); break;
             case 0xFC: assert(0); break; //unofficial a,x NOP
             case 0xFD: absolute_x_pc(); SBC(); break;
@@ -569,6 +574,12 @@ export template <typename Sys> class c_huc6280
         SR.T = 0;
     }
 
+    void CLX()
+    {
+        X = 0;
+        SR.T = 0;
+    }
+
     void SXY()
     {
         std::swap(X, Y);
@@ -588,10 +599,24 @@ export template <typename Sys> class c_huc6280
         SR.T = 0;
     }
 
+    void PLX()
+    {
+        X = pop();
+        setn(X);
+        setz(X);
+    }
+
     void PHY()
     {
         push(Y);
         SR.T = 0;
+    }
+
+    void PLY()
+    {
+        Y = pop();
+        setn(Y);
+        setz(Y);
     }
 
     void INC_A()
@@ -600,6 +625,18 @@ export template <typename Sys> class c_huc6280
         setn(A);
         setz(A);
         SR.T = 0;
+    }
+
+    void STZ()
+    {
+        write_byte(address, 0);
+    }
+
+    void BBS()
+    {
+        int bit = (opcode >> 4) - 1;
+        int mask = 1 << bit;
+        branch(M & mask);
     }
 
     INLINE void push(uint8_t value)

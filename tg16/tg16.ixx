@@ -16,7 +16,7 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
   public:
     static std::vector<s_system_info> get_registry_info()
     {
-        return {{.name = "TurboGrafx-16",
+        return {{.name = "NEC TurboGrafx-16",
                  .identifier = "tg16",
                  .extension = "pce",
                  .display_info =
@@ -187,7 +187,8 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
                 //assert(0);
             }
             else if (address < 0xC00) {
-                assert(0);
+                std::printf("write %2X to PSG address %4X\n", value, address);
+                //assert(0);
             }
             else if (address < 0x1000) {
                 assert(0);
@@ -196,7 +197,7 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
                 assert(0);
             }
             else if (address < 0x1800) {
-                assert(0);
+                std::printf("write %2X to interrupt controller address %4X\n", value, address);
             }
             else {
                 assert(0);
