@@ -12,7 +12,7 @@ export template <typename Sys> class c_huc6280
 {
     Sys &sys;
     // clang-format off
-    static constexpr int cycle_table[260] = {
+    static constexpr int cycle_table[261] = {
     //   0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
         21, 18,  3, 24,  9,  9, 15, 15,  9,  6,  6,  6, 12, 12, 18, 18, //0F
          6, 15,  3, 24, 12, 12, 18, 18,  6, 12,  6, 21, 12, 12, 21, 21, //1F
@@ -21,16 +21,16 @@ export template <typename Sys> class c_huc6280
         18, 18,  3, 24,  9,  9, 15, 15,  9,  6,  6,  6,  9, 12, 18, 18, //4F
          6, 15,  3, 24, 12, 12, 18, 18,  6, 12,  6, 21, 12, 12, 21, 21, //5F
         18, 18,  3, 24,  9,  9, 15, 15, 12,  6,  6,  6, 15, 12, 18, 18, //6F
-         6, 15,  3, 24, 12, 12, 18, 18,  6, 12,  6, 21, 12, 12, 21, 21, //7F
+         6, 15,  3, 51, 12, 12, 18, 18,  6, 12,  6, 21, 12, 12, 21, 21, //7F
          6, 18,  6, 18,  9,  9,  9,  9,  6,  6,  6,  6, 12, 12, 12, 12, //8F
          6, 18,  3, 18, 12, 12, 12, 12,  6, 15,  6, 15, 15, 15, 15, 15, //9F
          6, 18,  6, 18,  9,  9,  9,  9,  6,  6,  6,  6, 12, 12, 12, 12, //AF
          6, 15,  3, 15, 12, 12, 12, 12,  6, 12,  6, 12, 12, 12, 12, 12, //BF
          6, 18,  6, 24,  9,  9, 15, 15,  6,  6,  6,  6, 12, 12, 18, 18, //CF
          6, 15,  3, 24, 12, 12, 18, 18,  6, 12,  6, 21, 12, 12, 21, 21, //DF
-         6, 18,  6, 24,  9,  9, 15, 15,  6,  6,  6,  6, 12, 12, 18, 18, //EF
+         6, 18,  6, 51,  9,  9, 15, 15,  6,  6,  6,  6, 12, 12, 18, 18, //EF
          6, 15,  3, 24, 12, 12, 18, 18,  6, 12,  6, 21, 12, 12, 21, 21, //FF
-        21, 21,  6, 12
+        21, 21,  21, 18, 18
     };
     // clang-format on
   public:
@@ -74,29 +74,29 @@ export template <typename Sys> class c_huc6280
     {
         while (true) {
             if (fetch_opcode) {
-                if (do_apu_dma) {
-                    opcode = 0x103;
-                    do_apu_dma--;
-                }
-                else if (dma_pos) {
-                    opcode = 0x102;
-                }
-                else if (do_nmi && nmi_delay == 0) {
+                if (do_nmi && nmi_delay == 0) {
                     opcode = 0x100;
                     do_nmi = false;
                     nmi_delay = 0;
                 }
-                else if (do_irq && irq_delay == 0 && !SR.I) {
+                else if (sys.irq1 && irq_delay == 0 && !SR.I) {
                     opcode = 0x101;
                     irq_delay = 0;
                 }
+                else if (sys.irq2 && irq_delay == 0 && !SR.I) {
+                    opcode = 0x102;
+                    irq_delay = 0;
+                }
+                else if (tia_pos) {
+                    opcode = tia_opcode;
+                }
                 else {
-                    if (PC == 0xE0A2) {
+                    if (PC == 0xcb5e) {
                         int x = 1;
                     }
 
                     opcode = read_byte(PC++);
-                    std::printf("%4X: %2X\n", PC - 1, opcode);
+                    //std::printf("%4X: %2X\n", PC - 1, opcode);
                 }
                 irq_delay = 0;
                 nmi_delay = 0;
@@ -166,6 +166,11 @@ export template <typename Sys> class c_huc6280
         dma_pos = 0;
         do_apu_dma = 0;
         odd_cycle = 0;
+        tia_pos = 0;
+        tia_src = 0;
+        tia_dst = 0;
+        tia_cnt = 0;
+        tia_opcode = 0;
         return 1;
     }
 
@@ -211,6 +216,11 @@ export template <typename Sys> class c_huc6280
     bool irq_pending;
     bool nmi_pending;
     int dma_pos;
+    int tia_pos;
+    int tia_src;
+    int tia_dst;
+    int tia_cnt;
+    int tia_opcode;
     int required_cycles;
     unsigned char *dma_dst;
     int dma_src;
@@ -228,7 +238,7 @@ export template <typename Sys> class c_huc6280
             case 0x01: indirect_x(); ORA(); break;
             case 0x02: SXY(); break;
             case 0x03: assert(0); break;
-            case 0x04: assert(0); break; //unofficial d NOP
+            case 0x04: zeropage(); TSB(); break; //unofficial d NOP
             case 0x05: zeropage(); ORA(); break;
             case 0x06: zeropage(); ASL(); break;
             case 0x07: assert(0); break;
@@ -236,15 +246,15 @@ export template <typename Sys> class c_huc6280
             case 0x09: immediate(); ORA(); break;
             case 0x0A: ASL_R(A); break;
             case 0x0B: assert(0); break; //unofficial ANC
-            case 0x0C: assert(0); break; //unofficial a NOP
+            case 0x0C: absolute(); TSB(); break; //unofficial a NOP
             case 0x0D: absolute(); ORA(); break;
             case 0x0E: absolute(); ASL(); break;
             case 0x0F: assert(0); break;
             case 0x10: BPL(); break;
             case 0x11: indirect_y_pc(); ORA(); break;
-            case 0x12: assert(0); break;
+            case 0x12: indirect2(); ORA(); break;
             case 0x13: assert(0); break;
-            case 0x14: assert(0); break; //unofficial d,x NOP
+            case 0x14: zeropage(); TRB(); break; //unofficial d,x NOP
             case 0x15: zeropage_x(); ORA(); break;
             case 0x16: zeropage_x(); ASL(); break;
             case 0x17: assert(0); break;
@@ -252,7 +262,7 @@ export template <typename Sys> class c_huc6280
             case 0x19: absolute_y_pc(); ORA(); break;
             case 0x1A: INC_A(); break; //unofficial NOP
             case 0x1B: assert(0); break;
-            case 0x1C: assert(0); break; //unofficial a,x NOP
+            case 0x1C: absolute(); TRB(); break; //unofficial a,x NOP
             case 0x1D: absolute_x_pc(); ORA(); break;
             case 0x1E: absolute_x_rmw(); ASL(); break;
             case 0x1F: assert(0); break;
@@ -282,9 +292,9 @@ export template <typename Sys> class c_huc6280
             case 0x37: assert(0); break;
             case 0x38: SEC(); break;
             case 0x39: absolute_y_pc(); AND(); break;
-            case 0x3A: assert(0); break; //unofficial NOP
+            case 0x3A: DEC_A(); break; //unofficial NOP
             case 0x3B: assert(0); break;
-            case 0x3C: assert(0); break; //unofficial a,x NOP
+            case 0x3C: absolute_x_pc(); BIT(); break; //unofficial a,x NOP
             case 0x3D: absolute_x_pc(); AND(); break;
             case 0x3E: absolute_x_rmw(); ROL(); break;
             case 0x3F: assert(0); break;
@@ -339,11 +349,11 @@ export template <typename Sys> class c_huc6280
             case 0x70: BVS(); break;
             case 0x71: indirect_y_pc(); ADC(); break;
             case 0x72: indirect2(); ADC(); break;
-            case 0x73: assert(0); break;
+            case 0x73: TII(); break;
             case 0x74: assert(0); break; //unofficial d,x NOP
             case 0x75: zeropage_x(); ADC(); break;
             case 0x76: zeropage_x(); ROR(); break;
-            case 0x77: assert(0); break;
+            case 0x77: zeropage(); RMB(); break;
             case 0x78: SEI(); break;
             case 0x79: absolute_y_pc(); ADC(); break;
             case 0x7A: PLY(); break; //unofficial NOP
@@ -361,7 +371,7 @@ export template <typename Sys> class c_huc6280
             case 0x86: zeropage_ea(); STX(); break;
             case 0x87: assert(0); break;
             case 0x88: DEY(); break;
-            case 0x89: SKB(); break;
+            case 0x89: immediate(); BIT(); break;
             case 0x8A: TXA(); break;
             case 0x8B: assert(0); break;
             case 0x8C: absolute_ea(); STY(); break;
@@ -382,7 +392,7 @@ export template <typename Sys> class c_huc6280
             case 0x9B: absolute_y(); TAS(); break;
             case 0x9C: absolute_ea(); STZ(); break;
             case 0x9D: absolute_x_ea(); STA(); break;
-            case 0x9E: assert(0); break;
+            case 0x9E: absolute_x_ea(); STZ(); break;
             case 0x9F: assert(0); break;
             case 0xA0: immediate(); LDY(); break;
             case 0xA1: indirect_x(); LDA(); break;
@@ -402,7 +412,7 @@ export template <typename Sys> class c_huc6280
             case 0xAF: assert(0); break;
             case 0xB0: BCS(); break;
             case 0xB1: indirect_y_pc(); LDA(); break;
-            case 0xB2: assert(0); break;
+            case 0xB2: indirect2(); LDA(); break;
             case 0xB3: assert(0); break;
             case 0xB4: zeropage_x(); LDY(); break;
             case 0xB5: zeropage_x(); LDA(); break;
@@ -434,7 +444,7 @@ export template <typename Sys> class c_huc6280
             case 0xCF: assert(0); break;
             case 0xD0: BNE(); break;
             case 0xD1: indirect_y_pc(); CMP(); break;
-            case 0xD2: assert(0); break;
+            case 0xD2: indirect2(); CMP(); break;
             case 0xD3: assert(0); break;
             case 0xD4: CSH(); break; //unofficial d,x NOP
             case 0xD5: zeropage_x(); CMP(); break;
@@ -451,7 +461,7 @@ export template <typename Sys> class c_huc6280
             case 0xE0: immediate(); CPX(); break;
             case 0xE1: indirect_x(); SBC(); break;
             case 0xE2: assert(0); break; //unofficial i NOP
-            case 0xE3: assert(0); break;
+            case 0xE3: TIA(); break;
             case 0xE4: zeropage(); CPX(); break;
             case 0xE5: zeropage(); SBC(); break;
             case 0xE6: zeropage(); INC(); break;
@@ -466,12 +476,12 @@ export template <typename Sys> class c_huc6280
             case 0xEF: assert(0); break;
             case 0xF0: BEQ(); break;
             case 0xF1: indirect_y_pc(); SBC(); break;
-            case 0xF2: assert(0); break;
+            case 0xF2: indirect2(); SBC(); break;
             case 0xF3: assert(0); break;
             case 0xF4: assert(0); break; //unofficial d,x NOP
             case 0xF5: zeropage_x(); SBC(); break;
             case 0xF6: zeropage_x(); INC(); break;
-            case 0xF7: assert(0); break;
+            case 0xF7: zeropage(); SMB(); break;
             case 0xF8: SED(); break;
             case 0xF9: absolute_y_pc(); SBC(); break;
             case 0xFA: PLX(); break; //unofficial NOP
@@ -479,14 +489,9 @@ export template <typename Sys> class c_huc6280
             case 0xFC: assert(0); break; //unofficial a,x NOP
             case 0xFD: absolute_x_pc(); SBC(); break;
             case 0xFE: absolute_x_rmw(); INC(); break;
-            case 0xFF: assert(0); break;
+            case 0xFF: zeropage(); BBS(); break;
             case 0x100: //NMI
-                //Battletoads debugging
-            //{
-            //    char x[256];
-            //    sprintf(x, "NMI at scanline %d, cycle %d\n", sl, c);
-            //    OutputDebugString(x);
-            //}
+                // no NMI sources on tg16, but used by BRK?
                 push(hibyte(PC));
                 push(lobyte(PC));
                 SR.B = false;
@@ -494,28 +499,49 @@ export template <typename Sys> class c_huc6280
                 SR.I = true;
                 PC = makeword(read_byte(0xFFFA), read_byte(0xFFFB));
                 break;
-            case 0x101: //IRQ
+            case 0x101: //IRQ1
                 push(hibyte(PC));
                 push(lobyte(PC));
                 SR.B = false;
                 push(*S);
                 SR.I = true;
-                PC = makeword(read_byte(0xFFFE), read_byte(0xFFFF));
+                PC = makeword(read_byte(0xFFF8), read_byte(0xFFF9));
+                //std::printf("!!! IRQ1 !!!\n");
                 break;
-            case 0x102: //Sprite DMA
-                *(dma_dst++) = read_byte(dma_src++);
-                dma_pos--;
-
-                //Sprite DMA burns 513 CPU cycles, so after the last DMA, burn another one.
-                if (dma_pos == 0) {
-                    required_cycles += 3;
-                    if (odd_cycle) {
-                        required_cycles += 3;
+            case 0x102: //IRQ2
+                push(hibyte(PC));
+                push(lobyte(PC));
+                SR.B = false;
+                push(*S);
+                SR.I = true;
+                PC = makeword(read_byte(0xFFF6), read_byte(0xFFF7));
+                std::printf("!!! IRQ2 !!!\n");
+                break;
+            case 0x103: //TIA
+                {
+                    uint8_t data = read_byte(tia_src);
+                    tia_src = (tia_src + 1) & 0xFFFF;
+                    write_byte(tia_dst, data);
+                    if (tia_cnt & 1) {
+                        tia_dst = (tia_dst - 1) & 0xFFFF;
                     }
+                    else {
+                        tia_dst = (tia_dst + 1) & 0xFFFF;
+                    }
+                    tia_cnt++;
+                    tia_pos--;
                 }
                 break;
-            case 0x103: //APU DMA
+            case 0x104:
+                {
+                    uint8_t data = read_byte(tia_src);
+                    tia_src = (tia_src + 1) & 0xFFFF;
+                    write_byte(tia_dst, data);
+                    tia_dst = (tia_dst + 1) & 0xFFFF;
+                    tia_pos--;
+                }
                 break;
+
             default:
                 __assume(0);
         }
@@ -550,7 +576,7 @@ export template <typename Sys> class c_huc6280
     {
         SR.T = 0;
         for (int i = 0; i < 8; i++) {
-            if (M & (i << i)) {
+            if (M & (1 << i)) {
                 A = MR[i];
                 return;
             }
@@ -627,6 +653,14 @@ export template <typename Sys> class c_huc6280
         SR.T = 0;
     }
 
+    void DEC_A()
+    {
+        A--;
+        setn(A);
+        setz(A);
+        SR.T = 0;
+    }
+
     void STZ()
     {
         write_byte(address, 0);
@@ -634,9 +668,77 @@ export template <typename Sys> class c_huc6280
 
     void BBS()
     {
-        int bit = (opcode >> 4) - 1;
+        int bit = (opcode >> 4) - 8;
         int mask = 1 << bit;
         branch(M & mask);
+        SR.T = 0;
+    }
+
+    void SMB()
+    {
+        int bit = (opcode >> 4) - 8;
+        int mask = 1 << bit;
+        M |= mask;
+        write_byte(address, M);
+        SR.T = 0;
+    }
+
+    void RMB()
+    {
+        int bit = (opcode >> 4);
+        int mask = 1 << bit;
+        M &= ~mask;
+        write_byte(address, M);
+        SR.T = 0;
+    }
+
+    void TSB()
+    {
+        uint8_t result = A | M;
+        setn(M);
+        SR.V = M & 0x40;
+        setz(result);
+        write_byte(address, result);
+    }
+
+    void TRB()
+    {
+        uint8_t result = ~A & M;
+        setn(M);
+        SR.V = M & 0x40;
+        setz(result);
+        write_byte(address, result);
+    }
+
+    void TIA()
+    {
+        tia_src = read_byte(PC++);
+        tia_src |= (read_byte(PC++) << 8);
+        tia_dst = read_byte(PC++);
+        tia_dst |= (read_byte(PC++) << 8);
+        tia_pos = read_byte(PC++);
+        tia_pos |= (read_byte(PC++) << 8);
+
+        if (tia_pos == 0) {
+            tia_pos = 65536;
+        }
+        tia_cnt = 0;
+        tia_opcode = 0x103;
+    }
+
+    void TII()
+    {
+        tia_src = read_byte(PC++);
+        tia_src |= (read_byte(PC++) << 8);
+        tia_dst = read_byte(PC++);
+        tia_dst |= (read_byte(PC++) << 8);
+        tia_pos = read_byte(PC++);
+        tia_pos |= (read_byte(PC++) << 8);
+
+        if (tia_pos == 0) {
+            tia_pos = 65536;
+        }
+        tia_opcode = 0x104;
     }
 
     INLINE void push(uint8_t value)
@@ -856,6 +958,9 @@ export template <typename Sys> class c_huc6280
     INLINE void indirect()    //For indirect jmp
     {
         unsigned char lo = read_byte(PC++);
+        if (lo == 0xFF) {
+            assert(0);
+        }
         unsigned char hi = read_byte(PC++);
         unsigned short tempaddress = makeword(lo, hi);
         unsigned char pcl = read_byte(tempaddress);
@@ -870,7 +975,7 @@ export template <typename Sys> class c_huc6280
         //TODO: I think this is ok, but need to verify
         unsigned char hi = read_byte(PC++);
         hi += X;
-        address = makeword(read_byte(hi), read_byte((hi + 1) & 0xFF));
+        address = makeword(read_byte(hi | 0x2000), read_byte(((hi + 1) & 0xFF) | 0x2000));
         M = read_byte(address);
     }
 
@@ -879,7 +984,7 @@ export template <typename Sys> class c_huc6280
         //TODO: I think this is ok, but need to verify
         unsigned char hi = read_byte(PC++);
         hi += X;
-        address = makeword(read_byte(hi), read_byte((hi + 1) & 0xFF));
+        address = makeword(read_byte(hi | 0x2000), read_byte(((hi + 1) & 0xFF) | 0x2000));
     }
 
     INLINE void indirect_y()    //Post-indexed indirect
@@ -1038,6 +1143,7 @@ export template <typename Sys> class c_huc6280
     }
     INLINE void BRK()
     {
+        assert(0);
         push(hibyte(PC + 1));
         push(lobyte(PC + 1));
         push(*S | 0x30);

@@ -8,6 +8,7 @@ import system;
 import class_registry;
 
 import :huc6280;
+import :vid;
 
 namespace tg16
 {
@@ -30,6 +31,7 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
     c_tg16()
     {
         cpu = std::make_unique<c_huc6280<c_tg16>>(*this);
+        vid = std::make_unique<c_vid<c_tg16>>(*this);
         loaded = false;
     }
 
@@ -39,9 +41,10 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
 
     int emulate_frame()
     {
-        for (int i = 0; i < 262; i++) {
-            cpu->available_cycles += 455;
+        for (int i = 0; i < 263; i++) {
+            cpu->available_cycles += 455 * 3;
             cpu->execute();
+            vid->do_scanline();
         }
         return 0;
     }
@@ -49,14 +52,17 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
     int reset()
     {
         cpu->reset();
+        vid->reset();
         std::memset(ram, 0, sizeof(ram));
+        irq1 = 0;
+        irq2 = 0;
         return 0;
     }
 
     int fb[256 * 240];
     int *get_video()
     {
-        return fb;
+        return (int*)vid->fb;
     }
 
     int get_sound_buf(const float **buf)
@@ -109,6 +115,19 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
         int bank = address >> 13;
         const int mask = (1 << 13) - 1;
         if (bank < 0x80) {
+            uint32_t base = 0;
+            uint32_t offset = address & 0x1FFFF;
+            if (file_length / 8192 == 48) {
+                // goofy ass mirroring
+                uint32_t b = bank >> 4;
+                static const int o[] = {0, 0x10, 0, 0x10, 0x20, 0x20, 0x20, 0x20};
+                base = o[b] * 8192;
+
+            }
+            //assert(address == base + offset);
+            address = base + offset;
+            uint32_t k = address & mask;
+            uint32_t j = address & (file_length - 1);
             assert(address <= (uint32_t)file_length);
             return rom[address];
         }
@@ -128,7 +147,7 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
             // 1400-17FF - Interrupt controller (4 registers)
             // 1800-1FFF - unmapped
             if (address < 0x400) {
-                assert(0);
+                return vid->read_vdc(address);
             }
             else if (address < 0x800) {
                 assert(0);
@@ -180,21 +199,21 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
             // 1400-17FF - Interrupt controller (4 registers)
             // 1800-1FFF - unmapped
             if (address < 0x400) {
-                std::printf("write %2X to VDC address %4X\n", value, address);
+                //std::printf("write %2X to VDC address %4X\n", value, address);
+                vid->write_vdc(address, value);
             }
             else if (address < 0x800) {
-                std::printf("write %2X to VCE address %4X\n", value, address);
-                //assert(0);
+                //std::printf("write %2X to VCE address %4X\n", value, address);
+                vid->write_vce(address, value);
             }
             else if (address < 0xC00) {
-                std::printf("write %2X to PSG address %4X\n", value, address);
-                //assert(0);
+                //std::printf("write %2X to PSG address %4X\n", value, address);
             }
             else if (address < 0x1000) {
-                assert(0);
+                std::printf("write %2X to timer address %4X\n", value, address);
             }
             else if (address < 0x1400) {
-                assert(0);
+                //std::printf("write %2X to IO address %4X\n", value, address);
             }
             else if (address < 0x1800) {
                 std::printf("write %2X to interrupt controller address %4X\n", value, address);
@@ -208,8 +227,13 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
         }
     }
 
+  public:
+    int irq1;
+    int irq2;
+
   private:
     std::unique_ptr<c_huc6280<c_tg16>> cpu;
+    std::unique_ptr<c_vid<c_tg16>> vid;
     std::unique_ptr<uint8_t[]> rom;
     uint8_t ram[8192];
     bool loaded;
