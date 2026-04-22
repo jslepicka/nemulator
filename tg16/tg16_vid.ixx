@@ -33,11 +33,60 @@ export template <typename Sys> class c_vid
         vce_control = 0;
         vdc_register_latch = 0;
         std::memset(vdc_registers, 0, sizeof(vdc_registers));
+        std::memset(satb, 0, sizeof(satb));
         vdc_status = 0;
         raster_compare = 0;
         plane_width = 32;
         plane_height = 32;
         pal_index = 0;
+        do_satb_dma = false;
+    }
+
+    struct s_sprite
+    {
+    };
+
+    int sprites[256];
+
+    void eval_sprites(int ln)
+    {
+        std::memset(sprites, 0, sizeof(sprites));
+        for (int i = 0; i < 64; i++) {
+            uint16_t word0 = *(uint16_t*)&satb[i * 8 + 0];
+            uint16_t word1 = *(uint16_t*)&satb[i * 8 + 2];
+            uint16_t word2 = *(uint16_t*)&satb[i * 8 + 4];
+            uint16_t word3 = *(uint16_t*)&satb[i * 8 + 6];
+            uint16_t vpos = word0 & 0x3FF;
+            uint16_t hpos = word1 & 0x3FF;
+            uint16_t pattern = (word2 >> 1) & 0x3FF;
+            uint16_t hsize = (word3 >> 8) & 0x1;
+            uint16_t vsize = (word3 >> 12) & 0x3;
+            if (vsize > 1) {
+                vsize = 2;
+            }
+            uint16_t palette = word3 & 0xF;
+            bool priority = word3 & 0x80;
+            bool v_flip = word3 & 0x8000;
+            bool h_flip = word3 & 0x800;
+
+            int32_t y = (int32_t)vpos - 64;
+            int32_t x = (int32_t)hpos - 32;
+
+            for (int v = 0; v < vsize + 1; v++) {
+                int32_t y_base = y + v * 16;
+                if (ln >= y_base && ln < y_base + 16) {
+                    int32_t y_offset = ln - y_base;
+                    for (int h = 0; h < hsize + 1; h++) {
+                        int x_start = x + h * 16;
+                        for (int j = x_start, p = 0; j < x_start + 16; j++, p++) {
+                            if (j >= 0 && j < 256) {
+                                sprites[j] = 1;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     void do_scanline()
@@ -55,6 +104,7 @@ export template <typename Sys> class c_vid
 
         uint32_t start_line = VSW + VDS;
         if (line >= start_line && line < start_line + vdc_registers[0x0D]) {
+            eval_sprites(line - start_line);
             uint32_t temp[256 + 8] = {0};
             if (!(vdc_registers[0x5] & 0x80)) {
                 std::fill_n(&fb[(line - start_line) * 256], 256, 0xFF000000);
@@ -92,6 +142,9 @@ export template <typename Sys> class c_vid
                             color = palx[pal[0]];
                         }
                         temp[x] = color;
+                        if (sprites[x]) {
+                            temp[x] = 0xFFFF0000;
+                        }
                         c >>= 8;
                         x++;
                     }
@@ -110,7 +163,7 @@ export template <typename Sys> class c_vid
                 if (vdc_registers[0x05] & 0x4) {
                     sys.irq1 = 1;
                     vdc_status |= 0x4;
-                    std::printf("rcr irq\n");
+                    //std::printf("rcr irq\n");
                 }
             }
         }
@@ -121,7 +174,21 @@ export template <typename Sys> class c_vid
             if (vdc_registers[0x05] & 0x8) {
                 sys.irq1 = 1;
                 vdc_status |= 0x20;
-                std::printf("vblank irq\n");
+                //std::printf("vblank irq\n");
+            }
+        }
+        else if (line == 258) {
+            // todo: proper timing of satb transfer
+            if ((vdc_registers[0xF] & 0x10) || do_satb_dma) {
+                do_satb_dma = false;
+                uint32_t src = vdc_registers[0x13];
+                for (int i = 0; i < 512; i++) {
+                    satb[i] = vram[(src + i) & 0xFFFF];
+                }
+                if (vdc_registers[0xF] & 0x1) {
+                    vdc_status |= 0x8;
+                    sys.irq1 = 1;
+                }
             }
         }
         else if (line == 263) {
@@ -215,6 +282,22 @@ export template <typename Sys> class c_vid
                 display_height = vdc_registers[0x0D] & 0x1FF;
                 display_height += 1;
                 break;
+            case 0x0F:
+                std::printf("write %02X to DMA control register\n", value);
+                break;
+            case 0x10:
+                std::printf("write %02X to DMA source address register\n", value);
+                break;
+            case 0x11:
+                std::printf("write %02X to DMA dest address register\n", value);
+                break;
+            case 0x12:
+                std::printf("write %02X to DMA block length register\n", value);
+                break;
+            case 0x13:
+                std::printf("write %02X to DMA VRAM-SATB source\n", value);
+                //do_satb_dma = true;
+                break;
         }
     }
     
@@ -228,6 +311,7 @@ export template <typename Sys> class c_vid
         switch (vdc_register_latch) {
             case 0x00:
                 // MAWR
+                x = 2;
                 break;
             case 0x01:
                 // MARR
@@ -246,6 +330,22 @@ export template <typename Sys> class c_vid
             case 0x0D:
                 display_height = vdc_registers[0x0D] & 0x1FF;
                 display_height += 1;
+                break;
+            case 0x0F:
+                std::printf("write %02X to DMA control register hi\n", value);
+                break;
+            case 0x10:
+                std::printf("write %02X to DMA source address register hi\n", value);
+                break;
+            case 0x11:
+                std::printf("write %02X to DMA dest address register hi\n", value);
+                break;
+            case 0x12:
+                std::printf("write %02X to DMA block length register hi\n", value);
+                break;
+            case 0x13:
+                std::printf("write %02X to DMA VRAM-SATB source hi\n", value);
+                do_satb_dma = true;
                 break;
             default:
                 x = 2;
@@ -302,6 +402,9 @@ export template <typename Sys> class c_vid
     uint16_t pal[512];
     uint16_t pal_index;
     uint32_t palx[512];
+
+    bool do_satb_dma;
+    uint8_t satb[512];
 
 };
 } //namespace tg16
