@@ -107,7 +107,12 @@ export template <typename Sys> class c_huc6280
                 available_cycles -= required_cycles;
                 required_cycles = 0;
                 fetch_opcode = true;
+                if (set_t) {
+                    SR.T = 1;
+                    set_t = false;
+                }
                 execute_opcode();
+                SR.T = 0;
             }
             else {
                 return;
@@ -171,6 +176,7 @@ export template <typename Sys> class c_huc6280
         xfer_dst = 0;
         xfer_cnt = 0;
         xfer_opcode = 0;
+        set_t = false;
         return 1;
     }
 
@@ -219,6 +225,7 @@ export template <typename Sys> class c_huc6280
     int required_cycles;
     unsigned char *dma_dst;
     int dma_src;
+    bool set_t;
 
     int opcode;
 
@@ -302,7 +309,7 @@ export template <typename Sys> class c_huc6280
             case 0x3F: zeropage(); BBR(); break;
             case 0x40: RTI(); break;
             case 0x41: indirect_x(); EOR(); break;
-            case 0x42: assert(0); break;
+            case 0x42: SAY(); break;
             case 0x43: immediate(); TMA(); break;
             case 0x44: BSR(); break; //unofficial d NOP
             case 0x45: zeropage(); EOR(); break;
@@ -480,7 +487,7 @@ export template <typename Sys> class c_huc6280
             case 0xF1: indirect_y_pc(); SBC(); break;
             case 0xF2: indirect2(); SBC(); break;
             case 0xF3: xfer_setup(0x105); break;
-            case 0xF4: assert(0); break; //unofficial d,x NOP
+            case 0xF4: set_t = true; break; //unofficial d,x NOP
             case 0xF5: zeropage_x(); SBC(); break;
             case 0xF6: zeropage_x(); INC(); break;
             case 0xF7: zeropage(); SMB(); break;
@@ -570,6 +577,11 @@ export template <typename Sys> class c_huc6280
 
     // clang-format on
 
+    void SET()
+    {
+        SR.T = 1;
+    }
+
     void CSL()
     {
         // change speed to low
@@ -642,6 +654,12 @@ export template <typename Sys> class c_huc6280
     void SAX()
     {
         std::swap(A, X);
+        SR.T = 0;
+    }
+
+    void SAY()
+    {
+        std::swap(A, Y);
         SR.T = 0;
     }
 
@@ -1123,16 +1141,25 @@ export template <typename Sys> class c_huc6280
 
     INLINE void ADC()
     {
-        unsigned int temp = A + M + (SR.C ? 1 : 0);
+        uint8_t operand = SR.T ? read_byte(0x2000 | X) : A;
+
+        unsigned int temp = operand + M + (SR.C ? 1 : 0);
         SR.C = temp > 0xFF ? true : false;
         //SR.V = (((~(A^M)) & 0x80) & ((A^temp) & 0x80)) ? true : false;
         //if A and result have different sign and M and result have different sign, set overflow
         //127 + 1 = -128 or -1 - -3 = 2 will overflow
         //127 + -128
-        SR.V = (A ^ temp) & (M ^ temp) & 0x80 ? true : false;
-        A = temp & 0xFF;
-        setn(A);
-        setz(A);
+        SR.V = (operand ^ temp) & (M ^ temp) & 0x80 ? true : false;
+        operand = temp & 0xFF;
+        setn(operand);
+        setz(operand);
+
+        if (SR.T) {
+            write_byte(0x2000 | X, operand);
+        }
+        else {
+            A = operand;
+        }
     }
     INLINE void ANC()
     {
@@ -1143,9 +1170,18 @@ export template <typename Sys> class c_huc6280
     }
     INLINE void AND()
     {
-        A = A & M;
-        setn(A);
-        setz(A);
+        uint8_t operand = SR.T ? read_byte(0x2000 | X) : A;
+
+        operand = operand & M;
+        setn(operand);
+        setz(operand);
+
+        if (SR.T) {
+            write_byte(0x2000 | X, operand);
+        }
+        else {
+            A = operand;
+        }
     }
     INLINE void ALR()
     {
@@ -1308,9 +1344,18 @@ export template <typename Sys> class c_huc6280
     }
     INLINE void EOR()
     {
-        A ^= M;
-        setn(A);
-        setz(A);
+        uint8_t operand = SR.T ? read_byte(0x2000 | X) : A;
+
+        operand ^= M;
+        setn(operand);
+        setz(operand);
+
+        if (SR.T) {
+            write_byte(0x2000 | X, operand);
+        }
+        else {
+            A = operand;
+        }
     }
     INLINE void INC()
     {
@@ -1395,9 +1440,18 @@ export template <typename Sys> class c_huc6280
     }
     INLINE void ORA()
     {
-        A |= M;
-        setz(A);
-        setn(A);
+        uint8_t operand = SR.T ? read_byte(0x2000 | X) : A;
+
+        operand |= M;
+        setz(operand);
+        setn(operand);
+
+        if (SR.T) {
+            write_byte(0x2000 | X, operand);
+        }
+        else {
+            A = operand;
+        }
     }
 
     INLINE void PHA()

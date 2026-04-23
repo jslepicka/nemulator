@@ -55,7 +55,10 @@ export template <typename Sys> class c_vid
 
     void eval_sprites(int ln)
     {
-        uint8_t MRW = (vdc_registers[0x5] >> 2) & 3;
+        uint8_t sprite_pixel_width = (vdc_registers[0x9] >> 2) & 3;
+        if (sprite_pixel_width == 3) {
+            int x = 1;
+        }
         std::memset(sprites, 0, sizeof(sprites));
         for (int i = 0; i < 64; i++) {
             uint16_t word0 = *(uint16_t*)&satb[i * 8 + 0];
@@ -72,8 +75,8 @@ export template <typename Sys> class c_vid
             }
             uint16_t palette = word3 & 0xF;
             bool priority = word3 & 0x80;
-            bool v_flip = word3 & 0x8000;
-            bool h_flip = word3 & 0x800;
+            uint32_t v_flip = word3 & 0x8000 ? 15 : 0;
+            uint32_t h_flip = word3 & 0x800 ? 15 : 0;
 
             int32_t y = (int32_t)vpos - 64;
             int32_t x = (int32_t)hpos - 32;
@@ -82,36 +85,52 @@ export template <typename Sys> class c_vid
                 int32_t y_base = y + v * 16;
                 if (ln >= y_base && ln < y_base + 16) {
                     int32_t y_offset = ln - y_base;
-                    
-                    for (int h = 0; h < hsize + 1; h++) {
+                    uint32_t vv = (v_flip && vsize) ? vsize - v : v;
 
-                        uint32_t tile = base_tile;
-                        uint32_t pattern_address = tile * 128 + (y_offset * 2);
+                    for (int h = 0; h < hsize + 1; h++) {
+                        uint32_t hh = (h_flip && hsize) ? hsize - h : h;
+                        uint32_t tile = base_tile + hh + (vv * (hsize + 1));
+                        uint32_t pattern_address = tile * 128 + ((y_offset ^ v_flip) * 2);
 
                         uint32_t p0 = *(uint16_t*)&vram[pattern_address];
-                        uint32_t p2 = *(uint16_t *)&vram[pattern_address + 32];
-                        uint32_t p1 = *(uint16_t *)&vram[pattern_address + 64];
+                        uint32_t p1 = *(uint16_t *)&vram[pattern_address + 32];
+                        uint32_t p2 = *(uint16_t *)&vram[pattern_address + 64];
                         uint32_t p3 = *(uint16_t *)&vram[pattern_address + 96];
 
+                        if (sprite_pixel_width == 3) {
+                            if (word2 & 0x1) {
+                                p0 = p2;
+                                p1 = p3;
+                            }
+                            p2 = 0;
+                            p3 = 0;
+                        }
+
                         p0 <<= 0;
-                        p2 <<= 2;
                         p1 <<= 1;
+                        p2 <<= 2;
                         p3 <<= 3;
 
                         int x_start = x + h * 16;
                         for (int j = x_start, p = 0; j < x_start + 16; j++, p++) {
                             if (j >= 0 && j < 256) {
-                                
-                                uint8_t p = (p0 & 1) | (p1 & 2) | (p2 & 4) | (p3 & 8);
+                                if (sprites[j].sprite_here && sprites[j].color) {
+                                    continue;
+                                }
+                                uint8_t pp = p ^ h_flip;
+                                uint8_t px = ((p0 >> (15 - pp)) & 1) |
+                                             ((p1 >> (15 - pp)) & 2) |
+                                             ((p2 >> (15 - pp)) & 4) |
+                                             ((p3 >> (15 - pp)) & 8);
 
                                 sprites[j].sprite_here = true;
-                                sprites[j].color = p;
+                                sprites[j].color = px;
                                 sprites[j].pal = palette;
                             }
-                            p0 >>= 1;
-                            p1 >>= 1;
-                            p2 >>= 1;
-                            p3 >>= 1;
+                            //p0 >>= (7-i);
+                            //p1 >>= (7-i);
+                            //p2 >>= (7-i);
+                            //p3 >>= (7-i);
                         }
                     }
                 }

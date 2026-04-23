@@ -25,6 +25,16 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
                          .fb_width = 256,
                          .fb_height = 224,
                      },
+                 .button_map = {
+                     {BUTTON_1A,      0x01},
+                     {BUTTON_1B,      0x02},
+                     {BUTTON_1SELECT, 0x04},
+                     {BUTTON_1START,  0x08},
+                     {BUTTON_1UP,     0x10},
+                     {BUTTON_1RIGHT,  0x20},
+                     {BUTTON_1DOWN,   0x40},
+                     {BUTTON_1LEFT,   0x80}
+                 },
                  .constructor = []() { return std::make_unique<c_tg16>(); }}};
     }
 
@@ -56,6 +66,8 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
         std::memset(ram, 0, sizeof(ram));
         irq1 = 0;
         irq2 = 0;
+        joy_write = 0;
+        joy = 0xFF;
         return 0;
     }
 
@@ -108,6 +120,7 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
 
     void set_input(int input)
     {
+        joy = ~input;   
     }
 
     uint8_t read_byte(uint32_t address)
@@ -168,8 +181,21 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
                 assert(0);
             }
             else if (address < 0x1400) {
-                return 0x3F;
-                assert(0);
+                //return 0x3F;
+                uint8_t ret =
+                    (1 << 7) | // cd not attached
+                    (0 << 6) | // region = us
+                    (1 << 5) | // unused
+                    (1 << 4); //unused
+                if (joy_write & 0x1) {
+                    //directions
+                    ret |= ((joy >> 4) & 0xF);
+                }
+                else {
+                    //buttons
+                    ret |= (joy & 0xF);
+                }
+                return ret;
             }
             else if (address < 0x1800) {
                 return 0;
@@ -224,6 +250,7 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
             }
             else if (address < 0x1400) {
                 //std::printf("write %2X to IO address %4X\n", value, address);
+                joy_write = value;
             }
             else if (address < 0x1800) {
                 std::printf("write %2X to interrupt controller address %4X\n", value, address);
@@ -252,6 +279,7 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
     std::unique_ptr<uint8_t[]> rom;
     uint8_t ram[8192];
     bool loaded;
-
+    uint8_t joy_write;
+    uint8_t joy;
 };
 } //namespace tg16
