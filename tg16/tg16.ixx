@@ -115,17 +115,23 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
         int bank = address >> 13;
         const int mask = (1 << 13) - 1;
         if (bank < 0x80) {
-            uint32_t base = 0;
+            uint32_t base = bank * 8192;
             uint32_t offset = address & 0x1FFFF;
             if (file_length / 8192 == 48) {
                 // goofy ass mirroring
                 uint32_t b = bank >> 4;
                 static const int o[] = {0, 0x10, 0, 0x10, 0x20, 0x20, 0x20, 0x20};
                 base = o[b] * 8192;
+                address = base + offset;
 
             }
+            else if (file_length / 8192 == 64) {
+                uint32_t b = bank >> 4;
+                static const int o[] = {0, 0x10, 0x20, 0x30, 0x20, 0x30, 0x20, 0x30};
+                base = o[b] * 8192;
+                address = base + offset;
+            }
             //assert(address == base + offset);
-            address = base + offset;
             uint32_t k = address & mask;
             uint32_t j = address & (file_length - 1);
             assert(address <= (uint32_t)file_length);
@@ -150,10 +156,13 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
                 return vid->read_vdc(address);
             }
             else if (address < 0x800) {
+                std::printf("read from VCE\n");
+                return 0;
                 assert(0);
             }
             else if (address < 0xC00) {
-                assert(0);
+                std::printf("read from PSG\n");
+                return 0;
             }
             else if (address < 0x1000) {
                 assert(0);
@@ -163,6 +172,7 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
                 assert(0);
             }
             else if (address < 0x1800) {
+                return 0;
                 assert(0);
             }
             else {
@@ -225,6 +235,11 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
         else {
             assert(0);
         }
+    }
+
+    void write_vid(uint8_t address, uint8_t value)
+    {
+        vid->write_vdc(address, value);
     }
 
   public:

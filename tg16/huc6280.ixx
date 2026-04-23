@@ -12,7 +12,7 @@ export template <typename Sys> class c_huc6280
 {
     Sys &sys;
     // clang-format off
-    static constexpr int cycle_table[261] = {
+    static constexpr int cycle_table[262] = {
     //   0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
         21, 18,  3, 24,  9,  9, 15, 15,  9,  6,  6,  6, 12, 12, 18, 18, //0F
          6, 15,  3, 24, 12, 12, 18, 18,  6, 12,  6, 21, 12, 12, 21, 21, //1F
@@ -29,8 +29,8 @@ export template <typename Sys> class c_huc6280
          6, 18,  6, 24,  9,  9, 15, 15,  6,  6,  6,  6, 12, 12, 18, 18, //CF
          6, 15,  3, 24, 12, 12, 18, 18,  6, 12,  6, 21, 12, 12, 21, 21, //DF
          6, 18,  6, 51,  9,  9, 15, 15,  6,  6,  6,  6, 12, 12, 18, 18, //EF
-         6, 15,  3, 24, 12, 12, 18, 18,  6, 12,  6, 21, 12, 12, 21, 21, //FF
-        21, 21,  21, 18, 18
+         6, 15,  3, 51, 12, 12, 18, 18,  6, 12,  6, 21, 12, 12, 21, 21, //FF
+        21, 21,  21, 18, 18, 18
     };
     // clang-format on
   public:
@@ -87,11 +87,11 @@ export template <typename Sys> class c_huc6280
                     opcode = 0x102;
                     irq_delay = 0;
                 }
-                else if (tia_pos) {
-                    opcode = tia_opcode;
+                else if (xfer_pos) {
+                    opcode = xfer_opcode;
                 }
                 else {
-                    if (PC == 0xcb5e) {
+                    if (PC == 0xa009) {
                         int x = 1;
                     }
 
@@ -128,7 +128,7 @@ export template <typename Sys> class c_huc6280
         address &= 0x1FFF;
         uint32_t x = MR[bank] << 13;
         address |= (MR[bank] << 13);
-        return address;
+        return address & 0x1FFFFF;
     }
 
     uint8_t read_byte(uint16_t address)
@@ -166,11 +166,11 @@ export template <typename Sys> class c_huc6280
         dma_pos = 0;
         do_apu_dma = 0;
         odd_cycle = 0;
-        tia_pos = 0;
-        tia_src = 0;
-        tia_dst = 0;
-        tia_cnt = 0;
-        tia_opcode = 0;
+        xfer_pos = 0;
+        xfer_src = 0;
+        xfer_dst = 0;
+        xfer_cnt = 0;
+        xfer_opcode = 0;
         return 1;
     }
 
@@ -216,16 +216,18 @@ export template <typename Sys> class c_huc6280
     bool irq_pending;
     bool nmi_pending;
     int dma_pos;
-    int tia_pos;
-    int tia_src;
-    int tia_dst;
-    int tia_cnt;
-    int tia_opcode;
     int required_cycles;
     unsigned char *dma_dst;
     int dma_src;
 
     int opcode;
+
+    // for block transfer instructions
+    int xfer_pos;
+    int xfer_src;
+    int xfer_dst;
+    int xfer_cnt;
+    int xfer_opcode;
 
     /////////////////////////////////////////
 
@@ -237,11 +239,11 @@ export template <typename Sys> class c_huc6280
             case 0x00: BRK(); break;
             case 0x01: indirect_x(); ORA(); break;
             case 0x02: SXY(); break;
-            case 0x03: assert(0); break;
+            case 0x03: immediate(); ST0(); break;
             case 0x04: zeropage(); TSB(); break; //unofficial d NOP
             case 0x05: zeropage(); ORA(); break;
             case 0x06: zeropage(); ASL(); break;
-            case 0x07: assert(0); break;
+            case 0x07: zeropage(); RMB(); break;
             case 0x08: PHP(); break;
             case 0x09: immediate(); ORA(); break;
             case 0x0A: ASL_R(A); break;
@@ -249,15 +251,15 @@ export template <typename Sys> class c_huc6280
             case 0x0C: absolute(); TSB(); break; //unofficial a NOP
             case 0x0D: absolute(); ORA(); break;
             case 0x0E: absolute(); ASL(); break;
-            case 0x0F: assert(0); break;
+            case 0x0F: zeropage(); BBR(); break;
             case 0x10: BPL(); break;
             case 0x11: indirect_y_pc(); ORA(); break;
             case 0x12: indirect2(); ORA(); break;
-            case 0x13: assert(0); break;
+            case 0x13: immediate(); ST1(); break;
             case 0x14: zeropage(); TRB(); break; //unofficial d,x NOP
             case 0x15: zeropage_x(); ORA(); break;
             case 0x16: zeropage_x(); ASL(); break;
-            case 0x17: assert(0); break;
+            case 0x17: zeropage(); RMB(); break;
             case 0x18: CLC(); break;
             case 0x19: absolute_y_pc(); ORA(); break;
             case 0x1A: INC_A(); break; //unofficial NOP
@@ -265,15 +267,15 @@ export template <typename Sys> class c_huc6280
             case 0x1C: absolute(); TRB(); break; //unofficial a,x NOP
             case 0x1D: absolute_x_pc(); ORA(); break;
             case 0x1E: absolute_x_rmw(); ASL(); break;
-            case 0x1F: assert(0); break;
+            case 0x1F: zeropage(); BBR(); break;
             case 0x20: absolute(); JSR(); break;
             case 0x21: indirect_x(); AND(); break;
-            case 0x22: assert(0); break;
-            case 0x23: assert(0); break;
+            case 0x22: SAX(); break;
+            case 0x23: immediate(); ST2(); break;
             case 0x24: zeropage(); BIT(); break;
             case 0x25: zeropage(); AND(); break;
             case 0x26: zeropage(); ROL(); break;
-            case 0x27: assert(0); break;
+            case 0x27: zeropage(); RMB(); break;
             case 0x28: PLP(); break;
             case 0x29: immediate(); AND(); break;
             case 0x2A: ROL_R(A); break;
@@ -281,15 +283,15 @@ export template <typename Sys> class c_huc6280
             case 0x2C: absolute(); BIT(); break;
             case 0x2D: absolute(); AND(); break;
             case 0x2E: absolute(); ROL(); break;
-            case 0x2F: assert(0); break;
+            case 0x2F: zeropage(); BBR(); break;
             case 0x30: BMI(); break;
             case 0x31: indirect_y_pc(); AND(); break;
-            case 0x32: assert(0); break;
+            case 0x32: indirect2(); AND(); break;
             case 0x33: assert(0); break;
-            case 0x34: assert(0); break; //unofficial d,x NOP
+            case 0x34: zeropage_x(); BIT(); break; //unofficial d,x NOP
             case 0x35: zeropage_x(); AND(); break;
             case 0x36: zeropage_x(); ROL(); break;
-            case 0x37: assert(0); break;
+            case 0x37: zeropage(); RMB(); break;
             case 0x38: SEC(); break;
             case 0x39: absolute_y_pc(); AND(); break;
             case 0x3A: DEC_A(); break; //unofficial NOP
@@ -297,15 +299,15 @@ export template <typename Sys> class c_huc6280
             case 0x3C: absolute_x_pc(); BIT(); break; //unofficial a,x NOP
             case 0x3D: absolute_x_pc(); AND(); break;
             case 0x3E: absolute_x_rmw(); ROL(); break;
-            case 0x3F: assert(0); break;
+            case 0x3F: zeropage(); BBR(); break;
             case 0x40: RTI(); break;
             case 0x41: indirect_x(); EOR(); break;
             case 0x42: assert(0); break;
             case 0x43: immediate(); TMA(); break;
-            case 0x44: assert(0); break; //unofficial d NOP
+            case 0x44: BSR(); break; //unofficial d NOP
             case 0x45: zeropage(); EOR(); break;
             case 0x46: zeropage(); LSR(); break;
-            case 0x47: assert(0); break;
+            case 0x47: zeropage(); RMB(); break;
             case 0x48: PHA(); break;
             case 0x49: immediate(); EOR(); break;
             case 0x4A: LSR_R(A); break;
@@ -313,7 +315,7 @@ export template <typename Sys> class c_huc6280
             case 0x4C: absolute(); JMP(); break;
             case 0x4D: absolute(); EOR(); break;
             case 0x4E: absolute(); LSR(); break;
-            case 0x4F: assert(0); break;
+            case 0x4F: zeropage(); BBR(); break;
             case 0x50: BVC(); break;
             case 0x51: indirect_y_pc(); EOR(); break;
             case 0x52: assert(0); break;
@@ -321,7 +323,7 @@ export template <typename Sys> class c_huc6280
             case 0x54: CSL(); break; //CSL
             case 0x55: zeropage_x(); EOR(); break;
             case 0x56: zeropage_x(); LSR(); break;
-            case 0x57: assert(0); break;
+            case 0x57: zeropage(); RMB(); break;
             case 0x58: CLI(); break;
             case 0x59: absolute_y_pc(); EOR(); break;
             case 0x5A: PHY(); break; //unofficial NOP
@@ -329,7 +331,7 @@ export template <typename Sys> class c_huc6280
             case 0x5C: assert(0); break; //unofficial a,x NOP
             case 0x5D: absolute_x_pc(); EOR(); break;
             case 0x5E: absolute_x_rmw(); LSR(); break;
-            case 0x5F: assert(0); break;
+            case 0x5F: zeropage(); BBR(); break;
             case 0x60: RTS(); break;
             case 0x61: indirect_x(); ADC(); break;
             case 0x62: CLA(); break;
@@ -337,7 +339,7 @@ export template <typename Sys> class c_huc6280
             case 0x64: zeropage_ea(); STZ(); break; //unofficial d NOP
             case 0x65: zeropage(); ADC(); break;
             case 0x66: zeropage(); ROR(); break;
-            case 0x67: assert(0); break;
+            case 0x67: zeropage(); RMB(); break;
             case 0x68: PLA(); break;
             case 0x69: immediate(); ADC(); break;
             case 0x6A: ROR_R(A); break;
@@ -345,12 +347,12 @@ export template <typename Sys> class c_huc6280
             case 0x6C: indirect(); JMP(); break;
             case 0x6D: absolute(); ADC(); break;
             case 0x6E: absolute(); ROR(); break;
-            case 0x6F: assert(0); break;
+            case 0x6F: zeropage(); BBR(); break;
             case 0x70: BVS(); break;
             case 0x71: indirect_y_pc(); ADC(); break;
             case 0x72: indirect2(); ADC(); break;
-            case 0x73: TII(); break;
-            case 0x74: assert(0); break; //unofficial d,x NOP
+            case 0x73: xfer_setup(0x104); break;
+            case 0x74: zeropage_x_ea(); STZ(); break; //unofficial d,x NOP
             case 0x75: zeropage_x(); ADC(); break;
             case 0x76: zeropage_x(); ROR(); break;
             case 0x77: zeropage(); RMB(); break;
@@ -358,18 +360,18 @@ export template <typename Sys> class c_huc6280
             case 0x79: absolute_y_pc(); ADC(); break;
             case 0x7A: PLY(); break; //unofficial NOP
             case 0x7B: assert(0); break;
-            case 0x7C: assert(0); break; //unofficial a,x NOP
+            case 0x7C: JMP_ABINDX(); break; //unofficial a,x NOP
             case 0x7D: absolute_x_pc(); ADC(); break;
             case 0x7E: absolute_x_rmw(); ROR(); break;
-            case 0x7F: assert(0); break;
+            case 0x7F: zeropage(); BBR(); break;
             case 0x80: BRA(); break; //branch relative
             case 0x81: indirect_x_ea(); STA(); break;
             case 0x82: CLX(); break; //unofficial i NOP
-            case 0x83: assert(0); break;
+            case 0x83: TST(); break;
             case 0x84: zeropage_ea(); STY(); break;
             case 0x85: zeropage_ea(); STA(); break;
             case 0x86: zeropage_ea(); STX(); break;
-            case 0x87: assert(0); break;
+            case 0x87: zeropage(); SMB(); break;
             case 0x88: DEY(); break;
             case 0x89: immediate(); BIT(); break;
             case 0x8A: TXA(); break;
@@ -377,15 +379,15 @@ export template <typename Sys> class c_huc6280
             case 0x8C: absolute_ea(); STY(); break;
             case 0x8D: absolute_ea(); STA(); break;
             case 0x8E: absolute_ea(); STX(); break;
-            case 0x8F: assert(0); break;
+            case 0x8F: zeropage(); BBS(); break;
             case 0x90: BCC(); break;
             case 0x91: indirect_y_ea(); STA(); break;
             case 0x92: indirect2(); STA(); break;
-            case 0x93: assert(0); break;
+            case 0x93: TST(); break;
             case 0x94: zeropage_x_ea(); STY(); break;
             case 0x95: zeropage_x_ea(); STA(); break;
             case 0x96: zeropage_y_ea(); STX(); break;
-            case 0x97: assert(0); break;
+            case 0x97: zeropage(); SMB(); break;
             case 0x98: TYA(); break;
             case 0x99: absolute_y_ea(); STA(); break;
             case 0x9A: TXS(); break;
@@ -393,15 +395,15 @@ export template <typename Sys> class c_huc6280
             case 0x9C: absolute_ea(); STZ(); break;
             case 0x9D: absolute_x_ea(); STA(); break;
             case 0x9E: absolute_x_ea(); STZ(); break;
-            case 0x9F: assert(0); break;
+            case 0x9F: zeropage(); BBS(); break;
             case 0xA0: immediate(); LDY(); break;
             case 0xA1: indirect_x(); LDA(); break;
             case 0xA2: immediate(); LDX(); break;
-            case 0xA3: assert(0); break;
+            case 0xA3: TST(); break;
             case 0xA4: zeropage(); LDY(); break;
             case 0xA5: zeropage(); LDA(); break;
             case 0xA6: zeropage(); LDX(); break;
-            case 0xA7: assert(0); break;
+            case 0xA7: zeropage(); SMB(); break;
             case 0xA8: TAY(); break;
             case 0xA9: immediate(); LDA(); break;
             case 0xAA: TAX(); break;
@@ -409,15 +411,15 @@ export template <typename Sys> class c_huc6280
             case 0xAC: absolute(); LDY(); break;
             case 0xAD: absolute(); LDA(); break;
             case 0xAE: absolute(); LDX(); break;
-            case 0xAF: assert(0); break;
+            case 0xAF: zeropage(); BBS(); break;
             case 0xB0: BCS(); break;
             case 0xB1: indirect_y_pc(); LDA(); break;
             case 0xB2: indirect2(); LDA(); break;
-            case 0xB3: assert(0); break;
+            case 0xB3: TST(); break;
             case 0xB4: zeropage_x(); LDY(); break;
             case 0xB5: zeropage_x(); LDA(); break;
             case 0xB6: zeropage_y(); LDX(); break;
-            case 0xB7: assert(0); break;
+            case 0xB7: zeropage(); SMB(); break;
             case 0xB8: CLV(); break;
             case 0xB9: absolute_y_pc(); LDA(); break;
             case 0xBA: TSX(); break;
@@ -425,7 +427,7 @@ export template <typename Sys> class c_huc6280
             case 0xBC: absolute_x_pc(); LDY(); break;
             case 0xBD: absolute_x_pc(); LDA(); break;
             case 0xBE: absolute_y_pc(); LDX(); break;
-            case 0xBF: assert(0); break;
+            case 0xBF: zeropage(); BBS(); break;
             case 0xC0: immediate(); CPY(); break;
             case 0xC1: indirect_x(); CMP(); break;
             case 0xC2: CLY(); break;
@@ -433,7 +435,7 @@ export template <typename Sys> class c_huc6280
             case 0xC4: zeropage(); CPY(); break;
             case 0xC5: zeropage(); CMP(); break;
             case 0xC6: zeropage(); DEC(); break;
-            case 0xC7: assert(0); break;
+            case 0xC7: zeropage(); SMB(); break;
             case 0xC8: INY(); break;
             case 0xC9: immediate(); CMP(); break;
             case 0xCA: DEX(); break;
@@ -441,7 +443,7 @@ export template <typename Sys> class c_huc6280
             case 0xCC: absolute(); CPY(); break;
             case 0xCD: absolute(); CMP(); break;
             case 0xCE: absolute(); DEC(); break;
-            case 0xCF: assert(0); break;
+            case 0xCF: zeropage(); BBS(); break;
             case 0xD0: BNE(); break;
             case 0xD1: indirect_y_pc(); CMP(); break;
             case 0xD2: indirect2(); CMP(); break;
@@ -449,7 +451,7 @@ export template <typename Sys> class c_huc6280
             case 0xD4: CSH(); break; //unofficial d,x NOP
             case 0xD5: zeropage_x(); CMP(); break;
             case 0xD6: zeropage_x(); DEC(); break;
-            case 0xD7: assert(0); break;
+            case 0xD7: zeropage(); SMB(); break;
             case 0xD8: CLD(); break;
             case 0xD9: absolute_y_pc(); CMP(); break;
             case 0xDA: PHX(); break; //unofficial NOP
@@ -457,15 +459,15 @@ export template <typename Sys> class c_huc6280
             case 0xDC: assert(0); break; //unofficial a,x NOP
             case 0xDD: absolute_x_pc(); CMP(); break;
             case 0xDE: absolute_x_rmw(); DEC(); break;
-            case 0xDF: assert(0); break;
+            case 0xDF: zeropage(); BBS(); break;
             case 0xE0: immediate(); CPX(); break;
             case 0xE1: indirect_x(); SBC(); break;
             case 0xE2: assert(0); break; //unofficial i NOP
-            case 0xE3: TIA(); break;
+            case 0xE3: xfer_setup(0x103); break;
             case 0xE4: zeropage(); CPX(); break;
             case 0xE5: zeropage(); SBC(); break;
             case 0xE6: zeropage(); INC(); break;
-            case 0xE7: assert(0); break;
+            case 0xE7: zeropage(); SMB(); break;
             case 0xE8: INX(); break;
             case 0xE9: immediate(); SBC(); break;
             case 0xEA: break;
@@ -473,11 +475,11 @@ export template <typename Sys> class c_huc6280
             case 0xEC: absolute(); CPX(); break;
             case 0xED: absolute(); SBC(); break;
             case 0xEE: absolute(); INC(); break;
-            case 0xEF: assert(0); break;
+            case 0xEF: zeropage(); BBS(); break;
             case 0xF0: BEQ(); break;
             case 0xF1: indirect_y_pc(); SBC(); break;
             case 0xF2: indirect2(); SBC(); break;
-            case 0xF3: assert(0); break;
+            case 0xF3: xfer_setup(0x105); break;
             case 0xF4: assert(0); break; //unofficial d,x NOP
             case 0xF5: zeropage_x(); SBC(); break;
             case 0xF6: zeropage_x(); INC(); break;
@@ -519,26 +521,45 @@ export template <typename Sys> class c_huc6280
                 break;
             case 0x103: //TIA
                 {
-                    uint8_t data = read_byte(tia_src);
-                    tia_src = (tia_src + 1) & 0xFFFF;
-                    write_byte(tia_dst, data);
-                    if (tia_cnt & 1) {
-                        tia_dst = (tia_dst - 1) & 0xFFFF;
+                    uint8_t data = read_byte(xfer_src);
+                    write_byte(xfer_dst, data);
+
+                    xfer_src = (xfer_src + 1) & 0xFFFF;
+                    if (xfer_cnt & 1) {
+                        xfer_dst = (xfer_dst - 1) & 0xFFFF;
                     }
                     else {
-                        tia_dst = (tia_dst + 1) & 0xFFFF;
+                        xfer_dst = (xfer_dst + 1) & 0xFFFF;
                     }
-                    tia_cnt++;
-                    tia_pos--;
+                    xfer_cnt++;
+                    xfer_pos--;
                 }
                 break;
-            case 0x104:
+            case 0x104: //TII
                 {
-                    uint8_t data = read_byte(tia_src);
-                    tia_src = (tia_src + 1) & 0xFFFF;
-                    write_byte(tia_dst, data);
-                    tia_dst = (tia_dst + 1) & 0xFFFF;
-                    tia_pos--;
+                    uint8_t data = read_byte(xfer_src);
+                    write_byte(xfer_dst, data);
+
+                    xfer_src = (xfer_src + 1) & 0xFFFF;
+                    xfer_dst = (xfer_dst + 1) & 0xFFFF;
+                    xfer_pos--;
+                }
+                break;
+            case 0x105: //TAI
+                {
+                    uint8_t data = read_byte(xfer_src);
+                    write_byte(xfer_dst, data);
+
+                    if (xfer_cnt & 1) {
+                        xfer_src = (xfer_src - 1) & 0xFFFF;
+                    }
+                    else {
+                        xfer_src = (xfer_src + 1) & 0xFFFF;
+                    }
+                    xfer_dst = (xfer_dst + 1) & 0xFFFF;
+
+                    xfer_cnt++;
+                    xfer_pos--;
                 }
                 break;
 
@@ -563,17 +584,23 @@ export template <typename Sys> class c_huc6280
 
     void TAM()
     {
+        //std::printf("TAM %2X\n", A);
+        //std::printf("Before: %2X %2X %2X %2X %2X %2X %2X %2X\n", MR[0], MR[1], MR[2], MR[3], MR[4], MR[5], MR[6],
+        //            MR[7]);
         for (int i = 0; i < 8; i++) {
             if (M & (1 << i)) {
                 MR[i] = A;
             }
         }
         SR.T = 0;
+        //std::printf("After: %2X %2X %2X %2X %2X %2X %2X %2X\n", MR[0], MR[1], MR[2], MR[3], MR[4], MR[5], MR[6],
+        //            MR[7]);
         
     }
 
     void TMA()
     {
+        assert(std::popcount(M) == 1);
         SR.T = 0;
         for (int i = 0; i < 8; i++) {
             if (M & (1 << i)) {
@@ -609,6 +636,12 @@ export template <typename Sys> class c_huc6280
     void SXY()
     {
         std::swap(X, Y);
+        SR.T = 0;
+    }
+
+    void SAX()
+    {
+        std::swap(A, X);
         SR.T = 0;
     }
 
@@ -674,6 +707,14 @@ export template <typename Sys> class c_huc6280
         SR.T = 0;
     }
 
+    void BBR()
+    {
+        int bit = (opcode >> 4);
+        int mask = 1 << bit;
+        branch(!(M & mask));
+        SR.T = 0;
+    }
+
     void SMB()
     {
         int bit = (opcode >> 4) - 8;
@@ -710,35 +751,78 @@ export template <typename Sys> class c_huc6280
         write_byte(address, result);
     }
 
-    void TIA()
+    void xfer_setup(int opcode)
     {
-        tia_src = read_byte(PC++);
-        tia_src |= (read_byte(PC++) << 8);
-        tia_dst = read_byte(PC++);
-        tia_dst |= (read_byte(PC++) << 8);
-        tia_pos = read_byte(PC++);
-        tia_pos |= (read_byte(PC++) << 8);
+        xfer_src = read_byte(PC++);
+        xfer_src |= (read_byte(PC++) << 8);
+        xfer_dst = read_byte(PC++);
+        xfer_dst |= (read_byte(PC++) << 8);
+        xfer_pos = read_byte(PC++);
+        xfer_pos |= (read_byte(PC++) << 8);
 
-        if (tia_pos == 0) {
-            tia_pos = 65536;
+        if (xfer_pos == 0) {
+            xfer_pos = 65536;
         }
-        tia_cnt = 0;
-        tia_opcode = 0x103;
+        xfer_cnt = 0;
+        xfer_opcode = opcode;
     }
 
-    void TII()
+    void BSR()
     {
-        tia_src = read_byte(PC++);
-        tia_src |= (read_byte(PC++) << 8);
-        tia_dst = read_byte(PC++);
-        tia_dst |= (read_byte(PC++) << 8);
-        tia_pos = read_byte(PC++);
-        tia_pos |= (read_byte(PC++) << 8);
+        int8_t offset = read_byte(PC);
+        push(PC >> 8);
+        push(PC & 0xFF);
+        PC = PC + 1 + offset;
 
-        if (tia_pos == 0) {
-            tia_pos = 65536;
+    }
+
+    void TST()
+    {
+        uint8_t imm = read_byte(PC++);
+        switch (opcode) {
+            case 0x83:
+                zeropage();
+                break;
+            case 0x93:
+                absolute();
+                break;
+            case 0xA3:
+                zeropage_x();
+                break;
+            case 0xB3:
+                absolute_x();
+                break;
+            default:
+                assert(0);
         }
-        tia_opcode = 0x104;
+        setn(M);
+        SR.V = M & 0x40;
+        uint8_t result = imm & M;
+        setz(result);
+    }
+
+    void JMP_ABINDX()
+    {
+        absolute_ea();
+        address += X;
+        uint8_t pclo = read_byte(address);
+        uint8_t pchi = read_byte((address + 1) & 0xFFFF);
+        PC = makeword(pclo, pchi);
+    }
+
+    void ST0()
+    {
+        sys.write_vid(0, M);
+    }
+
+    void ST1()
+    {
+        sys.write_vid(2, M);
+    }
+
+    void ST2()
+    {
+        sys.write_vid(3, M);
     }
 
     INLINE void push(uint8_t value)
@@ -1170,7 +1254,7 @@ export template <typename Sys> class c_huc6280
     INLINE void CLI()
     {
         SR.I = false;
-        if (do_irq)
+        if (sys.irq1 || sys.irq2)
             irq_delay = 1;
     }
     INLINE void CLV()
@@ -1335,7 +1419,7 @@ export template <typename Sys> class c_huc6280
     {
         bool prev_i = SR.I;
         *S = pop();
-        if (do_irq && SR.I == false && SR.I != prev_i)
+        if ((sys.irq1 || sys.irq2) && SR.I == false && SR.I != prev_i)
             irq_delay = 1;
     }
     INLINE void RLA()
@@ -1407,7 +1491,7 @@ export template <typename Sys> class c_huc6280
         unsigned char pcl = pop();
         unsigned char pch = pop();
         PC = makeword(pcl, pch);
-        if (do_irq && SR.I == false && SR.I != prev_i)
+        if ((sys.irq1 || sys.irq2) && SR.I == false && SR.I != prev_i)
             irq_delay = 1;
     }
     INLINE void RTS()
@@ -1416,10 +1500,6 @@ export template <typename Sys> class c_huc6280
         unsigned char pch = pop();
         PC = makeword(pcl, pch);
         PC++;
-    }
-    INLINE void SAX()
-    {
-        write_byte(address, A & X);
     }
     INLINE void SBC()
     {

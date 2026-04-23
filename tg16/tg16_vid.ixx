@@ -40,16 +40,22 @@ export template <typename Sys> class c_vid
         plane_height = 32;
         pal_index = 0;
         do_satb_dma = false;
+        increment = 1;
     }
 
     struct s_sprite
     {
+        uint8_t pal;
+        uint8_t color;
+        bool priority;
+        bool sprite_here;
     };
 
-    int sprites[256];
+    s_sprite sprites[256+16];
 
     void eval_sprites(int ln)
     {
+        uint8_t MRW = (vdc_registers[0x5] >> 2) & 3;
         std::memset(sprites, 0, sizeof(sprites));
         for (int i = 0; i < 64; i++) {
             uint16_t word0 = *(uint16_t*)&satb[i * 8 + 0];
@@ -58,7 +64,7 @@ export template <typename Sys> class c_vid
             uint16_t word3 = *(uint16_t*)&satb[i * 8 + 6];
             uint16_t vpos = word0 & 0x3FF;
             uint16_t hpos = word1 & 0x3FF;
-            uint16_t pattern = (word2 >> 1) & 0x3FF;
+            uint16_t base_tile = (word2 >> 1) & 0x3FF;
             uint16_t hsize = (word3 >> 8) & 0x1;
             uint16_t vsize = (word3 >> 12) & 0x3;
             if (vsize > 1) {
@@ -76,12 +82,36 @@ export template <typename Sys> class c_vid
                 int32_t y_base = y + v * 16;
                 if (ln >= y_base && ln < y_base + 16) {
                     int32_t y_offset = ln - y_base;
+                    
                     for (int h = 0; h < hsize + 1; h++) {
+
+                        uint32_t tile = base_tile;
+                        uint32_t pattern_address = tile * 128 + (y_offset * 2);
+
+                        uint32_t p0 = *(uint16_t*)&vram[pattern_address];
+                        uint32_t p2 = *(uint16_t *)&vram[pattern_address + 32];
+                        uint32_t p1 = *(uint16_t *)&vram[pattern_address + 64];
+                        uint32_t p3 = *(uint16_t *)&vram[pattern_address + 96];
+
+                        p0 <<= 0;
+                        p2 <<= 2;
+                        p1 <<= 1;
+                        p3 <<= 3;
+
                         int x_start = x + h * 16;
                         for (int j = x_start, p = 0; j < x_start + 16; j++, p++) {
                             if (j >= 0 && j < 256) {
-                                sprites[j] = 1;
+                                
+                                uint8_t p = (p0 & 1) | (p1 & 2) | (p2 & 4) | (p3 & 8);
+
+                                sprites[j].sprite_here = true;
+                                sprites[j].color = p;
+                                sprites[j].pal = palette;
                             }
+                            p0 >>= 1;
+                            p1 >>= 1;
+                            p2 >>= 1;
+                            p3 >>= 1;
                         }
                     }
                 }
@@ -93,7 +123,7 @@ export template <typename Sys> class c_vid
     {
         line++;
 
-        uint8_t VSW = vdc_registers[0x0C] & 0xF;
+        uint8_t VSW = vdc_registers[0x0C] & 0x1F;
         uint8_t VDS = vdc_registers[0x0C] >> 8;
         uint32_t y_scroll = vdc_registers[0x08];
         uint32_t x_scroll = vdc_registers[0x07];
@@ -142,29 +172,31 @@ export template <typename Sys> class c_vid
                             color = palx[pal[0]];
                         }
                         temp[x] = color;
-                        if (sprites[x]) {
-                            temp[x] = 0xFFFF0000;
-                        }
                         c >>= 8;
                         x++;
                     }
                 }
             }
+
+            for (int i = 0; i < 256; i++) {
+                if (sprites[i].sprite_here && sprites[i].color) {
+                    temp[(x_scroll & 7) + i] = palx[pal[256 + (sprites[i].color | (sprites[i].pal << 4))]];
+                }
+            }
+
             std::memcpy(&fb[(line - start_line) * 256], &temp[x_scroll & 0x7], 256 * sizeof(uint32_t));
         }
 
-        uint32_t RCR = vdc_registers[0x06];
+        uint32_t RCR = vdc_registers[0x06] & 0x3FF;
 
-        if (RCR >= 0x40 && RCR <= 0x146) {
-            // RCR is in valid range
-            int x = RCR - 0x40 + start_line;
-            if (line == x) {
-                raster_compare = 1;
-                if (vdc_registers[0x05] & 0x4) {
-                    sys.irq1 = 1;
-                    vdc_status |= 0x4;
-                    //std::printf("rcr irq\n");
-                }
+        int x = (int)RCR - 0x40 + (int)start_line;
+
+        if (line == x) {
+            raster_compare = 1;
+            if (vdc_registers[0x05] & 0x4) {
+                sys.irq1 = 1;
+                vdc_status |= 0x4;
+                //std::printf("rcr irq\n");
             }
         }
 
@@ -181,7 +213,7 @@ export template <typename Sys> class c_vid
             // todo: proper timing of satb transfer
             if ((vdc_registers[0xF] & 0x10) || do_satb_dma) {
                 do_satb_dma = false;
-                uint32_t src = vdc_registers[0x13];
+                uint32_t src = vdc_registers[0x13] * 2;
                 for (int i = 0; i < 512; i++) {
                     satb[i] = vram[(src + i) & 0xFFFF];
                 }
@@ -204,7 +236,7 @@ export template <typename Sys> class c_vid
                 vdc_register_latch = value;
                 break;
             case 1:
-                assert(0);
+                //assert(0);
                 break;
             case 2:
                 write_vdc_register_lo(value);
@@ -228,9 +260,37 @@ export template <typename Sys> class c_vid
                 vblank = 0;
                 return ret;
             case 2:
+                return read_vdc_register_lo();
             case 3:
-                x = 2;
-                break;
+                return read_vdc_register_hi();
+        }
+        return 0;
+    }
+
+    uint8_t read_vdc_register_lo()
+    {
+        switch (vdc_register_latch) {
+            case 0x2:
+                return read_buffer & 0xFF;
+            default:
+                return 0xCD;
+
+        }
+        return 0;
+    }
+
+    uint8_t read_vdc_register_hi()
+    {
+        uint8_t ret;
+        switch (vdc_register_latch) {
+            case 0x2:
+                ret = read_buffer >> 8;
+                vdc_registers[0x1] += increment;
+                read_buffer = *(uint16_t *)&vram[vdc_registers[0x01] * 2];
+                return ret;
+
+            default:
+                return 0xCD;
         }
         return 0;
     }
@@ -316,16 +376,31 @@ export template <typename Sys> class c_vid
             case 0x01:
                 // MARR
                 x = 2;
+                read_buffer = *(uint16_t*)&vram[vdc_registers[0x01] * 2];
                 break;
             case 0x02: {
                 uint16_t &MAWR = vdc_registers[0];
                 uint32_t offset = MAWR * 2;
                 offset &= 0xFFFF;
-                //std::printf("writing %04X to VRAM MAWR %04X\n", vdc_registers[2], vdc_registers[0]);
-                vram[offset] = vdc_registers[2] & 0xFF;
-                vram[offset + 1] = vdc_registers[2] >> 8;
-                MAWR++;
+                *(uint16_t *)&vram[offset] = vdc_registers[2];
+                MAWR += increment;
             }
+                break;
+            case 0x05:
+                switch ((value >> 11) & 0x3) {
+                    case 0:
+                        increment = 1;
+                        break;
+                    case 1:
+                        increment = 0x20;
+                        break;
+                    case 2:
+                        increment = 0x40;
+                        break;
+                    case 3:
+                        increment = 0x80;
+                        break;
+                }
                 break;
             case 0x0D:
                 display_height = vdc_registers[0x0D] & 0x1FF;
@@ -387,6 +462,8 @@ export template <typename Sys> class c_vid
     int vblank;
     int raster_compare;
 
+    uint16_t read_buffer;
+
     uint8_t vdc_register_latch;
     uint8_t vdc_data_lo;
     uint8_t vdc_data_hi;
@@ -405,6 +482,8 @@ export template <typename Sys> class c_vid
 
     bool do_satb_dma;
     uint8_t satb[512];
+
+    int increment;
 
 };
 } //namespace tg16
