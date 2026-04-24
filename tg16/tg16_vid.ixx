@@ -41,6 +41,12 @@ export template <typename Sys> class c_vid
         pal_index = 0;
         do_satb_dma = false;
         increment = 1;
+        VSW = 0;
+        VDS = 0;
+        VDW = 0;
+        y_offset = 0;
+        reload_y_scroll = false;
+        std::fill_n(fb, 256 * 256, 0xFF000000);
     }
 
     struct s_sprite
@@ -51,15 +57,18 @@ export template <typename Sys> class c_vid
         bool sprite_here;
     };
 
-    s_sprite sprites[256+16];
+    s_sprite sprites[256];
 
     void eval_sprites(int ln)
     {
+        std::memset(sprites, 0, sizeof(sprites));
+        if (!(vdc_registers[0x5] & 0x40)) {
+            return;
+        }
         uint8_t sprite_pixel_width = (vdc_registers[0x9] >> 2) & 3;
         if (sprite_pixel_width == 3) {
             int x = 1;
         }
-        std::memset(sprites, 0, sizeof(sprites));
         for (int i = 0; i < 64; i++) {
             uint16_t word0 = *(uint16_t*)&satb[i * 8 + 0];
             uint16_t word1 = *(uint16_t*)&satb[i * 8 + 2];
@@ -73,6 +82,17 @@ export template <typename Sys> class c_vid
             if (vsize > 1) {
                 vsize = 2;
             }
+
+            if (hsize == 1) {
+                base_tile &= ~1;
+            }
+            if (vsize == 1) {
+                base_tile &= ~2;
+            }
+            else if (vsize == 2) {
+                base_tile &= ~6;
+            }
+
             uint16_t palette = word3 & 0xF;
             bool priority = word3 & 0x80;
             uint32_t v_flip = word3 & 0x8000 ? 15 : 0;
@@ -82,17 +102,26 @@ export template <typename Sys> class c_vid
             int32_t x = (int32_t)hpos - 32;
 
             for (int v = 0; v < vsize + 1; v++) {
-                int32_t y_base = y + v * 16;
+                int32_t y_base = y + v * 16 + 1;
                 if (ln >= y_base && ln < y_base + 16) {
                     int32_t y_offset = ln - y_base;
                     uint32_t vv = (v_flip && vsize) ? vsize - v : v;
 
                     for (int h = 0; h < hsize + 1; h++) {
                         uint32_t hh = (h_flip && hsize) ? hsize - h : h;
-                        uint32_t tile = base_tile + hh + (vv * (hsize + 1));
+                        if (base_tile == 0x81) {
+                            if (v == 0) {
+                                int x = 1;
+                            }
+                            else {
+                                int x = 1;
+                            }
+                        }
+                        uint32_t tile = base_tile | (vv << 1) | hh;
+
                         uint32_t pattern_address = tile * 128 + ((y_offset ^ v_flip) * 2);
 
-                        uint32_t p0 = *(uint16_t*)&vram[pattern_address];
+                        uint32_t p0 = *(uint16_t *)&vram[pattern_address];
                         uint32_t p1 = *(uint16_t *)&vram[pattern_address + 32];
                         uint32_t p2 = *(uint16_t *)&vram[pattern_address + 64];
                         uint32_t p3 = *(uint16_t *)&vram[pattern_address + 96];
@@ -127,10 +156,6 @@ export template <typename Sys> class c_vid
                                 sprites[j].color = px;
                                 sprites[j].pal = palette;
                             }
-                            //p0 >>= (7-i);
-                            //p1 >>= (7-i);
-                            //p2 >>= (7-i);
-                            //p3 >>= (7-i);
                         }
                     }
                 }
@@ -140,26 +165,23 @@ export template <typename Sys> class c_vid
 
     void do_scanline()
     {
-        line++;
 
-        uint8_t VSW = vdc_registers[0x0C] & 0x1F;
-        uint8_t VDS = vdc_registers[0x0C] >> 8;
-        uint32_t y_scroll = vdc_registers[0x08];
         uint32_t x_scroll = vdc_registers[0x07];
-
-        if (x_scroll) {
-            int x = 1;
-        }
-
         uint32_t start_line = VSW + VDS;
-        if (line >= start_line && line < start_line + vdc_registers[0x0D]) {
+
+        if (line >= start_line && line < start_line + VDW) {
+            if (reload_y_scroll) {
+                reload_y_scroll = false;
+                y_offset = vdc_registers[0x08];
+            }
             eval_sprites(line - start_line);
             uint32_t temp[256 + 8] = {0};
             if (!(vdc_registers[0x5] & 0x80)) {
-                std::fill_n(&fb[(line - start_line) * 256], 256, 0xFF000000);
+                uint32_t fill_color = palx[pal[0]];
+                std::fill_n(&fb[(line - start_line) * 256], 256, fill_color);
             }
             else {
-                uint32_t y = line - start_line + y_scroll;
+                uint32_t y = y_offset;
 
                 uint32_t x = 0;
                 for (int column = 0; column < display_width + 1; column++) {
@@ -196,6 +218,7 @@ export template <typename Sys> class c_vid
                     }
                 }
             }
+            y_offset++;
 
             for (int i = 0; i < 256; i++) {
                 if (sprites[i].sprite_here && sprites[i].color) {
@@ -215,13 +238,21 @@ export template <typename Sys> class c_vid
             if (vdc_registers[0x05] & 0x4) {
                 sys.irq1 = 1;
                 vdc_status |= 0x4;
-                //std::printf("rcr irq\n");
+                std::printf("rcr irq at line %d\n", line);
             }
         }
+        line++;
 
-        if (line == 257) {
+        if (line == 1) {
+            //no idea where this stuff should be reloaded
+            VSW = vdc_registers[0x0C] & 0x1F;
+            VDS = vdc_registers[0x0C] >> 8;
+            VDW = vdc_registers[0x0D] & 0x1FF;
+        }
+        else if (line == 257) {
             //vblank
             vblank = 1;
+            reload_y_scroll = true;
             if (vdc_registers[0x05] & 0x8) {
                 sys.irq1 = 1;
                 vdc_status |= 0x20;
@@ -320,23 +351,40 @@ export template <typename Sys> class c_vid
         if (vdc_register_latch == 0x0 && value != 0) {
             int x = 1;
         }
-        vdc_registers[vdc_register_latch] = (vdc_registers[vdc_register_latch] & 0xFF00) | value;
+        uint16_t prev = vdc_registers[vdc_register_latch];
+        uint16_t &r = vdc_registers[vdc_register_latch];
+        r = (r & 0xFF00) | value;
+        uint16_t cur = vdc_registers[vdc_register_latch];
         switch (vdc_register_latch) {
             case 0x05: {
-                uint8_t prev = vdc_registers[0x5];
-                if (value ^ prev && value & 0x8) {
+                
+                if (cur ^ prev && cur & 0x8) {
                     if (vblank) {
                         sys.irq1 = 1;
                         vdc_status |= 0x20;
                         std::printf("delayed vblank irq\n");
                     }
                 }
-                if (value ^ prev && value & 0x4) {
+                if (cur ^ prev && cur & 0x4) {
                     if (raster_compare) {
                         int x = 1;
                     }
                 }
+
+                if ((cur ^ prev) & 0x80) {
+                    if (cur & 0x80) {
+                        std::printf("bg rendering enabled at line %d\n", line);
+                    }
+                    else {
+                        std::printf("bg rendering disabled at line %d\n", line);
+                    }
+                }
+
             } break;
+            case 0x8:
+                reload_y_scroll = true;
+                //std::printf("set y scroll to %d at line %d\n", r, line);
+                break;
             case 0x9:
                 plane_height = value & 0x40 ? 64 : 32;
                 switch ((value & 0x30) >> 4) {
@@ -355,11 +403,13 @@ export template <typename Sys> class c_vid
             case 0x0B:
                 display_width = vdc_registers[0x0B] & 0x3F;
                 display_width += 1;
+                std::printf("set display width to %d\n", display_width);
                 break;
 
             case 0x0D:
                 display_height = vdc_registers[0x0D] & 0x1FF;
                 display_height += 1;
+                std::printf("set display height to %d\n", display_height);
                 break;
             case 0x0F:
                 std::printf("write %02X to DMA control register\n", value);
@@ -386,7 +436,8 @@ export template <typename Sys> class c_vid
         if (vdc_register_latch == 0x0 && value != 0) {
             int x = 1;
         }
-        vdc_registers[vdc_register_latch] = (vdc_registers[vdc_register_latch] & 0x00FF) | (value << 8);
+        uint16_t &r = vdc_registers[vdc_register_latch];
+        r = (r & 0x00FF) | (value << 8);
         switch (vdc_register_latch) {
             case 0x00:
                 // MAWR
@@ -395,13 +446,13 @@ export template <typename Sys> class c_vid
             case 0x01:
                 // MARR
                 x = 2;
-                read_buffer = *(uint16_t*)&vram[vdc_registers[0x01] * 2];
+                read_buffer = *(uint16_t*)&vram[r * 2];
                 break;
             case 0x02: {
                 uint16_t &MAWR = vdc_registers[0];
                 uint32_t offset = MAWR * 2;
                 offset &= 0xFFFF;
-                *(uint16_t *)&vram[offset] = vdc_registers[2];
+                *(uint16_t *)&vram[offset] = r;
                 MAWR += increment;
             }
                 break;
@@ -421,9 +472,18 @@ export template <typename Sys> class c_vid
                         break;
                 }
                 break;
+            case 0x07:
+                r &= 0x3FF;
+                break;
+            case 0x08:
+                r &= 0x1FF;
+                //std::printf("set y scroll to %d at line %d\n", r, line);
+                reload_y_scroll = true;
+                break;
             case 0x0D:
-                display_height = vdc_registers[0x0D] & 0x1FF;
+                display_height = r & 0x1FF;
                 display_height += 1;
+                std::printf("set display height to %d\n", display_height);
                 break;
             case 0x0F:
                 std::printf("write %02X to DMA control register hi\n", value);
@@ -445,6 +505,22 @@ export template <typename Sys> class c_vid
                 x = 2;
                 break;
                 
+        }
+    }
+
+    uint8_t read_vce(uint16_t address)
+    {
+        uint8_t ret = 0;
+        switch (address & 0x7) {
+            case 4:
+                return pal[pal_index] & 0xFF;
+            case 5:
+                ret = pal[pal_index] >> 8;
+                pal_index++;
+                pal_index &= 0x1FF;
+                return ret;
+            default:
+                return 0;
         }
     }
 
@@ -503,6 +579,12 @@ export template <typename Sys> class c_vid
     uint8_t satb[512];
 
     int increment;
+
+    uint8_t VSW;
+    uint8_t VDS;
+    uint16_t VDW;
+    uint32_t y_offset;
+    bool reload_y_scroll;
 
 };
 } //namespace tg16

@@ -23,7 +23,7 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
                  .display_info =
                      {
                          .fb_width = 256,
-                         .fb_height = 224,
+                         .fb_height = 240,
                      },
                  .button_map = {
                      {BUTTON_1A,      0x01},
@@ -71,7 +71,6 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
         return 0;
     }
 
-    int fb[256 * 240];
     int *get_video()
     {
         return (int*)vid->fb;
@@ -169,9 +168,8 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
                 return vid->read_vdc(address);
             }
             else if (address < 0x800) {
-                std::printf("read from VCE\n");
-                return 0;
-                assert(0);
+                //std::printf("read from VCE\n");
+                return vid->read_vdc(address);
             }
             else if (address < 0xC00) {
                 std::printf("read from PSG\n");

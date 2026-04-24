@@ -11,8 +11,16 @@ namespace tg16
 export template <typename Sys> class c_huc6280
 {
     Sys &sys;
+    enum TRANSFER
+    {
+        TIA = 0x103,
+        TII = 0x104,
+        TAI = 0x105,
+        TIN = 0x106
+
+    };
     // clang-format off
-    static constexpr int cycle_table[262] = {
+    static constexpr int cycle_table[263] = {
     //   0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
         21, 18,  3, 24,  9,  9, 15, 15,  9,  6,  6,  6, 12, 12, 18, 18, //0F
          6, 15,  3, 24, 12, 12, 18, 18,  6, 12,  6, 21, 12, 12, 21, 21, //1F
@@ -30,7 +38,7 @@ export template <typename Sys> class c_huc6280
          6, 15,  3, 24, 12, 12, 18, 18,  6, 12,  6, 21, 12, 12, 21, 21, //DF
          6, 18,  6, 51,  9,  9, 15, 15,  6,  6,  6,  6, 12, 12, 18, 18, //EF
          6, 15,  3, 51, 12, 12, 18, 18,  6, 12,  6, 21, 12, 12, 21, 21, //FF
-        21, 21,  21, 18, 18, 18
+        21, 21,  21, 18, 18, 18, 18
     };
     // clang-format on
   public:
@@ -358,7 +366,7 @@ export template <typename Sys> class c_huc6280
             case 0x70: BVS(); break;
             case 0x71: indirect_y_pc(); ADC(); break;
             case 0x72: indirect2(); ADC(); break;
-            case 0x73: xfer_setup(0x104); break;
+            case 0x73: xfer_setup(TRANSFER::TII); break;
             case 0x74: zeropage_x_ea(); STZ(); break; //unofficial d,x NOP
             case 0x75: zeropage_x(); ADC(); break;
             case 0x76: zeropage_x(); ROR(); break;
@@ -454,7 +462,7 @@ export template <typename Sys> class c_huc6280
             case 0xD0: BNE(); break;
             case 0xD1: indirect_y_pc(); CMP(); break;
             case 0xD2: indirect2(); CMP(); break;
-            case 0xD3: assert(0); break;
+            case 0xD3: xfer_setup(TRANSFER::TIN); break;
             case 0xD4: CSH(); break; //unofficial d,x NOP
             case 0xD5: zeropage_x(); CMP(); break;
             case 0xD6: zeropage_x(); DEC(); break;
@@ -470,7 +478,7 @@ export template <typename Sys> class c_huc6280
             case 0xE0: immediate(); CPX(); break;
             case 0xE1: indirect_x(); SBC(); break;
             case 0xE2: assert(0); break; //unofficial i NOP
-            case 0xE3: xfer_setup(0x103); break;
+            case 0xE3: xfer_setup(TRANSFER::TIA); break;
             case 0xE4: zeropage(); CPX(); break;
             case 0xE5: zeropage(); SBC(); break;
             case 0xE6: zeropage(); INC(); break;
@@ -486,7 +494,7 @@ export template <typename Sys> class c_huc6280
             case 0xF0: BEQ(); break;
             case 0xF1: indirect_y_pc(); SBC(); break;
             case 0xF2: indirect2(); SBC(); break;
-            case 0xF3: xfer_setup(0x105); break;
+            case 0xF3: xfer_setup(TRANSFER::TAI); break;
             case 0xF4: set_t = true; break; //unofficial d,x NOP
             case 0xF5: zeropage_x(); SBC(); break;
             case 0xF6: zeropage_x(); INC(); break;
@@ -526,7 +534,7 @@ export template <typename Sys> class c_huc6280
                 PC = makeword(read_byte(0xFFF6), read_byte(0xFFF7));
                 std::printf("!!! IRQ2 !!!\n");
                 break;
-            case 0x103: //TIA
+            case TRANSFER::TIA: //TIA
                 {
                     uint8_t data = read_byte(xfer_src);
                     write_byte(xfer_dst, data);
@@ -542,7 +550,7 @@ export template <typename Sys> class c_huc6280
                     xfer_pos--;
                 }
                 break;
-            case 0x104: //TII
+            case TRANSFER::TII: //TII
                 {
                     uint8_t data = read_byte(xfer_src);
                     write_byte(xfer_dst, data);
@@ -552,7 +560,7 @@ export template <typename Sys> class c_huc6280
                     xfer_pos--;
                 }
                 break;
-            case 0x105: //TAI
+            case TRANSFER::TAI: //TAI
                 {
                     uint8_t data = read_byte(xfer_src);
                     write_byte(xfer_dst, data);
@@ -566,6 +574,14 @@ export template <typename Sys> class c_huc6280
                     xfer_dst = (xfer_dst + 1) & 0xFFFF;
 
                     xfer_cnt++;
+                    xfer_pos--;
+                }
+                break;
+            case TRANSFER::TIN:
+                {
+                    uint8_t data = read_byte(xfer_src);
+                    write_byte(xfer_dst, data);
+                    xfer_src = (xfer_src + 1) & 0xFFFF;
                     xfer_pos--;
                 }
                 break;
@@ -1142,23 +1158,39 @@ export template <typename Sys> class c_huc6280
     INLINE void ADC()
     {
         uint8_t operand = SR.T ? read_byte(0x2000 | X) : A;
+        uint8_t result = 0;
+        if (SR.D) {
+            uint8_t lo = (operand & 0xF) + (M & 0xF) + (SR.C ? 1 : 0);
+            if (lo > 9) {
+                lo += 6;
+            }
 
-        unsigned int temp = operand + M + (SR.C ? 1 : 0);
-        SR.C = temp > 0xFF ? true : false;
-        //SR.V = (((~(A^M)) & 0x80) & ((A^temp) & 0x80)) ? true : false;
-        //if A and result have different sign and M and result have different sign, set overflow
-        //127 + 1 = -128 or -1 - -3 = 2 will overflow
-        //127 + -128
-        SR.V = (operand ^ temp) & (M ^ temp) & 0x80 ? true : false;
-        operand = temp & 0xFF;
-        setn(operand);
-        setz(operand);
-
-        if (SR.T) {
-            write_byte(0x2000 | X, operand);
+            uint8_t hi = (operand >> 4) + (M >> 4) + (lo > 0xF ? 1 : 0);
+            if (hi > 9) {
+                hi += 6;
+            }
+            result = ((hi & 0xF) << 4) | (lo & 0xF);
+            SR.C = (hi > 0xF) ? 1 : 0;
         }
         else {
-            A = operand;
+            unsigned int temp = operand + M + (SR.C ? 1 : 0);
+            SR.C = temp > 0xFF ? true : false;
+            //SR.V = (((~(A^M)) & 0x80) & ((A^temp) & 0x80)) ? true : false;
+            //if A and result have different sign and M and result have different sign, set overflow
+            //127 + 1 = -128 or -1 - -3 = 2 will overflow
+            //127 + -128
+            SR.V = (operand ^ temp) & (M ^ temp) & 0x80 ? true : false;
+            result = temp & 0xFF;
+        }
+        
+        setn(result);
+        setz(result);
+
+        if (SR.T) {
+            write_byte(0x2000 | X, result);
+        }
+        else {
+            A = result;
         }
     }
     INLINE void ANC()
@@ -1557,8 +1589,36 @@ export template <typename Sys> class c_huc6280
     }
     INLINE void SBC()
     {
-        M ^= 0xFF;
-        ADC();
+        if (SR.D) {
+            uint8_t operand = SR.T ? read_byte(0x2000 | X) : A;
+            uint8_t result = 0;
+            int8_t borrow = 0;
+            int8_t lo = (int8_t)(operand & 0xF) - (int8_t)(M & 0xF) - (SR.C ? 0 : 1);
+            if (lo < 0) {
+                lo -= 6;
+                borrow = true;
+            }
+            int8_t hi = (int8_t)(operand >> 4) - (int8_t)(M >> 4) - borrow;
+            if (hi < 0) {
+                hi -= 6;
+            }
+
+            result = ((hi & 0xF) << 4) | (lo & 0xF);
+            SR.C = hi >= 0 ? 1 : 0;
+            
+            setn(result);
+            setz(result);
+            if (SR.T) {
+                write_byte(0x2000 | X, result);
+            }
+            else {
+                A = result;
+            }
+        }
+        else {
+            M ^= 0xFF;
+            ADC();
+        }
     }
     INLINE void SEC()
     {
