@@ -24,6 +24,8 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
                      {
                          .fb_width = 256,
                          .fb_height = 240,
+                         .crop_top = 8,
+                         .crop_bottom = 8
                      },
                  .button_map = {
                      {BUTTON_1A,      0x01},
@@ -94,7 +96,13 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
             return 0;
         file.seekg(0, std::ios_base::end);
         file_length = (int)file.tellg();
-        file.seekg(0, std::ios_base::beg);
+        int offset = 0;
+        //if (file_length % 1024) {
+        //    std::printf("%s - header detected, skipping 512 bytes\n", path_file.c_str());
+        //    offset = 512;
+        //    file_length -= 512;
+        //}
+        file.seekg(offset, std::ios_base::beg);
         rom = std::make_unique_for_overwrite<uint8_t[]>(file_length);
         file.read((char *)rom.get(), file_length);
         file.close();

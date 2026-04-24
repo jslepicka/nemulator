@@ -34,6 +34,7 @@ export template <typename Sys> class c_vid
         vdc_register_latch = 0;
         std::memset(vdc_registers, 0, sizeof(vdc_registers));
         std::memset(satb, 0, sizeof(satb));
+        std::memset(pal, 0, sizeof(pal));
         vdc_status = 0;
         raster_compare = 0;
         plane_width = 32;
@@ -47,6 +48,7 @@ export template <typename Sys> class c_vid
         y_offset = 0;
         reload_y_scroll = false;
         std::fill_n(fb, 256 * 256, 0xFF000000);
+        burst_mode = false;
     }
 
     struct s_sprite
@@ -57,14 +59,10 @@ export template <typename Sys> class c_vid
         bool sprite_here;
     };
 
-    s_sprite sprites[256];
+    s_sprite sprite_output[256];
 
     void eval_sprites(int ln)
     {
-        std::memset(sprites, 0, sizeof(sprites));
-        if (!(vdc_registers[0x5] & 0x40)) {
-            return;
-        }
         uint8_t sprite_pixel_width = (vdc_registers[0x9] >> 2) & 3;
         if (sprite_pixel_width == 3) {
             int x = 1;
@@ -102,7 +100,7 @@ export template <typename Sys> class c_vid
             int32_t x = (int32_t)hpos - 32;
 
             for (int v = 0; v < vsize + 1; v++) {
-                int32_t y_base = y + v * 16 + 1;
+                int32_t y_base = y + v * 16;
                 if (ln >= y_base && ln < y_base + 16) {
                     int32_t y_offset = ln - y_base;
                     uint32_t vv = (v_flip && vsize) ? vsize - v : v;
@@ -143,7 +141,7 @@ export template <typename Sys> class c_vid
                         int x_start = x + h * 16;
                         for (int j = x_start, p = 0; j < x_start + 16; j++, p++) {
                             if (j >= 0 && j < 256) {
-                                if (sprites[j].sprite_here && sprites[j].color) {
+                                if (sprite_output[j].sprite_here && sprite_output[j].color) {
                                     continue;
                                 }
                                 uint8_t pp = p ^ h_flip;
@@ -152,9 +150,10 @@ export template <typename Sys> class c_vid
                                              ((p2 >> (15 - pp)) & 4) |
                                              ((p3 >> (15 - pp)) & 8);
 
-                                sprites[j].sprite_here = true;
-                                sprites[j].color = px;
-                                sprites[j].pal = palette;
+                                sprite_output[j].sprite_here = true;
+                                sprite_output[j].color = px;
+                                sprite_output[j].pal = palette;
+                                sprite_output[j].priority = priority;
                             }
                         }
                     }
@@ -163,24 +162,28 @@ export template <typename Sys> class c_vid
         }
     }
 
+    bool burst_mode;
+
     void do_scanline()
     {
 
         uint32_t x_scroll = vdc_registers[0x07];
         uint32_t start_line = VSW + VDS;
 
+        std::memset(sprite_output, 0, sizeof(sprite_output));
+
         if (line >= start_line && line < start_line + VDW) {
             if (reload_y_scroll) {
                 reload_y_scroll = false;
                 y_offset = vdc_registers[0x08];
             }
-            eval_sprites(line - start_line);
-            uint32_t temp[256 + 8] = {0};
-            if (!(vdc_registers[0x5] & 0x80)) {
-                uint32_t fill_color = palx[pal[0]];
-                std::fill_n(&fb[(line - start_line) * 256], 256, fill_color);
+            if (vdc_registers[0x5] & 0x40) {
+                eval_sprites(line - start_line);
             }
-            else {
+            uint8_t temp[256 + 8] = {0};
+            bool do_bg = !burst_mode && (vdc_registers[0x5] & 0x80);
+            //bool do_bg = vdc_registers[0x5] & 0x80;
+            if (do_bg) {
                 uint32_t y = y_offset;
 
                 uint32_t x = 0;
@@ -202,37 +205,62 @@ export template <typename Sys> class c_vid
 
                     c = std::byteswap(c);
 
+                    uint64_t pal_broadcast = (palette << 4) * 0x0101010101010101;
+                    c |= pal_broadcast;
+
                     uint16_t pal_index = palette * 16;
 
-                    for (int i = 0; i < 8; i++) {
-                        uint32_t color;
-                        if (c & 0xF) {
-                            color = palx[pal[pal_index + (c & 0xF)]];
-                        }
-                        else {
-                            color = palx[pal[0]];
-                        }
-                        temp[x] = color;
-                        c >>= 8;
-                        x++;
-                    }
+                    //for (int i = 0; i < 8; i++) {
+                    //    uint32_t color;
+                    //    if (c & 0xF) {
+                    //        color = palx[pal[pal_index + (c & 0xF)]];
+                    //    }
+                    //    else {
+                    //        color = palx[pal[0]];
+                    //    }
+                    //    temp[x] = color;
+                    //    c >>= 8;
+                    //    x++;
+                    //}
+                    *(uint64_t *)&temp[x] = c;
+                    x += 8;
                 }
             }
             y_offset++;
 
-            for (int i = 0; i < 256; i++) {
-                if (sprites[i].sprite_here && sprites[i].color) {
-                    temp[(x_scroll & 7) + i] = palx[pal[256 + (sprites[i].color | (sprites[i].pal << 4))]];
-                }
-            }
+            //for (int i = 0; i < 256; i++) {
+            //    if (sprite_output[i].sprite_here && sprite_output[i].color) {
+            //        temp[(x_scroll & 7) + i] = palx[pal[256 + (sprite_output[i].color | (sprite_output[i].pal << 4))]];
+            //    }
+            //}
 
-            std::memcpy(&fb[(line - start_line) * 256], &temp[x_scroll & 0x7], 256 * sizeof(uint32_t));
+            //std::memcpy(&fb[(line - start_line) * 256], &temp[x_scroll & 0x7], 256 * sizeof(uint32_t));
+
+            uint32_t *pfb = &fb[(line - start_line) * 256];
+            uint8_t *pbg = &temp[x_scroll & 0x7];
+            
+            for (int i = 0; i < 256; i++) {
+                uint8_t bg_index = *pbg++;
+                uint32_t bg_color = bg_index & 0xF ? palx[pal[bg_index]] : palx[pal[0]];
+                if (burst_mode) {
+                    bg_color = palx[pal[256]];
+                }
+                uint32_t sprite_color = 0;
+                bool draw_sprite = false;
+                if (sprite_output[i].sprite_here && sprite_output[i].color) {
+                    if (sprite_output[i].priority || !(bg_index & 0xF)) {
+                        draw_sprite = true;
+                        sprite_color = palx[pal[256 + (sprite_output[i].color | (sprite_output[i].pal << 4))]];
+                    }
+                }
+                *pfb++ = draw_sprite ? sprite_color : bg_color;
+            }
         }
 
         uint32_t RCR = vdc_registers[0x06] & 0x3FF;
 
         int x = (int)RCR - 0x40 + (int)start_line;
-
+        line++;
         if (line == x) {
             raster_compare = 1;
             if (vdc_registers[0x05] & 0x4) {
@@ -241,7 +269,14 @@ export template <typename Sys> class c_vid
                 std::printf("rcr irq at line %d\n", line);
             }
         }
-        line++;
+        //line++;
+
+        if (line == VSW) {
+            burst_mode = !(vdc_registers[0x5] & 0xC0);
+            if (burst_mode) {
+                std::printf("-- burst mode --\n");
+            }
+        }
 
         if (line == 1) {
             //no idea where this stuff should be reloaded
