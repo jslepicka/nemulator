@@ -77,9 +77,7 @@ export template <typename Sys> class c_vid
             uint16_t base_tile = (word2 >> 1) & 0x3FF;
             uint16_t hsize = (word3 >> 8) & 0x1;
             uint16_t vsize = (word3 >> 12) & 0x3;
-            if (vsize > 1) {
-                vsize = 2;
-            }
+            assert(vsize != 2);
 
             if (hsize == 1) {
                 base_tile &= ~1;
@@ -87,7 +85,7 @@ export template <typename Sys> class c_vid
             if (vsize == 1) {
                 base_tile &= ~2;
             }
-            else if (vsize == 2) {
+            else if (vsize == 3) {
                 base_tile &= ~6;
             }
 
@@ -144,11 +142,11 @@ export template <typename Sys> class c_vid
                                 if (sprite_output[j].sprite_here && sprite_output[j].color) {
                                     continue;
                                 }
-                                uint8_t pp = p ^ h_flip;
-                                uint8_t px = ((p0 >> (15 - pp)) & 1) |
-                                             ((p1 >> (15 - pp)) & 2) |
-                                             ((p2 >> (15 - pp)) & 4) |
-                                             ((p3 >> (15 - pp)) & 8);
+                                uint8_t shift_count = (15 - (p ^ h_flip));
+                                uint8_t px = ((p0 >> shift_count) & 1) |
+                                             ((p1 >> shift_count) & 2) |
+                                             ((p2 >> shift_count) & 4) |
+                                             ((p3 >> shift_count) & 8);
 
                                 sprite_output[j].sprite_here = true;
                                 sprite_output[j].color = px;
@@ -181,9 +179,7 @@ export template <typename Sys> class c_vid
                 eval_sprites(line - start_line);
             }
             uint8_t temp[256 + 8] = {0};
-            bool do_bg = !burst_mode && (vdc_registers[0x5] & 0x80);
-            //bool do_bg = vdc_registers[0x5] & 0x80;
-            if (do_bg) {
+            if (!burst_mode && (vdc_registers[0x5] & 0x80)) {
                 uint32_t y = y_offset;
 
                 uint32_t x = 0;
@@ -209,32 +205,11 @@ export template <typename Sys> class c_vid
                     c |= pal_broadcast;
 
                     uint16_t pal_index = palette * 16;
-
-                    //for (int i = 0; i < 8; i++) {
-                    //    uint32_t color;
-                    //    if (c & 0xF) {
-                    //        color = palx[pal[pal_index + (c & 0xF)]];
-                    //    }
-                    //    else {
-                    //        color = palx[pal[0]];
-                    //    }
-                    //    temp[x] = color;
-                    //    c >>= 8;
-                    //    x++;
-                    //}
                     *(uint64_t *)&temp[x] = c;
                     x += 8;
                 }
             }
             y_offset++;
-
-            //for (int i = 0; i < 256; i++) {
-            //    if (sprite_output[i].sprite_here && sprite_output[i].color) {
-            //        temp[(x_scroll & 7) + i] = palx[pal[256 + (sprite_output[i].color | (sprite_output[i].pal << 4))]];
-            //    }
-            //}
-
-            //std::memcpy(&fb[(line - start_line) * 256], &temp[x_scroll & 0x7], 256 * sizeof(uint32_t));
 
             uint32_t *pfb = &fb[(line - start_line) * 256];
             uint8_t *pbg = &temp[x_scroll & 0x7];
@@ -416,6 +391,9 @@ export template <typename Sys> class c_vid
                 }
 
             } break;
+            case 0x06:
+                std::printf("set rcr lo to %04X (%d) at line %d\n", r, r, line);
+                break;
             case 0x8:
                 reload_y_scroll = true;
                 //std::printf("set y scroll to %d at line %d\n", r, line);
@@ -506,6 +484,9 @@ export template <typename Sys> class c_vid
                         increment = 0x80;
                         break;
                 }
+                break;
+            case 0x06:
+                std::printf("set rcr lo to %04X (%d) at line %d\n", r, r, line);
                 break;
             case 0x07:
                 r &= 0x3FF;
