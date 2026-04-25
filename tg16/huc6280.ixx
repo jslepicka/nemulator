@@ -99,12 +99,12 @@ export template <typename Sys> class c_huc6280
                     opcode = xfer_opcode;
                 }
                 else {
-                    if (PC == 0xa009) {
+                    if (PC == 0xf914) {
                         int x = 1;
                     }
 
                     opcode = read_byte(PC++);
-                    //std::printf("%4X: %2X\n", PC - 1, opcode);
+                    //ods("%4X: %2X\n", PC - 1, opcode);
                 }
                 irq_delay = 0;
                 nmi_delay = 0;
@@ -523,7 +523,8 @@ export template <typename Sys> class c_huc6280
                 push(*S);
                 SR.I = true;
                 PC = makeword(read_byte(0xFFF8), read_byte(0xFFF9));
-                //std::printf("!!! IRQ1 !!!\n");
+                //ods("!!! IRQ1 !!!\n");
+                assert(!(sys.irq_controller_1402 & 2));
                 break;
             case 0x102: //IRQ2
                 push(hibyte(PC));
@@ -532,7 +533,7 @@ export template <typename Sys> class c_huc6280
                 push(*S);
                 SR.I = true;
                 PC = makeword(read_byte(0xFFF6), read_byte(0xFFF7));
-                std::printf("!!! IRQ2 !!!\n");
+                ods("!!! IRQ2 !!!\n");
                 break;
             case TRANSFER::TIA: //TIA
                 {
@@ -612,8 +613,8 @@ export template <typename Sys> class c_huc6280
 
     void TAM()
     {
-        //std::printf("TAM %2X\n", A);
-        //std::printf("Before: %2X %2X %2X %2X %2X %2X %2X %2X\n", MR[0], MR[1], MR[2], MR[3], MR[4], MR[5], MR[6],
+        //ods("TAM %2X\n", A);
+        //ods("Before: %2X %2X %2X %2X %2X %2X %2X %2X\n", MR[0], MR[1], MR[2], MR[3], MR[4], MR[5], MR[6],
         //            MR[7]);
         for (int i = 0; i < 8; i++) {
             if (M & (1 << i)) {
@@ -621,7 +622,7 @@ export template <typename Sys> class c_huc6280
             }
         }
         SR.T = 0;
-        //std::printf("After: %2X %2X %2X %2X %2X %2X %2X %2X\n", MR[0], MR[1], MR[2], MR[3], MR[4], MR[5], MR[6],
+        //ods("After: %2X %2X %2X %2X %2X %2X %2X %2X\n", MR[0], MR[1], MR[2], MR[3], MR[4], MR[5], MR[6],
         //            MR[7]);
         
     }

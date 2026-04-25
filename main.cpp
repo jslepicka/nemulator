@@ -6,6 +6,7 @@
 
 import D3d10App;
 import nemulator;
+import nemulator.std;
 
 #define _STRINGIFY(x) #x
 #define STRINGIFY(x) _STRINGIFY(x)
@@ -83,11 +84,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdPlin
 {
     timedemo = has_flag("-timedemo");
     benchmark_mode = has_flag("-benchmark");
-    if (IsDebuggerPresent()) {
+    #ifdef _DEBUG
+    if (debugger_present) {
         AllocConsole();
         freopen("CONOUT$", "w", stdout);
         printf("Running under debugger\n");
     }
+    #endif
     g_cpu_info = get_cpu_info();
     std::unique_ptr<D3d10App> app = std::make_unique<D3d10App>(hInstance);
     app->Init((char*)"nemulator.ini", new c_nemulator(), NULL);

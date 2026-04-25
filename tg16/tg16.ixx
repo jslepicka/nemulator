@@ -54,9 +54,12 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
     int emulate_frame()
     {
         for (int i = 0; i < 263; i++) {
-            cpu->available_cycles += 455 * 3;
+            cpu->available_cycles += 390 * 3;
             cpu->execute();
             vid->do_scanline();
+            cpu->available_cycles += (455 - 390) * 3;
+            cpu->execute();
+            
         }
         return 0;
     }
@@ -98,7 +101,7 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
         file_length = (int)file.tellg();
         int offset = 0;
         //if (file_length % 1024) {
-        //    std::printf("%s - header detected, skipping 512 bytes\n", path_file.c_str());
+        //    ods("%s - header detected, skipping 512 bytes\n", path_file.c_str());
         //    offset = 512;
         //    file_length -= 512;
         //}
@@ -176,11 +179,11 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
                 return vid->read_vdc(address);
             }
             else if (address < 0x800) {
-                //std::printf("read from VCE\n");
+                //ods("read from VCE\n");
                 return vid->read_vdc(address);
             }
             else if (address < 0xC00) {
-                std::printf("read from PSG\n");
+                ods("read from PSG\n");
                 return 0;
             }
             else if (address < 0x1000) {
@@ -241,25 +244,28 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
             // 1400-17FF - Interrupt controller (4 registers)
             // 1800-1FFF - unmapped
             if (address < 0x400) {
-                //std::printf("write %2X to VDC address %4X\n", value, address);
+                //ods("write %2X to VDC address %4X\n", value, address);
                 vid->write_vdc(address, value);
             }
             else if (address < 0x800) {
-                //std::printf("write %2X to VCE address %4X\n", value, address);
+                //ods("write %2X to VCE address %4X\n", value, address);
                 vid->write_vce(address, value);
             }
             else if (address < 0xC00) {
-                //std::printf("write %2X to PSG address %4X\n", value, address);
+                //ods("write %2X to PSG address %4X\n", value, address);
             }
             else if (address < 0x1000) {
-                std::printf("write %2X to timer address %4X\n", value, address);
+                ods("write %2X to timer address %4X\n", value, address);
             }
             else if (address < 0x1400) {
-                //std::printf("write %2X to IO address %4X\n", value, address);
+                //ods("write %2X to IO address %4X\n", value, address);
                 joy_write = value;
             }
             else if (address < 0x1800) {
-                std::printf("write %2X to interrupt controller address %4X\n", value, address);
+                ods("write %2X to interrupt controller address %4X\n", value, address);
+                if (address == 0x1402) {
+                    irq_controller_1402 = value;
+                }
             }
             else {
                 assert(0);
@@ -278,6 +284,7 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
   public:
     int irq1;
     int irq2;
+    uint8_t irq_controller_1402;
 
   private:
     std::unique_ptr<c_huc6280<c_tg16>> cpu;

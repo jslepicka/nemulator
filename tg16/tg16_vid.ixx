@@ -77,7 +77,9 @@ export template <typename Sys> class c_vid
             uint16_t base_tile = (word2 >> 1) & 0x3FF;
             uint16_t hsize = (word3 >> 8) & 0x1;
             uint16_t vsize = (word3 >> 12) & 0x3;
-            assert(vsize != 2);
+            if (vsize == 2) {
+                vsize = 3;
+            }
 
             if (hsize == 1) {
                 base_tile &= ~1;
@@ -241,7 +243,7 @@ export template <typename Sys> class c_vid
             if (vdc_registers[0x05] & 0x4) {
                 sys.irq1 = 1;
                 vdc_status |= 0x4;
-                std::printf("rcr irq at line %d\n", line);
+                ods("rcr irq at line %d\n", line);
             }
         }
         //line++;
@@ -249,7 +251,7 @@ export template <typename Sys> class c_vid
         if (line == VSW) {
             burst_mode = !(vdc_registers[0x5] & 0xC0);
             if (burst_mode) {
-                std::printf("-- burst mode --\n");
+                ods("-- burst mode --\n");
             }
         }
 
@@ -266,7 +268,7 @@ export template <typename Sys> class c_vid
             if (vdc_registers[0x05] & 0x8) {
                 sys.irq1 = 1;
                 vdc_status |= 0x20;
-                //std::printf("vblank irq\n");
+                //ods("vblank irq\n");
             }
         }
         else if (line == 258) {
@@ -366,37 +368,41 @@ export template <typename Sys> class c_vid
         r = (r & 0xFF00) | value;
         uint16_t cur = vdc_registers[vdc_register_latch];
         switch (vdc_register_latch) {
+            case 0x02:
+                x = 2;
+                break;
             case 0x05: {
                 
                 if (cur ^ prev && cur & 0x8) {
                     if (vblank) {
                         sys.irq1 = 1;
                         vdc_status |= 0x20;
-                        std::printf("delayed vblank irq\n");
+                        ods("delayed vblank irq\n");
                     }
                 }
                 if (cur ^ prev && cur & 0x4) {
                     if (raster_compare) {
                         int x = 1;
+                        //assert(0);
                     }
                 }
 
                 if ((cur ^ prev) & 0x80) {
                     if (cur & 0x80) {
-                        std::printf("bg rendering enabled at line %d\n", line);
+                        ods("bg rendering enabled at line %d\n", line);
                     }
                     else {
-                        std::printf("bg rendering disabled at line %d\n", line);
+                        ods("bg rendering disabled at line %d\n", line);
                     }
                 }
 
             } break;
             case 0x06:
-                std::printf("set rcr lo to %04X (%d) at line %d\n", r, r, line);
+                ods("set rcr lo to %04X (%d) at line %d\n", r, r, line);
                 break;
             case 0x8:
                 reload_y_scroll = true;
-                //std::printf("set y scroll to %d at line %d\n", r, line);
+                //ods("set y scroll to %d at line %d\n", r, line);
                 break;
             case 0x9:
                 plane_height = value & 0x40 ? 64 : 32;
@@ -416,28 +422,28 @@ export template <typename Sys> class c_vid
             case 0x0B:
                 display_width = vdc_registers[0x0B] & 0x3F;
                 display_width += 1;
-                std::printf("set display width to %d\n", display_width);
+                ods("set display width to %d\n", display_width);
                 break;
 
             case 0x0D:
                 display_height = vdc_registers[0x0D] & 0x1FF;
                 display_height += 1;
-                std::printf("set display height to %d\n", display_height);
+                ods("set display height to %d\n", display_height);
                 break;
             case 0x0F:
-                std::printf("write %02X to DMA control register\n", value);
+                ods("write %02X to DMA control register\n", value);
                 break;
             case 0x10:
-                std::printf("write %02X to DMA source address register\n", value);
+                ods("write %02X to DMA source address register\n", value);
                 break;
             case 0x11:
-                std::printf("write %02X to DMA dest address register\n", value);
+                ods("write %02X to DMA dest address register\n", value);
                 break;
             case 0x12:
-                std::printf("write %02X to DMA block length register\n", value);
+                ods("write %02X to DMA block length register\n", value);
                 break;
             case 0x13:
-                std::printf("write %02X to DMA VRAM-SATB source\n", value);
+                ods("write %02X to DMA VRAM-SATB source\n", value);
                 //do_satb_dma = true;
                 break;
         }
@@ -465,7 +471,11 @@ export template <typename Sys> class c_vid
                 uint16_t &MAWR = vdc_registers[0];
                 uint32_t offset = MAWR * 2;
                 offset &= 0xFFFF;
-                *(uint16_t *)&vram[offset] = r;
+                if (MAWR < 0x8000) {
+                    //writes past 64k are ignored
+                    //fixes graphics corruption in Vigilante attract mode bridge scene
+                    *(uint16_t *)&vram[offset] = r;
+                }
                 MAWR += increment;
             }
                 break;
@@ -486,35 +496,35 @@ export template <typename Sys> class c_vid
                 }
                 break;
             case 0x06:
-                std::printf("set rcr lo to %04X (%d) at line %d\n", r, r, line);
+                ods("set rcr lo to %04X (%d) at line %d\n", r, r, line);
                 break;
             case 0x07:
                 r &= 0x3FF;
                 break;
             case 0x08:
                 r &= 0x1FF;
-                //std::printf("set y scroll to %d at line %d\n", r, line);
+                //ods("set y scroll to %d at line %d\n", r, line);
                 reload_y_scroll = true;
                 break;
             case 0x0D:
                 display_height = r & 0x1FF;
                 display_height += 1;
-                std::printf("set display height to %d\n", display_height);
+                ods("set display height to %d\n", display_height);
                 break;
             case 0x0F:
-                std::printf("write %02X to DMA control register hi\n", value);
+                ods("write %02X to DMA control register hi\n", value);
                 break;
             case 0x10:
-                std::printf("write %02X to DMA source address register hi\n", value);
+                ods("write %02X to DMA source address register hi\n", value);
                 break;
             case 0x11:
-                std::printf("write %02X to DMA dest address register hi\n", value);
+                ods("write %02X to DMA dest address register hi\n", value);
                 break;
             case 0x12:
-                std::printf("write %02X to DMA block length register hi\n", value);
+                ods("write %02X to DMA block length register hi\n", value);
                 break;
             case 0x13:
-                std::printf("write %02X to DMA VRAM-SATB source hi\n", value);
+                ods("write %02X to DMA VRAM-SATB source hi\n", value);
                 do_satb_dma = true;
                 break;
             default:
