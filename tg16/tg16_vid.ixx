@@ -45,6 +45,7 @@ export template <typename Sys> class c_vid
         VSW = 0;
         VDS = 0;
         VDW = 0;
+        VCR = 0;
         y_offset = 0;
         reload_y_scroll = false;
         std::fill_n(fb, 256 * 256, 0xFF000000);
@@ -235,8 +236,17 @@ export template <typename Sys> class c_vid
         }
 
         uint32_t RCR = vdc_registers[0x06] & 0x3FF;
-
-        int x = (int)RCR - 0x40 + (int)start_line;
+        uint8_t VCR_adjust = (VCR & 0xFF) - 3;
+        // need to figure out how VCR affects RCR
+        // Cadash has a VCR of 4 and will hang during attract mode or
+        // at game start.  This fixes the hang, but RCR later in frame
+        // is off by one.
+        // This also fixes off by one screen split in Bloody Wolf, which
+        // also has a VCR of 4.
+        if (VCR != 0) {
+            //assert(VCR_adjust == 0 || VCR_adjust == 1);
+        }
+        int x = (int)RCR - 0x40 + (int)start_line + VCR_adjust;
         line++;
         if (line == x) {
             raster_compare = 1;
@@ -257,6 +267,7 @@ export template <typename Sys> class c_vid
 
         if (line == 1) {
             //no idea where this stuff should be reloaded
+            VCR = vdc_registers[0x0E] & 0xFF;
             VSW = vdc_registers[0x0C] & 0x1F;
             VDS = vdc_registers[0x0C] >> 8;
             VDW = vdc_registers[0x0D] & 0x1FF;
@@ -350,7 +361,8 @@ export template <typename Sys> class c_vid
                 uint16_t &MARR = vdc_registers[0x01];
                 MARR += increment;
                 if (MARR > 0x7FFF) {
-                    assert(0);
+                    //assert(0);
+                    ods("Out of bounds VRAM read (%04X)\n", MARR);
                 }
                 read_buffer = *(uint16_t *)&vram[MARR * 2];
                 return ret;
@@ -615,6 +627,7 @@ export template <typename Sys> class c_vid
 
     uint8_t VSW;
     uint8_t VDS;
+    uint8_t VCR;
     uint16_t VDW;
     uint32_t y_offset;
     bool reload_y_scroll;

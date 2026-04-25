@@ -100,11 +100,11 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
         file.seekg(0, std::ios_base::end);
         file_length = (int)file.tellg();
         int offset = 0;
-        //if (file_length % 1024) {
-        //    ods("%s - header detected, skipping 512 bytes\n", path_file.c_str());
-        //    offset = 512;
-        //    file_length -= 512;
-        //}
+        if (file_length % 1024) {
+            ods("%s - header detected, skipping 512 bytes\n", path_file.c_str());
+            offset = 512;
+            file_length -= 512;
+        }
         file.seekg(offset, std::ios_base::beg);
         rom = std::make_unique_for_overwrite<uint8_t[]>(file_length);
         file.read((char *)rom.get(), file_length);
@@ -187,7 +187,8 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
                 return 0;
             }
             else if (address < 0x1000) {
-                assert(0);
+                ods("read from timer\n");
+                return 0;
             }
             else if (address < 0x1400) {
                 //return 0x3F;
