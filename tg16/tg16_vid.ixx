@@ -345,11 +345,16 @@ export template <typename Sys> class c_vid
     {
         uint8_t ret;
         switch (vdc_register_latch) {
-            case 0x2:
+            case 0x2: {
                 ret = read_buffer >> 8;
-                vdc_registers[0x1] += increment;
-                read_buffer = *(uint16_t *)&vram[vdc_registers[0x01] * 2];
+                uint16_t &MARR = vdc_registers[0x01];
+                MARR += increment;
+                if (MARR > 0x7FFF) {
+                    assert(0);
+                }
+                read_buffer = *(uint16_t *)&vram[MARR * 2];
                 return ret;
+            }
 
             default:
                 return 0xCD;
@@ -366,29 +371,28 @@ export template <typename Sys> class c_vid
         uint16_t prev = vdc_registers[vdc_register_latch];
         uint16_t &r = vdc_registers[vdc_register_latch];
         r = (r & 0xFF00) | value;
-        uint16_t cur = vdc_registers[vdc_register_latch];
         switch (vdc_register_latch) {
             case 0x02:
                 x = 2;
                 break;
             case 0x05: {
                 
-                if (cur ^ prev && cur & 0x8) {
+                if (r ^ prev && r & 0x8) {
                     if (vblank) {
                         sys.irq1 = 1;
                         vdc_status |= 0x20;
                         ods("delayed vblank irq\n");
                     }
                 }
-                if (cur ^ prev && cur & 0x4) {
+                if (r ^ prev && r & 0x4) {
                     if (raster_compare) {
                         int x = 1;
                         //assert(0);
                     }
                 }
 
-                if ((cur ^ prev) & 0x80) {
-                    if (cur & 0x80) {
+                if ((r ^ prev) & 0x80) {
+                    if (r & 0x80) {
                         ods("bg rendering enabled at line %d\n", line);
                     }
                     else {
@@ -465,6 +469,9 @@ export template <typename Sys> class c_vid
             case 0x01:
                 // MARR
                 x = 2;
+                if (r > 0x7FFF) {
+                    assert(0);
+                }
                 read_buffer = *(uint16_t*)&vram[r * 2];
                 break;
             case 0x02: {
