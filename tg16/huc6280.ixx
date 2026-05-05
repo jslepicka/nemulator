@@ -87,7 +87,7 @@ export template <typename Sys> class c_huc6280
                     do_nmi = false;
                     nmi_delay = 0;
                 }
-                else if (sys.irq1 && irq_delay == 0 && !SR.I) {
+                else if (sys.irq1 && irq_delay == 0 && !SR.I && !(sys.irq_controller_1402 & 2)) {
                     opcode = 0x101;
                     irq_delay = 0;
                 }

@@ -22,7 +22,7 @@ export template <typename Sys> class c_vid
             g = (g << 5) | (g << 2) | (g >> 1);
             b = (b << 5) | (b << 2) | (b >> 1);
 
-            palx[i] = (0xFF << 24) | (b << 16) | (g << 8) | r;
+            rgb[i] = (0xFF << 24) | (b << 16) | (g << 8) | r;
         }
     }
 
@@ -54,10 +54,8 @@ export template <typename Sys> class c_vid
 
     struct s_sprite
     {
-        uint8_t pal;
         uint8_t color;
         bool priority;
-        bool sprite_here;
     };
 
     s_sprite sprite_output[256];
@@ -78,91 +76,72 @@ export template <typename Sys> class c_vid
             uint16_t base_tile = (word2 >> 1) & 0x3FF;
             uint16_t hsize = (word3 >> 8) & 0x1;
             uint16_t vsize = (word3 >> 12) & 0x3;
-            if (vsize == 2) {
-                vsize = 3;
+            if (vsize == 3) {
+                vsize = 2;
             }
 
-            if (hsize == 1) {
-                base_tile &= ~1;
-            }
-            if (vsize == 1) {
-                base_tile &= ~2;
-            }
-            else if (vsize == 3) {
-                base_tile &= ~6;
-            }
+            constexpr uint16_t base_tile_mask[4] = {~0, ~2, ~6, ~6};
+            base_tile &= base_tile_mask[vsize] & ~hsize;
 
-            uint16_t palette = word3 & 0xF;
+            uint16_t palette = (word3 & 0xF) << 4;
             bool priority = word3 & 0x80;
-            uint32_t v_flip = word3 & 0x8000 ? 15 : 0;
-            uint32_t h_flip = word3 & 0x800 ? 15 : 0;
+            bool h_flip = word3 & 0x800;
+            bool v_flip = word3 & 0x8000;
+            uint32_t h_tile_flip = h_flip ? hsize : 0;
+            uint32_t v_tile_flip = v_flip ? (1 << vsize) - 1 : 0;
+            uint32_t v_offset_flip = v_flip ? 15 : 0;
 
             int32_t y = (int32_t)vpos - 64;
             int32_t x = (int32_t)hpos - 32;
 
-            for (int v = 0; v < vsize + 1; v++) {
-                int32_t y_base = y + v * 16;
-                if (ln >= y_base && ln < y_base + 16) {
-                    int32_t y_offset = ln - y_base;
-                    uint32_t vv = (v_flip && vsize) ? vsize - v : v;
+            int32_t sprite_height = 16 << vsize;
 
-                    for (int h = 0; h < hsize + 1; h++) {
-                        uint32_t hh = (h_flip && hsize) ? hsize - h : h;
-                        if (base_tile == 0x81) {
-                            if (v == 0) {
-                                int x = 1;
+            if (ln >= y && ln < y + sprite_height) {
+                uint32_t y_offset = ln - y;
+                uint32_t v = (y_offset >> 4) ^ v_tile_flip;
+            
+                for (int h = 0; h < hsize + 1; h++) {
+                    uint32_t tile = base_tile | (v << 1) | (h ^ h_tile_flip);
+                    uint32_t pattern_address = tile * 128 + (((y_offset & 0xF) ^ v_offset_flip) * 2);
+
+                    uint16_t p0 = 0;
+                    uint16_t p1 = 0;
+                    uint16_t p2 = 0;
+                    uint16_t p3 = 0;
+
+                    if (sprite_pixel_width == 3) {
+                        uint32_t pattern_offset = (word2 & 0x1) * 64;
+                        p0 = *(uint16_t *)&vram[pattern_address + pattern_offset];
+                        p1 = *(uint16_t *)&vram[pattern_address + pattern_offset + 32];
+                    }
+                    else {
+                        p0 = *(uint16_t *)&vram[pattern_address];
+                        p1 = *(uint16_t *)&vram[pattern_address + 32];
+                        p2 = *(uint16_t *)&vram[pattern_address + 64];
+                        p3 = *(uint16_t *)&vram[pattern_address + 96];
+                    }
+
+                    uint64_t pdep_pattern =
+                        0b00010001'00010001'00010001'00010001'00010001'00010001'00010001'00010001;
+                    uint64_t c = _pdep_u64(p0, pdep_pattern);
+                    c |= _pdep_u64(p1, pdep_pattern << 1);
+                    c |= _pdep_u64(p2, pdep_pattern << 2);
+                    c |= _pdep_u64(p3, pdep_pattern << 3);
+
+                    if (!h_flip) {
+                        c = std::byteswap(c);
+                        c = ((c & 0x0F0F0F0F0F0F0F0F) << 4) | ((c & 0xF0F0F0F0F0F0F0F0) >> 4);
+                    }
+
+                    int x_start = x + h * 16;
+                    for (int j = x_start; j < x_start + 16; j++, c >>= 4) {
+                        if (j >= 0 && j < 256) {
+                            if (sprite_output[j].color) {
+                                continue;
                             }
-                            else {
-                                int x = 1;
-                            }
-                        }
-                        uint32_t tile = base_tile | (vv << 1) | hh;
-
-                        uint32_t pattern_address = tile * 128 + ((y_offset ^ v_flip) * 2);
-
-                        //uint32_t p0 = *(uint16_t *)&vram[pattern_address];
-                        //uint32_t p1 = *(uint16_t *)&vram[pattern_address + 32];
-                        //uint32_t p2 = *(uint16_t *)&vram[pattern_address + 64];
-                        //uint32_t p3 = *(uint16_t *)&vram[pattern_address + 96];
-
-                        uint16_t p0 = 0;
-                        uint16_t p1 = 0;
-                        uint16_t p2 = 0;
-                        uint16_t p3 = 0;
-
-                        if (sprite_pixel_width == 3) {
-                            uint32_t pattern_offset = (word2 & 0x1) * 64;
-                            p0 = *(uint16_t *)&vram[pattern_address + pattern_offset];
-                            p1 = *(uint16_t *)&vram[pattern_address + pattern_offset + 32];
-                        }
-                        else {
-                            p0 = *(uint16_t *)&vram[pattern_address];
-                            p1 = *(uint16_t *)&vram[pattern_address + 32];
-                            p2 = *(uint16_t *)&vram[pattern_address + 64];
-                            p3 = *(uint16_t *)&vram[pattern_address + 96];
-                        }
-
-                        uint64_t pdep_pattern =
-                            0b00010001'00010001'00010001'00010001'00010001'00010001'00010001'00010001;
-                        uint64_t c = _pdep_u64(p0, pdep_pattern);
-                        c |= _pdep_u64(p1, pdep_pattern << 1);
-                        c |= _pdep_u64(p2, pdep_pattern << 2);
-                        c |= _pdep_u64(p3, pdep_pattern << 3);
-
-                        if (!h_flip) {
-                            c = std::byteswap(c);
-                            c = ((c & 0x0F0F0F0F0F0F0F0FULL) << 4) | ((c & 0xF0F0F0F0F0F0F0F0ULL) >> 4);
-                        }
-
-                        int x_start = x + h * 16;
-                        for (int j = x_start; j < x_start + 16; j++, c >>= 4) {
-                            if (j >= 0 && j < 256) {
-                                if (sprite_output[j].sprite_here && sprite_output[j].color) {
-                                    continue;
-                                }
-                                sprite_output[j].sprite_here = true;
-                                sprite_output[j].color = c & 0xF;
-                                sprite_output[j].pal = palette;
+                            uint8_t pal_index = c & 0xF;
+                            if (pal_index) {
+                                sprite_output[j].color = pal_index | palette;
                                 sprite_output[j].priority = priority;
                             }
                         }
@@ -213,10 +192,13 @@ export template <typename Sys> class c_vid
 
                     c = std::byteswap(c);
 
-                    uint64_t pal_broadcast = (palette << 4) * 0x0101010101010101;
+                    uint64_t broadcast_mask = c | (c >> 1);
+                    broadcast_mask |= (broadcast_mask >> 2);
+                    broadcast_mask &= 0x0101010101010101;
+
+                    uint64_t pal_broadcast = (palette << 4) * broadcast_mask;
                     c |= pal_broadcast;
 
-                    uint16_t pal_index = palette * 16;
                     *(uint64_t *)&temp[x] = c;
                     x += 8;
                 }
@@ -225,20 +207,16 @@ export template <typename Sys> class c_vid
 
             uint32_t *pfb = &fb[(line - start_line) * 256];
             if (burst_mode) {
-                std::fill_n(pfb, 256, palx[pal[256]]);
+                std::fill_n(pfb, 256, rgb[pal[256]]);
             }
             else {
                 uint8_t *pbg = &temp[x_scroll & 0x7];
                 for (int i = 0; i < 256; i++) {
-                    uint8_t bg_index = *pbg++;
-                    uint32_t color = bg_index & 0xF ? palx[pal[bg_index]] : palx[pal[0]];
-                    uint32_t sprite_color = 0;
-                    if (sprite_output[i].sprite_here && sprite_output[i].color) {
-                        if (sprite_output[i].priority || !(bg_index & 0xF)) {
-                            color = palx[pal[256 + (sprite_output[i].color | (sprite_output[i].pal << 4))]];
-                        }
+                    uint32_t pal_index = *pbg++;
+                    if (sprite_output[i].color && (sprite_output[i].priority || !pal_index)) {
+                        pal_index = 256 + sprite_output[i].color;
                     }
-                    *pfb++ = color;
+                    *pfb++ = rgb[pal[pal_index]];
                 }
             }
         }
@@ -626,7 +604,7 @@ export template <typename Sys> class c_vid
     uint8_t vce_control;
     uint16_t pal[512];
     uint16_t pal_index;
-    uint32_t palx[512];
+    uint32_t rgb[512];
 
     bool do_satb_dma;
     uint8_t satb[512];
