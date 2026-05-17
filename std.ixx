@@ -32,3 +32,8 @@ export void ods(const char *message, ...)
     }
     #endif
 }
+
+export consteval uint64_t broadcast8to64(uint8_t b)
+{
+    return b * 0x0101010101010101ULL;
+}

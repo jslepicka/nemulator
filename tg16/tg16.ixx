@@ -9,6 +9,7 @@ import class_registry;
 
 import :huc6280;
 import :vid;
+import :psg;
 
 namespace tg16
 {
@@ -37,6 +38,8 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
                      {BUTTON_1DOWN,   0x40},
                      {BUTTON_1LEFT,   0x80}
                  },
+                 .num_sound_channels = 2,
+                 .volume = pow(10.0f, 8.0f / 20.0f),
                  .constructor = []() { return std::make_unique<c_tg16>(); }}};
     }
 
@@ -53,12 +56,16 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
 
     int emulate_frame()
     {
+        psg.clear_buffer();
         for (int i = 0; i < 263; i++) {
             cpu->available_cycles += 390 * 3;
             cpu->execute();
             vid->do_scanline();
             cpu->available_cycles += (455 - 390) * 3;
             cpu->execute();
+
+            //psg clock speed 21.47727MHz / 6 / 60 / 263
+            psg.clock(227);
             
         }
         return 0;
@@ -68,11 +75,14 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
     {
         cpu->reset();
         vid->reset();
+        psg.reset();
         std::memset(ram, 0, sizeof(ram));
         irq1 = 0;
         irq2 = 0;
+        timer_irq = 0;
         joy_write = 0;
         joy = 0xFF;
+        irq_controller_1402 = 0;
         return 0;
     }
 
@@ -83,13 +93,14 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
 
     int get_sound_buf(const float **buf)
     {
-        buf = nullptr;
-        return 0;
+        return psg.get_buffer(buf);
     }
 
     void set_audio_freq(double freq)
     {
+        psg.set_audio_rate(freq);
     }
+
     int file_length;
     int load()
     {
@@ -209,16 +220,16 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
             }
             else if (address < 0x1800) {
                 return 0;
-                assert(0);
+                //assert(0);
             }
             else {
-                assert(0);
+                //assert(0);
             }
 
             
         }
         else {
-            assert(0);
+            //assert(0);
         }
         return 0;
     }
@@ -254,26 +265,36 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
             }
             else if (address < 0xC00) {
                 //ods("write %2X to PSG address %4X\n", value, address);
+                psg.write_byte(address - 0x800, value);
             }
             else if (address < 0x1000) {
                 ods("write %2X to timer address %4X\n", value, address);
+                if (address & 0x1) {
+                    cpu->write_timer_control(value);
+                }
+                else {
+                    cpu->write_timer_reload(value);
+                }
             }
             else if (address < 0x1400) {
                 //ods("write %2X to IO address %4X\n", value, address);
                 joy_write = value;
             }
             else if (address < 0x1800) {
-                ods("write %2X to interrupt controller address %4X\n", value, address);
+                //ods("write %2X to interrupt controller address %4X\n", value, address);
                 if (address == 0x1402) {
                     irq_controller_1402 = value;
                 }
+                else if (address == 0x1403) {
+                    timer_irq = 0;
+                }
             }
             else {
-                assert(0);
+                //assert(0);
             }
         }
         else {
-            assert(0);
+            //assert(0);
         }
     }
 
@@ -285,12 +306,14 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
   public:
     int irq1;
     int irq2;
+    int timer_irq;
     uint8_t irq_controller_1402;
 
   private:
     std::unique_ptr<c_huc6280<c_tg16>> cpu;
     std::unique_ptr<c_vid<c_tg16>> vid;
     std::unique_ptr<uint8_t[]> rom;
+    c_psg psg;
     uint8_t ram[8192];
     bool loaded;
     uint8_t joy_write;

@@ -56,6 +56,7 @@
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <PlatformToolset>v145</PlatformToolset>
+    <EnableASAN>false</EnableASAN>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -355,6 +356,7 @@
     <ClCompile Include="texture_panel_item.cpp" />
     <ClCompile Include="tg16\huc6280.ixx" />
     <ClCompile Include="tg16\tg16.ixx" />
+    <ClCompile Include="tg16\tg16_psg.ixx" />
     <ClCompile Include="tg16\tg16_vid.ixx" />
     <ClCompile Include="ym2612\ym2612.cpp" />
     <ClCompile Include="ym2612\ym2612.ixx" />

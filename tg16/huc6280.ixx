@@ -20,7 +20,7 @@ export template <typename Sys> class c_huc6280
 
     };
     // clang-format off
-    static constexpr int cycle_table[263] = {
+    static constexpr int cycle_table[264] = {
     //   0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
         21, 18,  3, 24,  9,  9, 15, 15,  9,  6,  6,  6, 12, 12, 18, 18, //0F
          6, 15,  3, 24, 12, 12, 18, 18,  6, 12,  6, 21, 12, 12, 21, 21, //1F
@@ -38,7 +38,7 @@ export template <typename Sys> class c_huc6280
          6, 15,  3, 24, 12, 12, 18, 18,  6, 12,  6, 21, 12, 12, 21, 21, //DF
          6, 18,  6, 51,  9,  9, 15, 15,  6,  6,  6,  6, 12, 12, 18, 18, //EF
          6, 15,  3, 51, 12, 12, 18, 18,  6, 12,  6, 21, 12, 12, 21, 21, //FF
-        21, 21,  21, 18, 18, 18, 18
+        21, 21,  21, 18, 18, 18, 18, 21
     };
     // clang-format on
   public:
@@ -95,6 +95,10 @@ export template <typename Sys> class c_huc6280
                     opcode = 0x102;
                     irq_delay = 0;
                 }
+                else if (sys.timer_irq && irq_delay == 0 && !SR.I && !(sys.irq_controller_1402 & 4)) {
+                    opcode = 0x107;
+                    irq_delay = 0;
+                }
                 else if (xfer_pos) {
                     opcode = xfer_opcode;
                 }
@@ -113,6 +117,10 @@ export template <typename Sys> class c_huc6280
             }
             if (required_cycles <= available_cycles) {
                 available_cycles -= required_cycles;
+
+                if (timer_control) {
+                    timer_cycles += required_cycles;
+                }
                 required_cycles = 0;
                 fetch_opcode = true;
                 if (set_t) {
@@ -121,6 +129,14 @@ export template <typename Sys> class c_huc6280
                 }
                 execute_opcode();
                 SR.T = 0;
+
+                if (timer_control && timer_cycles >= (1024 * 3)) {
+                    timer_cycles -= (1024 * 3);
+                    if (--timer_counter == 0xFF) {
+                        sys.timer_irq = 1;
+                        timer_counter = timer_reload;
+                    }
+                }
             }
             else {
                 return;
@@ -169,6 +185,9 @@ export template <typename Sys> class c_huc6280
         fetch_opcode = true;
         opcode = 0;
         required_cycles = 0;
+        timer_cycles = 0;
+        timer_reload = 0;
+        timer_control = 0;
         irq_pending = false;
         nmi_pending = false;
         std::memset(MR, 0, sizeof(MR));
@@ -200,8 +219,29 @@ export template <typename Sys> class c_huc6280
         dma_pos = 256;
     }
 
+    void write_timer_control(uint8_t value)
+    {
+        if ((value & 0x1) == 0) {
+            timer_cycles = 0;
+        }
+        else if (timer_control == 0 && (value & 0x1)) {
+            timer_counter = timer_reload;
+        }
+        timer_control = value & 0x1;
+    }
+
+    void write_timer_reload(uint8_t value)
+    {
+        timer_reload = value & 0x7F;
+    }
+
+
   private:
     int cycles;
+    int timer_cycles;
+    uint8_t timer_counter;
+    uint8_t timer_control;
+    uint8_t timer_reload;
     unsigned char A;                //Accumulator
     unsigned char X;                //X Index Register
     unsigned char Y;                //Y Index Register
@@ -585,6 +625,14 @@ export template <typename Sys> class c_huc6280
                     xfer_src = (xfer_src + 1) & 0xFFFF;
                     xfer_pos--;
                 }
+                break;
+            case 0x107:
+                push(hibyte(PC));
+                push(lobyte(PC));
+                SR.B = false;
+                push(*S);
+                SR.I = true;
+                PC = makeword(read_byte(0xFFFA), read_byte(0xFFFB));
                 break;
 
             default:

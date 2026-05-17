@@ -473,6 +473,11 @@
     <ClCompile Include="tg16\huc6280.ixx">
       <Filter>tg16</Filter>
     </ClCompile>
+    <ClCompile Include="genesis\genesis_db.ixx" />
+    <ClCompile Include="tg16\tg16_vid.ixx" />
+    <ClCompile Include="tg16\tg16_psg.ixx">
+      <Filter>tg16</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="nes\mappers\vrc7_audio.h">

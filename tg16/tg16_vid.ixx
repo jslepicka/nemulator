@@ -6,6 +6,7 @@ import nemulator.std;
 
 namespace tg16
 {
+
 export template <typename Sys> class c_vid
 {
     Sys &sys;
@@ -121,8 +122,7 @@ export template <typename Sys> class c_vid
                         p3 = *(uint16_t *)&vram[pattern_address + 96];
                     }
 
-                    uint64_t pdep_pattern =
-                        0b00010001'00010001'00010001'00010001'00010001'00010001'00010001'00010001;
+                    constexpr uint64_t pdep_pattern = broadcast8to64(0x11);
                     uint64_t c = _pdep_u64(p0, pdep_pattern);
                     c |= _pdep_u64(p1, pdep_pattern << 1);
                     c |= _pdep_u64(p2, pdep_pattern << 2);
@@ -130,7 +130,7 @@ export template <typename Sys> class c_vid
 
                     if (!h_flip) {
                         c = std::byteswap(c);
-                        c = ((c & 0x0F0F0F0F0F0F0F0F) << 4) | ((c & 0xF0F0F0F0F0F0F0F0) >> 4);
+                        c = ((c & broadcast8to64(0x0F)) << 4) | ((c & broadcast8to64(0xF0)) >> 4);
                     }
 
                     int x_start = x + h * 16;
@@ -184,7 +184,7 @@ export template <typename Sys> class c_vid
                     uint32_t tile_address = tile * 32;
                     tile_address += (y & 7) * 2;
 
-                    uint64_t pdep_pattern = 0b00000001'00000001'00000001'00000001'00000001'00000001'00000001'00000001;
+                    constexpr uint64_t pdep_pattern = broadcast8to64(0x01);
                     uint64_t c = _pdep_u64(vram[tile_address], pdep_pattern);
                     c |= _pdep_u64(vram[tile_address + 1], pdep_pattern << 1);
                     c |= _pdep_u64(vram[tile_address + 16], pdep_pattern << 2);
@@ -192,6 +192,9 @@ export template <typename Sys> class c_vid
 
                     c = std::byteswap(c);
 
+                    // only broadcast palette where the pattern is not 0.
+                    // allows for simpler check when merging in sprites later
+                    // as we don't have to mask out the palette/store it separately.
                     uint64_t broadcast_mask = c | (c >> 1);
                     broadcast_mask |= (broadcast_mask >> 2);
                     broadcast_mask &= 0x0101010101010101;
@@ -445,7 +448,7 @@ export template <typename Sys> class c_vid
                 ods("write %02X to DMA block length register\n", value);
                 break;
             case 0x13:
-                ods("write %02X to DMA VRAM-SATB source\n", value);
+                //ods("write %02X to DMA VRAM-SATB source\n", value);
                 //do_satb_dma = true;
                 break;
         }
@@ -529,7 +532,7 @@ export template <typename Sys> class c_vid
                 ods("write %02X to DMA block length register hi\n", value);
                 break;
             case 0x13:
-                ods("write %02X to DMA VRAM-SATB source hi\n", value);
+                //ods("write %02X to DMA VRAM-SATB source hi\n", value);
                 do_satb_dma = true;
                 break;
             default:
