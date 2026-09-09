@@ -54,19 +54,37 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
     {
     }
 
+    //dot within the scanline at which the vdc samples its registers and draws.
+    //measured against the two games that pin it down: Vigilante writes BXR 56 dots
+    //after the raster irq and must split on the same line, Bloody Wolf needs 269
+    //dots and must split on the next one.
+    static constexpr int LATCH_DOT = 150;
+
     int emulate_frame()
     {
         psg.clear_buffer();
-        for (int i = 0; i < 263; i++) {
-            cpu->available_cycles += 390 * 3;
+        //the frame ends when the vce raster wraps, so the line count is whatever
+        //the vce is programmed for (262 or 263).  guard against a vdc/vce that
+        //never completes a frame.
+        int guard = 0;
+        bool frame_done = false;
+        while (!frame_done && ++guard < 400) {
+            //the raster interrupt is raised at the start of the line, and the
+            //render latches the scroll registers LATCH_DOT into it.  a handler
+            //quick enough to write BXR/BYR before that point moves the current
+            //line, a slower one only takes effect on the next one.
+            vid->line_start();
+            cpu->available_cycles += LATCH_DOT * 3;
             cpu->execute();
-            vid->do_scanline();
-            cpu->available_cycles += (455 - 390) * 3;
+            frame_done = vid->do_scanline();
+            cpu->available_cycles += (455 - LATCH_DOT) * 3;
             cpu->execute();
 
-            //psg clock speed 21.47727MHz / 6 / 60 / 263
-            psg.clock(227);
-            
+            //psg runs at master / 6, so 1365 / 6 = 227.5 cycles per line
+            psg_cycle_remainder += 1365;
+            int psg_cycles = psg_cycle_remainder / 6;
+            psg_cycle_remainder -= psg_cycles * 6;
+            psg.clock(psg_cycles);
         }
         return 0;
     }
@@ -83,6 +101,7 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
         joy_write = 0;
         joy = 0xFF;
         irq_controller_1402 = 0;
+        psg_cycle_remainder = 0;
         return 0;
     }
 
@@ -318,5 +337,6 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
     bool loaded;
     uint8_t joy_write;
     uint8_t joy;
+    int psg_cycle_remainder;
 };
 } //namespace tg16
