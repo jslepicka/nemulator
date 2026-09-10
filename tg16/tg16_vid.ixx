@@ -9,10 +9,21 @@ namespace tg16
 
 export template <typename Sys> class c_vid
 {
+    typedef std::function<void(int)> mode_switch_callback_t;
+
     Sys &sys;
+    mode_switch_callback_t mode_switch_callback;
 
   public:
-    c_vid(Sys &sys) : sys(sys)
+    // 512 is the widest mode any commercial game uses.  the hardware could show a
+    // little more - a scanline is 1365 master clocks, so 682.5 dots at the fastest
+    // dot clock (master / 2), of which roughly 565 fall inside the ntsc active line
+    // time - and HDW is 7 bits, so it can be programmed wider still.  anything past
+    // this is clamped rather than rejected.
+    static constexpr int max_width = 512;
+
+    c_vid(Sys &sys, mode_switch_callback_t mode_switch_callback)
+        : sys(sys), mode_switch_callback(mode_switch_callback)
     {
         reset();
         for (int i = 0; i < 512; i++) {
@@ -34,6 +45,7 @@ export template <typename Sys> class c_vid
         vphase = VPHASE_VSW;
         vphase_count = 1;
         rcr_counter = 0x40;
+        vblank_pending = 0;
         vblank = 0;
         vce_control = 0;
         vdc_register_latch = 0;
@@ -47,6 +59,8 @@ export template <typename Sys> class c_vid
         plane_height = 32;
         display_width = 32;
         display_height = 240;
+        frame_width = 0;
+        frame_x = 0;
         pal_index = 0;
         do_satb_dma = false;
         increment = 1;
@@ -56,7 +70,7 @@ export template <typename Sys> class c_vid
         VCR = 0;
         y_offset = 0;
         reload_y_scroll = false;
-        std::fill_n(fb, 256 * 256, 0xFF000000);
+        std::fill_n(fb, max_width * 240, 0xFF000000);
         burst_mode = false;
     }
 
@@ -66,7 +80,7 @@ export template <typename Sys> class c_vid
         bool priority;
     };
 
-    s_sprite sprite_output[256];
+    s_sprite sprite_output[max_width];
 
     void eval_sprites(int ln)
     {
@@ -142,7 +156,7 @@ export template <typename Sys> class c_vid
 
                     int x_start = x + h * 16;
                     for (int j = x_start; j < x_start + 16; j++, c >>= 4) {
-                        if (j >= 0 && j < 256) {
+                        if (j >= 0 && j < frame_width) {
                             if (sprite_output[j].color) {
                                 continue;
                             }
@@ -160,6 +174,25 @@ export template <typename Sys> class c_vid
 
     bool burst_mode;
 
+    // the active width only changes between frames.  latching it at the start of
+    // the display period and telling the system about it lets the front end re-crop,
+    // the same way the genesis vdp reports a 256/320 switch.
+    void update_width()
+    {
+        int w = display_width * 8;
+        if (w > max_width) {
+            w = max_width;
+        }
+        if (w < 8) {
+            w = 8;
+        }
+        if (w != frame_width) {
+            frame_width = w;
+            frame_x = (max_width - frame_width) / 2;
+            mode_switch_callback(frame_width);
+        }
+    }
+
     void render_display_line(uint32_t *pfb, int display_row)
     {
         if (reload_y_scroll) {
@@ -174,20 +207,20 @@ export template <typename Sys> class c_vid
         }
 
         if (burst_mode) {
-            std::fill_n(pfb, 256, rgb[pal[256]]);
+            std::fill_n(pfb, frame_width, rgb[pal[256]]);
             return;
         }
 
-        std::memset(sprite_output, 0, sizeof(sprite_output));
+        std::memset(sprite_output, 0, frame_width * sizeof(sprite_output[0]));
         if (vdc_registers[0x5] & 0x40) {
             eval_sprites(display_row);
         }
 
         uint32_t x_scroll = vdc_registers[0x07];
-        uint8_t temp[(64*8) + 8] = {0};
+        uint8_t temp[max_width + 8] = {0};
         if (vdc_registers[0x5] & 0x80) {
             uint32_t x = 0;
-            for (int column = 0; column < display_width + 1; column++) {
+            for (int column = 0; column < (frame_width / 8) + 1; column++) {
                 uint32_t y_address = ((y >> 3) & (plane_height - 1)) * plane_width * 2;
                 uint32_t nt_column = (((column * 8) + x_scroll) >> 3) & (plane_width - 1);
                 uint32_t nt_address = y_address + (nt_column * 2);
@@ -221,12 +254,42 @@ export template <typename Sys> class c_vid
         }
 
         uint8_t *pbg = &temp[x_scroll & 0x7];
-        for (int i = 0; i < 256; i++) {
+        for (int i = 0; i < frame_width; i++) {
             uint32_t pal_index = *pbg++;
             if (sprite_output[i].color && (sprite_output[i].priority || !pal_index)) {
                 pal_index = 256 + sprite_output[i].color;
             }
             *pfb++ = rgb[pal[pal_index]];
+        }
+    }
+
+    // vram-to-vram block copy, started by writing the high byte of LENR.
+    // DCR bit 2 counts the source down instead of up, bit 3 does the same for the
+    // destination, and bit 1 enables the completion interrupt.  the real vdc steals
+    // cycles from the cpu for this; we do it instantly, like the satb transfer.
+    void do_vram_dma()
+    {
+        uint16_t src = vdc_registers[0x10];
+        uint16_t dst = vdc_registers[0x11];
+        uint32_t len = vdc_registers[0x12];
+        int src_step = (vdc_registers[0x0F] & 0x04) ? -1 : 1;
+        int dst_step = (vdc_registers[0x0F] & 0x08) ? -1 : 1;
+
+        do {
+            if (dst < 0x8000) {
+                *(uint16_t *)&vram[dst * 2] = *(uint16_t *)&vram[(src & 0x7FFF) * 2];
+            }
+            src = (uint16_t)(src + src_step);
+            dst = (uint16_t)(dst + dst_step);
+        } while (len--);
+
+        vdc_registers[0x10] = src;
+        vdc_registers[0x11] = dst;
+        vdc_registers[0x12] = 0xFFFF;
+
+        if (vdc_registers[0x0F] & 0x02) {
+            vdc_status |= 0x10;
+            sys.irq1 = 1;
         }
     }
 
@@ -251,24 +314,22 @@ export template <typename Sys> class c_vid
                 // seeded one low: the increment at the top of the next call -- the
                 // call that draws the first display line -- brings it to $40.
                 rcr_counter = 0x40 - 1;
-                bool prev_burst = burst_mode;
-                burst_mode = !(vdc_registers[0x5] & 0xC0);
-                if (burst_mode && !prev_burst) {
-                    ods("-- burst mode --\n");
-                }
                 reload_y_scroll = true;
+                update_width();
             } break;
 
             case VPHASE_VDW:
                 vphase = VPHASE_VCR;
                 VCR = vdc_registers[0x0E] & 0xFF;
                 vphase_count = VCR;
-                vblank = 1;
-                if (vdc_registers[0x05] & 0x8) {
-                    sys.irq1 = 1;
-                    vdc_status |= 0x20;
-                    //ods("vblank irq\n");
-                }
+                // the vblank interrupt lands one line into blanking, not on the
+                // first blank line.  that line already belongs to a raster compare
+                // (Cadash arms RCR $130 = $40 + 240 there); if both fire together
+                // the game's handler takes a different path and never restores the
+                // background scroll, and if vblank comes first the raster compare
+                // preempts it mid-handler.  one line apart, both are serviced
+                // cleanly, which is what the game is written against.
+                vblank_pending = 2;
                 // satb transfer starts at the beginning of vertical blanking
                 if ((vdc_registers[0xF] & 0x10) || do_satb_dma) {
                     do_satb_dma = false;
@@ -287,6 +348,11 @@ export template <typename Sys> class c_vid
                 vphase = VPHASE_VSW;
                 VSW = vdc_registers[0x0C] & 0x1F;
                 vphase_count = VSW + 1;
+                // burst mode is sampled entering vsync, not at the start of the
+                // display period.  latching it here stops a background enabled
+                // during vertical blanking from appearing a frame early - Bonk's
+                // Adventure flashes its title screen before it scrolls in.
+                burst_mode = !(vdc_registers[0x5] & 0xC0);
                 break;
         }
     }
@@ -302,6 +368,14 @@ export template <typename Sys> class c_vid
     // line k + 1).  LATCH_DOT sits between the two.
     void line_start()
     {
+        if (vblank_pending && --vblank_pending == 0) {
+            vblank = 1;
+            if (vdc_registers[0x05] & 0x8) {
+                sys.irq1 = 1;
+                vdc_status |= 0x20;
+            }
+        }
+
         rcr_counter++;
         if (rcr_counter == (vdc_registers[0x06] & 0x3FF)) {
             raster_compare = 1;
@@ -318,13 +392,15 @@ export template <typename Sys> class c_vid
     bool do_scanline()
     {
         int fb_row = vce_line - fb_top_line;
-        uint32_t *pfb = (fb_row >= 0 && fb_row < 240) ? &fb[fb_row * 256] : nullptr;
+        uint32_t *pfb = (fb_row >= 0 && fb_row < 240)
+                            ? &fb[fb_row * max_width + frame_x]
+                            : nullptr;
 
         if (vphase == VPHASE_VDW) {
             render_display_line(pfb, VDW + 1 - vphase_count);
         }
         else if (pfb) {
-            std::fill_n(pfb, 256, rgb[pal[256]]);
+            std::fill_n(pfb, frame_width, rgb[pal[256]]);
         }
 
         if (--vphase_count <= 0) {
@@ -349,6 +425,7 @@ export template <typename Sys> class c_vid
             vphase = VPHASE_VSW;
             VSW = vdc_registers[0x0C] & 0x1F;
             vphase_count = VSW + 1;
+            burst_mode = !(vdc_registers[0x5] & 0xC0);
             return true;
         }
         return false;
@@ -489,8 +566,8 @@ export template <typename Sys> class c_vid
                 }
                 break;
             case 0x0B:
-                display_width = vdc_registers[0x0B] & 0x3F;
-                display_width += 1;
+                //HDW is bits 0-6 of HDR
+                display_width = (vdc_registers[0x0B] & 0x7F) + 1;
                 ods("set display width to %d\n", display_width);
                 break;
 
@@ -596,7 +673,8 @@ export template <typename Sys> class c_vid
                 ods("write %02X to DMA dest address register hi\n", value);
                 break;
             case 0x12:
-                ods("write %02X to DMA block length register hi\n", value);
+                //writing the high byte of LENR starts the transfer
+                do_vram_dma();
                 break;
             case 0x13:
                 //ods("write %02X to DMA VRAM-SATB source hi\n", value);
@@ -652,7 +730,7 @@ export template <typename Sys> class c_vid
   public:
     int vce_line;
     uint8_t vdc_status;
-    uint32_t fb[256 * 256];
+    uint32_t fb[max_width * 240];
   private:
     // vce raster: defines the frame.  262 or 263 lines, from vce control bit 2.
     int vce_lines;
@@ -668,6 +746,7 @@ export template <typename Sys> class c_vid
     // internal raster counter for RCR.  reloaded to 0x40 at the start of the
     // display period and then counts continuously, blanking included.
     int rcr_counter;
+    int vblank_pending;
 
     int vblank;
     int raster_compare;
@@ -683,6 +762,8 @@ export template <typename Sys> class c_vid
     uint32_t plane_width;
     uint32_t plane_height;
     uint32_t display_width;
+    int frame_width;
+    int frame_x;
     uint32_t display_height;
 
     uint8_t vce_control;

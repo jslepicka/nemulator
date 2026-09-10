@@ -23,8 +23,12 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
                  .extension = "pce",
                  .display_info =
                      {
-                         .fb_width = 256,
+                         //the buffer is as wide as the vdc can display; the active
+                         //window is centred in it and the crop follows the mode
+                         .fb_width = c_vid<c_tg16>::max_width,
                          .fb_height = 240,
+                         .crop_left = -1,
+                         .crop_right = -1,
                          .crop_top = 8,
                          .crop_bottom = 8
                      },
@@ -46,7 +50,10 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
     c_tg16()
     {
         cpu = std::make_unique<c_huc6280<c_tg16>>(*this);
-        vid = std::make_unique<c_vid<c_tg16>>(*this);
+        vid = std::make_unique<c_vid<c_tg16>>(
+            *this,
+            [this](int width) { this->on_mode_switch(width); }
+        );
         loaded = false;
     }
 
@@ -102,6 +109,7 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
         joy = 0xFF;
         irq_controller_1402 = 0;
         psg_cycle_remainder = 0;
+        on_mode_switch(256);
         return 0;
     }
 
@@ -209,8 +217,9 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
                 return vid->read_vdc(address);
             }
             else if (address < 0x800) {
-                //ods("read from VCE\n");
-                return vid->read_vdc(address);
+                //the vce palette port is readable, and Cadash relies on it: it
+                //reads the live palette back with TAI $0404 to fade it in place
+                return vid->read_vce(address);
             }
             else if (address < 0xC00) {
                 ods("read from PSG\n");
@@ -315,6 +324,17 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
         else {
             //assert(0);
         }
+    }
+
+    //the vdc calls this when the active width changes (R-Type switches between
+    //336 and 320 at the 7.16MHz dot clock; most games sit at 256).  every mode
+    //fills the same physical screen width, so cropping to the active window and
+    //letting the front end scale to 4:3 is all that is needed.
+    void on_mode_switch(int width)
+    {
+        int margin = (c_vid<c_tg16>::max_width - width) / 2;
+        crop_left = margin;
+        crop_right = c_vid<c_tg16>::max_width - width - margin;
     }
 
     void write_vid(uint8_t address, uint8_t value)
