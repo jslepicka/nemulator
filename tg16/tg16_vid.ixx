@@ -45,7 +45,8 @@ export template <typename Sys> class c_vid
         vphase = VPHASE_VSW;
         vphase_count = 1;
         rcr_counter = 0x40;
-        vblank_pending = 0;
+        frame_complete = false;
+        ph_hds = ph_hdw = ph_hde = ph_hsw = 341;
         vblank = 0;
         vce_control = 0;
         vdc_register_latch = 0;
@@ -70,6 +71,7 @@ export template <typename Sys> class c_vid
         VCR = 0;
         y_offset = 0;
         reload_y_scroll = false;
+        byr_written = false;
         std::fill_n(fb, max_width * 240, 0xFF000000);
         burst_mode = false;
     }
@@ -196,8 +198,17 @@ export template <typename Sys> class c_vid
     void render_display_line(uint32_t *pfb, int display_row)
     {
         if (reload_y_scroll) {
+            //start of the display period: the counter takes BYR and the first
+            //line shows it exactly as written
             reload_y_scroll = false;
+            byr_written = false;
             y_offset = vdc_registers[0x08];
+        }
+        else if (byr_written) {
+            //a write part way down the frame lands after the counter has already
+            //stepped for the next line, so that line shows BYR + 1
+            byr_written = false;
+            y_offset = vdc_registers[0x08] + 1;
         }
         uint32_t y = y_offset++;
 
@@ -310,10 +321,6 @@ export template <typename Sys> class c_vid
                 vphase = VPHASE_VDW;
                 VDW = vdc_registers[0x0D] & 0x1FF;
                 vphase_count = VDW + 1;
-                // the raster counter is reloaded at the start of the display period.
-                // seeded one low: the increment at the top of the next call -- the
-                // call that draws the first display line -- brings it to $40.
-                rcr_counter = 0x40 - 1;
                 reload_y_scroll = true;
                 update_width();
             } break;
@@ -322,14 +329,11 @@ export template <typename Sys> class c_vid
                 vphase = VPHASE_VCR;
                 VCR = vdc_registers[0x0E] & 0xFF;
                 vphase_count = VCR;
-                // the vblank interrupt lands one line into blanking, not on the
-                // first blank line.  that line already belongs to a raster compare
-                // (Cadash arms RCR $130 = $40 + 240 there); if both fire together
-                // the game's handler takes a different path and never restores the
-                // background scroll, and if vblank comes first the raster compare
-                // preempts it mid-handler.  one line apart, both are serviced
-                // cleanly, which is what the game is written against.
-                vblank_pending = 2;
+                vblank = 1;
+                if (vdc_registers[0x05] & 0x8) {
+                    sys.irq1 = 1;
+                    vdc_status |= 0x20;
+                }
                 // satb transfer starts at the beginning of vertical blanking
                 if ((vdc_registers[0xF] & 0x10) || do_satb_dma) {
                     do_satb_dma = false;
@@ -357,40 +361,46 @@ export template <typename Sys> class c_vid
         }
     }
 
-    // called at the start of each scanline, before the cpu runs the line.
-    // rcr_counter names the line about to be drawn: it is $40 on the first display
-    // line, so RCR = $40 + k raises the interrupt at the start of display line k.
-    // do_scanline() draws that line LATCH_DOT dots later, and that render point
-    // doubles as the scroll register latch: a handler quick enough to write
-    // BXR/BYR before it moves line k itself, a slower one only lands on line k + 1.
-    // measured from the raster irq to the scroll write: Vigilante 56 dots (one
-    // BXR write, splits on line k), Bloody Wolf 269 dots (BYR + BXR, splits on
-    // line k + 1).  LATCH_DOT sits between the two.
-    void line_start()
-    {
-        if (vblank_pending && --vblank_pending == 0) {
-            vblank = 1;
-            if (vdc_registers[0x05] & 0x8) {
-                sys.irq1 = 1;
-                vdc_status |= 0x20;
-            }
-        }
+    // ---------------------------------------------------------------------
+    // the line is driven as the vdc's four horizontal phases, HDS -> HDW ->
+    // HDE -> HSW, with the cpu run in between.  that puts each hardware event
+    // where the vdc actually performs it: the scroll registers are latched
+    // entering HDS, and the vertical state advances - taking the vblank
+    // interrupt and the satb transfer with it - during HSW.
+    // ---------------------------------------------------------------------
 
-        rcr_counter++;
-        if (rcr_counter == (vdc_registers[0x06] & 0x3FF)) {
-            raster_compare = 1;
-            if (vdc_registers[0x05] & 0x4) {
-                sys.irq1 = 1;
-                vdc_status |= 0x4;
-                //ods("rcr irq at line %d\n", vce_line);
+    // work out this line's phase lengths.  the vdc's programmed line rarely adds
+    // up to the 1365 master clocks a scanline really takes, so the sync phase
+    // absorbs the difference the way the incoming hsync does on hardware.
+    void compute_line_timing()
+    {
+        static constexpr int line_master = 1365;
+        static constexpr int dot_master[4] = {4, 3, 2, 2};   //5.37 / 7.16 / 10.74MHz
+        int dm = dot_master[vce_control & 3];
+
+        ph_hds = (((vdc_registers[0x0A] >> 8) & 0x7F) + 1) * 8 * dm;
+        ph_hdw = ((vdc_registers[0x0B] & 0x7F) + 1) * 8 * dm;
+        ph_hde = (((vdc_registers[0x0B] >> 8) & 0x7F) + 1) * 8 * dm;
+
+        //trim from the back until the line fits, then give the remainder to hsw
+        if (ph_hds + ph_hdw + ph_hde > line_master - 8) {
+            ph_hde = std::max(8, line_master - 8 - ph_hds - ph_hdw);
+            if (ph_hds + ph_hdw + ph_hde > line_master - 8) {
+                ph_hdw = std::max(8, line_master - 8 - ph_hds - ph_hde);
+                if (ph_hds + ph_hdw + ph_hde > line_master - 8) {
+                    ph_hds = std::max(8, line_master - 8 - ph_hdw - ph_hde);
+                }
             }
         }
+        ph_hsw = line_master - ph_hds - ph_hdw - ph_hde;
     }
 
-    // draws the current line, then advances the vdc phase and the vce raster.
-    // returns true when the vce raster wraps, i.e. the frame is complete
-    bool do_scanline()
+    // HDS - the vdc latches the scroll registers and starts fetching the row.
+    // whatever the cpu wrote before this instant is what the line is drawn with.
+    int phase_hds()
     {
+        compute_line_timing();
+
         int fb_row = vce_line - fb_top_line;
         uint32_t *pfb = (fb_row >= 0 && fb_row < 240)
                             ? &fb[fb_row * max_width + frame_x]
@@ -402,7 +412,45 @@ export template <typename Sys> class c_vid
         else if (pfb) {
             std::fill_n(pfb, frame_width, rgb[pal[256]]);
         }
+        return ph_hds;
+    }
 
+    int phase_hdw() { return ph_hdw; }
+
+    // HDE - active display for this line is done, and the vdc knows whether the
+    // next line matches RCR, so the raster interrupt goes here.  what is left of
+    // the line - back porch plus sync, about 245 master clocks - is all the time
+    // a handler gets to reach the scroll registers before the named line is
+    // fetched at the next HDS.  that deadline is what separates the two games:
+    // Vigilante writes BXR 168 clocks after the interrupt and moves the line it
+    // named, Bloody Wolf needs 807 for BYR and BXR and only lands on the one
+    // after.
+    int phase_hde()
+    {
+        // rcr_counter names this line: $40 is the first display line, which is
+        // what "add 64 to RCR to get the scanline" means, and it keeps counting
+        // through blanking so it spans $40..$146 over a frame.
+        if (vphase == VPHASE_VDS && vphase_count == 1) {
+            rcr_counter = 0x40 - 1;
+        }
+        else {
+            rcr_counter++;
+        }
+
+        if (rcr_counter + 1 == (int)(vdc_registers[0x06] & 0x3FF)) {
+            raster_compare = 1;
+            if (vdc_registers[0x05] & 0x4) {
+                sys.irq1 = 1;
+                vdc_status |= 0x4;
+            }
+        }
+        return ph_hde;
+    }
+
+    // HSW - sync.  the raster compare for this line is taken here, then the
+    // vertical state advances, which is what carries vblank and the satb dma.
+    int phase_hsw()
+    {
         if (--vphase_count <= 0) {
             // VCR can legitimately be zero, so a phase may have no lines at all
             int guard = 4;
@@ -420,15 +468,20 @@ export template <typename Sys> class c_vid
             // the vce is the sync master.  vsync restarts the vdc's vertical state
             // machine, so a vdc programmed for more lines than the vce provides just
             // gets its trailing VCR phase truncated instead of rolling the picture.
-            // Cadash asks for 264 lines (VCR=4) against a 263 line vce; Vigilante
-            // asks for exactly 263 (VCR=3) and this resync is a no-op for it.
             vphase = VPHASE_VSW;
             VSW = vdc_registers[0x0C] & 0x1F;
             vphase_count = VSW + 1;
             burst_mode = !(vdc_registers[0x5] & 0xC0);
-            return true;
+            frame_complete = true;
         }
-        return false;
+        return ph_hsw;
+    }
+
+    bool take_frame_complete()
+    {
+        bool f = frame_complete;
+        frame_complete = false;
+        return f;
     }
 
     void write_vdc(uint16_t address, uint8_t value)
@@ -547,7 +600,7 @@ export template <typename Sys> class c_vid
                 ods("set rcr lo to %04X (%d) at line %d\n", r, r, vce_line);
                 break;
             case 0x8:
-                reload_y_scroll = true;
+                byr_written = true;
                 //ods("set y scroll to %d at line %d\n", r, vce_line);
                 break;
             case 0x9:
@@ -656,7 +709,7 @@ export template <typename Sys> class c_vid
             case 0x08:
                 r &= 0x1FF;
                 //ods("set y scroll to %d at line %d\n", r, vce_line);
-                reload_y_scroll = true;
+                byr_written = true;
                 break;
             case 0x0D:
                 display_height = r & 0x1FF;
@@ -739,6 +792,7 @@ export template <typename Sys> class c_vid
     // they always have.
     static constexpr int fb_top_line = 20;
 
+
     // vdc vertical state machine: free-runs, independent of the vce raster
     enum e_vphase { VPHASE_VSW, VPHASE_VDS, VPHASE_VDW, VPHASE_VCR };
     int vphase;
@@ -746,7 +800,12 @@ export template <typename Sys> class c_vid
     // internal raster counter for RCR.  reloaded to 0x40 at the start of the
     // display period and then counts continuously, blanking included.
     int rcr_counter;
-    int vblank_pending;
+    bool frame_complete;
+    // length of each horizontal phase for the current line, in master clocks
+    int ph_hds;
+    int ph_hdw;
+    int ph_hde;
+    int ph_hsw;
 
     int vblank;
     int raster_compare;
@@ -782,6 +841,7 @@ export template <typename Sys> class c_vid
     uint16_t VDW;
     uint32_t y_offset;
     bool reload_y_scroll;
+    bool byr_written;
 
 };
 } //namespace tg16

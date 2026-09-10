@@ -61,12 +61,6 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
     {
     }
 
-    //dot within the scanline at which the vdc samples its registers and draws.
-    //measured against the two games that pin it down: Vigilante writes BXR 56 dots
-    //after the raster irq and must split on the same line, Bloody Wolf needs 269
-    //dots and must split on the next one.
-    static constexpr int LATCH_DOT = 150;
-
     int emulate_frame()
     {
         psg.clear_buffer();
@@ -76,16 +70,19 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
         int guard = 0;
         bool frame_done = false;
         while (!frame_done && ++guard < 400) {
-            //the raster interrupt is raised at the start of the line, and the
-            //render latches the scroll registers LATCH_DOT into it.  a handler
-            //quick enough to write BXR/BYR before that point moves the current
-            //line, a slower one only takes effect on the next one.
-            vid->line_start();
-            cpu->available_cycles += LATCH_DOT * 3;
+            //run the line as the vdc's four horizontal phases, letting the cpu
+            //run for each phase's real duration.  a handler that reaches the
+            //scroll registers before the next HDS moves the next line; one that
+            //does not is simply late, which is the distinction hardware makes.
+            cpu->available_cycles += vid->phase_hds();
             cpu->execute();
-            frame_done = vid->do_scanline();
-            cpu->available_cycles += (455 - LATCH_DOT) * 3;
+            cpu->available_cycles += vid->phase_hdw();
             cpu->execute();
+            cpu->available_cycles += vid->phase_hde();
+            cpu->execute();
+            cpu->available_cycles += vid->phase_hsw();
+            cpu->execute();
+            frame_done = vid->take_frame_complete();
 
             //psg runs at master / 6, so 1365 / 6 = 227.5 cycles per line
             psg_cycle_remainder += 1365;
