@@ -92,8 +92,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdPlin
     }
     #endif
     g_cpu_info = get_cpu_info();
+    //the first time nemulator is run, write a config file documenting the defaults
+    const char *config_filename = "nemulator.ini";
+    if (!std::filesystem::exists(config_filename))
+        c_nemulator::write_default_config(config_filename);
     std::unique_ptr<D3d10App> app = std::make_unique<D3d10App>(hInstance);
-    app->Init((char*)"nemulator.ini", new c_nemulator(), NULL);
+    app->Init((char*)config_filename, new c_nemulator(), NULL);
     app->SetCaption(app_title);
     int retval = app->Run();
     return retval;

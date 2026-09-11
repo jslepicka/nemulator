@@ -41,6 +41,8 @@ public:
     void resize();
     void on_pause(bool paused);
     void LoadGames();
+    //writes a nemulator.ini documenting every setting at its default value
+    static bool write_default_config(const std::string &filename);
 
 private:
     float sharpness;
@@ -48,6 +50,12 @@ private:
     static constexpr float default_sharpness = .8f;
     static constexpr bool default_scanlines = true;
     static constexpr float sharpness_step = .025f;
+    static constexpr int default_menu_columns = 8;
+    static constexpr double default_menu_delay = 333.0;
+    static constexpr bool default_preload = true;
+    static constexpr bool default_show_suspend = false;
+    static constexpr const char *default_rom_path = "c:\\roms\\"; //the system's identifier is appended
+    static constexpr const char *default_arcade_rom_path = "c:\\roms\\arcade";
     static const GUID nemulator_scheme_guid;
     static DWORD WINAPI game_thread(LPVOID lpParam);
     int init_threads();
@@ -123,8 +131,11 @@ private:
         MENU_DISPLAY
     };
 
-    void show_settings_menu();
-    void show_ingame_menu();
+    //each menu opens with the item at selected (or the item for selected_action) highlighted, so returning
+    //from a submenu leaves the cursor on the item that opened it
+    void show_quit_menu(int selected = 0);
+    void show_settings_menu(int selected = 0);
+    void show_ingame_menu(int selected_action = INGAME_RESUME);
     enum INGAME_ACTION //in-game menu items, in the order they're listed
     {
         INGAME_RESUME,

@@ -52,6 +52,9 @@ void c_menu::init(void *params)
         menu_items->items[i] = new char[len+1];
         strcpy(menu_items->items[i], passed_menu_items->items[i]);
     }
+    selected_item = passed_menu_items->selected;
+    if (selected_item < 0 || selected_item >= menu_items->num_items)
+        selected_item = 0;
     load_fonts();
     y_offset = (1.0 - ((menu_items->num_items-.5) * text_spacing)) / 2;
 }

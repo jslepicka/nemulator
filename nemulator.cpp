@@ -213,7 +213,7 @@ void c_nemulator::Init()
     fastscroll = false;
     scroll_fade_timer = 0.0;
 
-    int panel_columns = config->get_int("menu_columns", 8);
+    int panel_columns = config->get_int("menu_columns", default_menu_columns);
     if (panel_columns < 3)
         panel_columns = 3;
     int panel_rows = (int)((panel_columns-1) * c_texture_panel::tile_width / ((double)clientWidth/clientHeight) * .82 / c_texture_panel::tile_height); //not sure where .82 comes from...
@@ -254,11 +254,11 @@ void c_nemulator::Init()
         &at,
         &up);
 
-    menu_delay = config->get_double("menu_delay", 333.0);
+    menu_delay = config->get_double("menu_delay", default_menu_delay);
 
-    preload = config->get_bool("preload", true);
+    preload = config->get_bool("preload", default_preload);
 
-    show_suspend = config->get_bool("show_suspend", false);
+    show_suspend = config->get_bool("show_suspend", default_show_suspend);
 
     if (menu_delay < 1.0)
         menu_delay = 1.0;
@@ -270,20 +270,19 @@ void c_nemulator::Init()
 
 }
 
-void c_nemulator::configure_input()
+//the default button assignments, also used to generate nemulator.ini
+struct s_button_default
 {
-    struct s_button_map
-    {
-        BUTTONS button;
-        std::string config_base;
-        std::string config_name;
-        unsigned int default_key;
-        int repeat_mode;
-    };
-    static const unsigned int ALIAS = 0x80000000;
-    // clang-format off
-    s_button_map button_map[] =
-    {
+    BUTTONS button;
+    std::string config_base;
+    std::string config_name;
+    unsigned int default_key;
+    int repeat_mode;
+};
+static const unsigned int ALIAS = 0x80000000;
+// clang-format off
+static const s_button_default button_defaults[] =
+{
         { BUTTON_1LEFT,         "joy1",     "left",    VK_LEFT,                1 },
         { BUTTON_1RIGHT,        "joy1",     "right",   VK_RIGHT,               1 },
         { BUTTON_1UP,           "joy1",     "up",      VK_UP,                  1 },
@@ -335,10 +334,12 @@ void c_nemulator::configure_input()
         { BUTTON_MENU_DOWN,      "",        "",        VK_DOWN,                1 },
         { BUTTON_MENU_LEFT,      "",        "",        VK_LEFT,                1 },
         { BUTTON_MENU_RIGHT,     "",        "",        VK_RIGHT,               1 },
-    };
-    // clang-format on
+};
+// clang-format on
 
-    int num_buttons = sizeof(button_map) / sizeof(s_button_map);
+void c_nemulator::configure_input()
+{
+    int num_buttons = sizeof(button_defaults) / sizeof(s_button_default);
     g_ih = std::make_unique<c_input_handler>(BUTTON_COUNT);
     g_ih->set_pair(BUTTON_1LEFT, BUTTON_1RIGHT);
     g_ih->set_pair(BUTTON_1UP, BUTTON_1DOWN);
@@ -348,26 +349,26 @@ void c_nemulator::configure_input()
     for (int i = 0; i < num_buttons; i++)
     {
         int j = i;
-        int default_key = button_map[i].default_key;
-        int button = button_map[i].button;
-        std::string key = button_map[i].config_base + "." + button_map[i].config_name;
+        int default_key = button_defaults[i].default_key;
+        int button = button_defaults[i].button;
+        std::string key = button_defaults[i].config_base + "." + button_defaults[i].config_name;
         if (default_key & ALIAS)
         {
             default_key &= ALIAS - 1;
             for (int k = 0; k < num_buttons; k++)
             {
-                if (button_map[k].button == default_key)
+                if (button_defaults[k].button == default_key)
                 {
                     j = k;
-                    default_key = button_map[k].default_key;
+                    default_key = button_defaults[k].default_key;
                     break;
                 }
             }
         }
 
-        std::string joy_base = button_map[j].config_base + ".joy";
-        std::string joy_key = joy_base +  "." + button_map[j].config_name;
-        int repeat_mode = button_map[j].repeat_mode;
+        std::string joy_base = button_defaults[j].config_base + ".joy";
+        std::string joy_key = joy_base +  "." + button_defaults[j].config_name;
+        int repeat_mode = button_defaults[j].repeat_mode;
         int d = key == "." ? default_key : config->get_int(key, default_key);
         g_ih->set_button_keymap(button, d);
         g_ih->set_repeat_mode(button, repeat_mode);
@@ -383,13 +384,202 @@ void c_nemulator::configure_input()
     g_ih->set_button_group(BUTTON_OK, {BUTTON_1A, BUTTON_1C, BUTTON_1START, BUTTON_RETURN});
 
     std::map<int, c_input_bindings::s_config_name> config_names;
-    for (auto &b : button_map)
+    for (auto &b : button_defaults)
     {
         if (b.config_base != "")
             config_names[b.button] = {b.config_base, b.config_name};
     }
     input_bindings.init(config_names);
 
+}
+
+//writes a config file with every setting at its default, documenting what each one does.  The rom paths
+//and button assignments come from the same tables nemulator itself uses.
+bool c_nemulator::write_default_config(const std::string &filename)
+{
+    auto yes_no = [](bool value) { return value ? "true" : "false"; };
+    auto &registry = system_registry::get_registry();
+    std::ostringstream f;
+
+    f << ";" << app_title << " configuration\n"
+         ";\n"
+         ";This file was written with every setting at its default value.  Removing a setting, or this\n"
+         ";whole file, restores its default.\n"
+         "\n;\n;Paths\n;\n";
+
+    for (auto &si : registry) {
+        if (si.is_arcade)
+            continue;
+        const std::string &extension = si.extension != "" ? si.extension : si.identifier;
+        f << "\n;Location of ." << extension << " roms (" << si.name << ")\n"
+          << si.identifier << ".rom_path = " << default_rom_path << si.identifier << "\n"
+          << ";Location of .ram files.  If unspecified, or the directory doesn't exist, the rom path is used.\n"
+          << si.identifier << ".save_path = " << default_rom_path << si.identifier << "\n";
+    }
+
+    std::string arcade_sets;
+    for (auto &si : registry) {
+        if (si.is_arcade)
+            arcade_sets += (arcade_sets.empty() ? "" : ", ") + si.identifier;
+    }
+    f << "\n;Location of arcade roms.  Each set is in its own directory here, named after the set:\n"
+         ";" << arcade_sets << "\n"
+         ";A set can be kept elsewhere by giving it its own path, e.g., pacman.rom_path\n"
+         "arcade.rom_path = " << default_arcade_rom_path << "\n";
+
+    f << "\n;\n;Display\n;\n"
+         "\n;x resolution for windowed mode, y resolution is computed from the aspect ratio.  0 (the\n"
+         ";default) uses " << (int)(D3d10App::default_window_scale * 100) << "% of the screen width, as does a width too wide for the screen.  Saved\n"
+         ";when the window is resized, and reset by settings > display > reset to defaults.\n"
+         "app.x = " << D3d10App::default_window_width << "\n"
+         "\n;Start in fullscreen mode?  Also changed by settings > display.\n"
+         "app.fullscreen = " << yes_no(D3d10App::default_fullscreen) << "\n"
+         "\n;Image scaling sharpness, from 0.0 (soft) to 1.0 (sharp).  Also changed by settings > display.\n"
+         "sharpness = " << format_sharpness(default_sharpness) << "\n"
+         "\n;Enable scanlines.  Also changed by settings > display.\n"
+         "scanlines = " << yes_no(default_scanlines) << "\n"
+         "\n;Aspect ratio lock, i.e., constrain window dimensions on resize\n"
+         "app.aspect_lock = " << yes_no(D3d10App::default_aspect_lock) << "\n"
+         "\n;Wait for vsync?  Usually you'll want to leave this enabled.\n"
+         "app.vsync = " << yes_no(D3d10App::default_vsync) << "\n"
+         "\n;Use timer-based synchronization.  If your display's refresh rate is set to 60Hz, leave this\n"
+         ";set to false, otherwise set it to true.\n"
+         "app.timer_sync = " << yes_no(D3d10App::default_timer_sync) << "\n";
+
+    f << "\n;\n;Menu\n;\n"
+         "\n;Number of columns in the menu.  The number of rows is computed automatically.  Minimum is 3.\n"
+         "menu_columns = " << default_menu_columns << "\n"
+         "\n;Preload roms for smoother scrolling when first launched.  May cause long startup delays.\n"
+         "preload = " << yes_no(default_preload) << "\n"
+         "\n;Pause emulation when the application loses focus\n"
+         "app.pause_on_lost_focus = " << yes_no(D3d10App::default_pause_on_lost_focus) << "\n"
+         "\n;Show the suspend computer option in the quit menu\n"
+         "show_suspend = " << yes_no(default_show_suspend) << "\n"
+         "\n;How long, in ms, start+select need to be held to show the menu in a game.  The default keeps\n"
+         ";it clear of games that use the combo themselves (e.g., Crystal Mines); 0 shows it immediately.\n"
+         "menu_delay = " << default_menu_delay << "\n";
+
+    f << "\n;\n;Input\n;\n"
+         "\n;Keyboard assignments, as hex virtual-key codes:\n"
+         ";https://learn.microsoft.com/windows/win32/inputdev/virtual-key-codes\n"
+         ";Unassigned buttons are commented out.\n";
+
+    std::string previous_base;
+    for (auto &b : button_defaults) {
+        if (b.config_base == "")
+            continue; //not configurable, e.g., the function keys
+        unsigned int key = b.default_key;
+        if (key & ALIAS) {
+            //shares another button's assignment, e.g., sms pause uses start
+            for (auto &a : button_defaults) {
+                if (a.button == (key & (ALIAS - 1))) {
+                    key = a.default_key;
+                    break;
+                }
+            }
+        }
+        if (b.config_base != previous_base) {
+            f << "\n";
+            previous_base = b.config_base;
+        }
+        char value[16];
+        sprintf_s(value, sizeof(value), "0x%02X", key);
+        f << (key ? "" : ";") << b.config_base << "." << b.config_name << " = " << (key ? value : "0") << "\n";
+    }
+
+    f << R"ini(
+;Joystick assignments
+;
+;The device a player uses, numbered from 0.  Unassigned by default.
+;
+;joy1.joy = 0
+;
+;Each button is then joy1.joy.<button>, with an optional .type:
+;
+; 0 - Button (default)
+;     Value = button number
+;
+; 1 - Axis
+;     Check if YYYY axis is above XXXX threshold (or below XXXX threshold if XXXX is negative).
+;
+;     Value = 0xXXXXYYYY
+;     XXXX = signed threshold %.
+;     YYYY = Axis number (0 = X, 1 = Y, 2 = Z)
+;
+; 2 - POV Hat (D-Pad)
+;     POV Hat position is measured in 100ths of degrees.  Up = 0, Right = 9000, etc.
+;     Check if POV hat is between YYYY and XXXX position.
+;
+;     Value = 0xXXXXYYYY
+;     XXXX = high position
+;     YYYY = low position
+;
+;Xbox 360 controller (D-Pad)
+;
+;joy1.joy = 0
+;joy1.joy.left.type = 2
+;joy1.joy.left = 0x7B0C57E4
+;joy1.joy.right.type = 2
+;joy1.joy.right = 0x34BC1194
+;joy1.joy.up.type = 2
+;joy1.joy.up = 0x11947B0C
+;joy1.joy.down.type = 2
+;joy1.joy.down = 0x57E434BC
+;joy1.joy.a = 0
+;joy1.joy.a_turbo = 1
+;joy1.joy.b = 2
+;joy1.joy.b_turbo = 3
+;joy1.joy.select = 6
+;joy1.joy.start = 7
+;
+;Xbox 360 controller (Analog stick)
+;
+;joy1.joy = 0
+;joy1.joy.left.type = 1
+;joy1.joy.left = 0xDF00
+;joy1.joy.right.type = 1
+;joy1.joy.right = 0x2100
+;joy1.joy.up.type = 1
+;joy1.joy.up = 0xDF01
+;joy1.joy.down.type = 1
+;joy1.joy.down = 0x2101
+;joy1.joy.a = 0
+;joy1.joy.a_turbo = 1
+;joy1.joy.b = 2
+;joy1.joy.b_turbo = 3
+;joy1.joy.select = 6
+;joy1.joy.start = 7
+
+;Per-system input configuration
+;
+;Settings > input (press Esc in the game menu or in a game) saves assignments for each system at the
+;end of this file, prefixed with the system: )ini";
+
+    std::vector<std::string> input_systems;
+    for (auto &si : registry) {
+        const std::string &identifier = si.get_input_identifier();
+        if (std::find(input_systems.begin(), input_systems.end(), identifier) == input_systems.end())
+            input_systems.push_back(identifier);
+    }
+    for (size_t i = 0; i < input_systems.size(); i++)
+        f << (i ? ", " : "") << input_systems[i];
+
+    f << R"ini(.
+;Only assignments that differ from the joy1/joy2 settings above are saved; everything else uses those
+;settings, which the menu never changes.  Resetting a system to defaults removes its lines.
+;
+;nes.joy1.a = 0x4B            keyboard key, 0 = none
+;nes.joy1.joy.a.device = 0    joystick number, -1 = none
+;nes.joy1.joy.a.type = 0      joystick mapping type and value, as described above
+;nes.joy1.joy.a = 2
+)ini";
+
+    std::ofstream out(filename);
+    if (!out.is_open())
+        return false;
+    out << f.str();
+    out.close();
+    return !out.fail();
 }
 
 void c_nemulator::resize()
@@ -643,6 +833,11 @@ void c_nemulator::handle_button_menu_down(s_button_handler_params *params)
 
 void c_nemulator::handle_button_menu_cancel(s_button_handler_params *params)
 {
+    show_quit_menu();
+}
+
+void c_nemulator::show_quit_menu(int selected)
+{
     for (int i = 0; i < num_texture_panels; i++)
         texturePanels[i]->dim = true;
     c_menu::s_menu_items mi;
@@ -650,16 +845,18 @@ void c_nemulator::handle_button_menu_cancel(s_button_handler_params *params)
     const char* m[] = { "quit nemulator", "settings", "suspend computer" };
     mi.num_items = show_suspend ? 3 : 2;
     mi.items = (char**)m;
+    mi.selected = selected;
     add_task(new c_menu(), (void*)&mi);
     menu = MENU_QUIT;
 }
 
-void c_nemulator::show_settings_menu()
+void c_nemulator::show_settings_menu(int selected)
 {
     c_menu::s_menu_items mi;
     const char* m[] = { "input", "display" };
     mi.num_items = 2;
     mi.items = (char**)m;
+    mi.selected = selected;
     add_task(new c_menu(), (void*)&mi);
     menu = MENU_SETTINGS;
 }
@@ -778,7 +975,7 @@ void c_nemulator::handle_button_leave_game(s_button_handler_params* params)
     sound->stop();
 }
 
-void c_nemulator::show_ingame_menu()
+void c_nemulator::show_ingame_menu(int selected_action)
 {
     c_system_container *g = (c_system_container *)texturePanels[selectedPanel]->GetSelected();
     for (int i = 0; i < num_texture_panels; i++)
@@ -797,6 +994,8 @@ void c_nemulator::show_ingame_menu()
     c_menu::s_menu_items mi;
     mi.num_items = (int)items.size();
     mi.items = (char **)items.data();
+    auto selected = std::find(ingame_menu_actions.begin(), ingame_menu_actions.end(), selected_action);
+    mi.selected = (int)(selected - ingame_menu_actions.begin());
     add_task(new c_menu(), &mi);
     menu = MENU_INGAME;
 }
@@ -1105,9 +1304,9 @@ int c_nemulator::update(double dt, int child_result, void *params)
             {
                 //back to the menu settings was opened from
                 if (settings_in_game)
-                    show_ingame_menu();
+                    show_ingame_menu(INGAME_SETTINGS);
                 else
-                    handle_button_menu_cancel(nullptr);
+                    show_quit_menu(1); //settings
             }
             break;
         case MENU_INPUT_CONFIG:
@@ -1120,7 +1319,7 @@ int c_nemulator::update(double dt, int child_result, void *params)
                     input_bindings.apply(g->get_input_identifier(), g->get_button_map());
                 }
                 //back to the settings menu
-                show_settings_menu();
+                show_settings_menu(0); //input
             }
             break;
         case MENU_DISPLAY:
@@ -1130,7 +1329,7 @@ int c_nemulator::update(double dt, int child_result, void *params)
                 //back to the settings menu, dimming the game again if it was left undimmed
                 for (int i = 0; i < num_texture_panels; i++)
                     texturePanels[i]->dim = true;
-                show_settings_menu();
+                show_settings_menu(1); //display
             }
             break;
         case MENU_SELECT:
@@ -1598,7 +1797,7 @@ DWORD WINAPI c_nemulator::load_thread(LPVOID param)
 
 void c_nemulator::LoadGames()
 {
-    std::string arcade_path = config->get_string("arcade.rom_path", "c:\\roms\\arcade");
+    std::string arcade_path = config->get_string("arcade.rom_path", default_arcade_rom_path);
     struct s_loadinfo
     {
         std::string rom_path_key;
@@ -1616,7 +1815,7 @@ void c_nemulator::LoadGames()
         loadinfo.push_back({
             .rom_path_key = si.identifier + ".rom_path",
             .save_path_key = si.identifier + ".save_path",
-            .rom_path_default = si.is_arcade ? arcade_path + "\\" + si.identifier : "c:\\roms\\" + si.identifier,
+            .rom_path_default = si.is_arcade ? arcade_path + "\\" + si.identifier : default_rom_path + si.identifier,
             .system_info = si,
         });
     }

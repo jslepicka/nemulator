@@ -281,14 +281,14 @@ void D3d10App::Init(char *config_file_name, c_task *init_task, void *params)
         clientWidth = 2;
     window_width = clientWidth;
     aspectRatio = (double)screenWidth / (double)screenHeight;
-    aspectLock = config->get_bool("app.aspect_lock", true);
+    aspectLock = config->get_bool("app.aspect_lock", default_aspect_lock);
     startFullscreen = config->get_bool("app.fullscreen", default_fullscreen);
-    vsync = config->get_bool("app.vsync", true);
+    vsync = config->get_bool("app.vsync", default_vsync);
     if (benchmark_mode || timedemo) {
         vsync = false;
     }
-    timer_sync = config->get_bool("app.timer_sync", false);
-    pause_on_lost_focus = config->get_bool("app.pause_on_lost_focus", true);
+    timer_sync = config->get_bool("app.timer_sync", default_timer_sync);
+    pause_on_lost_focus = config->get_bool("app.pause_on_lost_focus", default_pause_on_lost_focus);
     ignore_input = 0;
     avrt_handle = 0;
     timeBeginPeriod(1);

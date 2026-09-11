@@ -56,6 +56,10 @@ public:
 	static bool set_window_width(int width);
 	static constexpr int default_window_width = 0; //uses default_window_scale
 	static constexpr double default_window_scale = .5; //fraction of the screen's work area width
+	static constexpr bool default_aspect_lock = true;
+	static constexpr bool default_vsync = true;
+	static constexpr bool default_timer_sync = false;
+	static constexpr bool default_pause_on_lost_focus = true;
 
 	struct SimpleVertex
 	{

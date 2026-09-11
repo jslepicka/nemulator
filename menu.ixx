@@ -20,6 +20,7 @@ public:
     {
         int num_items;
         char **items;
+        int selected = 0; //the item selected when the menu opens
     };
 
 protected:
