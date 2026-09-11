@@ -20,6 +20,7 @@ module nemulator;
 import system;
 import nemulator.menu;
 import nes;
+import interpolate;
 
 extern ID3D10Device *d3dDev;
 extern D3DXMATRIX matrixView;
@@ -58,6 +59,11 @@ c_nemulator::c_nemulator()
     audio_info = NULL;
     qam = NULL;
     system_filter = 0;
+    title_scroll_game = NULL;
+    title_scroll_state = TITLE_SCROLL_WAIT_START;
+    title_scroll_timer = 0.0;
+    title_scroll_offset = 0.0;
+    title_overflow = 0;
     splash_done = 0;
     splash_timer = SPLASH_TIMER_TOTAL_DURATION;
 #if defined(DEBUG)
@@ -392,6 +398,8 @@ void c_nemulator::resize()
 void c_nemulator::OnResize()
 {
     LoadFonts();
+    //the title's width depends on the font size, so start its scroll over
+    title_scroll_game = NULL;
 
     float aspect = (float)clientWidth/clientHeight;
     D3DXMatrixPerspectiveFovLH(&matrixProj, (float)fovy, aspect, 1.0f, 1000.0f);
@@ -1189,6 +1197,8 @@ void c_nemulator::UpdateScene(double dt)
     for (int i = 0; i < num_texture_panels; i++)
         texturePanels[i]->Update(dt);
 
+    update_title_scroll(dt);
+
     static int framesDrawn = 0;
     framesDrawn++;
 
@@ -1285,6 +1295,62 @@ void c_nemulator::DrawText(ID3DX10Font *font, float x, float y, std::string text
     d3dDev->OMSetDepthStencilState(state, oldref);
 }
 
+void c_nemulator::update_title_scroll(double dt)
+{
+    if (inGame || texturePanels[selectedPanel]->get_num_items() == 0)
+    {
+        //start over when the title is shown again
+        title_scroll_game = NULL;
+        return;
+    }
+
+    c_system_container *g = (c_system_container *)texturePanels[selectedPanel]->GetSelected();
+    if (g != title_scroll_game)
+    {
+        title_scroll_game = g;
+        title_scroll_state = TITLE_SCROLL_WAIT_START;
+        title_scroll_timer = 0.0;
+        title_scroll_offset = 0.0;
+        RECT r = {0, 0, 0, 0};
+        font1->DrawText(NULL, g->title.c_str(), -1, &r, DT_CALCRECT, D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f));
+        int title_width = r.right - r.left;
+        int available_width = (int)(clientWidth * (1.0 - title_margin * 2));
+        title_overflow = title_width > available_width ? title_width - available_width : 0;
+    }
+    if (title_overflow == 0)
+        return;
+
+    double scroll_duration = title_overflow / (clientWidth * title_scroll_speed) * 1000.0;
+    if (scroll_duration < title_scroll_min_duration)
+        scroll_duration = title_scroll_min_duration;
+
+    title_scroll_timer += dt;
+    switch (title_scroll_state)
+    {
+    case TITLE_SCROLL_WAIT_START:
+    case TITLE_SCROLL_WAIT_END:
+        if (title_scroll_timer >= title_scroll_delay)
+        {
+            title_scroll_state = title_scroll_state == TITLE_SCROLL_WAIT_START ? TITLE_SCROLL_LEFT : TITLE_SCROLL_RIGHT;
+            title_scroll_timer = 0.0;
+        }
+        break;
+    case TITLE_SCROLL_LEFT:
+    case TITLE_SCROLL_RIGHT:
+        {
+            double mu = title_scroll_timer / scroll_duration;
+            double from = title_scroll_state == TITLE_SCROLL_LEFT ? 0.0 : title_overflow;
+            title_scroll_offset = interpolate::interpolate_cosine(from, title_overflow - from, mu);
+            if (mu >= 1.0)
+            {
+                title_scroll_state = title_scroll_state == TITLE_SCROLL_LEFT ? TITLE_SCROLL_WAIT_END : TITLE_SCROLL_WAIT_START;
+                title_scroll_timer = 0.0;
+            }
+        }
+        break;
+    }
+}
+
 void c_nemulator::draw()
 {
     DrawScene();
@@ -1326,7 +1392,7 @@ void c_nemulator::DrawScene()
             menu != MENU_INPUT_CONFIG)
         {
             double dim = mainPanel2->dim ? .25 : 1.0;
-            DrawText(font1, .05f, .85f, g->title, D3DXCOLOR((float)(1.0f * dim), 0.0f, 0.0f, 1.0f));
+            DrawText(font1, (float)(title_margin - title_scroll_offset / clientWidth), .85f, g->title, D3DXCOLOR((float)(1.0f * dim), 0.0f, 0.0f, 1.0f));
             DrawText(font2, .0525f, .925f, g->get_system_name(),
                      D3DXCOLOR((float)(.22f * dim), (float)(.22f * dim), (float)(.22f * dim), 1.0f));
         }

@@ -121,6 +121,25 @@ private:
     int menu;
     bool fastscroll;
     double scroll_fade_timer;
+
+    //titles too long for the window scroll left until fully visible, then back, pausing before each scroll
+    enum TITLE_SCROLL
+    {
+        TITLE_SCROLL_WAIT_START,
+        TITLE_SCROLL_LEFT,
+        TITLE_SCROLL_WAIT_END,
+        TITLE_SCROLL_RIGHT
+    };
+    void update_title_scroll(double dt);
+    c_system_container *title_scroll_game; //the game whose title is being scrolled
+    int title_scroll_state;
+    double title_scroll_timer;
+    double title_scroll_offset; //pixels
+    int title_overflow; //pixels of the title that don't fit between the margins
+    static constexpr double title_margin = .05; //fraction of the client width on either side of the title
+    static constexpr double title_scroll_delay = 2000.0; //ms
+    static constexpr double title_scroll_speed = .10; //client widths per second
+    static constexpr double title_scroll_min_duration = 500.0; //ms, so short scrolls don't look like a jump
     void LoadFonts();
     void DrawText(ID3DX10Font *font, float x, float y, std::string text, D3DXCOLOR color);
     void OnPause(bool paused);
