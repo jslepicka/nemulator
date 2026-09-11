@@ -62,43 +62,24 @@ bool c_config::read_config_file(std::string filename)
     return true;
 }
 
-bool c_config::update_config_file(const std::vector<std::string> &remove,
-                                  const std::vector<std::pair<std::string, std::string>> &append)
+//reads every line of the config file; a missing file has no lines
+bool c_config::read_lines(std::vector<std::string> *lines)
 {
-    std::set<std::string> replaced(remove.begin(), remove.end());
-    for (auto &a : append)
-        replaced.insert(a.first);
+    lines->clear();
+    if (!std::filesystem::exists(config_filename))
+        return true;
+    std::ifstream in(config_filename);
+    if (!in.is_open())
+        return false;
+    std::string line;
+    while (std::getline(in, line))
+        lines->push_back(line);
+    return true;
+}
 
-    std::vector<std::string> lines;
-    if (std::filesystem::exists(config_filename))
-    {
-        std::ifstream in(config_filename);
-        if (!in.is_open())
-            return false;
-        std::string line;
-        while (std::getline(in, line))
-        {
-            std::string trimmed = trim(line);
-            std::string::size_type i = trimmed.find("=");
-            if (trimmed.length() > 0 && trimmed[0] != ';' && i != std::string::npos &&
-                replaced.count(trim(trimmed.substr(0, i))))
-                continue;
-            lines.push_back(line);
-        }
-    }
-
-    //appended values are separated from the rest of the file by a single blank line.  Trailing blank
-    //lines are only trimmed when appending, so removing values restores the file as it was.
-    if (append.size() > 0)
-    {
-        while (lines.size() > 0 && trim(lines.back()).length() == 0)
-            lines.pop_back();
-        lines.push_back("");
-        for (auto &a : append)
-            lines.push_back(a.first + " = " + a.second);
-    }
-
-    //write to a temporary file first so that a failed write can't damage the original
+//write to a temporary file first so that a failed write can't damage the original
+bool c_config::write_lines(const std::vector<std::string> &lines)
+{
     std::string temp_filename = config_filename + ".tmp";
     std::ofstream out(temp_filename);
     if (!out.is_open())
@@ -113,13 +94,83 @@ bool c_config::update_config_file(const std::vector<std::string> &remove,
         return false;
     }
     std::filesystem::rename(temp_filename, config_filename, ec);
-    if (ec)
+    return !ec;
+}
+
+//returns the key a line assigns a value to, or an empty string for comments and other lines
+std::string c_config::get_line_key(const std::string &line)
+{
+    std::string trimmed = trim(line);
+    std::string::size_type i = trimmed.find("=");
+    if (trimmed.length() == 0 || trimmed[0] == ';' || i == std::string::npos)
+        return "";
+    return trim(trimmed.substr(0, i));
+}
+
+//appended values are separated from the rest of the file by a single blank line.  Trailing blank
+//lines are only trimmed when appending, so removing values restores the file as it was.
+void c_config::append_lines(std::vector<std::string> &lines,
+                            const std::vector<std::pair<std::string, std::string>> &values)
+{
+    if (values.size() == 0)
+        return;
+    while (lines.size() > 0 && trim(lines.back()).length() == 0)
+        lines.pop_back();
+    lines.push_back("");
+    for (auto &v : values)
+        lines.push_back(v.first + " = " + v.second);
+}
+
+bool c_config::update_config_file(const std::vector<std::string> &remove,
+                                  const std::vector<std::pair<std::string, std::string>> &append)
+{
+    std::set<std::string> replaced(remove.begin(), remove.end());
+    for (auto &a : append)
+        replaced.insert(a.first);
+
+    std::vector<std::string> lines;
+    if (!read_lines(&lines))
+        return false;
+    std::erase_if(lines, [&](const std::string &line) { return replaced.count(get_line_key(line)) > 0; });
+    append_lines(lines, append);
+    if (!write_lines(lines))
         return false;
 
     for (auto &key : remove)
         config.erase(key);
     for (auto &a : append)
         config[a.first] = a.second;
+    return true;
+}
+
+bool c_config::set_config_values(const std::vector<std::pair<std::string, std::string>> &values)
+{
+    std::vector<std::string> lines;
+    if (!read_lines(&lines))
+        return false;
+
+    std::vector<std::pair<std::string, std::string>> append;
+    for (auto &v : values)
+    {
+        bool found = false;
+        for (auto &line : lines)
+        {
+            if (get_line_key(line) == v.first)
+            {
+                //keep the line as written up to the '='
+                line = line.substr(0, line.find("=") + 1) + " " + v.second;
+                found = true;
+            }
+        }
+        if (!found)
+            append.push_back(v);
+    }
+    append_lines(lines, append);
+    if (!write_lines(lines))
+        return false;
+
+    for (auto &v : values)
+        config[v.first] = v.second;
     return true;
 }
 

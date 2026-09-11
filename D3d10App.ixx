@@ -47,6 +47,16 @@ public:
 
 	void SetCaption(std::string cap);
 
+	//fullscreen can be changed from a task; the change is made before the next frame
+	static bool is_fullscreen();
+	static void set_fullscreen(bool enable);
+	static constexpr bool default_fullscreen = true;
+	//sets and saves the windowed mode width; the window is resized once it's windowed.  returns false if
+	//it couldn't be saved.
+	static bool set_window_width(int width);
+	static constexpr int default_window_width = 0; //uses default_window_scale
+	static constexpr double default_window_scale = .5; //fraction of the screen's work area width
+
 	struct SimpleVertex
 	{
 		D3DXVECTOR3 pos;
@@ -95,6 +105,13 @@ protected:
 	HANDLE avrt_handle;
 
 	BOOL fullscreen;
+	int fullscreen_request; //-1 = no change requested
+	static D3d10App *instance;
+	int window_width; //windowed mode client width, as saved in app.x
+	bool window_width_pending; //the window hasn't been resized to window_width yet
+	bool save_window_width();
+	static int get_window_width(int configured);
+	void resize_window(int width);
 
 	DXGI_MODE_DESC matching_mode;
 	DXGI_SWAP_CHAIN_DESC sd;

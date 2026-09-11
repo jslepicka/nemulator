@@ -44,6 +44,10 @@ public:
 
 private:
     float sharpness;
+    //used when nemulator.ini doesn't set them, and by reset to defaults in the display menu
+    static constexpr float default_sharpness = .8f;
+    static constexpr bool default_scanlines = true;
+    static constexpr float sharpness_step = .025f;
     static const GUID nemulator_scheme_guid;
     static DWORD WINAPI game_thread(LPVOID lpParam);
     int init_threads();
@@ -58,6 +62,9 @@ private:
     double splash_fade_timer;
     void configure_input();
     void adjust_sharpness(float value);
+    void set_sharpness(float value);
+    void set_scanlines(bool enabled);
+    static std::string format_sharpness(float value);
     void adjust_volume(int value);
 
     struct s_button_handler_params {
@@ -112,10 +119,30 @@ private:
         MENU_CHEAT,
         MENU_QAM,
         MENU_SETTINGS,
-        MENU_INPUT_CONFIG
+        MENU_INPUT_CONFIG,
+        MENU_DISPLAY
     };
 
     void show_settings_menu();
+    void show_ingame_menu();
+    enum INGAME_ACTION //in-game menu items, in the order they're listed
+    {
+        INGAME_RESUME,
+        INGAME_SWITCH_DISK,
+        INGAME_RESET,
+        INGAME_SETTINGS,
+        INGAME_RETURN_TO_MENU
+    };
+    std::vector<int> ingame_menu_actions; //the action for each item in the current in-game menu
+    void show_display_menu();
+    void save_display_settings();
+    bool settings_in_game; //the settings menu was opened from the in-game menu
+    struct s_display_settings
+    {
+        float sharpness;
+        bool scanlines;
+        bool fullscreen;
+    } display_settings_at_open; //settings that differ from these are saved when the display menu closes
     void start_game();
     void leave_game();
     int menu;

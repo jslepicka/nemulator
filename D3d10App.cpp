@@ -57,9 +57,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
+D3d10App *D3d10App::instance = nullptr;
+
 D3d10App::D3d10App(HINSTANCE hInstance)
 {
+    instance = this;
     fullscreen = FALSE;
+    fullscreen_request = -1;
+    window_width = 0;
+    window_width_pending = false;
     this->hInstance = hInstance;
     hWnd = 0;
     paused = false;
@@ -126,6 +132,52 @@ HWND D3d10App::GetWnd()
     return hWnd;
 }
 
+bool D3d10App::is_fullscreen()
+{
+    if (instance->fullscreen_request != -1)
+        return instance->fullscreen_request;
+    return instance->fullscreen;
+}
+
+void D3d10App::set_fullscreen(bool enable)
+{
+    instance->fullscreen_request = enable;
+}
+
+bool D3d10App::set_window_width(int width)
+{
+    instance->window_width = get_window_width(width);
+    instance->window_width_pending = true;
+    return config->set_config_values({{"app.x", std::to_string(width)}});
+}
+
+//app.x is the windowed mode client width.  0, or a width too wide for the screen (e.g., one saved on a
+//larger monitor), uses a fraction of the screen's work area instead.
+int D3d10App::get_window_width(int configured)
+{
+    RECT work_area;
+    SystemParametersInfo(SPI_GETWORKAREA, 0, &work_area, 0);
+    int work_width = work_area.right - work_area.left;
+    if (configured <= 0 || configured > work_width)
+        return (int)(work_width * default_window_scale);
+    return configured;
+}
+
+bool D3d10App::save_window_width()
+{
+    return config->set_config_values({{"app.x", std::to_string(window_width)}});
+}
+
+//resizes the client area to width, with the height from the aspect ratio
+void D3d10App::resize_window(int width)
+{
+    if (maximized)
+        ShowWindow(hWnd, SW_RESTORE);
+    int height = (int)(width / aspectRatio);
+    SetWindowPos(hWnd, NULL, 0, 0, width + window_adj_x, height + window_adj_y,
+                 SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+}
+
 void D3d10App::OnPause(bool paused)
 {
     for (auto &task : *c_task::task_list) {
@@ -143,6 +195,17 @@ int D3d10App::Run()
             DispatchMessage(&msg);
         }
         else {
+            //window changes are made between frames (like Alt+Enter) where every task sees the resize.
+            //the width only applies to windowed mode, so it waits until fullscreen is left, and it's
+            //done before entering fullscreen so that leaving fullscreen restores the new width.
+            if (window_width_pending && !fullscreen) {
+                resize_window(window_width);
+                window_width_pending = false;
+            }
+            if (fullscreen_request != -1) {
+                swapChain->SetFullscreenState(fullscreen_request, NULL);
+                fullscreen_request = -1;
+            }
             if (!paused) {
                 g_ih->poll(dt, ignore_input);
                 d3dDev->ClearRenderTargetView(renderTargetView, clearColor);
@@ -213,12 +276,13 @@ void D3d10App::Init(char *config_file_name, c_task *init_task, void *params)
 
     config = new c_config();
     config->read_config_file(config_file_name);
-    clientWidth = config->get_int("app.x", 640);
+    clientWidth = get_window_width(config->get_int("app.x", default_window_width));
     if (clientWidth < 2)
         clientWidth = 2;
+    window_width = clientWidth;
     aspectRatio = (double)screenWidth / (double)screenHeight;
     aspectLock = config->get_bool("app.aspect_lock", true);
-    startFullscreen = config->get_bool("app.fullscreen", true);
+    startFullscreen = config->get_bool("app.fullscreen", default_fullscreen);
     vsync = config->get_bool("app.vsync", true);
     if (benchmark_mode || timedemo) {
         vsync = false;
@@ -434,6 +498,11 @@ LRESULT D3d10App::MsgProc(UINT msg, WPARAM wParam, LPARAM lParam)
             }
             resizing = false;
             OnResize();
+            //save the width the window was dragged to
+            if (!fullscreen && !maximized && clientWidth != window_width) {
+                window_width = clientWidth;
+                save_window_width();
+            }
             return 0;
 
         case WM_DESTROY:

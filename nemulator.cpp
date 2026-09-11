@@ -64,6 +64,7 @@ c_nemulator::c_nemulator()
     title_scroll_timer = 0.0;
     title_scroll_offset = 0.0;
     title_overflow = 0;
+    settings_in_game = false;
     splash_done = 0;
     splash_timer = SPLASH_TIMER_TOTAL_DURATION;
 #if defined(DEBUG)
@@ -222,10 +223,10 @@ void c_nemulator::Init()
     mainPanel2->y = 0.0f;
     mainPanel2->z = 0.0f;
     mainPanel2->in_focus = true;
-    sharpness = (float)std::clamp(config->get_double("sharpness", .8), 0.0, 1.0);
+    sharpness = (float)std::clamp(config->get_double("sharpness", default_sharpness), 0.0, 1.0);
     mainPanel2->set_sharpness(sharpness);
     texturePanels[0] = mainPanel2.get();
-    mainPanel2->scanlines = config->get_bool("scanlines", false);
+    mainPanel2->scanlines = config->get_bool("scanlines", default_scanlines);
 
     QueryPerformanceFrequency(&liFreq);
 
@@ -526,15 +527,31 @@ void c_nemulator::adjust_sharpness(float value)
         return;
     if (value > 0.0f && sharpness >= 1.0f)
         return;
-    sharpness += value;
+    set_sharpness(sharpness + value);
+    status->add_message("set sharpness to " + format_sharpness(sharpness));
+}
+
+void c_nemulator::set_sharpness(float value)
+{
+    sharpness = value;
     if (sharpness < 0.0f + .0001f)
         sharpness = 0.0f;
     if (sharpness + .0001f > 1.0f)
         sharpness = 1.0f;
     mainPanel2->set_sharpness(sharpness);
-    char buf[6];
-    sprintf_s(buf, sizeof(buf), "%.3f", sharpness);
-    status->add_message("set sharpness to " + std::string(buf));
+}
+
+std::string c_nemulator::format_sharpness(float value)
+{
+    char buf[8];
+    sprintf_s(buf, sizeof(buf), "%.3f", value);
+    return buf;
+}
+
+void c_nemulator::set_scanlines(bool enabled)
+{
+    for (int i = 0; i < num_texture_panels; i++)
+        texturePanels[i]->scanlines = enabled;
 }
 
 void c_nemulator::adjust_volume(int value)
@@ -553,12 +570,12 @@ void c_nemulator::adjust_volume(int value)
 
 void c_nemulator::handle_button_dec_sharpness(s_button_handler_params *params)
 {
-    adjust_sharpness(-0.025f);
+    adjust_sharpness(-sharpness_step);
 }
 
 void c_nemulator::handle_button_inc_sharpness(s_button_handler_params *params)
 {
-    adjust_sharpness(.025f);
+    adjust_sharpness(sharpness_step);
 }
 
 void c_nemulator::handle_button_volume_up(s_button_handler_params *params)
@@ -640,11 +657,78 @@ void c_nemulator::handle_button_menu_cancel(s_button_handler_params *params)
 void c_nemulator::show_settings_menu()
 {
     c_menu::s_menu_items mi;
-    const char* m[] = { "configure input" };
-    mi.num_items = 1;
+    const char* m[] = { "input", "display" };
+    mi.num_items = 2;
     mi.items = (char**)m;
     add_task(new c_menu(), (void*)&mi);
     menu = MENU_SETTINGS;
+}
+
+void c_nemulator::show_display_menu()
+{
+    display_settings_at_open = {sharpness, mainPanel2->scanlines, D3d10App::is_fullscreen()};
+
+    //in a game, leave it undimmed so changes can be seen as they're made
+    if (settings_in_game)
+    {
+        for (int i = 0; i < num_texture_panels; i++)
+            texturePanels[i]->dim = false;
+    }
+
+    c_options_menu::s_params p = {
+        .title = "display",
+        .items = {
+            {
+                .label = "sharpness",
+                .get_value = [this]() { return format_sharpness(sharpness); },
+                .change = [this](int direction) { set_sharpness(sharpness + direction * sharpness_step); },
+                .repeat = true,
+            },
+            {
+                .label = "scanlines",
+                .get_value = [this]() { return std::string(mainPanel2->scanlines ? "on" : "off"); },
+                .change = [this](int) { set_scanlines(!mainPanel2->scanlines); },
+            },
+            {
+                .label = "display mode",
+                .get_value = []() { return std::string(D3d10App::is_fullscreen() ? "fullscreen" : "windowed"); },
+                .change = [](int) { D3d10App::set_fullscreen(!D3d10App::is_fullscreen()); },
+            },
+            {
+                .label = "reset to defaults",
+                .change =
+                    [this](int) {
+                        set_sharpness(default_sharpness);
+                        set_scanlines(default_scanlines);
+                        D3d10App::set_fullscreen(D3d10App::default_fullscreen);
+                        if (!D3d10App::set_window_width(D3d10App::default_window_width))
+                            status->add_message("unable to save window width to nemulator.ini");
+                    },
+                .confirm_label = "press again to reset to defaults",
+            },
+        },
+        .shadow = settings_in_game,
+    };
+    add_task(new c_options_menu(), &p);
+    menu = MENU_DISPLAY;
+}
+
+//writes the settings changed in the display menu to nemulator.ini, in place
+void c_nemulator::save_display_settings()
+{
+    auto &opened = display_settings_at_open;
+    std::vector<std::pair<std::string, std::string>> values;
+    //compare as saved, so stepping away and back to the same value doesn't count as a change
+    if (format_sharpness(sharpness) != format_sharpness(opened.sharpness))
+        values.push_back({"sharpness", format_sharpness(sharpness)});
+    if (mainPanel2->scanlines != opened.scanlines)
+        values.push_back({"scanlines", mainPanel2->scanlines ? "true" : "false"});
+    bool fullscreen = D3d10App::is_fullscreen();
+    if (fullscreen != opened.fullscreen)
+        values.push_back({"app.fullscreen", fullscreen ? "true" : "false"});
+
+    if (!values.empty() && !config->set_config_values(values))
+        status->add_message("unable to save display settings to nemulator.ini");
 }
 
 void c_nemulator::handle_button_menu_ok(s_button_handler_params *params)
@@ -689,25 +773,32 @@ void c_nemulator::handle_button_leave_game(s_button_handler_params* params)
 {
     g_ih->ack_button(BUTTON_1START);
     g_ih->ack_button(BUTTON_1SELECT);
+    show_ingame_menu();
+    paused = true;
+    sound->stop();
+}
+
+void c_nemulator::show_ingame_menu()
+{
     c_system_container *g = (c_system_container *)texturePanels[selectedPanel]->GetSelected();
     for (int i = 0; i < num_texture_panels; i++)
         texturePanels[i]->dim = true;
+
+    ingame_menu_actions = {INGAME_RESUME, INGAME_RESET, INGAME_SETTINGS, INGAME_RETURN_TO_MENU};
+    if (g->get_system_name() == "Nintendo FDS")
+        ingame_menu_actions.insert(ingame_menu_actions.begin() + 1, INGAME_SWITCH_DISK);
+
+    //indexed by INGAME_ACTION
+    static const char *labels[] = {"resume", "switch disk", "reset", "settings", "return to menu"};
+    std::vector<const char *> items;
+    for (int action : ingame_menu_actions)
+        items.push_back(labels[action]);
+
     c_menu::s_menu_items mi;
-    if (g->get_system_name() == "Nintendo FDS") {
-        const char *m[] = {"resume", "switch disk", "reset", "return to menu"};
-        mi.num_items = 4;
-        mi.items = (char **)m;
-        add_task(new c_menu(), (int *)&mi);
-    }
-    else {
-        const char *m[] = {"resume", "reset", "return to menu"};
-        mi.num_items = 3;
-        mi.items = (char **)m;
-        add_task(new c_menu(), (int *)&mi);
-    }
+    mi.num_items = (int)items.size();
+    mi.items = (char **)items.data();
+    add_task(new c_menu(), &mi);
     menu = MENU_INGAME;
-    paused = true;
-    sound->stop();
 }
 
 void c_nemulator::handle_button_switch_disk(s_button_handler_params *params)
@@ -975,6 +1066,7 @@ int c_nemulator::update(double dt, int child_result, void *params)
                         qam->dead = true;
                     return 0;
                 case 1: //settings
+                    settings_in_game = false;
                     show_settings_menu();
                     break;
                 case 2: //suspend
@@ -1000,22 +1092,46 @@ int c_nemulator::update(double dt, int child_result, void *params)
             {
                 switch (*(int*)params)
                 {
-                case 0: //configure input
+                case 0: //input
                     add_task(new c_input_config(), &input_bindings);
                     menu = MENU_INPUT_CONFIG;
+                    break;
+                case 1: //display
+                    show_display_menu();
                     break;
                 }
             }
             else if (child_result == c_task::TASK_RESULT_CANCEL)
             {
-                //back to the main menu
-                handle_button_menu_cancel(nullptr);
+                //back to the menu settings was opened from
+                if (settings_in_game)
+                    show_ingame_menu();
+                else
+                    handle_button_menu_cancel(nullptr);
             }
             break;
         case MENU_INPUT_CONFIG:
-            //back to the settings menu
             if (child_result == c_task::TASK_RESULT_CANCEL)
+            {
+                if (settings_in_game)
+                {
+                    //pick up any changes to the current game's buttons
+                    c_system_container *g = (c_system_container *)texturePanels[selectedPanel]->GetSelected();
+                    input_bindings.apply(g->get_input_identifier(), g->get_button_map());
+                }
+                //back to the settings menu
                 show_settings_menu();
+            }
+            break;
+        case MENU_DISPLAY:
+            if (child_result == c_task::TASK_RESULT_CANCEL)
+            {
+                save_display_settings();
+                //back to the settings menu, dimming the game again if it was left undimmed
+                for (int i = 0; i < num_texture_panels; i++)
+                    texturePanels[i]->dim = true;
+                show_settings_menu();
+            }
             break;
         case MENU_SELECT:
             if (child_result == c_task::TASK_RESULT_RETURN)
@@ -1046,32 +1162,29 @@ int c_nemulator::update(double dt, int child_result, void *params)
         case MENU_INGAME:
             if (child_result == c_task::TASK_RESULT_RETURN)
             {
-                c_system_container *g = (c_system_container *)texturePanels[selectedPanel]->GetSelected();
-                bool fds = g->get_system_name() == "Nintendo FDS";
-                int p = *(int*)params;
-                if (fds) {
-                    if (p == 1) {
-                        p = 3;
-                    }
-                    else if (p > 1) {
-                        p -= 1;
-                    }
-                }
-                switch (p)
+                int action = ingame_menu_actions[*(int*)params];
+                if (action == INGAME_SETTINGS)
                 {
-                case 0: //resume
+                    //the game stays paused while in settings
+                    settings_in_game = true;
+                    show_settings_menu();
                     break;
-                case 1: //reset
+                }
+                switch (action)
+                {
+                case INGAME_RESUME:
+                    break;
+                case INGAME_RESET:
                     {
                     c_system *n = ((c_system_container *)texturePanels[selectedPanel]->GetSelected())->system.get();
                         n->reset();
                         status->add_message("reset");
                     }
                     break;
-                case 2: //return to main menu
+                case INGAME_RETURN_TO_MENU:
                     leave_game();
                     break;
-                case 3: //fds only, switch disk
+                case INGAME_SWITCH_DISK:
                     handle_button_switch_disk(nullptr);
                     break;
                 }
@@ -1079,7 +1192,7 @@ int c_nemulator::update(double dt, int child_result, void *params)
                     texturePanels[i]->dim = false;
                 paused = false;
                 menu = 0;
-                if (p != 2)
+                if (action != INGAME_RETURN_TO_MENU)
                     sound->play();
             }
             else if (child_result == c_task::TASK_RESULT_CANCEL)
@@ -1387,9 +1500,9 @@ void c_nemulator::DrawScene()
         for (int i = 0; i < num_texture_panels; i++)
             texturePanels[i]->Draw();
 
-        //the config screen uses the whole display, so hide the title behind it
+        //the settings screens use the whole display, so hide the title behind them
         if ((texturePanels[selectedPanel]->state == c_texture_panel::STATE_MENU || texturePanels[selectedPanel]->state == c_texture_panel::STATE_SCROLLING) &&
-            menu != MENU_INPUT_CONFIG)
+            menu != MENU_INPUT_CONFIG && menu != MENU_DISPLAY)
         {
             double dim = mainPanel2->dim ? .25 : 1.0;
             DrawText(font1, (float)(title_margin - title_scroll_offset / clientWidth), .85f, g->title, D3DXCOLOR((float)(1.0f * dim), 0.0f, 0.0f, 1.0f));
@@ -1422,7 +1535,7 @@ void c_nemulator::DrawScene()
             d3dDev->OMSetDepthStencilState(state, oldref);
         }
     }
-    else if (menu != MENU_INPUT_CONFIG)
+    else if (menu != MENU_INPUT_CONFIG && menu != MENU_DISPLAY)
     {
         DrawText(font1, .05f, .5f, "No roms found\nCheck paths in nemulator.ini\nDefault NES path: c:\\roms\\nes\nDefault SMS path: c:\\roms\\sms", D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f));
     }
@@ -1437,7 +1550,8 @@ void c_nemulator::OnPause(bool paused)
     {
         if (paused)
             sound->stop();
-        else if (menu != MENU_INGAME)
+        //the game is paused while the in-game menu, or settings opened from it, are shown
+        else if (!this->paused)
             sound->play();
     }
 }
