@@ -74,13 +74,11 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
             //run for each phase's real duration.  a handler that reaches the
             //scroll registers before the next HDS moves the next line; one that
             //does not is simply late, which is the distinction hardware makes.
-            cpu->available_cycles += vid->phase_hds();
+            cpu->available_cycles += vid->phase_latch();
             cpu->execute();
-            cpu->available_cycles += vid->phase_hdw();
+            cpu->available_cycles += vid->phase_hds_irq();
             cpu->execute();
-            cpu->available_cycles += vid->phase_hde();
-            cpu->execute();
-            cpu->available_cycles += vid->phase_hsw();
+            cpu->available_cycles += vid->phase_rcr();
             cpu->execute();
             frame_done = vid->take_frame_complete();
 

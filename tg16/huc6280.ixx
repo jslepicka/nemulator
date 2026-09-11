@@ -22,23 +22,23 @@ export template <typename Sys> class c_huc6280
     // clang-format off
     static constexpr int cycle_table[264] = {
     //   0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
-        21, 18,  3, 24,  9,  9, 15, 15,  9,  6,  6,  6, 12, 12, 18, 18, //0F
-         6, 15,  3, 24, 12, 12, 18, 18,  6, 12,  6, 21, 12, 12, 21, 21, //1F
-        18, 18,  3, 24,  9,  9, 15, 15, 12,  6,  6,  6, 12, 12, 18, 18, //2F
-         6, 15,  3, 24, 12, 12, 18, 18,  6, 12,  6, 21, 12, 12, 21, 21, //3F
-        18, 18,  3, 24,  9,  9, 15, 15,  9,  6,  6,  6,  9, 12, 18, 18, //4F
-         6, 15,  3, 24, 12, 12, 18, 18,  6, 12,  6, 21, 12, 12, 21, 21, //5F
-        18, 18,  3, 24,  9,  9, 15, 15, 12,  6,  6,  6, 15, 12, 18, 18, //6F
-         6, 15,  3, 51, 12, 12, 18, 18,  6, 12,  6, 21, 12, 12, 21, 21, //7F
-         6, 18,  6, 18,  9,  9,  9,  9,  6,  6,  6,  6, 12, 12, 12, 12, //8F
-         6, 18,  3, 18, 12, 12, 12, 12,  6, 15,  6, 15, 15, 15, 15, 15, //9F
-         6, 18,  6, 18,  9,  9,  9,  9,  6,  6,  6,  6, 12, 12, 12, 12, //AF
-         6, 15,  3, 15, 12, 12, 12, 12,  6, 12,  6, 12, 12, 12, 12, 12, //BF
-         6, 18,  6, 24,  9,  9, 15, 15,  6,  6,  6,  6, 12, 12, 18, 18, //CF
-         6, 15,  3, 24, 12, 12, 18, 18,  6, 12,  6, 21, 12, 12, 21, 21, //DF
-         6, 18,  6, 51,  9,  9, 15, 15,  6,  6,  6,  6, 12, 12, 18, 18, //EF
-         6, 15,  3, 51, 12, 12, 18, 18,  6, 12,  6, 21, 12, 12, 21, 21, //FF
-        21, 21,  21, 18, 18, 18, 18, 21
+        24, 21,  9, 12, 18, 12, 18, 21,  9,  6,  6,  6, 21, 15, 21, 18, //0F
+         6, 21, 21, 12, 18, 12, 18, 21,  6, 15,  6,  6, 21, 15, 21, 18, //1F
+        21, 21,  9, 12, 12, 12, 18, 21, 12,  6,  6,  6, 15, 15, 21, 18, //2F
+         6, 21, 21,  6, 12, 12, 18, 21,  6, 15,  6,  6, 15, 15, 21, 18, //3F
+        21, 21,  9, 12, 24, 12, 18, 21,  9,  6,  6,  6, 12, 15, 21, 18, //4F
+         6, 21, 21, 15, 12, 12, 18, 21,  6, 15,  9,  6,  6, 15, 21, 18, //5F
+        21, 21,  6,  6, 12, 12, 18, 21, 12,  6,  6,  6, 21, 15, 21, 18, //6F
+         6, 21, 21, 51, 12, 12, 18, 21,  6, 15, 12,  6, 21, 15, 21, 18, //7F
+        12, 21,  6, 21, 12, 12, 12, 21,  6,  6,  6,  6, 15, 15, 15, 18, //8F
+         6, 21, 21, 24, 12, 12, 12, 21,  6, 15,  6,  6, 15, 15, 15, 18, //9F
+         6, 21,  6, 21, 12, 12, 12, 21,  6,  6,  6,  6, 15, 15, 15, 18, //AF
+         6, 21, 21, 24, 12, 12, 12, 21,  6, 15,  6,  6, 15, 15, 15, 18, //BF
+         6, 21,  6, 51, 12, 12, 18, 21,  6,  6,  6,  6, 15, 15, 21, 18, //CF
+         6, 21, 21, 51, 12, 12, 18, 21,  6, 15,  9,  6,  6, 15, 21, 18, //DF
+         6, 21,  6, 51, 12, 12, 18, 21,  6,  6,  6,  6, 15, 15, 21, 18, //EF
+         6, 21, 21, 51,  6, 12, 18, 21,  6, 15, 12,  6,  6, 15, 21, 18, //FF
+        21, 21, 21, 18, 18, 18, 18, 21
     };
     // clang-format on
   public:
@@ -554,6 +554,7 @@ export template <typename Sys> class c_huc6280
                 SR.B = false;
                 push(*S);
                 SR.I = true;
+                SR.D = false;
                 PC = makeword(read_byte(0xFFFA), read_byte(0xFFFB));
                 break;
             case 0x101: //IRQ1
@@ -562,6 +563,7 @@ export template <typename Sys> class c_huc6280
                 SR.B = false;
                 push(*S);
                 SR.I = true;
+                SR.D = false;
                 PC = makeword(read_byte(0xFFF8), read_byte(0xFFF9));
                 //ods("!!! IRQ1 !!!\n");
                 assert(!(sys.irq_controller_1402 & 2));
@@ -572,6 +574,7 @@ export template <typename Sys> class c_huc6280
                 SR.B = false;
                 push(*S);
                 SR.I = true;
+                SR.D = false;
                 PC = makeword(read_byte(0xFFF6), read_byte(0xFFF7));
                 ods("!!! IRQ2 !!!\n");
                 break;
@@ -632,6 +635,7 @@ export template <typename Sys> class c_huc6280
                 SR.B = false;
                 push(*S);
                 SR.I = true;
+                SR.D = false;
                 PC = makeword(read_byte(0xFFFA), read_byte(0xFFFB));
                 break;
 
@@ -1206,6 +1210,10 @@ export template <typename Sys> class c_huc6280
 
     INLINE void ADC()
     {
+        //the documentation notes one extra cycle when the decimal flag is set
+        if (SR.D) {
+            required_cycles += 3;
+        }
         uint8_t operand = SR.T ? read_byte(0x2000 | X) : A;
         uint8_t result = 0;
         if (SR.D) {
@@ -1350,6 +1358,7 @@ export template <typename Sys> class c_huc6280
         push(*S | 0x30);
         SR.B = true;
         SR.I = true;
+        SR.D = false;
         PC = makeword(read_byte(0xFFFE), read_byte(0xFFFF));
     }
     INLINE void BVC()

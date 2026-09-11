@@ -329,23 +329,10 @@ export template <typename Sys> class c_vid
                 vphase = VPHASE_VCR;
                 VCR = vdc_registers[0x0E] & 0xFF;
                 vphase_count = VCR;
-                vblank = 1;
-                if (vdc_registers[0x05] & 0x8) {
-                    sys.irq1 = 1;
-                    vdc_status |= 0x20;
-                }
-                // satb transfer starts at the beginning of vertical blanking
-                if ((vdc_registers[0xF] & 0x10) || do_satb_dma) {
-                    do_satb_dma = false;
-                    uint32_t src = vdc_registers[0x13] * 2;
-                    for (int i = 0; i < 512; i++) {
-                        satb[i] = vram[(src + i) & 0xFFFF];
-                    }
-                    if (vdc_registers[0xF] & 0x1) {
-                        vdc_status |= 0x8;
-                        sys.irq1 = 1;
-                    }
-                }
+                //entering vertical blanking only arms the interrupt; it is raised
+                //at the hds point of the following line, which is what keeps it
+                //clear of the raster compare that flagged it
+                vblank_pending = true;
                 break;
 
             case VPHASE_VCR:
@@ -374,9 +361,9 @@ export template <typename Sys> class c_vid
     // absorbs the difference the way the incoming hsync does on hardware.
     void compute_line_timing()
     {
-        static constexpr int line_master = 1365;
         static constexpr int dot_master[4] = {4, 3, 2, 2};   //5.37 / 7.16 / 10.74MHz
         int dm = dot_master[vce_control & 3];
+        dot_clock = dm;
 
         ph_hds = (((vdc_registers[0x0A] >> 8) & 0x7F) + 1) * 8 * dm;
         ph_hdw = ((vdc_registers[0x0B] & 0x7F) + 1) * 8 * dm;
@@ -395,9 +382,26 @@ export template <typename Sys> class c_vid
         ph_hsw = line_master - ph_hds - ph_hdw - ph_hde;
     }
 
-    // HDS - the vdc latches the scroll registers and starts fetching the row.
-    // whatever the cpu wrote before this instant is what the line is drawn with.
-    int phase_hds()
+    // a scanline is driven as three events, placed where the vdc performs them.
+    // between them the cpu runs for the real interval, so a handler either reaches
+    // the scroll registers before the row is fetched or it does not - which is the
+    // distinction the hardware makes, and the only one a raster split depends on.
+    //
+    //    -34 dots   scroll latch, row fetched        phase_latch
+    //    -26 dots   vertical blank irq, satb dma     phase_hds_irq
+    //      0 dots   display window opens
+    //   +HDW-14     raster compare, vertical advance phase_rcr
+    //
+    // the offsets are counted from the display window opening.  the latch sitting
+    // 34 dots ahead of it puts it back inside the preceding sync period for the
+    // usual HDS, and that is what decides a split: Splatterhouse writes its bottom
+    // split too late to catch the latch, which leaves the black line hardware shows
+    // above the status bar, while Vigilante and Cadash's scroll chain get there in
+    // time and move the row they named.
+
+    // the vdc latches the scroll registers and fetches the row here.  whatever the
+    // cpu wrote before this instant is what the line is drawn with.
+    int phase_latch()
     {
         compute_line_timing();
 
@@ -412,20 +416,45 @@ export template <typename Sys> class c_vid
         else if (pfb) {
             std::fill_n(pfb, frame_width, rgb[pal[256]]);
         }
-        return ph_hds;
+
+        //the hds irq point follows 8 dots later
+        return 8 * dot_clock;
     }
 
-    int phase_hdw() { return ph_hdw; }
+    // vertical blank is raised here rather than at the vertical transition that
+    // armed it, which leaves most of a line between it and the raster compare.
+    // Cadash needs that gap - with both on the same instant its handler never
+    // restores the background scroll and the throne room jumps.  the satb transfer
+    // starts with the interrupt.
+    int phase_hds_irq()
+    {
+        if (vblank_pending) {
+            vblank_pending = false;
+            vblank = 1;
+            if (vdc_registers[0x05] & 0x8) {
+                sys.irq1 = 1;
+                vdc_status |= 0x20;
+            }
+            if ((vdc_registers[0xF] & 0x10) || do_satb_dma) {
+                do_satb_dma = false;
+                uint32_t src = vdc_registers[0x13] * 2;
+                for (int i = 0; i < 512; i++) {
+                    satb[i] = vram[(src + i) & 0xFFFF];
+                }
+                if (vdc_registers[0xF] & 0x1) {
+                    vdc_status |= 0x8;
+                    sys.irq1 = 1;
+                }
+            }
+        }
+        //on to the compare, 14 dots before the window closes
+        return ph_hdw + 12 * dot_clock;
+    }
 
-    // HDE - active display for this line is done, and the vdc knows whether the
-    // next line matches RCR, so the raster interrupt goes here.  what is left of
-    // the line - back porch plus sync, about 245 master clocks - is all the time
-    // a handler gets to reach the scroll registers before the named line is
-    // fetched at the next HDS.  that deadline is what separates the two games:
-    // Vigilante writes BXR 168 clocks after the interrupt and moves the line it
-    // named, Bloody Wolf needs 807 for BYR and BXR and only lands on the one
-    // after.
-    int phase_hde()
+    // the raster compare sits 14 dots before the display window closes, and the
+    // vertical counter clocks with it - so vblank and the satb transfer are timed
+    // from here too, not from the sync edge.
+    int phase_rcr()
     {
         // rcr_counter names this line: $40 is the first display line, which is
         // what "add 64 to RCR to get the scanline" means, and it keeps counting
@@ -437,6 +466,8 @@ export template <typename Sys> class c_vid
             rcr_counter++;
         }
 
+        advance_vertical();
+
         if (rcr_counter + 1 == (int)(vdc_registers[0x06] & 0x3FF)) {
             raster_compare = 1;
             if (vdc_registers[0x05] & 0x4) {
@@ -444,12 +475,11 @@ export template <typename Sys> class c_vid
                 vdc_status |= 0x4;
             }
         }
-        return ph_hde;
+
+        return line_master - (ph_hdw + 20 * dot_clock);
     }
 
-    // HSW - sync.  the raster compare for this line is taken here, then the
-    // vertical state advances, which is what carries vblank and the satb dma.
-    int phase_hsw()
+    void advance_vertical()
     {
         if (--vphase_count <= 0) {
             // VCR can legitimately be zero, so a phase may have no lines at all
@@ -474,7 +504,6 @@ export template <typename Sys> class c_vid
             burst_mode = !(vdc_registers[0x5] & 0xC0);
             frame_complete = true;
         }
-        return ph_hsw;
     }
 
     bool take_frame_complete()
@@ -802,6 +831,8 @@ export template <typename Sys> class c_vid
     int rcr_counter;
     bool frame_complete;
     // length of each horizontal phase for the current line, in master clocks
+    int dot_clock = 4;
+    static constexpr int line_master = 1365;
     int ph_hds;
     int ph_hdw;
     int ph_hde;
@@ -842,6 +873,7 @@ export template <typename Sys> class c_vid
     uint32_t y_offset;
     bool reload_y_scroll;
     bool byr_written;
+    bool vblank_pending = false;
 
 };
 } //namespace tg16
