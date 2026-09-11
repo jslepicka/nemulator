@@ -37,7 +37,10 @@ c_qam::c_qam()
     row = ROW_CHAR;
     selected_system = 0;
     active_system = 0;
+    system_row_left = 0;
+    system_row_right = 0;
     system_scroll = 0.0;
+    system_scroll_target = 0.0;
 }
 
 c_qam::~c_qam()
@@ -62,7 +65,51 @@ void c_qam::set_systems(const std::vector<std::string> &system_names, int active
     systems = system_names;
     selected_system = active;
     active_system = active;
-    system_scroll = active;
+    layout_systems();
+}
+
+//measures the system names and the edges of the letter row, then scrolls straight to the selected system
+void c_qam::layout_systems()
+{
+    auto text_width = [](ID3DX10Font *f, const char *s) {
+        RECT calc = {0, 0, 0, 0};
+        f->DrawText(NULL, s, -1, &calc, DT_CALCRECT | DT_SINGLELINE, D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f));
+        return (int)(calc.right - calc.left);
+    };
+
+    //letters are centered in their cells, so align with the outer edges of the first and last letters
+    double cell_width = clientWidth / 29.0;
+    system_row_left = (int)(cell_width + (cell_width - text_width(font, "#")) / 2.0);
+    system_row_right = (int)(cell_width * 28 - (cell_width - text_width(font, "Z")) / 2.0);
+
+    int spacing = (int)(clientHeight * .04);
+    int x = 0;
+    system_lefts.clear();
+    system_widths.clear();
+    for (auto &s : systems)
+    {
+        system_lefts.push_back(x);
+        system_widths.push_back(text_width(system_font, s.c_str()));
+        x += system_widths.back() + spacing;
+    }
+
+    system_scroll_target = 0.0;
+    update_system_scroll_target();
+    system_scroll = system_scroll_target;
+}
+
+//scrolls only as far as needed to keep the selected system within the row
+void c_qam::update_system_scroll_target()
+{
+    if (systems.empty())
+        return;
+    int visible_width = system_row_right - system_row_left;
+    int left = system_lefts[selected_system];
+    int right = left + system_widths[selected_system];
+    if (left < system_scroll_target)
+        system_scroll_target = left;
+    else if (right > system_scroll_target + visible_width)
+        system_scroll_target = right - visible_width;
 }
 
 void c_qam::init(void *params)
@@ -112,6 +159,7 @@ void c_qam::load_fonts()
 void c_qam::resize()
 {
     load_fonts();
+    layout_systems();
     scroll_target = (int)(clientHeight * (system_row_height + char_row_height));
     if (state == STATE_READY)
         scroll_pos = scroll_target;
@@ -121,9 +169,10 @@ int c_qam::update(double dt, int child_result, void *params)
 {
     //easing (rather than a fixed-duration interpolation) keeps the scroll smooth when the
     //target changes mid-scroll, e.g., while left/right is repeating
-    system_scroll += (selected_system - system_scroll) * (1.0 - std::exp(-dt / system_scroll_time));
-    if (std::abs(selected_system - system_scroll) < .001)
-        system_scroll = selected_system;
+    update_system_scroll_target();
+    system_scroll += (system_scroll_target - system_scroll) * (1.0 - std::exp(-dt / system_scroll_time));
+    if (std::abs(system_scroll_target - system_scroll) < .5)
+        system_scroll = system_scroll_target;
 
     if (state == STATE_ACTIVATED)
     {
@@ -254,38 +303,14 @@ void c_qam::draw()
     long top = (long)scroll_pos - scroll_target;
     long system_row_bottom = top + (long)(clientHeight * system_row_height);
 
-    //the system row keeps the selected system centered, scrolling as the selection changes
-    if (!systems.empty())
+    //the system row is left aligned with the letter row and scrolls to keep the selected system visible
+    for (int i = 0; i < (int)systems.size(); i++)
     {
-        int spacing = (int)(clientHeight * .04);
-        std::vector<int> lefts; //left edge of each system, relative to the start of the row
-        std::vector<int> widths;
-        int row_width = 0;
-        for (auto &s : systems)
-        {
-            RECT calc = {0, 0, 0, 0};
-            system_font->DrawText(NULL, s.c_str(), -1, &calc, DT_CALCRECT | DT_SINGLELINE, normal);
-            lefts.push_back(row_width);
-            widths.push_back(calc.right - calc.left);
-            row_width += widths.back() + spacing;
-        }
-
-        //while scrolling, system_scroll is between two systems, so center on a point between them
-        int last = (int)systems.size() - 1;
-        int from = std::clamp((int)std::floor(system_scroll), 0, last);
-        int to = from < last ? from + 1 : last;
-        double mu = std::clamp(system_scroll - from, 0.0, 1.0);
-        double from_center = lefts[from] + widths[from] / 2.0;
-        double to_center = lefts[to] + widths[to] / 2.0;
-        int x = (int)(clientWidth / 2.0 - (from_center + (to_center - from_center) * mu));
-
-        for (int i = 0; i <= last; i++)
-        {
-            RECT r = {x + lefts[i], top, x + lefts[i] + widths[i], system_row_bottom};
-            D3DXCOLOR color = row == ROW_SYSTEM ? (i == selected_system ? highlight : normal)
-                                                : (i == selected_system ? unfocused_highlight : unfocused_normal);
-            system_font->DrawText(NULL, systems[i].c_str(), -1, &r, DT_NOCLIP | DT_LEFT | DT_SINGLELINE | DT_VCENTER, color);
-        }
+        int x = system_row_left + system_lefts[i] - (int)system_scroll;
+        RECT r = {x, top, x + system_widths[i], system_row_bottom};
+        D3DXCOLOR color = row == ROW_SYSTEM ? (i == selected_system ? highlight : normal)
+                                            : (i == selected_system ? unfocused_highlight : unfocused_normal);
+        system_font->DrawText(NULL, systems[i].c_str(), -1, &r, DT_NOCLIP | DT_LEFT | DT_SINGLELINE | DT_VCENTER, color);
     }
 
     //RECT r = {(LONG)(clientWidth * .1), (LONG)(clientHeight * .1), 0, 0};

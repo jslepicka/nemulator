@@ -62,6 +62,13 @@ private:
     std::vector<std::string> systems;
     int selected_system;
     int active_system; //the system the menu is currently filtered to
-    double system_scroll; //fractional index of the system centered in the row; eases toward selected_system
+    void layout_systems();
+    void update_system_scroll_target();
+    std::vector<int> system_lefts; //left edge of each system name, relative to the start of the row
+    std::vector<int> system_widths;
+    int system_row_left; //the system row is aligned with the letter row
+    int system_row_right;
+    double system_scroll; //pixels the system row is scrolled left; eases toward system_scroll_target
+    double system_scroll_target;
     static const double system_scroll_time;
 };
