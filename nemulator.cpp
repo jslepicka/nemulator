@@ -57,6 +57,7 @@ c_nemulator::c_nemulator()
     nsf_stats = NULL;
     audio_info = NULL;
     qam = NULL;
+    system_filter = 0;
     splash_done = 0;
     splash_timer = SPLASH_TIMER_TOTAL_DURATION;
 #if defined(DEBUG)
@@ -808,9 +809,27 @@ void c_nemulator::show_qam()
         texturePanels[i]->dim = true;
 
     qam->set_char(texturePanels[selectedPanel]->GetSelected()->get_description().c_str()[0]);
+    qam->set_systems(system_filters, system_filter);
 
     qam->activate();
     menu = MENUS::MENU_QAM;
+}
+
+//unloads the games in the menu, then rebuilds it with only the games from the chosen system
+void c_nemulator::set_system_filter(int filter)
+{
+    system_filter = filter;
+    mainPanel2->clear();
+    add_games_to_panel();
+}
+
+void c_nemulator::add_games_to_panel()
+{
+    for (auto &game : gameList)
+    {
+        if (system_filter == 0 || game->get_system_name() == system_filters[system_filter])
+            mainPanel2->AddItem(game);
+    }
 }
 
 void c_nemulator::do_turbo_press(int button, std::string button_name)
@@ -910,7 +929,13 @@ int c_nemulator::update(double dt, int child_result, void *params)
         case MENU_QAM:
             if (child_result == c_task::TASK_RESULT_RETURN)
             {
-                texturePanels[selectedPanel]->move_to_char(*(char*)params);
+                if (qam->system_chosen())
+                {
+                    if (qam->get_system() != system_filter)
+                        set_system_filter(qam->get_system());
+                }
+                else
+                    texturePanels[selectedPanel]->move_to_char(*(char*)params);
                 menu = 0;
             }
             else if (child_result == c_task::TASK_RESULT_CANCEL)
@@ -1488,10 +1513,16 @@ void c_nemulator::LoadGames()
         std::transform(b_title.begin(), b_title.end(), b_title.begin(), fn);
         return a_title < b_title;
     });
+
+    system_filters = {"All"};
     for (auto &game : gameList)
     {
-        mainPanel2->AddItem(game);
+        if (std::find(system_filters.begin(), system_filters.end(), game->get_system_name()) == system_filters.end())
+            system_filters.push_back(game->get_system_name());
     }
+    std::sort(system_filters.begin() + 1, system_filters.end());
+
+    add_games_to_panel();
     loaded = 1;
 }
 

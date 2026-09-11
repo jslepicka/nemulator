@@ -49,6 +49,8 @@ private:
     int init_threads();
     void kill_threads();
     void show_qam();
+    void set_system_filter(int filter);
+    void add_games_to_panel();
     void do_turbo_press(int button, std::string button_name);
     int splash_done;
     int splash_stage;
@@ -128,6 +130,8 @@ private:
     void ProcessInput(double dt);
     int selectedPanel;
     std::vector<c_system_container*> gameList;
+    std::vector<std::string> system_filters; //"All" followed by each system that has games
+    int system_filter; //index into system_filters of the systems shown in the menu
     double menu_delay;
 
     bool inGame;

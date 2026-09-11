@@ -19,6 +19,7 @@ public:
     void set_scroll_duration(float duration) { scrollDuration = duration; };
     void Init();
     void AddItem(c_texture_panel_item *item);
+    void clear();
     void Update(double dt);
     void Draw(/*float x, float y, float z*/);
     void GetActive(std::list<c_texture_panel_item*> *itemList);

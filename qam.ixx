@@ -20,14 +20,21 @@ public:
     void load_fonts();
     void set_valid_chars(int *v);
     void set_char(char c);
+    void set_systems(const std::vector<std::string> &system_names, int active);
     void activate();
+    //after returning TASK_RESULT_RETURN, either a system was chosen or params holds the chosen character
+    bool system_chosen() { return result == RESULT_SYSTEM; }
+    int get_system() { return selected_system; }
 private:
     ID3DX10Font *font;
+    ID3DX10Font *system_font;
     int selected;
     static const char *c;
     double scroll_timer;
     double scroll_pos;
     static const double scroll_delay;
+    static const double system_row_height;
+    static const double char_row_height;
     int scroll_target;
     int state;
     int result;
@@ -39,5 +46,22 @@ private:
         STATE_READY,
         STATE_IDLE
     };
+    enum RESULT
+    {
+        RESULT_CANCEL,
+        RESULT_CHAR,
+        RESULT_SYSTEM
+    };
+    enum ROW
+    {
+        ROW_SYSTEM,
+        ROW_CHAR
+    };
+    int row;
     int *valid_chars;
+    std::vector<std::string> systems;
+    int selected_system;
+    int active_system; //the system the menu is currently filtered to
+    double system_scroll; //fractional index of the system centered in the row; eases toward selected_system
+    static const double system_scroll_time;
 };
