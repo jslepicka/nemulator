@@ -320,8 +320,13 @@ void c_nemulator::configure_input()
         { BUTTON_VOLUME_DOWN,    "",        "",        VK_OEM_MINUS,           1 },
 
         { BUTTON_HOME,           "joy1",    "home",    0,                      0 },
-        { BUTTON_SCANLINES,      "",        "",        VK_F12,                 0 }
+        { BUTTON_SCANLINES,      "",        "",        VK_F12,                 0 },
 
+        //not configurable so the arrow keys always work in menus
+        { BUTTON_MENU_UP,        "",        "",        VK_UP,                  1 },
+        { BUTTON_MENU_DOWN,      "",        "",        VK_DOWN,                1 },
+        { BUTTON_MENU_LEFT,      "",        "",        VK_LEFT,                1 },
+        { BUTTON_MENU_RIGHT,     "",        "",        VK_RIGHT,               1 },
     };
     // clang-format on
 
@@ -362,12 +367,20 @@ void c_nemulator::configure_input()
         g_ih->set_button_type(button, config->get_int(joy_key + ".type", 0));
     }
 
-    g_ih->set_button_group(BUTTON_UP, {BUTTON_1UP});
-    g_ih->set_button_group(BUTTON_DOWN, {BUTTON_1DOWN});
-    g_ih->set_button_group(BUTTON_LEFT, {BUTTON_1LEFT});
-    g_ih->set_button_group(BUTTON_RIGHT, {BUTTON_1RIGHT});
+    g_ih->set_button_group(BUTTON_UP, {BUTTON_1UP, BUTTON_MENU_UP});
+    g_ih->set_button_group(BUTTON_DOWN, {BUTTON_1DOWN, BUTTON_MENU_DOWN});
+    g_ih->set_button_group(BUTTON_LEFT, {BUTTON_1LEFT, BUTTON_MENU_LEFT});
+    g_ih->set_button_group(BUTTON_RIGHT, {BUTTON_1RIGHT, BUTTON_MENU_RIGHT});
     g_ih->set_button_group(BUTTON_CANCEL, {BUTTON_1B, BUTTON_ESCAPE});
     g_ih->set_button_group(BUTTON_OK, {BUTTON_1A, BUTTON_1C, BUTTON_1START, BUTTON_RETURN});
+
+    std::map<int, c_input_bindings::s_config_name> config_names;
+    for (auto &b : button_map)
+    {
+        if (b.config_base != "")
+            config_names[b.button] = {b.config_base, b.config_name};
+    }
+    input_bindings.init(config_names);
 
 }
 
@@ -608,11 +621,21 @@ void c_nemulator::handle_button_menu_cancel(s_button_handler_params *params)
         texturePanels[i]->dim = true;
     c_menu::s_menu_items mi;
 
-    const char* m[] = { "quit nemulator", "suspend computer" };
-    mi.num_items = show_suspend ? 2 : 1;
+    const char* m[] = { "quit nemulator", "settings", "suspend computer" };
+    mi.num_items = show_suspend ? 3 : 2;
     mi.items = (char**)m;
     add_task(new c_menu(), (void*)&mi);
     menu = MENU_QUIT;
+}
+
+void c_nemulator::show_settings_menu()
+{
+    c_menu::s_menu_items mi;
+    const char* m[] = { "configure input" };
+    mi.num_items = 1;
+    mi.items = (char**)m;
+    add_task(new c_menu(), (void*)&mi);
+    menu = MENU_SETTINGS;
 }
 
 void c_nemulator::handle_button_menu_ok(s_button_handler_params *params)
@@ -736,8 +759,8 @@ void c_nemulator::ProcessInput(double dt)
     if (current_scope | IN_MENU) {
         if (fastscroll)
         {
-            if ((!g_ih->get_result(BUTTON_1RIGHT)
-                && !g_ih->get_result(BUTTON_1LEFT))
+            if ((!g_ih->get_result(BUTTON_RIGHT)
+                && !g_ih->get_result(BUTTON_LEFT))
                 || texturePanels[selectedPanel]->is_first_col()
                 || texturePanels[selectedPanel]->is_last_col())
             {
@@ -826,6 +849,7 @@ void c_nemulator::leave_game()
         ResumeThread(game_thread->thread_handle);
     }
     c_system_container* g = (c_system_container*)texturePanels[selectedPanel]->GetSelected();
+    input_bindings.restore(g->get_button_map());
     if (g->is_nes)
     {
         nes::c_nes *n = (nes::c_nes *)g->system.get();
@@ -844,6 +868,7 @@ void c_nemulator::start_game()
     c_system *n = g->system.get();
     if (n && n->is_loaded())
     {
+        input_bindings.apply(g->get_input_identifier(), g->get_button_map());
         sound->set_num_channels(g->get_num_sound_channels());
         sound->play();
         inGame = true;
@@ -916,13 +941,19 @@ int c_nemulator::update(double dt, int child_result, void *params)
                     if (qam)
                         qam->dead = true;
                     return 0;
-                case 1: //suspend
+                case 1: //settings
+                    show_settings_menu();
+                    break;
+                case 2: //suspend
                     SetSuspendState(FALSE, TRUE, FALSE);
                     break;
                 }
-                menu = 0;
-                for (int i = 0; i < num_texture_panels; i++)
-                    texturePanels[i]->dim = false;
+                if (menu == MENU_QUIT)
+                {
+                    menu = 0;
+                    for (int i = 0; i < num_texture_panels; i++)
+                        texturePanels[i]->dim = false;
+                }
             }
             else if (child_result == c_task::TASK_RESULT_CANCEL)
             {
@@ -930,6 +961,28 @@ int c_nemulator::update(double dt, int child_result, void *params)
                 for (int i = 0; i < num_texture_panels; i++)
                     texturePanels[i]->dim = false;
             }
+            break;
+        case MENU_SETTINGS:
+            if (child_result == c_task::TASK_RESULT_RETURN)
+            {
+                switch (*(int*)params)
+                {
+                case 0: //configure input
+                    add_task(new c_input_config(), &input_bindings);
+                    menu = MENU_INPUT_CONFIG;
+                    break;
+                }
+            }
+            else if (child_result == c_task::TASK_RESULT_CANCEL)
+            {
+                //back to the main menu
+                handle_button_menu_cancel(nullptr);
+            }
+            break;
+        case MENU_INPUT_CONFIG:
+            //back to the settings menu
+            if (child_result == c_task::TASK_RESULT_CANCEL)
+                show_settings_menu();
             break;
         case MENU_SELECT:
             if (child_result == c_task::TASK_RESULT_RETURN)
@@ -1243,7 +1296,9 @@ void c_nemulator::DrawScene()
         for (int i = 0; i < num_texture_panels; i++)
             texturePanels[i]->Draw();
 
-        if (texturePanels[selectedPanel]->state == c_texture_panel::STATE_MENU || texturePanels[selectedPanel]->state == c_texture_panel::STATE_SCROLLING)
+        //the config screen uses the whole display, so hide the title behind it
+        if ((texturePanels[selectedPanel]->state == c_texture_panel::STATE_MENU || texturePanels[selectedPanel]->state == c_texture_panel::STATE_SCROLLING) &&
+            menu != MENU_INPUT_CONFIG)
         {
             double dim = mainPanel2->dim ? .25 : 1.0;
             DrawText(font1, .05f, .85f, g->title, D3DXCOLOR((float)(1.0f * dim), 0.0f, 0.0f, 1.0f));
@@ -1276,7 +1331,7 @@ void c_nemulator::DrawScene()
             d3dDev->OMSetDepthStencilState(state, oldref);
         }
     }
-    else
+    else if (menu != MENU_INPUT_CONFIG)
     {
         DrawText(font1, .05f, .5f, "No roms found\nCheck paths in nemulator.ini\nDefault NES path: c:\\roms\\nes\nDefault SMS path: c:\\roms\\sms", D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f));
     }

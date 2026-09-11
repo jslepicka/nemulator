@@ -305,6 +305,7 @@
     <ClCompile Include="config.cpp" />
     <ClCompile Include="crc32.ixx" />
     <ClCompile Include="D3d10App.cpp" />
+    <ClCompile Include="input_config.cpp" />
     <ClCompile Include="input_handler.cpp" />
     <ClCompile Include="interpolate.ixx" />
     <ClCompile Include="main.cpp" />
@@ -323,6 +324,7 @@
     <ClCompile Include="class_registry.ixx" />
     <ClCompile Include="config.ixx" />
     <ClCompile Include="D3d10App.ixx" />
+    <ClCompile Include="input_config.ixx" />
     <ClCompile Include="input_handler.ixx" />
     <ClCompile Include="menu.ixx" />
     <ClCompile Include="nemulator.ixx" />

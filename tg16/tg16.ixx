@@ -33,14 +33,14 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
                          .crop_bottom = 8
                      },
                  .button_map = {
-                     {BUTTON_1A,      0x01},
-                     {BUTTON_1B,      0x02},
-                     {BUTTON_1SELECT, 0x04},
-                     {BUTTON_1START,  0x08},
-                     {BUTTON_1UP,     0x10},
-                     {BUTTON_1RIGHT,  0x20},
-                     {BUTTON_1DOWN,   0x40},
-                     {BUTTON_1LEFT,   0x80}
+                     {BUTTON_1A,      0x01, "I"},
+                     {BUTTON_1B,      0x02, "II"},
+                     {BUTTON_1SELECT, 0x04, "Select"},
+                     {BUTTON_1START,  0x08, "Run"},
+                     {BUTTON_1UP,     0x10, "Up"},
+                     {BUTTON_1RIGHT,  0x20, "Right"},
+                     {BUTTON_1DOWN,   0x40, "Down"},
+                     {BUTTON_1LEFT,   0x80, "Left"}
                  },
                  .num_sound_channels = 2,
                  .volume = pow(10.0f, 8.0f / 20.0f),

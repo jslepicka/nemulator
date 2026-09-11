@@ -15,6 +15,7 @@ import :nsf_stats;
 import :audio_info;
 import :status;
 import :system_container;
+import :input_config;
 
 import D3d10App;
 import task;
@@ -107,9 +108,12 @@ private:
         MENU_INGAME_OPTIONS,
         MENU_QUIT,
         MENU_CHEAT,
-        MENU_QAM
+        MENU_QAM,
+        MENU_SETTINGS,
+        MENU_INPUT_CONFIG
     };
 
+    void show_settings_menu();
     void start_game();
     void leave_game();
     int menu;
@@ -160,6 +164,7 @@ private:
 
     c_audio_info *audio_info;
     c_qam *qam;
+    c_input_bindings input_bindings;
 
     struct s_game_thread
     {

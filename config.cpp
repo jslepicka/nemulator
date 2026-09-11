@@ -1,5 +1,8 @@
 module;
 #include <iostream>
+#include <fstream>
+#include <filesystem>
+#include <set>
 
 module config;
 
@@ -28,6 +31,7 @@ std::string c_config::trim(std::string s)
 
 bool c_config::read_config_file(std::string filename)
 {
+    config_filename = std::filesystem::absolute(filename).string();
     file.open(filename.c_str());
     if (!file.is_open())
         return false;
@@ -43,7 +47,7 @@ bool c_config::read_config_file(std::string filename)
                 continue;
 
             std::basic_string <char>::size_type i;
-            
+
             i = line.find("=");
             if (i != std::string::npos)
             {
@@ -55,6 +59,67 @@ bool c_config::read_config_file(std::string filename)
         }
     }
     file.close();
+    return true;
+}
+
+bool c_config::update_config_file(const std::vector<std::string> &remove,
+                                  const std::vector<std::pair<std::string, std::string>> &append)
+{
+    std::set<std::string> replaced(remove.begin(), remove.end());
+    for (auto &a : append)
+        replaced.insert(a.first);
+
+    std::vector<std::string> lines;
+    if (std::filesystem::exists(config_filename))
+    {
+        std::ifstream in(config_filename);
+        if (!in.is_open())
+            return false;
+        std::string line;
+        while (std::getline(in, line))
+        {
+            std::string trimmed = trim(line);
+            std::string::size_type i = trimmed.find("=");
+            if (trimmed.length() > 0 && trimmed[0] != ';' && i != std::string::npos &&
+                replaced.count(trim(trimmed.substr(0, i))))
+                continue;
+            lines.push_back(line);
+        }
+    }
+
+    //appended values are separated from the rest of the file by a single blank line.  Trailing blank
+    //lines are only trimmed when appending, so removing values restores the file as it was.
+    if (append.size() > 0)
+    {
+        while (lines.size() > 0 && trim(lines.back()).length() == 0)
+            lines.pop_back();
+        lines.push_back("");
+        for (auto &a : append)
+            lines.push_back(a.first + " = " + a.second);
+    }
+
+    //write to a temporary file first so that a failed write can't damage the original
+    std::string temp_filename = config_filename + ".tmp";
+    std::ofstream out(temp_filename);
+    if (!out.is_open())
+        return false;
+    for (auto &l : lines)
+        out << l << "\n";
+    out.close();
+    std::error_code ec;
+    if (out.fail())
+    {
+        std::filesystem::remove(temp_filename, ec);
+        return false;
+    }
+    std::filesystem::rename(temp_filename, config_filename, ec);
+    if (ec)
+        return false;
+
+    for (auto &key : remove)
+        config.erase(key);
+    for (auto &a : append)
+        config[a.first] = a.second;
     return true;
 }
 

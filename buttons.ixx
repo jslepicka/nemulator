@@ -50,6 +50,10 @@ export enum BUTTONS
     BUTTON_VOLUME_DOWN,
     BUTTON_HOME,
     BUTTON_SCANLINES,
+    BUTTON_MENU_UP,
+    BUTTON_MENU_DOWN,
+    BUTTON_MENU_LEFT,
+    BUTTON_MENU_RIGHT,
     //generic button aliases
     BUTTON_UP,
     BUTTON_DOWN,
@@ -66,4 +70,5 @@ export struct s_button_map
 {
     uint32_t button;
     uint32_t mask;
+    const char *name = nullptr; //label shown in input configuration
 };

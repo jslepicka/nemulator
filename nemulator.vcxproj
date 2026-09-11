@@ -341,6 +341,7 @@
     <ClCompile Include="sms\sms_common.ixx" />
     <ClCompile Include="std.ixx" />
     <ClCompile Include="system_container.cpp" />
+    <ClCompile Include="input_config.cpp" />
     <ClCompile Include="input_handler.cpp" />
     <ClCompile Include="menu.cpp" />
     <ClCompile Include="nemulator.cpp" />
@@ -407,6 +408,9 @@
       <FileType>Document</FileType>
     </ClCompile>
     <ClCompile Include="gb\mbc5.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
+    <ClCompile Include="input_config.ixx">
       <FileType>Document</FileType>
     </ClCompile>
     <ClCompile Include="input_handler.ixx">

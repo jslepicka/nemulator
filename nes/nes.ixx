@@ -25,22 +25,22 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>
     {
         // clang-format off
         static const std::vector<s_button_map> button_map = {
-            {BUTTON_1A,       0x01},
-            {BUTTON_1B,       0x02},
-            {BUTTON_1SELECT,  0x04},
-            {BUTTON_1START,   0x08},
-            {BUTTON_1UP,      0x10},
-            {BUTTON_1DOWN,    0x20},
-            {BUTTON_1LEFT,    0x40},
-            {BUTTON_1RIGHT,   0x80},
-            {BUTTON_2A,      0x101},
-            {BUTTON_2B,      0x102},
-            {BUTTON_2SELECT, 0x104},
-            {BUTTON_2START,  0x108},
-            {BUTTON_2UP,     0x110},
-            {BUTTON_2DOWN,   0x120},
-            {BUTTON_2LEFT,   0x140},
-            {BUTTON_2RIGHT,  0x180},
+            {BUTTON_1A,       0x01, "A"},
+            {BUTTON_1B,       0x02, "B"},
+            {BUTTON_1SELECT,  0x04, "Select"},
+            {BUTTON_1START,   0x08, "Start"},
+            {BUTTON_1UP,      0x10, "Up"},
+            {BUTTON_1DOWN,    0x20, "Down"},
+            {BUTTON_1LEFT,    0x40, "Left"},
+            {BUTTON_1RIGHT,   0x80, "Right"},
+            {BUTTON_2A,      0x101, "P2 A"},
+            {BUTTON_2B,      0x102, "P2 B"},
+            {BUTTON_2SELECT, 0x104, "P2 Select"},
+            {BUTTON_2START,  0x108, "P2 Start"},
+            {BUTTON_2UP,     0x110, "P2 Up"},
+            {BUTTON_2DOWN,   0x120, "P2 Down"},
+            {BUTTON_2LEFT,   0x140, "P2 Left"},
+            {BUTTON_2RIGHT,  0x180, "P2 Right"},
         };
         // clang-format on
 
@@ -51,12 +51,18 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>
             .crop_bottom = 8,
         };
 
+        static const s_system_info::s_input_info input_info = {
+            .identifier = "nes",
+            .name = "Nintendo NES",
+        };
+
         return {
             {
                 .name = "Nintendo NES",
                 .identifier = "nes",
                 .display_info = display_info,
                 .button_map = button_map,
+                .input_info = input_info,
                 .constructor = []() { return std::make_unique<c_nes>(); },
             },
             {
@@ -64,6 +70,7 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>
                 .identifier = "nsf",
                 .display_info = display_info,
                 .button_map = button_map,
+                .input_info = input_info,
                 .constructor = []() { return std::make_unique<c_nes>(); },
             },
             {
@@ -71,6 +78,7 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>
                 .identifier = "fds",
                 .display_info = display_info,
                 .button_map = button_map,
+                .input_info = input_info,
                 .constructor = []() { return std::make_unique<c_nes>(); },
             },
         };

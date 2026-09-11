@@ -43,6 +43,8 @@ c_input_handler::c_input_handler(int buttons)
     joymask = 0;
     ackd = false;
     extrafast_enabled = 1;
+    input_detection_enabled = 0;
+    input_ignored = 0;
 }
 
 c_input_handler::~c_input_handler()
@@ -195,7 +197,7 @@ int c_input_handler::get_result(int button, bool ack)
 
 void c_input_handler::set_button_joymap(int button, int joy, int joy_button)
 {
-    if (joy == -1 || joy_button == -1) return;
+    if (joy < 0 || joy >= 8 || joy_button == -1) return;
     int result = joyGetPosEx(joy, &joyInfoEx[joy]);
     if (result != JOYERR_NOERROR)
         joy_suppressed[joy] = JOY_SUPPRESSED_TIME;
@@ -209,17 +211,36 @@ void c_input_handler::set_button_type(int button, int type)
     state[button].type = type;
 }
 
+c_input_handler::s_binding c_input_handler::get_binding(int button)
+{
+    auto &s = state[button];
+    if (s.joy < 0) {
+        return {.key = s.button_key};
+    }
+    return {.key = s.button_key, .joy = s.joy, .joy_type = s.type, .joy_value = s.joy_button};
+}
+
+void c_input_handler::set_binding(int button, const s_binding &binding)
+{
+    set_button_keymap(button, binding.key);
+    set_button_type(button, binding.joy_type);
+    state[button].joy = -1;
+    set_button_joymap(button, binding.joy, binding.joy_value);
+}
+
 void c_input_handler::poll(double dt, int ignore_input)
 {
     //poll joysticks
     ackd = false;
-    if (joymask)
+    input_ignored = ignore_input;
+    unsigned char poll_mask = input_detection_enabled ? 0xFF : joymask;
+    if (poll_mask)
     {
         for (int i = 0; i < 8; i++) {
             if (joy_suppressed[i] > 0.0) {
                 joy_suppressed[i] -= dt;
             }
-            else if (joymask & (1 << i)) {
+            else if (poll_mask & (1 << i)) {
                 joy_poll_result[i] = joyGetPosEx(i, &joyInfoEx[i]);
                 if (joy_poll_result[i] != JOYERR_NOERROR) {
                     joy_suppressed[i] = JOY_SUPPRESSED_TIME;
@@ -333,4 +354,60 @@ uint32_t c_input_handler::get_console_input(const std::vector<s_button_map> &but
         }
     }
     return ret;
+}
+
+std::vector<c_input_handler::s_binding> c_input_handler::get_active_inputs()
+{
+    std::vector<s_binding> inputs;
+    if (input_ignored) {
+        return inputs;
+    }
+
+    //start after the mouse buttons
+    for (int key = VK_BACK; key <= 0xFE; key++) {
+        //skip generic shift/ctrl/alt so the left/right-specific keys are reported instead
+        if (key >= VK_SHIFT && key <= VK_MENU) {
+            continue;
+        }
+        if (get_key_state(key)) {
+            inputs.push_back({.key = key});
+        }
+    }
+
+    static const int axis_threshold = 33;
+    static const struct
+    {
+        int low;
+        int high;
+    } pov_ranges[] = {
+        {31500, 4500},  //up
+        {4500, 13500},  //right
+        {13500, 22500}, //down
+        {22500, 31500}, //left
+    };
+
+    for (int joy = 0; joy < 8; joy++) {
+        if (joy_poll_result[joy] != JOYERR_NOERROR) {
+            continue;
+        }
+        for (int button = 0; button < 32; button++) {
+            if (get_joy_state(joy, button)) {
+                inputs.push_back({.joy = joy, .joy_type = TYPE_BUTTON, .joy_value = button});
+            }
+        }
+        for (int axis = AXIS_X; axis <= AXIS_Z; axis++) {
+            for (int threshold : {axis_threshold, -axis_threshold}) {
+                int value = (threshold & 0xFF) << 8 | axis;
+                if (get_joy_axis(joy, value)) {
+                    inputs.push_back({.joy = joy, .joy_type = TYPE_AXIS, .joy_value = value});
+                }
+            }
+        }
+        for (auto &r : pov_ranges) {
+            if (get_joy_pov(joy, r.low, r.high)) {
+                inputs.push_back({.joy = joy, .joy_type = TYPE_POV, .joy_value = r.high << 16 | r.low});
+            }
+        }
+    }
+    return inputs;
 }

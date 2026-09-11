@@ -51,9 +51,21 @@ public:
             double aspect_ratio = 4.0 / 3.0;
         } display_info;
         std::vector<s_button_map> button_map;
+        //systems with the same input identifier share an input configuration (e.g., NES and FDS)
+        //if unset, the system's identifier and title or name are used
+        struct s_input_info
+        {
+            std::string identifier;
+            std::string name;
+        } input_info;
         int num_sound_channels = 1;
         float volume = 1.0f;
         std::function <std::unique_ptr<c_system>()> constructor;
+
+        const std::string &get_input_identifier() const
+        {
+            return input_info.identifier.empty() ? identifier : input_info.identifier;
+        }
     };
     int crop_left;
     int crop_right;
