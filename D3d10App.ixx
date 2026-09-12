@@ -57,9 +57,30 @@ public:
 	static constexpr int default_window_width = 0; //uses default_window_scale
 	static constexpr double default_window_scale = .5; //fraction of the screen's work area width
 	static constexpr bool default_aspect_lock = true;
-	static constexpr bool default_vsync = true;
-	static constexpr bool default_timer_sync = false;
 	static constexpr bool default_pause_on_lost_focus = true;
+
+	//how emulation is paced:
+	// vsync - vsync on, with the audio rate adjusted to match the display.  needs a ~60Hz display, or a
+	//         multiple of it, which is presented every nth refresh
+	// timer - vsync off, with frames paced by a timer: 60Hz in the menu, and the running system's rate
+	//         in a game.  a variable refresh rate (g-sync/freesync) display is recommended
+	enum SYNC_MODE
+	{
+		SYNC_VSYNC,
+		SYNC_TIMER,
+		SYNC_COUNT
+	};
+	static int get_sync_mode();
+	static void set_sync_mode(int mode);
+	static constexpr int default_sync_mode = SYNC_VSYNC;
+	//the rate the timer paces frames at, i.e., the rate the running system runs at
+	static void set_frame_rate(double rate);
+	//the display's refresh rate, and how many refreshes make one 60Hz frame (0 if it isn't a multiple)
+	static double get_refresh_rate();
+	static int get_refresh_multiple();
+	static const char *get_sync_mode_name(int mode);
+	//returns -1 if the name isn't recognized
+	static int parse_sync_mode(const std::string &name);
 
 	struct SimpleVertex
 	{
@@ -81,8 +102,10 @@ protected:
 	bool minimized;
 	bool maximized;
 	bool resizing;
-	bool vsync;
-	bool timer_sync;
+	int sync_mode;
+	int refresh_multiple; //cached, since the display's refresh rate only changes on a mode change
+	double frame_rate; //the running system's rate, for the timer
+	double next_frame; //the timer's deadline for the next frame, in performance counter ticks
 	bool pause_on_lost_focus;
 	int ignore_input;
 

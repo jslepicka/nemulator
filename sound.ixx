@@ -10,9 +10,15 @@ export class c_sound
   public:
     c_sound();
     ~c_sound();
+    //the rate the audio device runs at.  the vsync sync mode adjusts a system's rate around this to match
+    //the display; the audio mode locks to it.
+    static constexpr double default_audio_freq = 48000.0;
     int init();
     void play();
     void stop();
+    bool is_playing() { return playing; }
+    //frames submitted but not yet played, interpolated to now
+    double get_outstanding_frames();
     int copy(const float *buf, int num_samples, float system_volume);
     double get_freq()
     {
@@ -53,6 +59,9 @@ export class c_sound
     }
 
   private:
+    bool playing = false;
+    uint64_t frames_written = 0;
+    double qpc_frequency = 0.0;
     int num_channels = 1; //default to mono
     float sample_sum;
     float sample_count;

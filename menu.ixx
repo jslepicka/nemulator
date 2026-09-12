@@ -54,6 +54,8 @@ public:
     {
         std::string title;
         std::vector<s_item> items;
+        //a warning shown below the list, e.g. when a setting doesn't suit the hardware.  empty for none
+        std::function<std::string()> get_note;
         bool shadow = false; //draws text with a shadow so it can be read over an undimmed game
     };
     ~c_options_menu();
@@ -70,12 +72,14 @@ private:
     static constexpr double TITLE_Y = .06;
     static constexpr double LIST_Y = .24;
     static constexpr double ROW_HEIGHT = .065;
+    static constexpr double NOTE_Y = .80;
     static constexpr double HINT_Y = .88;
 
     std::string title;
     std::vector<s_item> items;
     int selected_item = 0;
     bool confirm = false;
+    std::function<std::string()> get_note;
     bool shadow = false;
     ID3DX10Font *title_font = nullptr;
     ID3DX10Font *font = nullptr;

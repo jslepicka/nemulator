@@ -65,6 +65,8 @@ c_nemulator::c_nemulator()
     title_scroll_offset = 0.0;
     title_overflow = 0;
     settings_in_game = false;
+    sync_mode_at_open = 0;
+    app_paused = false;
     splash_done = 0;
     splash_timer = SPLASH_TIMER_TOTAL_DURATION;
 #if defined(DEBUG)
@@ -265,6 +267,14 @@ void c_nemulator::Init()
 
     configure_input();
 
+    //the mode is honored even when the display doesn't suit it, so say so instead
+    if (D3d10App::get_sync_mode() == D3d10App::SYNC_VSYNC && D3d10App::get_refresh_multiple() == 0) {
+        char buf[96];
+        sprintf_s(buf, sizeof(buf), "vsync needs a ~60Hz display; this display is %dHz",
+                  (int)D3d10App::get_refresh_rate());
+        startup_message = buf;
+    }
+
     QueryPerformanceCounter(&liLast);
     OnResize();
 
@@ -440,11 +450,19 @@ bool c_nemulator::write_default_config(const std::string &filename)
          "scanlines = " << yes_no(default_scanlines) << "\n"
          "\n;Aspect ratio lock, i.e., constrain window dimensions on resize\n"
          "app.aspect_lock = " << yes_no(D3d10App::default_aspect_lock) << "\n"
-         "\n;Wait for vsync?  Usually you'll want to leave this enabled.\n"
-         "app.vsync = " << yes_no(D3d10App::default_vsync) << "\n"
-         "\n;Use timer-based synchronization.  If your display's refresh rate is set to 60Hz, leave this\n"
-         ";set to false, otherwise set it to true.\n"
-         "app.timer_sync = " << yes_no(D3d10App::default_timer_sync) << "\n";
+         "\n;How emulation is paced.  Also changed by settings > general.\n"
+         ";  vsync - vsync on, with the audio rate adjusted to match the display.  Needs a ~60Hz display,\n"
+         ";          or a multiple of it (120, 180, 240), which is presented every nth refresh.\n"
+         ";  timer - vsync off, with frames paced by a timer: 60Hz in the menu, and the running system's\n"
+         ";          rate in a game.  A variable refresh rate (g-sync/freesync) display is recommended.\n"
+         ";A mode named here is used even if the display doesn't suit it.\n"
+         ";\n"
+         ";On a display that is not ~60Hz or a multiple of it, no setting avoids artifacts entirely: at\n"
+         ";144Hz, for example, a 60Hz frame lasts 2.4 refreshes, so frames are either presented when\n"
+         ";ready (tearing, in fullscreen) or held for an uneven number of refreshes (judder).  Setting\n"
+         ";the display to 60Hz - or 120Hz, where vsync holds each frame for exactly two refreshes -\n"
+         ";avoids this, as does a variable refresh rate display with timer mode.\n"
+         "sync_mode = " << D3d10App::get_sync_mode_name(D3d10App::default_sync_mode) << "\n";
 
     f << "\n;\n;Menu\n;\n"
          "\n;Number of columns in the menu.  The number of rows is computed automatically.  Minimum is 3.\n"
@@ -853,8 +871,8 @@ void c_nemulator::show_quit_menu(int selected)
 void c_nemulator::show_settings_menu(int selected)
 {
     c_menu::s_menu_items mi;
-    const char* m[] = { "input", "display" };
-    mi.num_items = 2;
+    const char* m[] = { "general", "input", "display" };
+    mi.num_items = 3;
     mi.items = (char**)m;
     mi.selected = selected;
     add_task(new c_menu(), (void*)&mi);
@@ -928,6 +946,59 @@ void c_nemulator::save_display_settings()
         status->add_message("unable to save display settings to nemulator.ini");
 }
 
+void c_nemulator::show_general_menu()
+{
+    sync_mode_at_open = D3d10App::get_sync_mode();
+
+    c_options_menu::s_params p = {
+        .title = "general",
+        .items = {
+            {
+                .label = "sync mode",
+                .get_value = []() { return std::string(D3d10App::get_sync_mode_name(D3d10App::get_sync_mode())); },
+                .change =
+                    [](int direction) {
+                        //enter moves forward, the same as right
+                        if (direction == 0)
+                            direction = 1;
+                        int mode = (D3d10App::get_sync_mode() + direction + D3d10App::SYNC_COUNT) %
+                                   D3d10App::SYNC_COUNT;
+                        D3d10App::set_sync_mode(mode);
+                    },
+            },
+            {
+                .label = "reset to defaults",
+                .change = [](int) { D3d10App::set_sync_mode(D3d10App::default_sync_mode); },
+                .confirm_label = "press again to reset to defaults",
+            },
+        },
+        //either mode can be chosen; the one that doesn't suit the display says so
+        .get_note = []() -> std::string {
+            if (D3d10App::get_sync_mode() == D3d10App::SYNC_TIMER)
+                return "a variable refresh rate (g-sync/freesync) display is recommended";
+            if (D3d10App::get_refresh_multiple() == 0) {
+                char buf[96];
+                sprintf_s(buf, sizeof(buf), "vsync needs a ~60Hz display; this display is %dHz",
+                          (int)D3d10App::get_refresh_rate());
+                return buf;
+            }
+            return "";
+        },
+    };
+    add_task(new c_options_menu(), &p);
+    menu = MENU_GENERAL;
+}
+
+//writes the sync mode to nemulator.ini, in place
+void c_nemulator::save_general_settings()
+{
+    int mode = D3d10App::get_sync_mode();
+    if (mode == sync_mode_at_open)
+        return;
+    if (!config->set_config_values({{"sync_mode", D3d10App::get_sync_mode_name(mode)}}))
+        status->add_message("unable to save the sync mode to nemulator.ini");
+}
+
 void c_nemulator::handle_button_menu_ok(s_button_handler_params *params)
 {
     start_game();
@@ -972,7 +1043,6 @@ void c_nemulator::handle_button_leave_game(s_button_handler_params* params)
     g_ih->ack_button(BUTTON_1SELECT);
     show_ingame_menu();
     paused = true;
-    sound->stop();
 }
 
 void c_nemulator::show_ingame_menu(int selected_action)
@@ -1155,7 +1225,6 @@ void c_nemulator::do_turbo_press(int button, std::string button_name)
 
 void c_nemulator::leave_game()
 {
-    sound->stop();
     c_system *n = ((c_system_container *)texturePanels[selectedPanel]->GetSelected())->system.get();
     n->disable_mixer();
     inGame = false;
@@ -1167,6 +1236,7 @@ void c_nemulator::leave_game()
     }
     c_system_container* g = (c_system_container*)texturePanels[selectedPanel]->GetSelected();
     input_bindings.restore(g->get_button_map());
+    D3d10App::set_frame_rate(60.0); //the menu runs at 60Hz
     if (g->is_nes)
     {
         nes::c_nes *n = (nes::c_nes *)g->system.get();
@@ -1187,8 +1257,9 @@ void c_nemulator::start_game()
     {
         input_bindings.apply(g->get_input_identifier(), g->get_button_map());
         sound->set_num_channels(g->get_num_sound_channels());
-        sound->play();
+        D3d10App::set_frame_rate(g->get_frame_rate());
         inGame = true;
+        update_audio_stream();
         n->enable_mixer();
         for (int i = 0; i < num_texture_panels; i++)
             texturePanels[i]->Zoom();
@@ -1291,11 +1362,14 @@ int c_nemulator::update(double dt, int child_result, void *params)
             {
                 switch (*(int*)params)
                 {
-                case 0: //input
+                case 0: //general
+                    show_general_menu();
+                    break;
+                case 1: //input
                     add_task(new c_input_config(), &input_bindings);
                     menu = MENU_INPUT_CONFIG;
                     break;
-                case 1: //display
+                case 2: //display
                     show_display_menu();
                     break;
                 }
@@ -1319,7 +1393,7 @@ int c_nemulator::update(double dt, int child_result, void *params)
                     input_bindings.apply(g->get_input_identifier(), g->get_button_map());
                 }
                 //back to the settings menu
-                show_settings_menu(0); //input
+                show_settings_menu(1); //input
             }
             break;
         case MENU_DISPLAY:
@@ -1329,7 +1403,14 @@ int c_nemulator::update(double dt, int child_result, void *params)
                 //back to the settings menu, dimming the game again if it was left undimmed
                 for (int i = 0; i < num_texture_panels; i++)
                     texturePanels[i]->dim = true;
-                show_settings_menu(1); //display
+                show_settings_menu(2); //display
+            }
+            break;
+        case MENU_GENERAL:
+            if (child_result == c_task::TASK_RESULT_CANCEL)
+            {
+                save_general_settings();
+                show_settings_menu(0); //general
             }
             break;
         case MENU_SELECT:
@@ -1391,8 +1472,6 @@ int c_nemulator::update(double dt, int child_result, void *params)
                     texturePanels[i]->dim = false;
                 paused = false;
                 menu = 0;
-                if (action != INGAME_RETURN_TO_MENU)
-                    sound->play();
             }
             else if (child_result == c_task::TASK_RESULT_CANCEL)
             {
@@ -1400,7 +1479,6 @@ int c_nemulator::update(double dt, int child_result, void *params)
                 for (int i = 0; i < num_texture_panels; i++)
                     texturePanels[i]->dim = false;
                 menu = 0;
-                sound->play();
             }
             break;
         }
@@ -1462,6 +1540,13 @@ void c_nemulator::UpdateScene(double dt)
         return;
     }
 
+    if (!startup_message.empty()) {
+        status->add_message(startup_message);
+        startup_message.clear();
+    }
+
+    update_audio_stream();
+
     static double elapsed = 0.0f;
     static int s = 0;
 
@@ -1500,6 +1585,8 @@ void c_nemulator::UpdateScene(double dt)
                 sound->copy(buf, num_samples, sc->get_volume());
                 s = sound->sync();
             }
+            //the rate is adjusted in both modes; it's what absorbs drift between whatever is pacing
+            //frames and the audio device
             system->set_audio_freq(sound->get_requested_freq());
         }
         RunGames();
@@ -1546,6 +1633,7 @@ void c_nemulator::UpdateScene(double dt)
             stats->report_stat("audio position", s);
             stats->report_stat("audio bytes buffered", sound->get_buffered_length());
             stats->report_stat("audio buffer length (ms)", (double)sound->get_buffered_length() / (48000.0 * 2 * 2) * 1000.0);
+            stats->report_stat("audio outstanding (ms)", sound->get_outstanding_frames() / 48.0);
             stats->report_stat("audio resets", sound->resets);
             stats->report_stat("audio buffer wait count", (int)sound->buffer_wait_count);
             stats->report_stat("audio.slope", sound->slope);
@@ -1745,14 +1833,20 @@ void c_nemulator::on_pause(bool paused)
 }
 void c_nemulator::OnPause(bool paused)
 {
-    if (inGame)
-    {
-        if (paused)
-            sound->stop();
-        //the game is paused while the in-game menu, or settings opened from it, are shown
-        else if (!this->paused)
-            sound->play();
-    }
+    //the frame loop stops entirely while the application is paused, so the stream is started and
+    //stopped here rather than waiting for the next update
+    app_paused = paused;
+    update_audio_stream();
+}
+
+//vsync or the timer paces the menu, so the stream is only needed while a game is actually running
+void c_nemulator::update_audio_stream()
+{
+    bool want_playing = !app_paused && !benchmark_mode && !timedemo && inGame && !paused;
+    if (want_playing && !sound->is_playing())
+        sound->play();
+    else if (!want_playing && sound->is_playing())
+        sound->stop();
 }
 
 void c_nemulator::GetEvents()

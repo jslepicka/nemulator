@@ -145,6 +145,7 @@ void c_options_menu::init(void *params)
     auto p = (s_params *)params;
     title = p->title;
     items = p->items;
+    get_note = p->get_note;
     shadow = p->shadow;
     load_fonts();
 }
@@ -274,6 +275,13 @@ void c_options_menu::draw()
             bool confirming = confirm && i == selected_item;
             draw_text(font, confirming ? item.confirm_label : item.label, 0.0, 1.0, y, DT_CENTER, color);
         }
+    }
+
+    if (get_note)
+    {
+        std::string note = get_note();
+        if (!note.empty())
+            draw_text(hint_font, note, 0.0, 1.0, NOTE_Y, DT_CENTER, highlight);
     }
 
     bool is_setting = (bool)items[selected_item].get_value;

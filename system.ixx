@@ -60,6 +60,9 @@ public:
         } input_info;
         int num_sound_channels = 1;
         float volume = 1.0f;
+        //the rate the system runs at, used to pace frames when syncing to a timer.
+        //todo: set the real rate for each system; they all use 60.0 for now
+        double frame_rate = 60.0;
         std::function <std::unique_ptr<c_system>()> constructor;
 
         const std::string &get_input_identifier() const

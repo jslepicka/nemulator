@@ -128,7 +128,8 @@ private:
         MENU_QAM,
         MENU_SETTINGS,
         MENU_INPUT_CONFIG,
-        MENU_DISPLAY
+        MENU_DISPLAY,
+        MENU_GENERAL
     };
 
     //each menu opens with the item at selected (or the item for selected_action) highlighted, so returning
@@ -147,6 +148,13 @@ private:
     std::vector<int> ingame_menu_actions; //the action for each item in the current in-game menu
     void show_display_menu();
     void save_display_settings();
+    void show_general_menu();
+    void save_general_settings();
+    int sync_mode_at_open; //saved when the general menu closes, if it changed
+    std::string startup_message; //shown once the splash screen is done
+    //the audio stream paces frames in the audio sync mode, so it runs in the menu as well as in a game
+    void update_audio_stream();
+    bool app_paused; //the application lost focus, as opposed to the in-game menu pausing a game
     bool settings_in_game; //the settings menu was opened from the in-game menu
     struct s_display_settings
     {
