@@ -4,7 +4,7 @@ import :audio_filter;
 
 namespace dsp
 {
-export class c_null_filter : public i_audio_filter
+export class c_null_filter final : public i_audio_filter
 {
   public:
     __forceinline float process(float in)

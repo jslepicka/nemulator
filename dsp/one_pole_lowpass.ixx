@@ -17,7 +17,7 @@ constexpr double cx_exp(double x)
     return exp_impl(x, 1.0, 0.0, 1);
 }
 
-export template <float fs, float fc> class c_one_pole_lowpass : public i_audio_filter
+export template <float fs, float fc> class c_one_pole_lowpass final : public i_audio_filter
 {
   public:
     c_one_pole_lowpass()

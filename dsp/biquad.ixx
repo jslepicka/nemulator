@@ -7,7 +7,7 @@ import :audio_filter;
 namespace dsp
 {
 export template <float g, float b0, float b1, float b2, float a0, float a1, float a2>
-class c_biquad : public i_audio_filter
+class c_biquad final : public i_audio_filter
 {
   public:
     c_biquad()

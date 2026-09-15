@@ -12,7 +12,7 @@ export template <float b0_l = 0.5000000000000000f,
                  float b0_h = 0.9998691174378402f,
                  float b1_h = -0.9998691174378402f,
                  float a1_h = -0.9997382348756805f>
-class c_first_order_bandpass : public i_audio_filter
+class c_first_order_bandpass final : public i_audio_filter
 {
   public:
     // default to 2Hz-12kHz
