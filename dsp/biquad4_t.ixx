@@ -36,7 +36,7 @@ export template<
         float b2_0, float b2_1, float b2_2, float b2_3,
         float a2_0, float a2_1, float a2_2, float a2_3,
         float a3_0, float a3_1, float a3_2, float a3_3>
-class c_biquad4_t : public i_audio_filter
+class c_biquad4_t final : public i_audio_filter
 {
   public:
     c_biquad4_t()
