@@ -58,6 +58,7 @@ export class c_genesis : public c_system,
                         .crop_right = -1,
                     },
                 .button_map = button_map,
+                .turbo_buttons = {BUTTON_1B, BUTTON_1A, BUTTON_1C}, //labelled A, B, C
                 .num_sound_channels = 2,
                 .volume = pow(10.0f, 4.0f / 20.0f), //boost by 4dB
                 .constructor = []() { return std::make_unique<c_genesis>(); },

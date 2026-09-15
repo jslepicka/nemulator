@@ -42,6 +42,7 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
                      {BUTTON_1DOWN,   0x40, "Down"},
                      {BUTTON_1LEFT,   0x80, "Left"}
                  },
+                 .turbo_buttons = {BUTTON_1B, BUTTON_1A}, //II and I
                  .num_sound_channels = 2,
                  .volume = pow(10.0f, 8.0f / 20.0f),
                  .constructor = []() { return std::make_unique<c_tg16>(); }}};

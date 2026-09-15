@@ -270,7 +270,7 @@ void c_nemulator::Init()
     //the mode is honored even when the display doesn't suit it, so say so instead
     if (D3d10App::get_sync_mode() == D3d10App::SYNC_VSYNC && D3d10App::get_refresh_multiple() == 0) {
         char buf[96];
-        sprintf_s(buf, sizeof(buf), "vsync needs a ~60Hz display; this display is %dHz",
+        sprintf_s(buf, sizeof(buf), "Vsync needs a ~60Hz display; this display is %dHz",
                   (int)D3d10App::get_refresh_rate());
         startup_message = buf;
     }
@@ -298,9 +298,11 @@ static const s_button_default button_defaults[] =
         { BUTTON_1UP,           "joy1",     "up",      VK_UP,                  1 },
         { BUTTON_1DOWN,         "joy1",     "down",    VK_DOWN,                1 },
         { BUTTON_1A,            "joy1",     "a",       88,                     0 },
-        { BUTTON_1A_TURBO,      "joy1",     "a_turbo", 0x53,                   0 },
+        //turbo defaults are per system, from its turbo_buttons list
+        { BUTTON_1A_TURBO,      "joy1",     "a_turbo", 0,                      0 },
         { BUTTON_1B,            "joy1",     "b",       90,                     0 },
-        { BUTTON_1B_TURBO,      "joy1",     "b_turbo", 0x41,                   0 },
+        { BUTTON_1B_TURBO,      "joy1",     "b_turbo", 0,                      0 },
+        { BUTTON_1C_TURBO,      "joy1",     "c_turbo", 0,                      0 },
         { BUTTON_1C,            "joy1",     "c",       0x43,                   0 },
         { BUTTON_1SELECT,       "joy1",     "select",  VK_OEM_4,               0 },
         { BUTTON_1START,        "joy1",     "start",   VK_OEM_6,               0 },
@@ -314,6 +316,7 @@ static const s_button_default button_defaults[] =
         { BUTTON_2A_TURBO,      "joy2",     "a_turbo", 0,                      0 },
         { BUTTON_2B,            "joy2",     "b",       0,                      0 },
         { BUTTON_2B_TURBO,      "joy2",     "b_turbo", 0,                      0 },
+        { BUTTON_2C_TURBO,      "joy2",     "c_turbo", 0,                      0 },
         { BUTTON_2SELECT,       "joy2",     "select",  0,                      0 },
         { BUTTON_2START,        "joy2",     "start",   0,                      0 },
 
@@ -330,13 +333,12 @@ static const s_button_default button_defaults[] =
         { BUTTON_DEC_SHARPNESS,  "",        "",        0x39,                   1 },
         { BUTTON_INC_SHARPNESS,  "",        "",        0x30,                   1 },
 
-        { BUTTON_1COIN,          "",        "",        0x31,                   0 },
         { BUTTON_SWITCH_DISK,    "",        "",        VK_F5,                  0 },
 
         { BUTTON_VOLUME_UP,      "",        "",        VK_OEM_PLUS,            1 },
         { BUTTON_VOLUME_DOWN,    "",        "",        VK_OEM_MINUS,           1 },
 
-        { BUTTON_HOME,           "joy1",    "home",    0,                      0 },
+        { BUTTON_HOME,           "joy1",    "home",    VK_ESCAPE,              0 },
         { BUTTON_SCANLINES,      "",        "",        VK_F12,                 0 },
 
         //not configurable so the arrow keys always work in menus
@@ -486,6 +488,8 @@ bool c_nemulator::write_default_config(const std::string &filename)
     for (auto &b : button_defaults) {
         if (b.config_base == "")
             continue; //not configurable, e.g., the function keys
+        if (get_turbo_target(b.button) != BUTTON_COUNT)
+            continue; //turbo toggles are per system, and have no default
         unsigned int key = b.default_key;
         if (key & ALIAS) {
             //shares another button's assignment, e.g., sms pause uses start
@@ -860,7 +864,7 @@ void c_nemulator::show_quit_menu(int selected)
         texturePanels[i]->dim = true;
     c_menu::s_menu_items mi;
 
-    const char* m[] = { "quit nemulator", "settings", "suspend computer" };
+    const char* m[] = { "Quit nemulator", "Settings", "Suspend computer" };
     mi.num_items = show_suspend ? 3 : 2;
     mi.items = (char**)m;
     mi.selected = selected;
@@ -871,7 +875,7 @@ void c_nemulator::show_quit_menu(int selected)
 void c_nemulator::show_settings_menu(int selected)
 {
     c_menu::s_menu_items mi;
-    const char* m[] = { "general", "input", "display" };
+    const char* m[] = { "General", "Input", "Display" };
     mi.num_items = 3;
     mi.items = (char**)m;
     mi.selected = selected;
@@ -891,26 +895,26 @@ void c_nemulator::show_display_menu()
     }
 
     c_options_menu::s_params p = {
-        .title = "display",
+        .title = "Display",
         .items = {
             {
-                .label = "sharpness",
+                .label = "Sharpness",
                 .get_value = [this]() { return format_sharpness(sharpness); },
                 .change = [this](int direction) { set_sharpness(sharpness + direction * sharpness_step); },
                 .repeat = true,
             },
             {
-                .label = "scanlines",
-                .get_value = [this]() { return std::string(mainPanel2->scanlines ? "on" : "off"); },
+                .label = "Scanlines",
+                .get_value = [this]() { return std::string(mainPanel2->scanlines ? "On" : "Off"); },
                 .change = [this](int) { set_scanlines(!mainPanel2->scanlines); },
             },
             {
-                .label = "display mode",
-                .get_value = []() { return std::string(D3d10App::is_fullscreen() ? "fullscreen" : "windowed"); },
+                .label = "Display mode",
+                .get_value = []() { return std::string(D3d10App::is_fullscreen() ? "Fullscreen" : "Windowed"); },
                 .change = [](int) { D3d10App::set_fullscreen(!D3d10App::is_fullscreen()); },
             },
             {
-                .label = "reset to defaults",
+                .label = "Reset to defaults",
                 .change =
                     [this](int) {
                         set_sharpness(default_sharpness);
@@ -919,7 +923,7 @@ void c_nemulator::show_display_menu()
                         if (!D3d10App::set_window_width(D3d10App::default_window_width))
                             status->add_message("unable to save window width to nemulator.ini");
                     },
-                .confirm_label = "press again to reset to defaults",
+                .confirm_label = "Press again to reset to defaults",
             },
         },
         .shadow = settings_in_game,
@@ -951,11 +955,11 @@ void c_nemulator::show_general_menu()
     sync_mode_at_open = D3d10App::get_sync_mode();
 
     c_options_menu::s_params p = {
-        .title = "general",
+        .title = "General",
         .items = {
             {
-                .label = "sync mode",
-                .get_value = []() { return std::string(D3d10App::get_sync_mode_name(D3d10App::get_sync_mode())); },
+                .label = "Sync mode",
+                .get_value = []() { return std::string(D3d10App::get_sync_mode() == D3d10App::SYNC_TIMER ? "Timer" : "Vsync"); },
                 .change =
                     [](int direction) {
                         //enter moves forward, the same as right
@@ -967,18 +971,18 @@ void c_nemulator::show_general_menu()
                     },
             },
             {
-                .label = "reset to defaults",
+                .label = "Reset to defaults",
                 .change = [](int) { D3d10App::set_sync_mode(D3d10App::default_sync_mode); },
-                .confirm_label = "press again to reset to defaults",
+                .confirm_label = "Press again to reset to defaults",
             },
         },
         //either mode can be chosen; the one that doesn't suit the display says so
         .get_note = []() -> std::string {
             if (D3d10App::get_sync_mode() == D3d10App::SYNC_TIMER)
-                return "a variable refresh rate (g-sync/freesync) display is recommended";
+                return "A variable refresh rate (G-Sync/FreeSync) display is recommended";
             if (D3d10App::get_refresh_multiple() == 0) {
                 char buf[96];
-                sprintf_s(buf, sizeof(buf), "vsync needs a ~60Hz display; this display is %dHz",
+                sprintf_s(buf, sizeof(buf), "Vsync needs a ~60Hz display; this display is %dHz",
                           (int)D3d10App::get_refresh_rate());
                 return buf;
             }
@@ -1011,28 +1015,17 @@ void c_nemulator::handle_button_show_qam(s_button_handler_params *params)
 
 void c_nemulator::handle_button_turbo(s_button_handler_params* params)
 {
-    int button = 0;
-    const char* button_names[] = { "1 A", "1 B", "2 A", "2 B" };
-    const char* button_name;
-    switch (params->button) {
-    case BUTTON_1A_TURBO:
-        button = BUTTON_1A;
-        button_name = button_names[0];
-        break;
-    case BUTTON_1B_TURBO:
-        button = BUTTON_1B;
-        button_name = button_names[1];
-        break;
-    case BUTTON_2A_TURBO:
-        button = BUTTON_2A;
-        button_name = button_names[2];
-        break;
-    case BUTTON_2B_TURBO:
-        button = BUTTON_2B;
-        button_name = button_names[3];
-        break;
-    default:
+    uint32_t button = get_turbo_target(params->button);
+    if (button == BUTTON_COUNT)
         return;
+    //name the button the way the running system labels it
+    c_system_container *g = (c_system_container *)texturePanels[selectedPanel]->GetSelected();
+    std::string button_name = "button";
+    for (auto &b : g->get_button_map()) {
+        if (b.button == button && b.name) {
+            button_name = b.name;
+            break;
+        }
     }
     do_turbo_press(button, button_name);
 }
@@ -1056,7 +1049,7 @@ void c_nemulator::show_ingame_menu(int selected_action)
         ingame_menu_actions.insert(ingame_menu_actions.begin() + 1, INGAME_SWITCH_DISK);
 
     //indexed by INGAME_ACTION
-    static const char *labels[] = {"resume", "switch disk", "reset", "settings", "return to menu"};
+    static const char *labels[] = {"Resume", "Switch disk", "Reset", "Settings", "Return to menu"};
     std::vector<const char *> items;
     for (int action : ingame_menu_actions)
         items.push_back(labels[action]);
@@ -1103,8 +1096,9 @@ const c_nemulator::s_button_handler c_nemulator::button_handlers[] =
     { SCOPE::IN_MENU | SCOPE::NO_GAMES_LOADED, {BUTTON_CANCEL}, false, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_cancel },
     { SCOPE::IN_MENU, {BUTTON_OK}, true, RESULT_DOWN_OR_REPEAT, &c_nemulator::handle_button_menu_ok },
     { SCOPE::IN_MENU, {BUTTON_1SELECT}, true, RESULT_DOWN, &c_nemulator::handle_button_show_qam },
-    { SCOPE::IN_GAME, {BUTTON_1A_TURBO, BUTTON_1B_TURBO, BUTTON_2A_TURBO, BUTTON_2B_TURBO}, false, RESULT_DOWN, &c_nemulator::handle_button_turbo },
-    { SCOPE::IN_GAME, {BUTTON_ESCAPE, BUTTON_HOME}, false, RESULT_DOWN, &c_nemulator::handle_button_leave_game },
+    { SCOPE::IN_GAME, {BUTTON_1A_TURBO, BUTTON_1B_TURBO, BUTTON_1C_TURBO, BUTTON_2A_TURBO, BUTTON_2B_TURBO, BUTTON_2C_TURBO}, false, RESULT_DOWN, &c_nemulator::handle_button_turbo },
+    //home defaults to Esc; Esc still cancels menus through BUTTON_CANCEL either way
+    { SCOPE::IN_GAME, {BUTTON_HOME}, false, RESULT_DOWN, &c_nemulator::handle_button_leave_game },
     { SCOPE::IN_GAME, {BUTTON_SWITCH_DISK}, true, RESULT_DOWN, &c_nemulator::handle_button_switch_disk },
 };
 
@@ -1235,7 +1229,7 @@ void c_nemulator::leave_game()
         ResumeThread(game_thread->thread_handle);
     }
     c_system_container* g = (c_system_container*)texturePanels[selectedPanel]->GetSelected();
-    input_bindings.restore(g->get_button_map());
+    input_bindings.restore(g->get_input_identifier());
     D3d10App::set_frame_rate(60.0); //the menu runs at 60Hz
     if (g->is_nes)
     {
@@ -1255,7 +1249,7 @@ void c_nemulator::start_game()
     c_system *n = g->system.get();
     if (n && n->is_loaded())
     {
-        input_bindings.apply(g->get_input_identifier(), g->get_button_map());
+        input_bindings.apply(g->get_input_identifier());
         sound->set_num_channels(g->get_num_sound_channels());
         D3d10App::set_frame_rate(g->get_frame_rate());
         inGame = true;
@@ -1390,7 +1384,7 @@ int c_nemulator::update(double dt, int child_result, void *params)
                 {
                     //pick up any changes to the current game's buttons
                     c_system_container *g = (c_system_container *)texturePanels[selectedPanel]->GetSelected();
-                    input_bindings.apply(g->get_input_identifier(), g->get_button_map());
+                    input_bindings.apply(g->get_input_identifier());
                 }
                 //back to the settings menu
                 show_settings_menu(1); //input

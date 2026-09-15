@@ -48,6 +48,7 @@ export class c_gb : public c_system, register_class<system_registry, c_gb>
                 .display_info = display_info,
                 .button_map = button_map,
                 .input_info = input_info,
+                .turbo_buttons = {BUTTON_1B, BUTTON_1A},
                 .num_sound_channels = 2,
                 .volume = pow(10.0f, -7.0f / 20.0f), //reduce by 7dB
                 .constructor = []() { return std::make_unique<c_gb>(GB_MODEL::DMG); },
@@ -58,6 +59,7 @@ export class c_gb : public c_system, register_class<system_registry, c_gb>
                 .display_info = display_info,
                 .button_map = button_map,
                 .input_info = input_info,
+                .turbo_buttons = {BUTTON_1B, BUTTON_1A},
                 .num_sound_channels = 2,
                 .volume = pow(10.0f, -7.0f / 20.0f),
                 .constructor = []() { return std::make_unique<c_gb>(GB_MODEL::CGB); },

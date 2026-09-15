@@ -38,6 +38,37 @@ void c_input_bindings::init(const std::map<int, s_config_name> &names)
                 load(identifier, b.button);
             }
         }
+
+        //auto-fire buttons aren't console inputs, so a system lists them separately.  they have no
+        //default assignment; they do nothing until the user assigns one
+        for (int player2 = 0; player2 < 2; player2++) {
+            for (auto &t : si.turbo_buttons) {
+                uint32_t base = player2 ? get_player2_button(t) : t;
+                uint32_t turbo = base == BUTTON_COUNT ? BUTTON_COUNT : get_turbo_button(base);
+                //only for buttons the system actually has
+                if (turbo == BUTTON_COUNT || !config_names.contains(turbo) ||
+                    !std::ranges::contains(si.button_map, base, &s_button_map::button)) {
+                    continue;
+                }
+                buttons.push_back(turbo);
+                load(identifier, turbo);
+            }
+        }
+    }
+
+    init_general();
+}
+
+void c_input_bindings::init_general()
+{
+    for (int button : {BUTTON_HOME}) {
+        if (!config_names.contains(button)) {
+            continue;
+        }
+        system_buttons[general_identifier].push_back(button);
+        load(general_identifier, button);
+        //these aren't applied when a game starts, so put them into effect now
+        g_ih->set_binding(button, get(general_identifier, button));
     }
 }
 
@@ -128,26 +159,37 @@ bool c_input_bindings::set(const std::string &identifier, int button, const s_bi
     else {
         system_bindings[identifier][button] = binding;
     }
+    //general buttons aren't tied to a game, so they take effect immediately
+    if (identifier == general_identifier) {
+        g_ih->set_binding(button, binding);
+    }
     return save(identifier);
 }
 
 bool c_input_bindings::reset(const std::string &identifier)
 {
     system_bindings.erase(identifier);
+    if (identifier == general_identifier) {
+        for (int button : system_buttons[general_identifier]) {
+            g_ih->set_binding(button, get(general_identifier, button));
+        }
+    }
     return save(identifier);
 }
 
-void c_input_bindings::apply(const std::string &identifier, const std::vector<s_button_map> &button_map)
+//the system's own list is used rather than its button map, so that buttons which aren't console
+//inputs - the turbo toggles - are applied too
+void c_input_bindings::apply(const std::string &identifier)
 {
-    for (auto &b : button_map) {
-        g_ih->set_binding(b.button, get(identifier, b.button));
+    for (int button : system_buttons[identifier]) {
+        g_ih->set_binding(button, get(identifier, button));
     }
 }
 
-void c_input_bindings::restore(const std::vector<s_button_map> &button_map)
+void c_input_bindings::restore(const std::string &identifier)
 {
-    for (auto &b : button_map) {
-        g_ih->set_binding(b.button, defaults[b.button]);
+    for (int button : system_buttons[identifier]) {
+        g_ih->set_binding(button, defaults[button]);
     }
 }
 
@@ -180,15 +222,43 @@ void c_input_config::init(void *params)
         }
         for (auto &b : si.button_map) {
             if (b.name) {
-                system.buttons.push_back(b);
+                system.buttons.push_back({(int)b.button, b.name});
             }
         }
-        std::ranges::stable_sort(system.buttons, {}, [](const s_button_map &b) { return get_display_order(b.button); });
+        //turbo toggles are listed alphabetically, at the end of their own player's buttons
+        std::vector<s_button_row> turbo_rows;
+        for (int player2 = 0; player2 < 2; player2++) {
+            for (auto &t : si.turbo_buttons) {
+                uint32_t base = player2 ? get_player2_button(t) : t;
+                uint32_t turbo = base == BUTTON_COUNT ? BUTTON_COUNT : get_turbo_button(base);
+                if (turbo == BUTTON_COUNT) {
+                    continue;
+                }
+                auto row = std::ranges::find(system.buttons, (int)base, &s_button_row::button);
+                if (row != system.buttons.end()) {
+                    turbo_rows.push_back({(int)turbo, row->label + " turbo toggle"});
+                }
+            }
+        }
+        //the stable sort by player below keeps this order within each player
+        std::ranges::sort(turbo_rows, {}, &s_button_row::label);
+        system.buttons.insert(system.buttons.end(), turbo_rows.begin(), turbo_rows.end());
+        std::ranges::stable_sort(system.buttons, {}, [](const s_button_row &b) { return get_display_order(b.button); });
         systems.push_back(system);
     }
 
+    //buttons that apply everywhere, rather than to one system
+    s_system general = {
+        .label = "General",
+        .identifier = c_input_bindings::general_identifier,
+        .is_arcade = 0,
+        .order = 0,
+    };
+    general.buttons.push_back({BUTTON_HOME, "Return to menu"});
+    systems.push_back(general);
+
     std::ranges::stable_sort(systems, [](const s_system &a, const s_system &b) {
-        return std::tie(a.is_arcade, a.label) < std::tie(b.is_arcade, b.label);
+        return std::tie(a.order, a.is_arcade, a.label) < std::tie(b.order, b.is_arcade, b.label);
     });
 }
 
@@ -353,7 +423,8 @@ void c_input_config::update_scroll(int &scroll, int selected)
     }
 }
 
-//directions first, then the remaining buttons in system order, then player 2
+//directions first, then the remaining buttons in system order, then that player's turbo toggles,
+//then the same again for player 2
 int c_input_config::get_display_order(int button)
 {
     switch (button) {
@@ -365,20 +436,28 @@ int c_input_config::get_display_order(int button)
             return 2;
         case BUTTON_1RIGHT:
             return 3;
-        case BUTTON_2UP:
+        case BUTTON_1A_TURBO:
+        case BUTTON_1B_TURBO:
+        case BUTTON_1C_TURBO:
             return 5;
-        case BUTTON_2DOWN:
+        case BUTTON_2UP:
             return 6;
-        case BUTTON_2LEFT:
+        case BUTTON_2DOWN:
             return 7;
-        case BUTTON_2RIGHT:
+        case BUTTON_2LEFT:
             return 8;
+        case BUTTON_2RIGHT:
+            return 9;
         case BUTTON_2A:
         case BUTTON_2B:
         case BUTTON_2C:
         case BUTTON_2SELECT:
         case BUTTON_2START:
-            return 9;
+            return 10;
+        case BUTTON_2A_TURBO:
+        case BUTTON_2B_TURBO:
+        case BUTTON_2C_TURBO:
+            return 11;
         default:
             return 4;
     }
@@ -498,7 +577,7 @@ void c_input_config::draw()
 
     std::string hint_text;
     if (state == STATE_SYSTEMS) {
-        draw_text(title_font, "configure input", 0.0, 1.0, TITLE_Y, DT_CENTER, normal);
+        draw_text(title_font, "Configure input", 0.0, 1.0, TITLE_Y, DT_CENTER, normal);
         int end = system_scroll + VISIBLE_ROWS;
         if (end > (int)systems.size()) {
             end = (int)systems.size();
@@ -518,8 +597,8 @@ void c_input_config::draw()
         auto &system = systems[selected_system];
         int reset_row = (int)system.buttons.size();
         draw_text(title_font, system.label, 0.0, 1.0, TITLE_Y, DT_CENTER, normal);
-        draw_text(hint_font, "keyboard", keyboard_left, joypad_left, HEADER_Y, DT_CENTER, hint);
-        draw_text(hint_font, "joypad", joypad_left, joypad_right, HEADER_Y, DT_CENTER, hint);
+        draw_text(hint_font, "Keyboard", keyboard_left, joypad_left, HEADER_Y, DT_CENTER, hint);
+        draw_text(hint_font, "Joypad", joypad_left, joypad_right, HEADER_Y, DT_CENTER, hint);
 
         int end = button_scroll + VISIBLE_ROWS;
         if (end > reset_row + 1) {
@@ -529,7 +608,7 @@ void c_input_config::draw()
             double y = LIST_Y + ROW_HEIGHT * (i - button_scroll);
             bool row_selected = i == selected_button;
             if (i == reset_row) {
-                draw_text(font, confirm_reset ? "press again to reset to defaults" : "reset to defaults", name_left,
+                draw_text(font, confirm_reset ? "Press again to reset to defaults" : "Reset to defaults", name_left,
                           joypad_right, y, DT_CENTER, row_selected ? highlight : normal);
                 continue;
             }
@@ -545,7 +624,7 @@ void c_input_config::draw()
                     joy_text = "...";
                 }
             }
-            draw_text(font, button.name, name_left, keyboard_left, y, DT_LEFT, row_selected ? highlight : normal);
+            draw_text(font, button.label, name_left, keyboard_left, y, DT_LEFT, row_selected ? highlight : normal);
             draw_text(font, key_text, keyboard_left, joypad_left, y, DT_CENTER,
                       row_selected && column == COLUMN_KEYBOARD ? highlight : normal);
             draw_text(font, joy_text, joypad_left, joypad_right, y, DT_CENTER,
@@ -554,8 +633,8 @@ void c_input_config::draw()
 
         if (state == STATE_LISTEN) {
             int seconds = (int)std::ceil(listen_timer / 1000.0);
-            hint_text = std::string(column == COLUMN_KEYBOARD ? "press a key" : "press a joypad button or direction") +
-                        " for " + system.buttons[selected_button].name + "    Del: clear    Esc: cancel    (" +
+            hint_text = std::string(column == COLUMN_KEYBOARD ? "Press a key" : "Press a joypad button or direction") +
+                        " for " + system.buttons[selected_button].label + "    Del: clear    Esc: cancel    (" +
                         std::to_string(seconds) + ")";
         }
         else if (selected_button == reset_row) {
@@ -566,7 +645,7 @@ void c_input_config::draw()
         }
     }
     if (save_failed) {
-        draw_text(hint_font, "unable to save to nemulator.ini", 0.0, 1.0, ERROR_Y, DT_CENTER, highlight);
+        draw_text(hint_font, "Unable to save to nemulator.ini", 0.0, 1.0, ERROR_Y, DT_CENTER, highlight);
     }
     draw_text(hint_font, hint_text, 0.0, 1.0, HINT_Y, DT_CENTER, hint);
 

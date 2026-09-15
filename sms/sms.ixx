@@ -56,6 +56,7 @@ export class c_sms : public c_system, register_class<system_registry, c_sms>
                     },
                 .button_map = button_map,
                 .input_info = input_info,
+                .turbo_buttons = {BUTTON_1B, BUTTON_1A}, //buttons 1 and 2
                 .volume = pow(10.0f, -1.0f / 20.0f),
                 .constructor = []() { return std::make_unique<c_sms>(SMS_MODEL::SMS); },
             },
@@ -73,6 +74,7 @@ export class c_sms : public c_system, register_class<system_registry, c_sms>
                     },
                 .button_map = button_map,
                 .input_info = input_info,
+                .turbo_buttons = {BUTTON_1B, BUTTON_1A}, //buttons 1 and 2
                 .volume = pow(10.0f, -1.0f / 20.0f),
                 .constructor = []() { return std::make_unique<c_sms>(SMS_MODEL::GAMEGEAR); },
             },

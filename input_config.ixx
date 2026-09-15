@@ -21,6 +21,9 @@ export class c_input_bindings
         std::string base;
         std::string name;
     };
+    //buttons that aren't part of any system are configured under this identifier and apply globally.
+    //their joy1 keys stay the default, with an override saved under the general prefix
+    static constexpr const char *general_identifier = "general";
     //snapshot the defaults and load each system's assignments; call after the defaults have been
     //loaded from nemulator.ini
     void init(const std::map<int, s_config_name> &config_names);
@@ -29,9 +32,9 @@ export class c_input_bindings
     bool set(const std::string &identifier, int button, const s_binding &binding);
     bool reset(const std::string &identifier);
     //assign a system's buttons when entering a game
-    void apply(const std::string &identifier, const std::vector<s_button_map> &button_map);
+    void apply(const std::string &identifier);
     //return a system's buttons to the defaults when leaving a game
-    void restore(const std::vector<s_button_map> &button_map);
+    void restore(const std::string &identifier);
 
   private:
     struct s_config_keys
@@ -42,6 +45,7 @@ export class c_input_bindings
         std::string joy;
     };
     s_config_keys get_config_keys(const std::string &identifier, int button);
+    void init_general();
     void load(const std::string &identifier, int button);
     bool save(const std::string &identifier);
 
@@ -75,12 +79,18 @@ export class c_input_config : public c_task
         COLUMN_KEYBOARD,
         COLUMN_JOYPAD
     };
+    struct s_button_row
+    {
+        int button;
+        std::string label;
+    };
     struct s_system
     {
         std::string label;
         std::string identifier;
         int is_arcade;
-        std::vector<s_button_map> buttons;
+        int order = 1; //the general entry sorts ahead of the systems
+        std::vector<s_button_row> buttons;
     };
 
     void listen(double dt);

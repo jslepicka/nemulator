@@ -63,6 +63,7 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>
                 .display_info = display_info,
                 .button_map = button_map,
                 .input_info = input_info,
+                .turbo_buttons = {BUTTON_1B, BUTTON_1A},
                 .constructor = []() { return std::make_unique<c_nes>(); },
             },
             {
@@ -71,6 +72,7 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>
                 .display_info = display_info,
                 .button_map = button_map,
                 .input_info = input_info,
+                .turbo_buttons = {BUTTON_1B, BUTTON_1A},
                 .constructor = []() { return std::make_unique<c_nes>(); },
             },
             {
@@ -79,6 +81,7 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>
                 .display_info = display_info,
                 .button_map = button_map,
                 .input_info = input_info,
+                .turbo_buttons = {BUTTON_1B, BUTTON_1A},
                 .constructor = []() { return std::make_unique<c_nes>(); },
             },
         };
