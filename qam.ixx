@@ -28,13 +28,27 @@ public:
 private:
     ID3DX10Font *font;
     ID3DX10Font *system_font;
+    //the arrow is drawn as a shape rather than as text, so it can turn over between the rows
+    struct s_shape_vertex
+    {
+        float x, y, z;
+        float u, v;
+    };
+    ID3D10Effect *shape_effect;
+    ID3D10EffectTechnique *triangle_technique;
+    ID3D10EffectVectorVariable *shape_color;
+    ID3D10EffectScalarVariable *shape_angle; //so the shading's light stays put as the shape turns
+    ID3D10InputLayout *shape_layout;
+    ID3D10Buffer *shape_vertices;
+    void init_arrow();
+    void draw_arrow(double center_x, double center_y, double size, double angle, D3DXCOLOR color);
     int selected;
     static const char *c;
     double scroll_timer;
     double scroll_pos;
     static const double scroll_delay;
-    static const double system_row_height;
-    static const double char_row_height;
+    static const double row_height;
+    static const double arrow_height;
     int scroll_target;
     int state;
     int result;
@@ -71,4 +85,7 @@ private:
     double system_scroll; //pixels the system row is scrolled left; eases toward system_scroll_target
     double system_scroll_target;
     static const double system_scroll_time;
+    //only one row is shown at a time: 0 shows the letters, 1 the systems.  eases toward the selected row
+    double row_blend;
+    static const double row_blend_time;
 };

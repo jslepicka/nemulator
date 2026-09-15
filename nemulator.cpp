@@ -864,7 +864,7 @@ void c_nemulator::show_quit_menu(int selected)
         texturePanels[i]->dim = true;
     c_menu::s_menu_items mi;
 
-    const char* m[] = { "Quit", "Settings", "Suspend computer" };
+    const char* m[] = { "Exit nemulator", "Settings", "Suspend computer" };
     mi.num_items = show_suspend ? 3 : 2;
     mi.items = (char**)m;
     mi.selected = selected;

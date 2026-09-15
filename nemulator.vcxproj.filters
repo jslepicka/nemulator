@@ -492,6 +492,7 @@
   <ItemGroup>
     <FxCompile Include="effect.fx" />
     <FxCompile Include="effect2.fx" />
+    <FxCompile Include="shape.fx" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="nemulator.rc">
