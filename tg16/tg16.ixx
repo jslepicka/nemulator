@@ -19,7 +19,7 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
     static std::vector<s_system_info> get_registry_info()
     {
         return {{.name = "NEC TurboGrafx-16",
-                 .identifier = "tg16",
+                 .identifier = "pce",
                  .extension = "pce",
                  .display_info =
                      {

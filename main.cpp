@@ -14,7 +14,7 @@ import nemulator.std;
 #ifdef PREVIEW_SHA
 std::string app_title = "nemulator " STRINGIFY(PREVIEW_SHA);
 #else
-std::string app_title = "nemulator 5.1";
+std::string app_title = "nemulator 6.0";
 #endif
 
 struct s_cpu_info

@@ -413,7 +413,7 @@ bool c_nemulator::write_default_config(const std::string &filename)
     auto &registry = system_registry::get_registry();
     std::ostringstream f;
 
-    f << ";" << app_title << " configuration\n"
+    f << ";" << "nemulator configuration\n"
          ";\n"
          ";This file was written with every setting at its default value.  Removing a setting, or this\n"
          ";whole file, restores its default.\n"
