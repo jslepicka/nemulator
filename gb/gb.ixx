@@ -22,14 +22,14 @@ export class c_gb : public c_system, register_class<system_registry, c_gb>
     {
         // clang-format off
         static const std::vector<s_button_map> button_map = {
-            {BUTTON_1RIGHT,  0x01},
-            {BUTTON_1LEFT,   0x02},
-            {BUTTON_1UP,     0x04},
-            {BUTTON_1DOWN,   0x08},
-            {BUTTON_1A,      0x10},
-            {BUTTON_1B,      0x20},
-            {BUTTON_1SELECT, 0x40},
-            {BUTTON_1START,  0x80},
+            {BUTTON_1RIGHT,  0x01, "Right"},
+            {BUTTON_1LEFT,   0x02, "Left"},
+            {BUTTON_1UP,     0x04, "Up"},
+            {BUTTON_1DOWN,   0x08, "Down"},
+            {BUTTON_1A,      0x10, "A"},
+            {BUTTON_1B,      0x20, "B"},
+            {BUTTON_1SELECT, 0x40, "Select"},
+            {BUTTON_1START,  0x80, "Start"},
         };
         // clang-format on
         static const s_system_info::s_display_info display_info = {
@@ -37,12 +37,18 @@ export class c_gb : public c_system, register_class<system_registry, c_gb>
             .fb_height = 144,
             .aspect_ratio = 4.7 / 4.3,
         };
+        static const s_system_info::s_input_info input_info = {
+            .identifier = "gb",
+            .name = "Nintendo Game Boy",
+        };
         return {
             {
                 .name = "Nintendo Game Boy",
                 .identifier = "gb",
                 .display_info = display_info,
                 .button_map = button_map,
+                .input_info = input_info,
+                .turbo_buttons = {BUTTON_1B, BUTTON_1A},
                 .num_sound_channels = 2,
                 .volume = pow(10.0f, -7.0f / 20.0f), //reduce by 7dB
                 .constructor = []() { return std::make_unique<c_gb>(GB_MODEL::DMG); },
@@ -52,6 +58,8 @@ export class c_gb : public c_system, register_class<system_registry, c_gb>
                 .identifier = "gbc",
                 .display_info = display_info,
                 .button_map = button_map,
+                .input_info = input_info,
+                .turbo_buttons = {BUTTON_1B, BUTTON_1A},
                 .num_sound_channels = 2,
                 .volume = pow(10.0f, -7.0f / 20.0f),
                 .constructor = []() { return std::make_unique<c_gb>(GB_MODEL::CGB); },

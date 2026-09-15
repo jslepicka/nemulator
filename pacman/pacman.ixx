@@ -44,6 +44,7 @@ export class c_pacman : public c_system, register_class<system_registry, c_pacma
                 .title = "Pac-Man",
                 .display_info = get_display_info(),
                 .button_map = get_button_map(),
+                .input_info = get_input_info(),
                 .volume = pow(10.0f, -3.0f / 20.0f), //reduce by 3dB
                 .constructor = []() { return std::make_unique<c_pacman>(); },
             },
@@ -54,6 +55,7 @@ export class c_pacman : public c_system, register_class<system_registry, c_pacma
                 .title = "Ms. Pac-Man (Bootleg)",
                 .display_info = get_display_info(),
                 .button_map = get_button_map(),
+                .input_info = get_input_info(),
                 .volume = pow(10.0f, -3.0f / 20.0f), //reduce by 3dB
                 .constructor = []() { return std::make_unique<c_pacman>(PACMAN_MODEL::MSPACMAB); },
             },
@@ -215,12 +217,12 @@ export class c_pacman : public c_system, register_class<system_registry, c_pacma
     {
         // clang-format off
         static const std::vector<s_button_map> button_map = {
-            {BUTTON_1UP,     0x01},
-            {BUTTON_1LEFT,   0x02},
-            {BUTTON_1RIGHT,  0x04},
-            {BUTTON_1DOWN,   0x08},
-            {BUTTON_1SELECT, 0x20},
-            {BUTTON_1START,  0x80},
+            {BUTTON_1UP,     0x01, "Up"},
+            {BUTTON_1LEFT,   0x02, "Left"},
+            {BUTTON_1RIGHT,  0x04, "Right"},
+            {BUTTON_1DOWN,   0x08, "Down"},
+            {BUTTON_1SELECT, 0x20, "Coin"},
+            {BUTTON_1START,  0x80, "Start"},
         };
         // clang-format on
         return button_map;
@@ -235,6 +237,16 @@ export class c_pacman : public c_system, register_class<system_registry, c_pacma
             .aspect_ratio = 3.0 / 4.0,
         };
         return display_info;
+    }
+
+    //all Pac-Man variants share one input configuration
+    static const s_system_info::s_input_info &get_input_info()
+    {
+        static const s_system_info::s_input_info input_info = {
+            .identifier = "pacman",
+            .name = "Pac-Man",
+        };
+        return input_info;
     }
 
     uint8_t z80_read_byte(uint16_t address)

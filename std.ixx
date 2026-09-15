@@ -20,11 +20,20 @@ auto thunk(void * const ctx, auto... args)
     return (static_cast<T*>(ctx)->*method)(args...);
 }
 
+export bool debugger_present = IsDebuggerPresent();
 export void ods(const char *message, ...)
 {
-    static char buf[128];
-    va_list args;
-    va_start(args, message);
-    vsprintf(buf, message, args);
-    OutputDebugString(buf);
+    #ifdef _DEBUG
+    if (debugger_present) {
+        static char buf[128];
+        va_list args;
+        va_start(args, message);
+        vprintf(message, args);
+    }
+    #endif
+}
+
+export consteval uint64_t broadcast8to64(uint8_t b)
+{
+    return b * 0x0101010101010101ULL;
 }

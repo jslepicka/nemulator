@@ -15,6 +15,7 @@ import :nsf_stats;
 import :audio_info;
 import :status;
 import :system_container;
+import :input_config;
 
 import D3d10App;
 import task;
@@ -40,14 +41,28 @@ public:
     void resize();
     void on_pause(bool paused);
     void LoadGames();
+    //writes a nemulator.ini documenting every setting at its default value
+    static bool write_default_config(const std::string &filename);
 
 private:
     float sharpness;
+    //used when nemulator.ini doesn't set them, and by reset to defaults in the display menu
+    static constexpr float default_sharpness = .8f;
+    static constexpr bool default_scanlines = true;
+    static constexpr float sharpness_step = .025f;
+    static constexpr int default_menu_columns = 8;
+    static constexpr double default_menu_delay = 333.0;
+    static constexpr bool default_preload = true;
+    static constexpr bool default_show_suspend = false;
+    static constexpr const char *default_rom_path = "c:\\roms\\"; //the system's identifier is appended
+    static constexpr const char *default_arcade_rom_path = "c:\\roms\\arcade";
     static const GUID nemulator_scheme_guid;
     static DWORD WINAPI game_thread(LPVOID lpParam);
     int init_threads();
     void kill_threads();
     void show_qam();
+    void set_system_filter(int filter);
+    void add_games_to_panel();
     void do_turbo_press(int button, std::string button_name);
     int splash_done;
     int splash_stage;
@@ -55,6 +70,9 @@ private:
     double splash_fade_timer;
     void configure_input();
     void adjust_sharpness(float value);
+    void set_sharpness(float value);
+    void set_scanlines(bool enabled);
+    static std::string format_sharpness(float value);
     void adjust_volume(int value);
 
     struct s_button_handler_params {
@@ -107,14 +125,67 @@ private:
         MENU_INGAME_OPTIONS,
         MENU_QUIT,
         MENU_CHEAT,
-        MENU_QAM
+        MENU_QAM,
+        MENU_SETTINGS,
+        MENU_INPUT_CONFIG,
+        MENU_DISPLAY,
+        MENU_GENERAL
     };
 
+    //each menu opens with the item at selected (or the item for selected_action) highlighted, so returning
+    //from a submenu leaves the cursor on the item that opened it
+    void show_quit_menu(int selected = 0);
+    void show_settings_menu(int selected = 0);
+    void show_ingame_menu(int selected_action = INGAME_RESUME);
+    enum INGAME_ACTION //in-game menu items, in the order they're listed
+    {
+        INGAME_RESUME,
+        INGAME_SWITCH_DISK,
+        INGAME_RESET,
+        INGAME_SETTINGS,
+        INGAME_RETURN_TO_MENU
+    };
+    std::vector<int> ingame_menu_actions; //the action for each item in the current in-game menu
+    void show_display_menu();
+    void save_display_settings();
+    void show_general_menu();
+    void save_general_settings();
+    int sync_mode_at_open; //saved when the general menu closes, if it changed
+    std::string startup_message; //shown once the splash screen is done
+    //the audio stream paces frames in the audio sync mode, so it runs in the menu as well as in a game
+    void update_audio_stream();
+    bool app_paused; //the application lost focus, as opposed to the in-game menu pausing a game
+    bool settings_in_game; //the settings menu was opened from the in-game menu
+    struct s_display_settings
+    {
+        float sharpness;
+        bool scanlines;
+        bool fullscreen;
+    } display_settings_at_open; //settings that differ from these are saved when the display menu closes
     void start_game();
     void leave_game();
     int menu;
     bool fastscroll;
     double scroll_fade_timer;
+
+    //titles too long for the window scroll left until fully visible, then back, pausing before each scroll
+    enum TITLE_SCROLL
+    {
+        TITLE_SCROLL_WAIT_START,
+        TITLE_SCROLL_LEFT,
+        TITLE_SCROLL_WAIT_END,
+        TITLE_SCROLL_RIGHT
+    };
+    void update_title_scroll(double dt);
+    c_system_container *title_scroll_game; //the game whose title is being scrolled
+    int title_scroll_state;
+    double title_scroll_timer;
+    double title_scroll_offset; //pixels
+    int title_overflow; //pixels of the title that don't fit between the margins
+    static constexpr double title_margin = .05; //fraction of the client width on either side of the title
+    static constexpr double title_scroll_delay = 2000.0; //ms
+    static constexpr double title_scroll_speed = .10; //client widths per second
+    static constexpr double title_scroll_min_duration = 500.0; //ms, so short scrolls don't look like a jump
     void LoadFonts();
     void DrawText(ID3DX10Font *font, float x, float y, std::string text, D3DXCOLOR color);
     void OnPause(bool paused);
@@ -124,6 +195,8 @@ private:
     void ProcessInput(double dt);
     int selectedPanel;
     std::vector<c_system_container*> gameList;
+    std::vector<std::string> system_filters; //"All" followed by each system that has games
+    int system_filter; //index into system_filters of the systems shown in the menu
     double menu_delay;
 
     bool inGame;
@@ -160,6 +233,7 @@ private:
 
     c_audio_info *audio_info;
     c_qam *qam;
+    c_input_bindings input_bindings;
 
     struct s_game_thread
     {

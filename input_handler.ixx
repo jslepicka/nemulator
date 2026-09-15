@@ -59,6 +59,24 @@ public:
         AXIS_Y,
         AXIS_Z
     };
+
+    //keyboard and joystick assignment for a button
+    struct s_binding
+    {
+        int key = 0;        //virtual key code, 0 = none
+        int joy = -1;       //joystick number, -1 = none
+        int joy_type = TYPE_BUTTON;
+        int joy_value = 0;  //button number, axis, or pov range, depending on joy_type
+        bool operator==(const s_binding &) const = default;
+    };
+    s_binding get_binding(int button);
+    void set_binding(int button, const s_binding &binding);
+
+    //while enabled, all joysticks are polled, not just the ones assigned to buttons
+    void enable_input_detection() { input_detection_enabled = 1; }
+    void disable_input_detection() { input_detection_enabled = 0; }
+    //returns a binding for every key and joystick input that is currently active
+    std::vector<s_binding> get_active_inputs();
     void set_pair(int button1, int button2)
     {
         pairs.push_back({button1, button2});
@@ -114,6 +132,8 @@ public:
     unsigned char joymask;
     int repeat_mask;
     int extrafast_enabled;
+    int input_detection_enabled;
+    int input_ignored;
 
     std::map<int, std::vector<int>> groups;
 };

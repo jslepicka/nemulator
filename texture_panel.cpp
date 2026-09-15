@@ -266,6 +266,36 @@ void c_texture_panel::AddItem(c_texture_panel_item *item)
     valid_chars[c == '0' ? 0 : c - 64] = 1;
 }
 
+//removes all items and unloads any that are active
+void c_texture_panel::clear()
+{
+    for (auto &container : item_containers) {
+        //items can be activated more than once (and left active off-page by move_to_char),
+        //so deactivate until the item is actually unloaded
+        while (container->item->is_active)
+            container->item->Deactivate();
+        delete container;
+    }
+    item_containers.clear();
+
+    numItems = 0;
+    first_item = 0;
+    last_item = 0;
+    selected_item = 0;
+    on_first_page = true;
+    state = STATE_MENU;
+    prevState = STATE_NULL;
+    scrollTimer = 0.0f;
+    scrollOffset = 0.0f;
+    scroll_changed_page = false;
+    scrollRepeat = false;
+    scrolls = 0;
+    selectable = false;
+    prev_in_focus = false; //selects the first item on the next update
+    memset(valid_chars, 0, sizeof(valid_chars));
+    changed = true;
+}
+
 int *c_texture_panel::get_valid_chars()
 {
     return valid_chars;

@@ -56,6 +56,7 @@
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <PlatformToolset>v145</PlatformToolset>
+    <EnableASAN>true</EnableASAN>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -340,6 +341,7 @@
     <ClCompile Include="sms\sms_common.ixx" />
     <ClCompile Include="std.ixx" />
     <ClCompile Include="system_container.cpp" />
+    <ClCompile Include="input_config.cpp" />
     <ClCompile Include="input_handler.cpp" />
     <ClCompile Include="menu.cpp" />
     <ClCompile Include="nemulator.cpp" />
@@ -353,6 +355,10 @@
     <ClCompile Include="task.cpp" />
     <ClCompile Include="texture_panel.cpp" />
     <ClCompile Include="texture_panel_item.cpp" />
+    <ClCompile Include="tg16\huc6280.ixx" />
+    <ClCompile Include="tg16\tg16.ixx" />
+    <ClCompile Include="tg16\tg16_psg.ixx" />
+    <ClCompile Include="tg16\tg16_vid.ixx" />
     <ClCompile Include="ym2612\ym2612.cpp" />
     <ClCompile Include="ym2612\ym2612.ixx" />
     <ClCompile Include="z80\z80.ixx" />
@@ -402,6 +408,9 @@
       <FileType>Document</FileType>
     </ClCompile>
     <ClCompile Include="gb\mbc5.ixx">
+      <FileType>Document</FileType>
+    </ClCompile>
+    <ClCompile Include="input_config.ixx">
       <FileType>Document</FileType>
     </ClCompile>
     <ClCompile Include="input_handler.ixx">
@@ -566,6 +575,40 @@
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">effect2</VariableName>
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">effect2.fxo.h</HeaderFileOutput>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ObjectFileOutput>
+    </FxCompile>
+    <FxCompile Include="shape.fx">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Effect</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">g_shape_effect</VariableName>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">shape.fxo.h</HeaderFileOutput>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </EntryPointName>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </ObjectFileOutput>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Effect</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">g_shape_effect</VariableName>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">shape.fxo.h</HeaderFileOutput>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </EntryPointName>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </ObjectFileOutput>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Effect</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">g_shape_effect</VariableName>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">shape.fxo.h</HeaderFileOutput>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </EntryPointName>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ObjectFileOutput>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Effect</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">g_shape_effect</VariableName>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">shape.fxo.h</HeaderFileOutput>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+      </EntryPointName>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
       </ObjectFileOutput>
     </FxCompile>
   </ItemGroup>

@@ -1013,65 +1013,64 @@ export class c_vdp
 
             uint32_t sprite_here = 0;
 
-            for (int v = 0; v < vsize + 1; v++) {
-                int32_t y_base = y + v * 8;
-                if (line >= y_base && line < y_base + 8) {
-                    if (hpos == 0) {
-                        if (i != 0) {
-                            mask_low_priority = 1;
-                        }
+            int32_t sprite_height = (vsize + 1) * 8;
+            if (line >= y && line < y + sprite_height) {
+                if (hpos == 0) {
+                    if (i != 0) {
+                        mask_low_priority = 1;
                     }
-
-                    sprite_here = 1;
-                    int32_t y_offset = line - y_base;
-                    uint32_t vv = (v_flip && vsize) ? vsize - v : v;
-                    for (int h = 0; h < hsize + 1; h++) {
-                        //load tile at this position
-                        uint32_t hh = (h_flip && hsize) ? hsize - h : h;
-                        uint32_t tile = base_tile + vv + (hh * (vsize + 1));
-                        uint32_t pattern_address = tile * 32 + ((y_offset ^ v_flip) * 4);
-                        uint32_t pattern = std::byteswap(*((uint32_t *)&vram[pattern_address]));
+                }
+                sprite_here = 1;
+                int32_t y_offset = line - y;
+                uint32_t v = y_offset >> 3;
+                if (v_flip) {
+                    v = vsize - v;
+                }
+                for (int h = 0; h < hsize + 1; h++) {
+                    //load tile at this position
+                    uint32_t hh = h_flip ? hsize - h : h;
+                    uint32_t tile = base_tile + v + (hh * (vsize + 1));
+                    uint32_t pattern_address = tile * 32 + (((y_offset & 0x7) ^ v_flip) * 4);
+                    uint32_t pattern = std::byteswap(*((uint32_t *)&vram[pattern_address]));
 #ifdef USE_BMI2
-                        uint64_t pattern_expanded = _pdep_u64(pattern, 0x0F0F0F0F0F0F0F0F);
-                        pattern_expanded |= palette_broadcast;
-                        if (!h_flip) {
-                            pattern_expanded = std::byteswap(pattern_expanded);
+                    uint64_t pattern_expanded = _pdep_u64(pattern, 0x0F0F0F0F0F0F0F0F);
+                    pattern_expanded |= palette_broadcast;
+                    if (!h_flip) {
+                        pattern_expanded = std::byteswap(pattern_expanded);
+                    }
+#endif
+                    int x_start = x + h * 8;
+#ifdef USE_BMI2
+                    for (int j = x_start; j < x_start + 8; j++, pattern_expanded >>= 8) {
+#else
+                    for (int j = x_start, p = 0; j < x_start + 8; j++, p++) {
+#endif
+                        if (++pixels_drawn > x_res) {
+                            return;
                         }
-#endif
-                        int x_start = x + h * 8;
-#ifdef USE_BMI2
-                        for (int j = x_start; j < x_start + 8; j++, pattern_expanded >>= 8) {
-#else
-                        for (int j = x_start, p = 0; j < x_start + 8; j++, p++) {
-#endif
-                            if (++pixels_drawn > x_res) {
-                                return;
-                            }
-                            if (j >= 0 && j < x_res) {
-                                if (sprite_out[j] != 0xFF) {
-                                    //there is already a sprite here
-                                    if ((sprite_out[j] & 0xF) != 0) {
-                                        //and it's not transparent
-                                        continue;
-                                    }
-                                }
-#ifdef USE_BMI2
-                                uint8_t color = pattern_expanded & 0xFF;
-#else
-                                uint8_t color = pattern >> ((7 - (p ^ h_flip)) * 4);
-#endif
-                                if (color & 0xF) {
-                                    layer_visibility[j + 8] |= priority_val;
-#ifdef USE_BMI2
-                                    sprite_out[j] = color;
-#else
-                                    sprite_out[j] = palette | (color & 0xF);
-#endif
+                        if (j >= 0 && j < x_res) {
+                            if (sprite_out[j] != 0xFF) {
+                                //there is already a sprite here
+                                if ((sprite_out[j] & 0xF) != 0) {
+                                    //and it's not transparent
+                                    continue;
                                 }
                             }
+#ifdef USE_BMI2
+                            uint8_t color = pattern_expanded & 0xFF;
+#else
+                            uint8_t color = pattern >> ((7 - (p ^ h_flip)) * 4);
+#endif
+                            if (color & 0xF) {
+                                layer_visibility[j + 8] |= priority_val;
+#ifdef USE_BMI2
+                                sprite_out[j] = color;
+#else
+                                sprite_out[j] = palette | (color & 0xF);
+#endif
+                            }
                         }
                     }
-                    break;
                 }
             }
 

@@ -33,7 +33,9 @@ export class c_system_container : public c_texture_panel_item
     bool is_nes = false;
 
     std::string &get_system_name() { return system_info.name; }
+    const std::string &get_input_identifier() { return system_info.get_input_identifier(); }
     float get_volume() { return system_info.volume; }
+    double get_frame_rate() { return system_info.frame_rate; }
     int get_num_sound_channels() { return system_info.num_sound_channels; }
     const std::vector<s_button_map> &get_button_map() { return system_info.button_map; }
 

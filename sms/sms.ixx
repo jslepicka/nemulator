@@ -22,21 +22,26 @@ export class c_sms : public c_system, register_class<system_registry, c_sms>
     {
         // clang-format off
         static const std::vector<s_button_map> button_map = {
-            {BUTTON_1UP,             0x01},
-            {BUTTON_1DOWN,           0x02},
-            {BUTTON_1LEFT,           0x04},
-            {BUTTON_1RIGHT,          0x08},
-            {BUTTON_1B,              0x10}, //button 1
-            {BUTTON_1A,              0x20}, //button 2
-            {BUTTON_2UP,             0x40},
-            {BUTTON_2DOWN,           0x80},
-            {BUTTON_2LEFT,          0x100},
-            {BUTTON_2RIGHT,         0x200},
-            {BUTTON_2B,             0x400}, //button 1
-            {BUTTON_2A,             0x800}, //button 2
-            {BUTTON_SMS_PAUSE, 0x80000000},
+            {BUTTON_1UP,             0x01, "Up"},
+            {BUTTON_1DOWN,           0x02, "Down"},
+            {BUTTON_1LEFT,           0x04, "Left"},
+            {BUTTON_1RIGHT,          0x08, "Right"},
+            {BUTTON_1B,              0x10, "Button 1"}, //button 1
+            {BUTTON_1A,              0x20, "Button 2"}, //button 2
+            {BUTTON_2UP,             0x40, "P2 Up"},
+            {BUTTON_2DOWN,           0x80, "P2 Down"},
+            {BUTTON_2LEFT,          0x100, "P2 Left"},
+            {BUTTON_2RIGHT,         0x200, "P2 Right"},
+            {BUTTON_2B,             0x400, "P2 Button 1"}, //button 1
+            {BUTTON_2A,             0x800, "P2 Button 2"}, //button 2
+            {BUTTON_SMS_PAUSE, 0x80000000, "Pause/Start"},
         };
         // clang-format on
+
+        static const s_system_info::s_input_info input_info = {
+            .identifier = "sms",
+            .name = "Sega Master System/Game Gear",
+        };
 
         return {
             {
@@ -50,6 +55,8 @@ export class c_sms : public c_system, register_class<system_registry, c_sms>
                         .crop_bottom = -14,
                     },
                 .button_map = button_map,
+                .input_info = input_info,
+                .turbo_buttons = {BUTTON_1B, BUTTON_1A}, //buttons 1 and 2
                 .volume = pow(10.0f, -1.0f / 20.0f),
                 .constructor = []() { return std::make_unique<c_sms>(SMS_MODEL::SMS); },
             },
@@ -66,6 +73,8 @@ export class c_sms : public c_system, register_class<system_registry, c_sms>
                         .crop_bottom = 24,
                     },
                 .button_map = button_map,
+                .input_info = input_info,
+                .turbo_buttons = {BUTTON_1B, BUTTON_1A}, //buttons 1 and 2
                 .volume = pow(10.0f, -1.0f / 20.0f),
                 .constructor = []() { return std::make_unique<c_sms>(SMS_MODEL::GAMEGEAR); },
             },

@@ -57,9 +57,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
+D3d10App *D3d10App::instance = nullptr;
+
 D3d10App::D3d10App(HINSTANCE hInstance)
 {
+    instance = this;
     fullscreen = FALSE;
+    fullscreen_request = -1;
+    window_width = 0;
+    window_width_pending = false;
+    sync_mode = default_sync_mode;
+    refresh_multiple = 1;
+    frame_rate = 60.0;
+    next_frame = 0.0;
     this->hInstance = hInstance;
     hWnd = 0;
     paused = false;
@@ -126,6 +136,106 @@ HWND D3d10App::GetWnd()
     return hWnd;
 }
 
+bool D3d10App::is_fullscreen()
+{
+    if (instance->fullscreen_request != -1)
+        return instance->fullscreen_request;
+    return instance->fullscreen;
+}
+
+void D3d10App::set_fullscreen(bool enable)
+{
+    instance->fullscreen_request = enable;
+}
+
+int D3d10App::get_sync_mode()
+{
+    return instance->sync_mode;
+}
+
+void D3d10App::set_sync_mode(int mode)
+{
+    instance->sync_mode = mode;
+}
+
+void D3d10App::set_frame_rate(double rate)
+{
+    instance->frame_rate = rate > 0.0 ? rate : 60.0;
+}
+
+double D3d10App::get_refresh_rate()
+{
+    DEVMODE mode = {};
+    mode.dmSize = sizeof(mode);
+    if (!EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &mode))
+        return 0.0;
+    return mode.dmDisplayFrequency;
+}
+
+//the number of refreshes in one 60Hz frame, so a 120Hz display presents every second refresh.  0 if the
+//display isn't ~60Hz or a multiple of it.  Windows reports 59.94Hz as 59.
+int D3d10App::get_refresh_multiple()
+{
+    double rate = get_refresh_rate();
+    if (rate <= 0.0)
+        return 0;
+    int multiple = (int)std::round(rate / 60.0);
+    if (multiple < 1 || multiple > 4) //Present syncs to at most 4 refreshes
+        return 0;
+    double per_frame = rate / multiple;
+    if (per_frame < 59.0 || per_frame > 60.5)
+        return 0;
+    return multiple;
+}
+
+const char *D3d10App::get_sync_mode_name(int mode)
+{
+    return mode == SYNC_TIMER ? "timer" : "vsync";
+}
+
+int D3d10App::parse_sync_mode(const std::string &name)
+{
+    for (int mode = 0; mode < SYNC_COUNT; mode++) {
+        if (name == get_sync_mode_name(mode))
+            return mode;
+    }
+    return -1;
+}
+
+bool D3d10App::set_window_width(int width)
+{
+    instance->window_width = get_window_width(width);
+    instance->window_width_pending = true;
+    return config->set_config_values({{"app.x", std::to_string(width)}});
+}
+
+//app.x is the windowed mode client width.  0, or a width too wide for the screen (e.g., one saved on a
+//larger monitor), uses a fraction of the screen's work area instead.
+int D3d10App::get_window_width(int configured)
+{
+    RECT work_area;
+    SystemParametersInfo(SPI_GETWORKAREA, 0, &work_area, 0);
+    int work_width = work_area.right - work_area.left;
+    if (configured <= 0 || configured > work_width)
+        return (int)(work_width * default_window_scale);
+    return configured;
+}
+
+bool D3d10App::save_window_width()
+{
+    return config->set_config_values({{"app.x", std::to_string(window_width)}});
+}
+
+//resizes the client area to width, with the height from the aspect ratio
+void D3d10App::resize_window(int width)
+{
+    if (maximized)
+        ShowWindow(hWnd, SW_RESTORE);
+    int height = (int)(width / aspectRatio);
+    SetWindowPos(hWnd, NULL, 0, 0, width + window_adj_x, height + window_adj_y,
+                 SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+}
+
 void D3d10App::OnPause(bool paused)
 {
     for (auto &task : *c_task::task_list) {
@@ -143,6 +253,17 @@ int D3d10App::Run()
             DispatchMessage(&msg);
         }
         else {
+            //window changes are made between frames (like Alt+Enter) where every task sees the resize.
+            //the width only applies to windowed mode, so it waits until fullscreen is left, and it's
+            //done before entering fullscreen so that leaving fullscreen restores the new width.
+            if (window_width_pending && !fullscreen) {
+                resize_window(window_width);
+                window_width_pending = false;
+            }
+            if (fullscreen_request != -1) {
+                swapChain->SetFullscreenState(fullscreen_request, NULL);
+                fullscreen_request = -1;
+            }
             if (!paused) {
                 g_ih->poll(dt, ignore_input);
                 d3dDev->ClearRenderTargetView(renderTargetView, clearColor);
@@ -167,30 +288,36 @@ int D3d10App::Run()
 
                 d3dDev->Flush();
 
-                swapChain->Present(vsync ? 1 : 0, 0);
+                //on a 120Hz display a 60Hz frame is held for two refreshes, and so on
+                swapChain->Present(sync_mode == SYNC_VSYNC ? (refresh_multiple ? refresh_multiple : 1) : 0, 0);
                 //d3dDev->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
             }
             else
                 Sleep(250);
 
-            if (timer_sync) {
-                double refresh_rate = 1000.0 / 59.97;
+            //without vsync the timer is the frame clock.  the deadline advances by a fixed step rather
+            //than being measured from the end of the last frame, so overshoot doesn't accumulate into a
+            //drift; if a stall (or a mode change) leaves it more than a frame behind, it starts again
+            //from now instead of racing to catch up
+            if (sync_mode == SYNC_TIMER && !benchmark_mode && !timedemo) {
+                double frame_ticks = (double)liFreq.QuadPart / frame_rate;
+                QueryPerformanceCounter(&liCurrent);
+                if (next_frame < (double)liCurrent.QuadPart - frame_ticks)
+                    next_frame = (double)liCurrent.QuadPart;
+                next_frame += frame_ticks;
                 for (;;) {
                     QueryPerformanceCounter(&liCurrent);
-                    double elapsed = ((liCurrent.QuadPart - liPrev.QuadPart) * 1000) / (double)liFreq.QuadPart;
-                    if (elapsed >= refresh_rate) {
+                    double remaining = (next_frame - (double)liCurrent.QuadPart) * 1000.0 / liFreq.QuadPart;
+                    if (remaining <= 0.0)
                         break;
-                    }
-                    else {
-                        if (refresh_rate - elapsed > 2)
-                            Sleep(1);
-                        else
-                            Sleep(0);
-                    }
+                    if (remaining > 2.0)
+                        Sleep(1);
+                    else
+                        Sleep(0);
                 }
             }
-            else
-                QueryPerformanceCounter(&liCurrent);
+
+            QueryPerformanceCounter(&liCurrent);
 
             dt = ((liCurrent.QuadPart - liPrev.QuadPart) * 1000 / (float)liFreq.QuadPart);
             liPrev = liCurrent;
@@ -213,18 +340,23 @@ void D3d10App::Init(char *config_file_name, c_task *init_task, void *params)
 
     config = new c_config();
     config->read_config_file(config_file_name);
-    clientWidth = config->get_int("app.x", 640);
+    clientWidth = get_window_width(config->get_int("app.x", default_window_width));
     if (clientWidth < 2)
         clientWidth = 2;
+    window_width = clientWidth;
     aspectRatio = (double)screenWidth / (double)screenHeight;
-    aspectLock = config->get_bool("app.aspect_lock", true);
-    startFullscreen = config->get_bool("app.fullscreen", true);
-    vsync = config->get_bool("app.vsync", true);
+    aspectLock = config->get_bool("app.aspect_lock", default_aspect_lock);
+    startFullscreen = config->get_bool("app.fullscreen", default_fullscreen);
+    refresh_multiple = get_refresh_multiple();
+    //an unrecognized mode, or no setting at all, uses the default
+    sync_mode = parse_sync_mode(config->get_string("sync_mode", get_sync_mode_name(default_sync_mode)));
+    if (sync_mode < 0)
+        sync_mode = default_sync_mode;
     if (benchmark_mode || timedemo) {
-        vsync = false;
+        //vsync off; the timer is skipped as well, so frames run as fast as they can
+        sync_mode = SYNC_TIMER;
     }
-    timer_sync = config->get_bool("app.timer_sync", false);
-    pause_on_lost_focus = config->get_bool("app.pause_on_lost_focus", true);
+    pause_on_lost_focus = config->get_bool("app.pause_on_lost_focus", default_pause_on_lost_focus);
     ignore_input = 0;
     avrt_handle = 0;
     timeBeginPeriod(1);
@@ -330,6 +462,8 @@ void D3d10App::OnResize()
     vp.MaxDepth = 1.0f;
 
     d3dDev->RSSetViewports(1, &vp);
+    //a fullscreen switch can change the display mode
+    refresh_multiple = get_refresh_multiple();
     resized = true;
 }
 
@@ -434,6 +568,11 @@ LRESULT D3d10App::MsgProc(UINT msg, WPARAM wParam, LPARAM lParam)
             }
             resizing = false;
             OnResize();
+            //save the width the window was dragged to
+            if (!fullscreen && !maximized && clientWidth != window_width) {
+                window_width = clientWidth;
+                save_window_width();
+            }
             return 0;
 
         case WM_DESTROY:

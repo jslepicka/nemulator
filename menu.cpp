@@ -2,6 +2,9 @@ module;
 
 #include "d3d10.h"
 #include "D3DX10.h"
+
+#define ReleaseCOM(x) { if(x) {x->Release(); x = 0; } }
+
 module nemulator.menu;
 import nemulator.buttons;
 import input_handler;
@@ -49,6 +52,9 @@ void c_menu::init(void *params)
         menu_items->items[i] = new char[len+1];
         strcpy(menu_items->items[i], passed_menu_items->items[i]);
     }
+    selected_item = passed_menu_items->selected;
+    if (selected_item < 0 || selected_item >= menu_items->num_items)
+        selected_item = 0;
     load_fonts();
     y_offset = (1.0 - ((menu_items->num_items-.5) * text_spacing)) / 2;
 }
@@ -125,4 +131,163 @@ void c_menu::load_fonts()
     fontDesc.PitchAndFamily = DEFAULT_PITCH | FF_DONTCARE;
     strcpy_s(fontDesc.FaceName, "Calibri");
     HRESULT hr = D3DX10CreateFontIndirect(d3dDev, &fontDesc, &font);
+}
+
+c_options_menu::~c_options_menu()
+{
+    ReleaseCOM(title_font);
+    ReleaseCOM(font);
+    ReleaseCOM(hint_font);
+}
+
+void c_options_menu::init(void *params)
+{
+    auto p = (s_params *)params;
+    title = p->title;
+    items = p->items;
+    get_note = p->get_note;
+    shadow = p->shadow;
+    load_fonts();
+}
+
+void c_options_menu::resize()
+{
+    load_fonts();
+}
+
+int c_options_menu::update(double dt, int child_result, void *params)
+{
+    auto &item = items[selected_item];
+    int num_items = (int)items.size();
+    int adjust_mask = c_input_handler::RESULT_DOWN | (item.repeat ? c_input_handler::RESULT_REPEAT : 0);
+
+    if (g_ih->get_result(BUTTON_DOWN, true) & c_input_handler::RESULT_DOWN)
+    {
+        selected_item = (selected_item + 1) % num_items;
+        confirm = false;
+    }
+    else if (g_ih->get_result(BUTTON_UP, true) & c_input_handler::RESULT_DOWN)
+    {
+        selected_item = (selected_item + num_items - 1) % num_items;
+        confirm = false;
+    }
+    else if (g_ih->get_result(BUTTON_LEFT, true) & adjust_mask)
+    {
+        if (item.get_value)
+            item.change(-1);
+    }
+    else if (g_ih->get_result(BUTTON_RIGHT, true) & adjust_mask)
+    {
+        if (item.get_value)
+            item.change(1);
+    }
+    else if (g_ih->get_result(BUTTON_OK, true) & c_input_handler::RESULT_DOWN)
+    {
+        if (item.confirm_label.empty() || confirm)
+        {
+            item.change(0);
+            confirm = false;
+        }
+        else
+        {
+            confirm = true;
+        }
+    }
+    else if (g_ih->get_result(BUTTON_CANCEL, true) & c_input_handler::RESULT_DOWN)
+    {
+        dead = true;
+        g_ih->ack();
+        return c_task::TASK_RESULT_CANCEL;
+    }
+    g_ih->ack();
+    return c_task::TASK_RESULT_NONE;
+}
+
+void c_options_menu::load_fonts()
+{
+    struct s_fonts
+    {
+        ID3DX10Font **font;
+        double scale;
+    };
+
+    s_fonts fonts[] = {
+        {&title_font, .08},
+        {&font, .05},
+        {&hint_font, .035},
+    };
+
+    for (auto f : fonts)
+    {
+        ReleaseCOM((*f.font));
+        D3DX10_FONT_DESC fontDesc = {0};
+        fontDesc.Height = (int)(clientHeight * f.scale);
+        fontDesc.Width = 0;
+        fontDesc.Weight = 0;
+        fontDesc.MipLevels = 1;
+        fontDesc.Italic = false;
+        fontDesc.CharSet = DEFAULT_CHARSET;
+        fontDesc.OutputPrecision = OUT_DEFAULT_PRECIS;
+        fontDesc.Quality = DEFAULT_QUALITY;
+        fontDesc.PitchAndFamily = DEFAULT_PITCH | FF_DONTCARE;
+        strcpy_s(fontDesc.FaceName, "Calibri");
+        D3DX10CreateFontIndirect(d3dDev, &fontDesc, f.font);
+    }
+}
+
+void c_options_menu::draw_text(ID3DX10Font *f, const std::string &text, double left, double right, double y,
+                               UINT format, D3DXCOLOR color)
+{
+    RECT r = {(LONG)(clientWidth * left), (LONG)(clientHeight * y), (LONG)(clientWidth * right), clientHeight};
+    if (shadow)
+    {
+        LONG offset = clientHeight / 400 + 1;
+        RECT shadow_rect = {r.left + offset, r.top + offset, r.right + offset, r.bottom + offset};
+        f->DrawText(NULL, text.c_str(), -1, &shadow_rect, DT_NOCLIP | format, D3DXCOLOR(0.0f, 0.0f, 0.0f, color.a));
+    }
+    f->DrawText(NULL, text.c_str(), -1, &r, DT_NOCLIP | format, color);
+}
+
+void c_options_menu::draw()
+{
+    const D3DXCOLOR normal(1.0f, 1.0f, 1.0f, 1.0f);
+    const D3DXCOLOR highlight(1.0f, 0.0f, 0.0f, 1.0f);
+    const D3DXCOLOR hint(.6f, .6f, .6f, 1.0f);
+
+    ID3D10DepthStencilState *depth_state;
+    UINT oldref;
+    d3dDev->OMGetDepthStencilState(&depth_state, &oldref);
+
+    draw_text(title_font, title, 0.0, 1.0, TITLE_Y, DT_CENTER, normal);
+    for (int i = 0; i < (int)items.size(); i++)
+    {
+        auto &item = items[i];
+        double y = LIST_Y + ROW_HEIGHT * i;
+        D3DXCOLOR color = i == selected_item ? highlight : normal;
+        if (item.get_value)
+        {
+            //labels end just left of center and values start just right of it
+            draw_text(font, item.label, 0.0, .47, y, DT_RIGHT, color);
+            draw_text(font, item.get_value(), .53, 1.0, y, DT_LEFT, color);
+        }
+        else
+        {
+            bool confirming = confirm && i == selected_item;
+            draw_text(font, confirming ? item.confirm_label : item.label, 0.0, 1.0, y, DT_CENTER, color);
+        }
+    }
+
+    if (get_note)
+    {
+        std::string note = get_note();
+        if (!note.empty())
+            draw_text(hint_font, note, 0.0, 1.0, NOTE_Y, DT_CENTER, highlight);
+    }
+
+    bool is_setting = (bool)items[selected_item].get_value;
+    draw_text(hint_font, is_setting ? "Left/Right: change    Esc: back" : "Enter: select    Esc: back", 0.0, 1.0,
+              HINT_Y, DT_CENTER, hint);
+
+    d3dDev->OMSetDepthStencilState(depth_state, oldref);
+    ReleaseCOM(depth_state);
 }

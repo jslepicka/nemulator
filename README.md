@@ -4,17 +4,18 @@ nemulator is a multi-system emulator for Windows
 ![](demo.gif)
 
 ## Supported Systems
-- Nintendo NES
+- Nintendo NES / Famicom Disk System
 - Sega Master System
 - Sega Game Gear
-- &#x1F195; Sega Genesis
+- Sega Genesis
+- &#x1F195; TurboGrafx-16
 - Nintendo Game Boy / Game Boy Color
 - Pac-Man / Ms. Pac-Man (Arcade)
 - Space Invaders (Arcade)
 
 ## Notes
 - See configuration options in nemulator.ini
-- Default ROM locations are c:\roms\\(nes|sms|gg|genesis|gb|gbc|arcade\\romset)
+- Default ROM locations are c:\roms\\(nes|fds|sms|gg|genesis|pce|gb|gbc|arcade\\romset)
     - Supported pacman rom sets are pacman, mspacman, mspacmab, and mspacmnf
     - Space Invaders requires invaders rom set and, optionally, audio samples from https://samples.mameworld.info/Unofficial%20Samples.htm
 - Default keyboard assignments:
@@ -23,8 +24,6 @@ nemulator is a multi-system emulator for Windows
     - B button - Z
     - Start - ]
     - Select - [
-    - A turbo toggle - A (+ left/right shift to decrease/increase rate)
-    - B turbo toggle - B (+ left/right shift to decrease/increase rate)
 
 ## Requirements
 - [DirectX End-User Runtimes](https://www.microsoft.com/en-us/download/details.aspx?id=8109)

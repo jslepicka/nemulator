@@ -35,14 +35,14 @@ export class c_genesis : public c_system,
     {
         // clang-format off
         static const std::vector<s_button_map> button_map = {
-            {BUTTON_1UP,             0x01},
-            {BUTTON_1DOWN,           0x02},
-            {BUTTON_1LEFT,           0x04},
-            {BUTTON_1RIGHT,          0x08},
-            {BUTTON_1A,              0x10}, //B button 1
-            {BUTTON_1C,              0x20}, //C button 3
-            {BUTTON_1B,            0x1000}, //A button 2
-            {BUTTON_1START,        0x2000}
+            {BUTTON_1UP,             0x01, "Up"},
+            {BUTTON_1DOWN,           0x02, "Down"},
+            {BUTTON_1LEFT,           0x04, "Left"},
+            {BUTTON_1RIGHT,          0x08, "Right"},
+            {BUTTON_1B,            0x1000, "A"}, //A button 2
+            {BUTTON_1A,              0x10, "B"}, //B button 1
+            {BUTTON_1C,              0x20, "C"}, //C button 3
+            {BUTTON_1START,        0x2000, "Start"}
         };
         // clang-format on
 
@@ -58,6 +58,7 @@ export class c_genesis : public c_system,
                         .crop_right = -1,
                     },
                 .button_map = button_map,
+                .turbo_buttons = {BUTTON_1B, BUTTON_1A, BUTTON_1C}, //labelled A, B, C
                 .num_sound_channels = 2,
                 .volume = pow(10.0f, 4.0f / 20.0f), //boost by 4dB
                 .constructor = []() { return std::make_unique<c_genesis>(); },

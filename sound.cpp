@@ -13,7 +13,7 @@ import interpolate;
 c_sound::c_sound()
 {
     resets = 0;
-    requested_freq = freq = default_freq = 48000.0;
+    requested_freq = freq = default_freq = default_audio_freq;
     max_freq = default_freq * 1.02;
     min_freq = default_freq * .98;
     adjustPeriod = 3;
@@ -43,6 +43,39 @@ c_sound::c_sound()
     sample_sum = 0.0f;
     sample_count = 0;
     sample_peak = _sample_peak = 0;
+
+    LARGE_INTEGER qpc;
+    QueryPerformanceFrequency(&qpc);
+    qpc_frequency = (double)qpc.QuadPart;
+}
+
+//the play position is only updated once per device period, so interpolate from the timestamp it was
+//read at to get sub-period resolution.  returns 0 if the position doesn't look usable, which leaves
+//the caller waiting on buffer space instead.
+double c_sound::get_outstanding_frames()
+{
+    UINT64 frequency = 0;
+    UINT64 position = 0;
+    UINT64 qpc_position = 0;
+    if (!playing || qpc_frequency == 0.0)
+        return 0.0;
+    if (audio_clock->GetFrequency(&frequency) != S_OK || frequency == 0)
+        return 0.0;
+    if (audio_clock->GetPosition(&position, &qpc_position) != S_OK)
+        return 0.0;
+
+    double played = (double)position / (double)frequency * wf.nSamplesPerSec;
+    LARGE_INTEGER now;
+    QueryPerformanceCounter(&now);
+    //qpc_position is in 100ns units
+    double elapsed = (double)now.QuadPart / qpc_frequency * 10'000'000.0 - (double)qpc_position;
+    if (elapsed > 0.0)
+        played += elapsed / 10'000'000.0 * wf.nSamplesPerSec;
+
+    double outstanding = (double)frames_written - played;
+    if (outstanding < 0.0 || outstanding > (double)pNumBufferFrames)
+        return 0.0;
+    return outstanding;
 }
 
 int c_sound::init_wasapi()
@@ -130,18 +163,26 @@ int c_sound::init()
 
 void c_sound::play()
 {
+    if (playing)
+        return;
     reset_slope();
     BYTE *buffer;
     render_client->GetBuffer(pNumBufferFrames, &buffer);
     render_client->ReleaseBuffer(pNumBufferFrames, AUDCLNT_BUFFERFLAGS_SILENT);
+    frames_written = pNumBufferFrames;
     audio_client->Start();
+    playing = true;
     Sleep(50); //sleep for a bit to give the play cursor time to advance.  ick.
 }
 
 void c_sound::stop()
 {
+    if (!playing)
+        return;
     audio_client->Stop();
     audio_client->Reset();
+    frames_written = 0;
+    playing = false;
 }
 
 void c_sound::reset()
@@ -399,6 +440,7 @@ int c_sound::copy(const float *buf, int num_samples, float system_volume)
         }
     }
     render_client->ReleaseBuffer(num_samples, 0);
+    frames_written += num_samples;
 
     frame_average /= (num_samples * (num_channels == 1 ? 2 : num_channels));
     sample_sum += frame_average;

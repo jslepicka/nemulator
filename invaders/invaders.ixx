@@ -33,11 +33,11 @@ export class c_invaders : public c_system, register_class<system_registry, c_inv
                     },
                 .button_map =
                     {
-                        {BUTTON_1SELECT, 0x01},
-                        {BUTTON_1START, 0x04},
-                        {BUTTON_1A, 0x10},
-                        {BUTTON_1LEFT, 0x20},
-                        {BUTTON_1RIGHT, 0x40},
+                        {BUTTON_1SELECT, 0x01, "Coin"},
+                        {BUTTON_1START, 0x04, "Start"},
+                        {BUTTON_1A, 0x10, "Fire"},
+                        {BUTTON_1LEFT, 0x20, "Left"},
+                        {BUTTON_1RIGHT, 0x40, "Right"},
                     },
                 .constructor = []() { return std::make_unique<c_invaders>(); },
             },

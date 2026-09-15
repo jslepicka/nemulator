@@ -6,6 +6,7 @@
 
 import D3d10App;
 import nemulator;
+import nemulator.std;
 
 #define _STRINGIFY(x) #x
 #define STRINGIFY(x) _STRINGIFY(x)
@@ -13,7 +14,7 @@ import nemulator;
 #ifdef PREVIEW_SHA
 std::string app_title = "nemulator " STRINGIFY(PREVIEW_SHA);
 #else
-std::string app_title = "nemulator 5.1";
+std::string app_title = "nemulator 6.0";
 #endif
 
 struct s_cpu_info
@@ -83,14 +84,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdPlin
 {
     timedemo = has_flag("-timedemo");
     benchmark_mode = has_flag("-benchmark");
-    if (IsDebuggerPresent()) {
+    #ifdef _DEBUG
+    if (debugger_present) {
         AllocConsole();
         freopen("CONOUT$", "w", stdout);
         printf("Running under debugger\n");
     }
+    #endif
     g_cpu_info = get_cpu_info();
+    //the first time nemulator is run, write a config file documenting the defaults
+    const char *config_filename = "nemulator.ini";
+    if (!std::filesystem::exists(config_filename))
+        c_nemulator::write_default_config(config_filename);
     std::unique_ptr<D3d10App> app = std::make_unique<D3d10App>(hInstance);
-    app->Init((char*)"nemulator.ini", new c_nemulator(), NULL);
+    app->Init((char*)config_filename, new c_nemulator(), NULL);
     app->SetCaption(app_title);
     int retval = app->Run();
     return retval;

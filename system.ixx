@@ -51,9 +51,27 @@ public:
             double aspect_ratio = 4.0 / 3.0;
         } display_info;
         std::vector<s_button_map> button_map;
+        //systems with the same input identifier share an input configuration (e.g., NES and FDS)
+        //if unset, the system's identifier and title or name are used
+        struct s_input_info
+        {
+            std::string identifier;
+            std::string name;
+        } input_info;
+        //buttons that can be set to auto-fire.  Name player 1's buttons; player 2's equivalents are
+        //added automatically.  Turbo toggles have no default assignment.
+        std::vector<uint32_t> turbo_buttons;
         int num_sound_channels = 1;
         float volume = 1.0f;
+        //the rate the system runs at, used to pace frames when syncing to a timer.
+        //todo: set the real rate for each system; they all use 60.0 for now
+        double frame_rate = 60.0;
         std::function <std::unique_ptr<c_system>()> constructor;
+
+        const std::string &get_input_identifier() const
+        {
+            return input_info.identifier.empty() ? identifier : input_info.identifier;
+        }
     };
     int crop_left;
     int crop_right;
