@@ -195,6 +195,23 @@ export class c_sms : public c_system, register_class<system_registry, c_sms>
                 if (port == 0x3F) {
                     nationalism = value;
                 }
+                else if (model == SMS_MODEL::GAMEGEAR) {
+                    //EXT connector registers
+                    switch (port) {
+                        case 0x01:
+                            ext_data = value & 0x7F;
+                            break;
+                        case 0x02:
+                            ext_dir = value;
+                            break;
+                        case 0x03:
+                            ext_tx = value;
+                            break;
+                        case 0x05:
+                            ext_serial = value & 0xF8;
+                            break;
+                    }
+                }
                 break;
             case 1:
                 catchup_psg();
@@ -224,7 +241,24 @@ export class c_sms : public c_system, register_class<system_registry, c_sms>
         switch (port >> 6) {
             case 0:
                 if (model == SMS_MODEL::GAMEGEAR) {
-                    return joy >> 31;
+                    switch (port) {
+                        case 0x00:
+                            //bit 7: start (0 = pressed), bit 6: export region, bit 5: NTSC
+                            return (joy & 0x8000'0000 ? 0x80 : 0x00) | 0x40;
+                        case 0x01:
+                            //output pins read back latched data, unconnected input pins read high
+                            return ((ext_data & ~ext_dir) | ext_dir) & 0x7F;
+                        case 0x02:
+                            return ext_dir;
+                        case 0x03:
+                            return ext_tx;
+                        case 0x04:
+                            return 0xFF;
+                        case 0x05:
+                            return ext_serial;
+                        default:
+                            return 0xFF;
+                    }
                 }
                 return 0;
             case 1:
@@ -299,6 +333,10 @@ export class c_sms : public c_system, register_class<system_registry, c_sms>
         page[2] = file_length > 0x8000 ? rom.get() + 0x8000 : rom.get();
         nationalism = 0;
         ram_select = 0;
+        ext_data = 0x7F;
+        ext_dir = 0xFF;
+        ext_tx = 0x00;
+        ext_serial = 0x00;
         joy = 0xFFFF;
         psg_cycles = 0;
         last_psg_run = 0;
@@ -438,6 +476,10 @@ export class c_sms : public c_system, register_class<system_registry, c_sms>
     int loaded = 0;
     int ram_select;
     int nationalism;
+    uint8_t ext_data;
+    uint8_t ext_dir;
+    uint8_t ext_tx;
+    uint8_t ext_serial;
     uint8_t data_bus = 0xFF;
     std::unique_ptr<c_z80<c_sms>> z80;
     std::unique_ptr<i_vdp> vdp;
