@@ -576,7 +576,7 @@ export template <typename Sys> class c_vid
                     //assert(0);
                     ods("Out of bounds VRAM read (%04X)\n", MARR);
                 }
-                read_buffer = *(uint16_t *)&vram[MARR * 2];
+                read_buffer = *(uint16_t *)&vram[(MARR & 0x7FFF) * 2];
                 return ret;
             }
 
