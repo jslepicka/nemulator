@@ -240,6 +240,7 @@ export template <typename Sys> class c_vid
                 tile &= 0xFFF;
                 uint32_t tile_address = tile * 32;
                 tile_address += (y & 7) * 2;
+                tile_address &= 0xFFFF;
 
                 constexpr uint64_t pdep_pattern = broadcast8to64(0x01);
                 uint64_t c = _pdep_u64(vram[tile_address], pdep_pattern);
@@ -813,9 +814,9 @@ export template <typename Sys> class c_vid
     int vce_line;
     uint8_t vdc_status;
     uint32_t fb[max_width * 240];
-  private:
     // vce raster: defines the frame.  262 or 263 lines, from vce control bit 2.
     int vce_lines;
+  private:
     // vce line that maps to framebuffer row 0.  this is the display start for the
     // standard VSW=2/VDS=15 timing ((2+1) + (15+2)), so normal games land where
     // they always have.

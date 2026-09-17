@@ -68,9 +68,9 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
         //the frame ends when the vce raster wraps, so the line count is whatever
         //the vce is programmed for (262 or 263).  guard against a vdc/vce that
         //never completes a frame.
-        int guard = 0;
         bool frame_done = false;
-        while (!frame_done && ++guard < 400) {
+        int lines = vid->vce_lines;
+        for (int i = 0; i < lines; i++) {
             //run the line as the vdc's four horizontal phases, letting the cpu
             //run for each phase's real duration.  a handler that reaches the
             //scroll registers before the next HDS moves the next line; one that
@@ -88,6 +88,9 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
             int psg_cycles = psg_cycle_remainder / 6;
             psg_cycle_remainder -= psg_cycles * 6;
             psg.clock(psg_cycles);
+        }
+        if (!frame_done) {
+            int x = 1;
         }
         return 0;
     }
@@ -209,6 +212,10 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
             // 1000-13FF - I/O (1 register)
             // 1400-17FF - Interrupt controller (4 registers)
             // 1800-1FFF - unmapped
+            if (address < 0x800) {
+                //the vdc and vce hold the cpu for an extra cycle on every access
+                cpu->stall(3);
+            }
             if (address < 0x400) {
                 return vid->read_vdc(address);
             }
@@ -263,7 +270,8 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
         int bank = address >> 13;
         const int mask = (1 << 13) - 1;
         if (bank < 0x80) {
-            assert(0);
+            //assert(0);
+            ods("write to rom\n");
         }
         else if (bank == 0xF8) {
             address &= mask;
@@ -279,6 +287,10 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
             // 1000-13FF - I/O (1 register)
             // 1400-17FF - Interrupt controller (4 registers)
             // 1800-1FFF - unmapped
+            if (address < 0x800) {
+                //the vdc and vce hold the cpu for an extra cycle on every access
+                cpu->stall(3);
+            }
             if (address < 0x400) {
                 //ods("write %2X to VDC address %4X\n", value, address);
                 vid->write_vdc(address, value);

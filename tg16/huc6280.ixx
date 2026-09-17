@@ -78,6 +78,41 @@ export template <typename Sys> class c_huc6280
         do_nmi = false;
     }
 
+    // interrupt lines as the cpu last sampled them: bit 0 irq2, bit 1 irq1, bit 2
+    // timer.  the lines are sampled on every cycle, and the last sample of an
+    // instruction is taken before its final memory access - so an interrupt that
+    // the instruction itself acknowledges or masks is still taken after it.
+    // Jackie Chan depends on this: its raster handler does CLI and then reads the
+    // vdc status, and the interrupt that read acknowledges re-enters the handler
+    // once.  that re-entry is what puts its status-bar split on the right line.
+    int irq_pend = 0;
+    int sample_irqs()
+    {
+        if (SR.I) {
+            return 0;
+        }
+        return (sys.irq2 ? 1 : 0) |
+               ((sys.irq1 && !(sys.irq_controller_1402 & 2)) ? 2 : 0) |
+               ((sys.timer_irq && !(sys.irq_controller_1402 & 4)) ? 4 : 0);
+    }
+
+    // cycles owed by the last instruction for accessing the vdc or vce
+    int pending_stall = 0;
+
+    // CSL drops the cpu to 1.79MHz, where a cycle is 12 master clocks instead of 3.
+    // the timer and vdc keep running on master time.  the cpu comes out of reset in
+    // low speed, and games switch up with CSH.  Fantasy Zone also drops to low speed
+    // inside its raster handler as a calibrated wait, so its status-bar split lands
+    // after the scroll latch.
+    bool slow_speed = true;
+
+  public:
+    // reads and writes to the vdc and vce hold the cpu for an extra cycle
+    void stall(int master)
+    {
+        pending_stall += slow_speed ? master * 4 : master;
+    }
+
     void execute()
     {
         while (true) {
@@ -87,17 +122,16 @@ export template <typename Sys> class c_huc6280
                     do_nmi = false;
                     nmi_delay = 0;
                 }
-                else if (sys.irq1 && irq_delay == 0 && !SR.I && !(sys.irq_controller_1402 & 2)) {
-                    opcode = 0x101;
-                    irq_delay = 0;
-                }
-                else if (sys.irq2 && irq_delay == 0 && !SR.I) {
-                    opcode = 0x102;
-                    irq_delay = 0;
-                }
-                else if (sys.timer_irq && irq_delay == 0 && !SR.I && !(sys.irq_controller_1402 & 4)) {
+                // timer first, then irq1, then irq2.  the timer also needs its line
+                // still raised; the others are taken on the sample alone.
+                else if ((irq_pend & 4) && sys.timer_irq && !(sys.irq_controller_1402 & 4)) {
                     opcode = 0x107;
-                    irq_delay = 0;
+                }
+                else if (irq_pend & 2) {
+                    opcode = 0x101;
+                }
+                else if (irq_pend & 1) {
+                    opcode = 0x102;
                 }
                 else if (xfer_pos) {
                     opcode = xfer_opcode;
@@ -112,7 +146,15 @@ export template <typename Sys> class c_huc6280
                 }
                 irq_delay = 0;
                 nmi_delay = 0;
-                required_cycles += cycle_table[opcode];
+                if (opcode == 0x54 || opcode == 0xD4) {
+                    int now = slow_speed ? 12 : 3;
+                    int after = opcode == 0x54 ? 12 : 3;
+                    required_cycles += 2 * now + after + pending_stall;
+                }
+                else {
+                    required_cycles += (slow_speed ? cycle_table[opcode] * 4 : cycle_table[opcode]) + pending_stall;
+                }
+                pending_stall = 0;
                 fetch_opcode = false;
             }
             if (required_cycles <= available_cycles) {
@@ -123,19 +165,38 @@ export template <typename Sys> class c_huc6280
                 }
                 required_cycles = 0;
                 fetch_opcode = true;
-                if (set_t) {
-                    SR.T = 1;
-                    set_t = false;
-                }
-                execute_opcode();
-                SR.T = 0;
 
+                // the timer runs through the instruction's cycles, so an underflow
+                // during them is part of this instruction's sample
                 if (timer_control && timer_cycles >= (1024 * 3)) {
                     timer_cycles -= (1024 * 3);
                     if (--timer_counter == 0xFF) {
                         sys.timer_irq = 1;
                         timer_counter = timer_reload;
                     }
+                }
+
+                // RTI and the interrupt sequence change I before their last cycles,
+                // so they sample afterwards; everything else samples beforehand
+                bool late_sample = opcode == 0x40 || opcode == 0x100 || opcode == 0x101 ||
+                                   opcode == 0x102 || opcode == 0x107;
+                if (!late_sample) {
+                    irq_pend = sample_irqs();
+                }
+
+                if (set_t) {
+                    SR.T = 1;
+                    set_t = false;
+                }
+                bool slow_during = slow_speed;
+                execute_opcode();
+                SR.T = 0;
+                if (slow_during) {
+                    required_cycles *= 4;
+                }
+
+                if (late_sample) {
+                    irq_pend = sample_irqs();
                 }
             }
             else {
@@ -175,6 +236,9 @@ export template <typename Sys> class c_huc6280
         cycles = 0;
         nmi_delay = 0;
         irq_delay = 0;
+        irq_pend = 0;
+        pending_stall = 0;
+        slow_speed = true;
         S = (unsigned char *)&SR;
         *S = 0;
         SR.T = 0;
@@ -566,7 +630,8 @@ export template <typename Sys> class c_huc6280
                 SR.D = false;
                 PC = makeword(read_byte(0xFFF8), read_byte(0xFFF9));
                 //ods("!!! IRQ1 !!!\n");
-                assert(!(sys.irq_controller_1402 & 2));
+                //an interrupt sampled before the instruction that masked it is still
+                //taken, so the mask can already be set here
                 break;
             case 0x102: //IRQ2
                 push(hibyte(PC));
@@ -653,14 +718,12 @@ export template <typename Sys> class c_huc6280
 
     void CSL()
     {
-        // change speed to low
-        // ignoring for now
+        slow_speed = true;
     }
 
     void CSH()
     {
-        // change speed to high
-        // ignoring for now
+        slow_speed = false;
     }
 
     void TAM()
