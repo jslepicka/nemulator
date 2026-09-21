@@ -26,16 +26,6 @@ export template <typename Sys> class c_vid
         : sys(sys), mode_switch_callback(mode_switch_callback)
     {
         reset();
-        for (int i = 0; i < 512; i++) {
-            uint32_t b = i & 7;
-            uint32_t r = (i >> 3) & 7;
-            uint32_t g = (i >> 6) & 7;
-            r = (r << 5) | (r << 2) | (r >> 1);
-            g = (g << 5) | (g << 2) | (g >> 1);
-            b = (b << 5) | (b << 2) | (b >> 1);
-
-            rgb[i] = (0xFF << 24) | (b << 16) | (g << 8) | r;
-        }
     }
 
     void reset()
@@ -53,6 +43,7 @@ export template <typename Sys> class c_vid
         std::memset(vdc_registers, 0, sizeof(vdc_registers));
         std::memset(satb, 0, sizeof(satb));
         std::memset(pal, 0, sizeof(pal));
+        std::memset(rgb, 0, sizeof(rgb));
         vdc_status = 0;
         raster_compare = 0;
         read_buffer = 0;
@@ -218,7 +209,7 @@ export template <typename Sys> class c_vid
         }
 
         if (burst_mode) {
-            std::fill_n(pfb, frame_width, rgb[pal[256]]);
+            std::fill_n(pfb, frame_width, rgb[256]);
             return;
         }
 
@@ -271,7 +262,7 @@ export template <typename Sys> class c_vid
             if (sprite_output[i].color && (sprite_output[i].priority || !pal_index)) {
                 pal_index = 256 + sprite_output[i].color;
             }
-            *pfb++ = rgb[pal[pal_index]];
+            *pfb++ = rgb[pal_index];
         }
     }
 
@@ -415,7 +406,7 @@ export template <typename Sys> class c_vid
             render_display_line(pfb, VDW + 1 - vphase_count);
         }
         else if (pfb) {
-            std::fill_n(pfb, frame_width, rgb[pal[256]]);
+            std::fill_n(pfb, frame_width, rgb[256]);
         }
 
         //the hds irq point follows 8 dots later
@@ -801,13 +792,28 @@ export template <typename Sys> class c_vid
                 break;
             case 4:
                 pal[pal_index] = (pal[pal_index] & 0x100) | value;
+                set_rgb(pal_index, pal[pal_index]);
                 break;
             case 5:
                 pal[pal_index] = (pal[pal_index] & 0xFF) | ((value & 0x1) << 8);
+                set_rgb(pal_index, pal[pal_index]);
                 pal_index++;
                 pal_index &= 0x1FF;
                 break;
         }
+    }
+
+  private:
+    void set_rgb(int index, int color)
+    {
+        uint32_t b = color & 7;
+        uint32_t r = (color >> 3) & 7;
+        uint32_t g = (color >> 6) & 7;
+        r = (r << 5) | (r << 2) | (r >> 1);
+        g = (g << 5) | (g << 2) | (g >> 1);
+        b = (b << 5) | (b << 2) | (b >> 1);
+
+        rgb[index] = (0xFF << 24) | (b << 16) | (g << 8) | r;
     }
 
   public:
