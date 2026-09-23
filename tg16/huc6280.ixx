@@ -184,13 +184,16 @@ export template <typename Sys> class c_huc6280
                     irq_pend = sample_irqs();
                 }
 
-                if (set_t) {
-                    SR.T = 1;
-                    set_t = false;
-                }
                 bool slow_during = slow_speed;
                 execute_opcode();
-                SR.T = 0;
+                //if PLP or RTI, retain SR.T.  If SET, set SR.T to true otherwise
+                //set it to false.  Should really set SR.T appropriately in each
+                //opcode handler.  Legendary Axe II will have glitches in intro if
+                //this isn't handled correctly.
+                if (opcode != 0x28 && opcode != 0x40) {
+                    SR.T = opcode == 0xF4;
+                }
+
                 if (slow_during) {
                     required_cycles *= 4;
                 }
@@ -267,7 +270,6 @@ export template <typename Sys> class c_huc6280
         xfer_dst = 0;
         xfer_cnt = 0;
         xfer_opcode = 0;
-        set_t = false;
         return 1;
     }
 
@@ -337,7 +339,6 @@ export template <typename Sys> class c_huc6280
     int required_cycles;
     unsigned char *dma_dst;
     int dma_src;
-    bool set_t;
 
     int opcode;
 
@@ -599,7 +600,7 @@ export template <typename Sys> class c_huc6280
             case 0xF1: indirect_y_pc(); SBC(); break;
             case 0xF2: indirect2(); SBC(); break;
             case 0xF3: xfer_setup(TRANSFER::TAI); break;
-            case 0xF4: set_t = true; break; //unofficial d,x NOP
+            case 0xF4: SET(); break;
             case 0xF5: zeropage_x(); SBC(); break;
             case 0xF6: zeropage_x(); INC(); break;
             case 0xF7: zeropage(); SMB(); break;
@@ -619,6 +620,7 @@ export template <typename Sys> class c_huc6280
                 push(*S);
                 SR.I = true;
                 SR.D = false;
+                SR.T = 0;
                 PC = makeword(read_byte(0xFFFA), read_byte(0xFFFB));
                 break;
             case 0x101: //IRQ1
@@ -628,6 +630,7 @@ export template <typename Sys> class c_huc6280
                 push(*S);
                 SR.I = true;
                 SR.D = false;
+                SR.T = 0;
                 PC = makeword(read_byte(0xFFF8), read_byte(0xFFF9));
                 //ods("!!! IRQ1 !!!\n");
                 //an interrupt sampled before the instruction that masked it is still
@@ -640,6 +643,7 @@ export template <typename Sys> class c_huc6280
                 push(*S);
                 SR.I = true;
                 SR.D = false;
+                SR.T = 0;
                 PC = makeword(read_byte(0xFFF6), read_byte(0xFFF7));
                 ods("!!! IRQ2 !!!\n");
                 break;
@@ -701,6 +705,7 @@ export template <typename Sys> class c_huc6280
                 push(*S);
                 SR.I = true;
                 SR.D = false;
+                SR.T = 0;
                 PC = makeword(read_byte(0xFFFA), read_byte(0xFFFB));
                 break;
 
@@ -1273,13 +1278,10 @@ export template <typename Sys> class c_huc6280
 
     INLINE void ADC()
     {
-        //the documentation notes one extra cycle when the decimal flag is set
-        if (SR.D) {
-            required_cycles += 3;
-        }
         uint8_t operand = SR.T ? read_byte(0x2000 | X) : A;
         uint8_t result = 0;
         if (SR.D) {
+            required_cycles += 3;
             uint8_t lo = (operand & 0xF) + (M & 0xF) + (SR.C ? 1 : 0);
             if (lo > 9) {
                 lo += 6;
@@ -1418,11 +1420,12 @@ export template <typename Sys> class c_huc6280
         assert(0);
         push(hibyte(PC + 1));
         push(lobyte(PC + 1));
-        push(*S | 0x30);
+        SR.T = 0;
+        push(*S | 0x10);
         SR.B = true;
         SR.I = true;
         SR.D = false;
-        PC = makeword(read_byte(0xFFFE), read_byte(0xFFFF));
+        PC = makeword(read_byte(0xFFF6), read_byte(0xFFF7));
     }
     INLINE void BVC()
     {
@@ -1613,7 +1616,8 @@ export template <typename Sys> class c_huc6280
     }
     INLINE void PHP()
     {
-        push(*S);
+        //push(*S);
+        push(*S & ~0x20);
         SR.T = 0;
     }
     INLINE void PLA()
@@ -1710,8 +1714,12 @@ export template <typename Sys> class c_huc6280
     }
     INLINE void SBC()
     {
+        //clear SR.T here since SBC doesn't use it and we fall through to ADC, which does,
+        //in the non decimal mode case.
+        SR.T = 0;
         if (SR.D) {
-            uint8_t operand = SR.T ? read_byte(0x2000 | X) : A;
+            required_cycles += 3;
+            uint8_t operand = A;
             uint8_t result = 0;
             int8_t borrow = 0;
             int8_t lo = (int8_t)(operand & 0xF) - (int8_t)(M & 0xF) - (SR.C ? 0 : 1);
@@ -1729,12 +1737,7 @@ export template <typename Sys> class c_huc6280
             
             setn(result);
             setz(result);
-            if (SR.T) {
-                write_byte(0x2000 | X, result);
-            }
-            else {
-                A = result;
-            }
+            A = result;
         }
         else {
             M ^= 0xFF;
