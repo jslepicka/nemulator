@@ -262,6 +262,8 @@ void c_nemulator::Init()
 
     show_suspend = config->get_bool("show_suspend", default_show_suspend);
 
+    load_system_settings();
+
     if (menu_delay < 1.0)
         menu_delay = 1.0;
 
@@ -478,6 +480,19 @@ bool c_nemulator::write_default_config(const std::string &filename)
          "\n;How long, in ms, start+select need to be held to show the menu in a game.  The default keeps\n"
          ";it clear of games that use the combo themselves (e.g., Crystal Mines); 0 shows it immediately.\n"
          "menu_delay = " << default_menu_delay << "\n";
+
+    f << "\n;\n;Systems\n;\n"
+         "\n;Limit sprites per line as the hardware does, e.g., to 8 on the NES.  Without the limit, every\n"
+         ";sprite is shown, so games that flicker sprites to work around it don't flicker, but sprites a\n"
+         ";game hides using the limit are shown as well.  Also changed by settings > system.\n";
+    std::vector<std::string> sprite_limit_systems;
+    for (auto &si : registry) {
+        const std::string &identifier = si.get_input_identifier();
+        if (!si.has_sprite_limit || std::ranges::contains(sprite_limit_systems, identifier))
+            continue;
+        sprite_limit_systems.push_back(identifier);
+        f << identifier << ".limit_sprites = " << yes_no(default_limit_sprites) << "\n";
+    }
 
     f << "\n;\n;Input\n;\n"
          "\n;Keyboard assignments, as hex virtual-key codes:\n"
@@ -715,9 +730,9 @@ void c_nemulator::handle_button_mask_sides(s_button_handler_params *params)
 void c_nemulator::handle_button_sprite_limit(s_button_handler_params *params)
 {
     c_system_container* g = (c_system_container*)texturePanels[selectedPanel]->GetSelected();
-    if (g->is_nes)
+    if (g->has_sprite_limit() && g->system && g->system->is_loaded())
     {
-        nes::c_nes *n = ((nes::c_nes *)g->system.get());
+        c_system *n = g->system.get();
         n->set_sprite_limit(!n->get_sprite_limit());
         if (n->get_sprite_limit())
             status->add_message("sprites limited");
@@ -875,8 +890,8 @@ void c_nemulator::show_quit_menu(int selected)
 void c_nemulator::show_settings_menu(int selected)
 {
     c_menu::s_menu_items mi;
-    const char* m[] = { "General", "Input", "Display" };
-    mi.num_items = 3;
+    const char* m[] = { "General", "Input", "Display", "System" };
+    mi.num_items = 4;
     mi.items = (char**)m;
     mi.selected = selected;
     add_task(new c_menu(), (void*)&mi);
@@ -1001,6 +1016,104 @@ void c_nemulator::save_general_settings()
         return;
     if (!config->set_config_values({{"sync_mode", D3d10App::get_sync_mode_name(mode)}}))
         status->add_message("unable to save the sync mode to nemulator.ini");
+}
+
+void c_nemulator::load_system_settings()
+{
+    system_settings.clear();
+    for (auto &si : system_registry::get_registry()) {
+        if (!si.has_sprite_limit)
+            continue;
+        const std::string &identifier = si.get_input_identifier();
+        auto s = std::ranges::find(system_settings, identifier, &s_system_settings::identifier);
+        if (s == system_settings.end()) {
+            s_system_settings settings = {
+                .identifier = identifier,
+                .name = si.input_info.name.empty() ? si.name : si.input_info.name,
+            };
+            s = system_settings.insert(system_settings.end(), settings);
+        }
+        s->has_sprite_limit = true;
+        s->limit_sprites = config->get_bool(identifier + ".limit_sprites", default_limit_sprites);
+    }
+    std::ranges::sort(system_settings, {}, &s_system_settings::name);
+}
+
+void c_nemulator::show_system_menu(int selected)
+{
+    std::vector<const char *> m;
+    for (auto &s : system_settings)
+        m.push_back(s.name.c_str());
+    c_menu::s_menu_items mi;
+    mi.num_items = (int)m.size();
+    mi.items = (char **)m.data();
+    mi.selected = selected;
+    add_task(new c_menu(), (void *)&mi);
+    menu = MENU_SYSTEM;
+}
+
+void c_nemulator::show_system_options_menu()
+{
+    auto &settings = system_settings[system_settings_index];
+    system_settings_at_open = settings;
+
+    c_options_menu::s_params p = {
+        .title = settings.name,
+    };
+    if (settings.has_sprite_limit)
+    {
+        p.items.push_back({
+            .label = "Sprite limit",
+            .get_value = [&settings]() { return std::string(settings.limit_sprites ? "On" : "Off"); },
+            .change =
+                [this, &settings](int) {
+                    settings.limit_sprites = !settings.limit_sprites;
+                    apply_system_settings(settings);
+                },
+        });
+    }
+    p.items.push_back({
+        .label = "Reset to defaults",
+        .change =
+            [this, &settings](int) {
+                settings.limit_sprites = default_limit_sprites;
+                apply_system_settings(settings);
+            },
+        .confirm_label = "Press again to reset to defaults",
+    });
+    add_task(new c_options_menu(), &p);
+    menu = MENU_SYSTEM_OPTIONS;
+}
+
+//writes the settings changed in a system's options menu to nemulator.ini, in place
+void c_nemulator::save_system_settings()
+{
+    auto &settings = system_settings[system_settings_index];
+    auto &opened = system_settings_at_open;
+    std::vector<std::pair<std::string, std::string>> values;
+    if (settings.limit_sprites != opened.limit_sprites)
+        values.push_back({settings.identifier + ".limit_sprites", settings.limit_sprites ? "true" : "false"});
+
+    if (!values.empty() && !config->set_config_values(values))
+        status->add_message("unable to save " + settings.name + " settings to nemulator.ini");
+}
+
+void c_nemulator::apply_system_settings(const s_system_settings &settings)
+{
+    //games are still being added until loading is done; they pick up the settings as they're added
+    if (!loaded)
+        return;
+    for (auto g : gameList)
+    {
+        if (g->get_input_identifier() != settings.identifier)
+            continue;
+        if (g->has_sprite_limit())
+        {
+            g->limit_sprites = settings.limit_sprites;
+            if (g->system && g->system->is_loaded())
+                g->system->set_sprite_limit(settings.limit_sprites);
+        }
+    }
 }
 
 void c_nemulator::handle_button_menu_ok(s_button_handler_params *params)
@@ -1366,6 +1479,9 @@ int c_nemulator::update(double dt, int child_result, void *params)
                 case 2: //display
                     show_display_menu();
                     break;
+                case 3: //system
+                    show_system_menu();
+                    break;
                 }
             }
             else if (child_result == c_task::TASK_RESULT_CANCEL)
@@ -1405,6 +1521,24 @@ int c_nemulator::update(double dt, int child_result, void *params)
             {
                 save_general_settings();
                 show_settings_menu(0); //general
+            }
+            break;
+        case MENU_SYSTEM:
+            if (child_result == c_task::TASK_RESULT_RETURN)
+            {
+                system_settings_index = *(int *)params;
+                show_system_options_menu();
+            }
+            else if (child_result == c_task::TASK_RESULT_CANCEL)
+            {
+                show_settings_menu(3); //system
+            }
+            break;
+        case MENU_SYSTEM_OPTIONS:
+            if (child_result == c_task::TASK_RESULT_CANCEL)
+            {
+                save_system_settings();
+                show_system_menu(system_settings_index);
             }
             break;
         case MENU_SELECT:
@@ -1642,13 +1776,14 @@ void c_nemulator::UpdateScene(double dt)
             std::ostringstream s;
             s << std::hex << std::uppercase << system->get_crc();
             stats->report_stat("CRC", s.str());
+            if (game->has_sprite_limit())
+                stats->report_stat("sprite limit", system->get_sprite_limit() ? "limited" : "unlimited");
 
             if (game->is_nes)
             {
                 nes::c_nes *n = (nes::c_nes *)system;
                 stats->report_stat("mapper #", n->get_mapper_number());
                 stats->report_stat("mapper name", n->get_mapper_name());
-                stats->report_stat("sprite limit", n->get_sprite_limit() ? "limited" : "unlimited");
                 switch (n->get_mirroring_mode())
                 {
                 case 0:
@@ -1781,9 +1916,9 @@ void c_nemulator::DrawScene()
         for (int i = 0; i < num_texture_panels; i++)
             texturePanels[i]->Draw();
 
-        //the settings screens use the whole display, so hide the title behind them
+        //hide the title behind any open menu
         if ((texturePanels[selectedPanel]->state == c_texture_panel::STATE_MENU || texturePanels[selectedPanel]->state == c_texture_panel::STATE_SCROLLING) &&
-            menu != MENU_INPUT_CONFIG && menu != MENU_DISPLAY)
+            !menu)
         {
             double dim = mainPanel2->dim ? .25 : 1.0;
             DrawText(font1, (float)(title_margin - title_scroll_offset / clientWidth), .85f, g->title, D3DXCOLOR((float)(1.0f * dim), 0.0f, 0.0f, 1.0f));
@@ -1816,7 +1951,7 @@ void c_nemulator::DrawScene()
             d3dDev->OMSetDepthStencilState(state, oldref);
         }
     }
-    else if (menu != MENU_INPUT_CONFIG && menu != MENU_DISPLAY)
+    else if (!menu)
     {
         DrawText(font1, .05f, .5f, "No roms found\nCheck paths in nemulator.ini\nDefault NES path: c:\\roms\\nes\nDefault SMS path: c:\\roms\\sms", D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f));
     }
@@ -1909,7 +2044,6 @@ void c_nemulator::LoadGames()
     }
 
     bool global_mask_sides = config->get_bool("mask_sides", false);
-    bool global_limit_sprites = config->get_bool("limit_sprites", false);
 
     for (auto &li : loadinfo)
     {
@@ -1958,6 +2092,12 @@ void c_nemulator::LoadGames()
             if (li.system_info.name == "Nintendo NES" ||
                 li.system_info.name == "Nintendo FDS") {
                 g->is_nes = true;
+            }
+            if (g->has_sprite_limit())
+            {
+                auto s = std::ranges::find(system_settings, g->get_input_identifier(), &s_system_settings::identifier);
+                if (s != system_settings.end())
+                    g->limit_sprites = s->limit_sprites;
             }
 
             if (li.system_info.title != "") {

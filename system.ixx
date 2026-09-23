@@ -23,6 +23,9 @@ public:
     virtual void enable_mixer() {}
     virtual void disable_mixer() {}
     virtual int *get_video() = 0;
+    //systems with has_sprite_limit set limit sprites per line as the hardware does, unless turned off
+    virtual void set_sprite_limit(bool limit_sprites) {}
+    virtual bool get_sprite_limit() { return false; }
     std::string path;
     std::string filename;
     std::string path_file;
@@ -66,6 +69,9 @@ public:
         //the rate the system runs at, used to pace frames when syncing to a timer.
         //todo: set the real rate for each system; they all use 60.0 for now
         double frame_rate = 60.0;
+        //the system has a per-line sprite limit that can be turned off in settings > system.  systems
+        //that share an input identifier (e.g., NES and FDS) share their system settings as well
+        bool has_sprite_limit = false;
         std::function <std::unique_ptr<c_system>()> constructor;
 
         const std::string &get_input_identifier() const

@@ -4,7 +4,6 @@ module;
 
 module nemulator:system_container;
 import random;
-import nes;
 
 extern HANDLE g_start_event;
 
@@ -71,9 +70,7 @@ void c_system_container::OnActivate(bool load)
                     system->load();
                 if (system->is_loaded()) {
                     system->disable_mixer();
-                    if (is_nes) {
-                        ((nes::c_nes *)system.get())->set_sprite_limit(limit_sprites);
-                    }
+                    system->set_sprite_limit(limit_sprites);
                 }
                 create_vertex_buffer();
             }

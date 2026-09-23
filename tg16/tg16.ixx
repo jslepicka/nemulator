@@ -45,6 +45,7 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
                  .turbo_buttons = {BUTTON_1B, BUTTON_1A}, //II and I
                  .num_sound_channels = 2,
                  .volume = pow(10.0f, 8.0f / 20.0f),
+                 .has_sprite_limit = true,
                  .constructor = []() { return std::make_unique<c_tg16>(); }}};
     }
 
@@ -343,6 +344,16 @@ export class c_tg16 : public c_system, register_class<system_registry, c_tg16>
         int margin = (c_vid<c_tg16>::max_width - width) / 2;
         crop_left = margin;
         crop_right = c_vid<c_tg16>::max_width - width - margin;
+    }
+
+    void set_sprite_limit(bool limit_sprites) override
+    {
+        vid->limit_sprites = limit_sprites;
+    }
+
+    bool get_sprite_limit() override
+    {
+        return vid->limit_sprites;
     }
 
     void write_vid(uint8_t address, uint8_t value)

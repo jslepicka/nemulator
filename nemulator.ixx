@@ -54,6 +54,7 @@ private:
     static constexpr double default_menu_delay = 333.0;
     static constexpr bool default_preload = true;
     static constexpr bool default_show_suspend = false;
+    static constexpr bool default_limit_sprites = false;
     static constexpr const char *default_rom_path = "c:\\roms\\"; //the system's identifier is appended
     static constexpr const char *default_arcade_rom_path = "c:\\roms\\arcade";
     static const GUID nemulator_scheme_guid;
@@ -129,7 +130,9 @@ private:
         MENU_SETTINGS,
         MENU_INPUT_CONFIG,
         MENU_DISPLAY,
-        MENU_GENERAL
+        MENU_GENERAL,
+        MENU_SYSTEM,
+        MENU_SYSTEM_OPTIONS
     };
 
     //each menu opens with the item at selected (or the item for selected_action) highlighted, so returning
@@ -151,6 +154,25 @@ private:
     void show_general_menu();
     void save_general_settings();
     int sync_mode_at_open; //saved when the general menu closes, if it changed
+
+    //settings > system, for each group of systems that shares an input identifier (e.g., NES and FDS),
+    //saved as <identifier>.<setting>.  only systems with a setting to change are listed.
+    struct s_system_settings
+    {
+        std::string identifier;
+        std::string name;
+        bool has_sprite_limit = false;
+        bool limit_sprites = default_limit_sprites;
+    };
+    std::vector<s_system_settings> system_settings;
+    int system_settings_index; //the system whose options menu is open
+    s_system_settings system_settings_at_open; //settings that differ from these are saved when it closes
+    void load_system_settings();
+    void show_system_menu(int selected = 0);
+    void show_system_options_menu();
+    void save_system_settings();
+    //applies a system's settings to its games, including any that are running
+    void apply_system_settings(const s_system_settings &settings);
     std::string startup_message; //shown once the splash screen is done
     //the audio stream paces frames in the audio sync mode, so it runs in the menu as well as in a game
     void update_audio_stream();

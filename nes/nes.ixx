@@ -64,6 +64,7 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>
                 .button_map = button_map,
                 .input_info = input_info,
                 .turbo_buttons = {BUTTON_1B, BUTTON_1A},
+                .has_sprite_limit = true,
                 .constructor = []() { return std::make_unique<c_nes>(); },
             },
             {
@@ -82,6 +83,7 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>
                 .button_map = button_map,
                 .input_info = input_info,
                 .turbo_buttons = {BUTTON_1B, BUTTON_1A},
+                .has_sprite_limit = true,
                 .constructor = []() { return std::make_unique<c_nes>(); },
             },
         };
@@ -263,13 +265,13 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>
             return 0;
     }
 
-    void set_sprite_limit(bool limit_sprites)
+    void set_sprite_limit(bool limit_sprites) override
     {
         this->limit_sprites = limit_sprites;
         ppu->set_sprite_limit(limit_sprites);
     }
 
-    bool get_sprite_limit()
+    bool get_sprite_limit() override
     {
         if (ppu) {
             return ppu->get_sprite_limit();

@@ -75,12 +75,20 @@ export template <typename Sys> class c_vid
 
     s_sprite sprite_output[max_width];
 
+    //set by the front end, and kept through reset
+    bool limit_sprites = false;
+
     void eval_sprites(int ln)
     {
         uint8_t sprite_pixel_width = (vdc_registers[0x9] >> 2) & 3;
+        //the hardware shows 16 sprite cells per line, each 16 pixels wide, so a 32 pixel wide sprite
+        //uses two.  without the limit, all 64 sprites can be shown at 32 pixels wide.
+        const int max_sprites = limit_sprites ? 16 : 128;
+
         if (sprite_pixel_width == 3) {
             int x = 1;
         }
+        int sprite_count = 0;
         for (int i = 0; i < 64; i++) {
             uint16_t word0 = *(uint16_t*)&satb[i * 8 + 0];
             uint16_t word1 = *(uint16_t*)&satb[i * 8 + 2];
@@ -159,6 +167,9 @@ export template <typename Sys> class c_vid
                                 sprite_output[j].priority = priority;
                             }
                         }
+                    }
+                    if (++sprite_count == max_sprites) {
+                        return;
                     }
                 }
             }
