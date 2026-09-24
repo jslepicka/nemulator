@@ -71,8 +71,8 @@ class c_gbppu
                     //end of line
                     current_cycle = 0;
                     line++;
-                    if (window_start_line != -1 && in_window) {
-                        window_start_line++;
+                    if (in_window) {
+                        window_line++;
                     }
                     if (line == 144) {
                         //begin vblank
@@ -87,7 +87,7 @@ class c_gbppu
                         line = 0;
                         mode = 2;
                         update_stat();
-                        window_start_line = -1;
+                        window_line = 0;
                     }
                     else if (line < 144) {
                         mode = 2;
@@ -157,7 +157,7 @@ class c_gbppu
         start_vblank = 0;
         fetch_x = 0;
         window_tile = 0;
-        window_start_line = -1;
+        window_line = 0;
 
         dma_count = 0;
         sprite_count = 0;
@@ -320,6 +320,7 @@ class c_gbppu
                         LY = 0;
                         line = 0;
                         current_cycle = 0;
+                        window_line = 0;
                         update_stat();
                         uint32_t col = palette[0];
                         if (gb.get_model() == GB_MODEL::CGB) {
@@ -602,7 +603,9 @@ class c_gbppu
             case 1: //fetch nt
                 if (true || first_tile) {
                     if (in_window) {
-                        ybase = window_start_line - WY;
+                        //the window has its own line counter, which only advances on lines where
+                        //the window was drawn
+                        ybase = window_line;
                         char_addr = 0x9800 | ((LCDC & 0x40) << 4) | ((ybase & 0xF8) << 2) | window_tile;
                     }
                     else {
@@ -941,9 +944,6 @@ class c_gbppu
                 bg_latched = 0;
                 first_tile = 1;
                 window_tile = 0;
-                if (window_start_line == -1) {
-                    window_start_line = line;
-                }
             }
         }
 
@@ -980,7 +980,7 @@ private:
 
     int fetch_x;
     int window_tile;
-    int window_start_line;
+    int window_line;
 
     int cpu_divider;
 
