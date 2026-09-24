@@ -252,7 +252,7 @@ export class c_gb : public c_system, register_class<system_registry, c_gb>
                 }
                 else if (address <= 0xFE9F) {
                     //OAM
-                    return 0;
+                    return ppu->read_byte(address);
                 }
                 else if (address <= 0xFEFF) {
                     //unusable
