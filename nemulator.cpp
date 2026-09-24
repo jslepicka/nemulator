@@ -56,6 +56,7 @@ c_nemulator::c_nemulator()
     g_start_event = CreateEvent(NULL, TRUE, TRUE, NULL);
     stats = NULL;
     nsf_stats = NULL;
+    disk_indicator = NULL;
     audio_info = NULL;
     qam = NULL;
     system_filter = 0;
@@ -66,6 +67,7 @@ c_nemulator::c_nemulator()
     title_overflow = 0;
     settings_in_game = false;
     sync_mode_at_open = 0;
+    pause_on_lost_focus_at_open = false;
     app_paused = false;
     splash_done = 0;
     splash_timer = SPLASH_TIMER_TOTAL_DURATION;
@@ -204,6 +206,8 @@ void c_nemulator::Init()
 {
     status = new c_status();
     add_task(status, NULL);
+    disk_indicator = new c_disk_indicator();
+    add_task(disk_indicator, NULL);
 
     LoadFonts();
     sound = std::make_unique<c_sound>();
@@ -473,7 +477,8 @@ bool c_nemulator::write_default_config(const std::string &filename)
          "menu_columns = " << default_menu_columns << "\n"
          "\n;Preload roms for smoother scrolling when first launched.  May cause long startup delays.\n"
          "preload = " << yes_no(default_preload) << "\n"
-         "\n;Pause emulation when the application loses focus\n"
+         "\n;Pause emulation when the application loses focus.  Otherwise, it keeps running but ignores input.\n"
+         ";Also changed by settings > general.\n"
          "app.pause_on_lost_focus = " << yes_no(D3d10App::default_pause_on_lost_focus) << "\n"
          "\n;Show the suspend computer option in the quit menu\n"
          "show_suspend = " << yes_no(default_show_suspend) << "\n"
@@ -492,6 +497,18 @@ bool c_nemulator::write_default_config(const std::string &filename)
             continue;
         sprite_limit_systems.push_back(identifier);
         f << identifier << ".limit_sprites = " << yes_no(default_limit_sprites) << "\n";
+    }
+
+    f << "\n;Show an indicator in the corner of the screen while a disk is being read or written, e.g., by\n"
+         ";the Famicom Disk System (nes), whose loads can take several seconds.  Also changed by\n"
+         ";settings > system.\n";
+    std::vector<std::string> disk_indicator_systems;
+    for (auto &si : registry) {
+        const std::string &identifier = si.get_input_identifier();
+        if (!si.has_disk_indicator || std::ranges::contains(disk_indicator_systems, identifier))
+            continue;
+        disk_indicator_systems.push_back(identifier);
+        f << identifier << ".disk_indicator = " << yes_no(default_disk_indicator) << "\n";
     }
 
     f << "\n;\n;Input\n;\n"
@@ -680,7 +697,7 @@ void c_nemulator::handle_button_reset(s_button_handler_params* params)
     if (g->system->is_loaded())
     {
         g->system->reset();
-        status->add_message("reset");
+        status->add_message("Reset");
     }
 }
 
@@ -720,10 +737,10 @@ void c_nemulator::handle_button_mask_sides(s_button_handler_params *params)
     c_system_container* g = (c_system_container*)texturePanels[selectedPanel]->GetSelected();
     g->mask_sides = !g->mask_sides;
     if (g->mask_sides) {
-        status->add_message("side mask enabled");
+        status->add_message("Side mask enabled");
     }
     else {
-        status->add_message("side mask disabled");
+        status->add_message("Side mask disabled");
     }
 }
 
@@ -735,9 +752,9 @@ void c_nemulator::handle_button_sprite_limit(s_button_handler_params *params)
         c_system *n = g->system.get();
         n->set_sprite_limit(!n->get_sprite_limit());
         if (n->get_sprite_limit())
-            status->add_message("sprites limited");
+            status->add_message("Sprites limited");
         else
-            status->add_message("sprites unlimited");
+            status->add_message("Sprites unlimited");
     }
 }
 
@@ -745,7 +762,7 @@ void c_nemulator::handle_button_scanlines(s_button_handler_params *params)
 {
     auto &t = texturePanels[selectedPanel]->scanlines;
     t = !t;
-    status->add_message(std::string("scanlines ") + (t ? "enabled" : "disabled"));
+    status->add_message(std::string("Scanlines ") + (t ? "enabled" : "disabled"));
 }
 
 void c_nemulator::adjust_sharpness(float value)
@@ -755,7 +772,7 @@ void c_nemulator::adjust_sharpness(float value)
     if (value > 0.0f && sharpness >= 1.0f)
         return;
     set_sharpness(sharpness + value);
-    status->add_message("set sharpness to " + format_sharpness(sharpness));
+    status->add_message("Set sharpness to " + format_sharpness(sharpness));
 }
 
 void c_nemulator::set_sharpness(float value)
@@ -792,7 +809,7 @@ void c_nemulator::adjust_volume(int value)
     sound->set_volume(sound->master_volume + value);
     char buf[8];
     sprintf_s(buf, sizeof(buf), "%d", sound->master_volume);
-    status->add_message("set volume to " + std::string(buf));
+    status->add_message("Set volume to " + std::string(buf));
 }
 
 void c_nemulator::handle_button_dec_sharpness(s_button_handler_params *params)
@@ -936,7 +953,7 @@ void c_nemulator::show_display_menu()
                         set_scanlines(default_scanlines);
                         D3d10App::set_fullscreen(D3d10App::default_fullscreen);
                         if (!D3d10App::set_window_width(D3d10App::default_window_width))
-                            status->add_message("unable to save window width to nemulator.ini");
+                            status->add_message("Unable to save window width to nemulator.ini");
                     },
                 .confirm_label = "Press again to reset to defaults",
             },
@@ -962,12 +979,13 @@ void c_nemulator::save_display_settings()
         values.push_back({"app.fullscreen", fullscreen ? "true" : "false"});
 
     if (!values.empty() && !config->set_config_values(values))
-        status->add_message("unable to save display settings to nemulator.ini");
+        status->add_message("Unable to save display settings to nemulator.ini");
 }
 
 void c_nemulator::show_general_menu()
 {
     sync_mode_at_open = D3d10App::get_sync_mode();
+    pause_on_lost_focus_at_open = D3d10App::get_pause_on_lost_focus();
 
     c_options_menu::s_params p = {
         .title = "General",
@@ -986,8 +1004,17 @@ void c_nemulator::show_general_menu()
                     },
             },
             {
+                .label = "Pause in background",
+                .get_value = []() { return std::string(D3d10App::get_pause_on_lost_focus() ? "On" : "Off"); },
+                .change = [](int) { D3d10App::set_pause_on_lost_focus(!D3d10App::get_pause_on_lost_focus()); },
+            },
+            {
                 .label = "Reset to defaults",
-                .change = [](int) { D3d10App::set_sync_mode(D3d10App::default_sync_mode); },
+                .change =
+                    [](int) {
+                        D3d10App::set_sync_mode(D3d10App::default_sync_mode);
+                        D3d10App::set_pause_on_lost_focus(D3d10App::default_pause_on_lost_focus);
+                    },
                 .confirm_label = "Press again to reset to defaults",
             },
         },
@@ -1011,18 +1038,23 @@ void c_nemulator::show_general_menu()
 //writes the sync mode to nemulator.ini, in place
 void c_nemulator::save_general_settings()
 {
+    std::vector<std::pair<std::string, std::string>> values;
     int mode = D3d10App::get_sync_mode();
-    if (mode == sync_mode_at_open)
-        return;
-    if (!config->set_config_values({{"sync_mode", D3d10App::get_sync_mode_name(mode)}}))
-        status->add_message("unable to save the sync mode to nemulator.ini");
+    if (mode != sync_mode_at_open)
+        values.push_back({"sync_mode", D3d10App::get_sync_mode_name(mode)});
+    bool pause = D3d10App::get_pause_on_lost_focus();
+    if (pause != pause_on_lost_focus_at_open)
+        values.push_back({"app.pause_on_lost_focus", pause ? "true" : "false"});
+
+    if (!values.empty() && !config->set_config_values(values))
+        status->add_message("Unable to save general settings to nemulator.ini");
 }
 
 void c_nemulator::load_system_settings()
 {
     system_settings.clear();
     for (auto &si : system_registry::get_registry()) {
-        if (!si.has_sprite_limit)
+        if (!si.has_sprite_limit && !si.has_disk_indicator)
             continue;
         const std::string &identifier = si.get_input_identifier();
         auto s = std::ranges::find(system_settings, identifier, &s_system_settings::identifier);
@@ -1033,8 +1065,14 @@ void c_nemulator::load_system_settings()
             };
             s = system_settings.insert(system_settings.end(), settings);
         }
-        s->has_sprite_limit = true;
-        s->limit_sprites = config->get_bool(identifier + ".limit_sprites", default_limit_sprites);
+        if (si.has_sprite_limit) {
+            s->has_sprite_limit = true;
+            s->limit_sprites = config->get_bool(identifier + ".limit_sprites", default_limit_sprites);
+        }
+        if (si.has_disk_indicator) {
+            s->has_disk_indicator = true;
+            s->disk_indicator = config->get_bool(identifier + ".disk_indicator", default_disk_indicator);
+        }
     }
     std::ranges::sort(system_settings, {}, &s_system_settings::name);
 }
@@ -1072,11 +1110,21 @@ void c_nemulator::show_system_options_menu()
                 },
         });
     }
+    if (settings.has_disk_indicator)
+    {
+        //read each frame while a game runs, so there's nothing to apply
+        p.items.push_back({
+            .label = "Disk indicator",
+            .get_value = [&settings]() { return std::string(settings.disk_indicator ? "On" : "Off"); },
+            .change = [&settings](int) { settings.disk_indicator = !settings.disk_indicator; },
+        });
+    }
     p.items.push_back({
         .label = "Reset to defaults",
         .change =
             [this, &settings](int) {
                 settings.limit_sprites = default_limit_sprites;
+                settings.disk_indicator = default_disk_indicator;
                 apply_system_settings(settings);
             },
         .confirm_label = "Press again to reset to defaults",
@@ -1093,9 +1141,11 @@ void c_nemulator::save_system_settings()
     std::vector<std::pair<std::string, std::string>> values;
     if (settings.limit_sprites != opened.limit_sprites)
         values.push_back({settings.identifier + ".limit_sprites", settings.limit_sprites ? "true" : "false"});
+    if (settings.disk_indicator != opened.disk_indicator)
+        values.push_back({settings.identifier + ".disk_indicator", settings.disk_indicator ? "true" : "false"});
 
     if (!values.empty() && !config->set_config_values(values))
-        status->add_message("unable to save " + settings.name + " settings to nemulator.ini");
+        status->add_message("Unable to save " + settings.name + " settings to nemulator.ini");
 }
 
 void c_nemulator::apply_system_settings(const s_system_settings &settings)
@@ -1182,12 +1232,24 @@ void c_nemulator::handle_button_switch_disk(s_button_handler_params *params)
     if (g->get_system_name() == "Nintendo FDS") {
         nes::c_nes *n = ((nes::c_nes *)g->system.get());
         int side = n->switch_disk();
-        if (side >= 0) {
-            status->add_message(
-                "Switch to disk " + std::to_string(side / 2 + 1) + " side " + (side % 2 ? 'B' : 'A')
-            );
+        //the disk indicator shows the side being put in, so the message is only needed without it
+        if (side >= 0 && !disk_indicator_enabled(g)) {
+            auto activity = n->get_disk_activity();
+            if (activity.disks > 1)
+                status->add_message("Switch to disk " + std::to_string(activity.disk + 1) + " side " +
+                                    (activity.side ? 'B' : 'A'));
+            else
+                status->add_message(std::string("Switch to side ") + (activity.side ? 'B' : 'A'));
         }
     }
+}
+
+bool c_nemulator::disk_indicator_enabled(c_system_container *g)
+{
+    if (!g->has_disk_indicator())
+        return false;
+    auto settings = std::ranges::find(system_settings, g->get_input_identifier(), &s_system_settings::identifier);
+    return settings != system_settings.end() && settings->disk_indicator;
 }
 
 const c_nemulator::s_button_handler c_nemulator::button_handlers[] =
@@ -1433,6 +1495,8 @@ int c_nemulator::update(double dt, int child_result, void *params)
                     dead = true;
                     if (status)
                         status->dead = true;
+                    if (disk_indicator)
+                        disk_indicator->dead = true;
                     if (stats)
                         stats->dead = true;
                     if (nsf_stats)
@@ -1586,7 +1650,7 @@ int c_nemulator::update(double dt, int child_result, void *params)
                     {
                     c_system *n = ((c_system_container *)texturePanels[selectedPanel]->GetSelected())->system.get();
                         n->reset();
-                        status->add_message("reset");
+                        status->add_message("Reset");
                     }
                     break;
                 case INGAME_RETURN_TO_MENU:
@@ -1723,6 +1787,20 @@ void c_nemulator::UpdateScene(double dt)
 
     for (int i = 0; i < num_texture_panels; i++)
         texturePanels[i]->Update(dt);
+
+    //the disk indicator follows the running game's disk, but isn't shown over the in-game menu
+    bool show_disk_indicator = false;
+    c_system::s_disk_activity disk_activity;
+    if (inGame && !paused)
+    {
+        c_system_container *g = (c_system_container *)texturePanels[selectedPanel]->GetSelected();
+        if (disk_indicator_enabled(g) && g->system && g->system->is_loaded())
+        {
+            show_disk_indicator = true;
+            disk_activity = g->system->get_disk_activity();
+        }
+    }
+    disk_indicator->report(dt, show_disk_indicator, disk_activity);
 
     update_title_scroll(dt);
 

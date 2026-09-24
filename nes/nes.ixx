@@ -84,6 +84,7 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>
                 .input_info = input_info,
                 .turbo_buttons = {BUTTON_1B, BUTTON_1A},
                 .has_sprite_limit = true,
+                .has_disk_indicator = true,
                 .constructor = []() { return std::make_unique<c_nes>(); },
             },
         };
@@ -382,6 +383,11 @@ export class c_nes : public c_system, register_class<system_registry, c_nes>
     int switch_disk()
     {
         return mapper->switch_disk();
+    }
+
+    s_disk_activity get_disk_activity() override
+    {
+        return mapper ? mapper->get_disk_activity() : s_disk_activity{};
     }
 
     void irq(bool irq)

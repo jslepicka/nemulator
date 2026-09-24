@@ -1,7 +1,6 @@
 module;
 #include <Audioclient.h>
 #include <mmdeviceapi.h>
-#undef max
 module sound;
 
 import interpolate;

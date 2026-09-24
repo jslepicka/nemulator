@@ -60,6 +60,24 @@ class c_mapper_fds : public c_mapper, register_class<nes_mapper_registry, c_mapp
         return side_number;
     }
 
+    c_system::s_disk_activity get_disk_activity() override
+    {
+        using STATE = c_system::s_disk_activity::STATE;
+        c_system::s_disk_activity activity = {
+            .disk = side_number / 2,
+            .side = side_number % 2,
+            .disks = (num_sides + 1) / 2,
+        };
+        if (switching_disk) {
+            activity.state = STATE::SWITCHING;
+        }
+        else if (scanning) {
+            activity.state = dont_write ? STATE::READING : STATE::WRITING;
+            activity.position = (double)disk_position / disk_sides[side_number].size();
+        }
+        return activity;
+    }
+
     void reset()
     {
         disk_not_inserted = 0;

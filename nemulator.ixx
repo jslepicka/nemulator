@@ -14,6 +14,7 @@ import :stats;
 import :nsf_stats;
 import :audio_info;
 import :status;
+import :disk_indicator;
 import :system_container;
 import :input_config;
 
@@ -55,6 +56,7 @@ private:
     static constexpr bool default_preload = true;
     static constexpr bool default_show_suspend = false;
     static constexpr bool default_limit_sprites = false;
+    static constexpr bool default_disk_indicator = true;
     static constexpr const char *default_rom_path = "c:\\roms\\"; //the system's identifier is appended
     static constexpr const char *default_arcade_rom_path = "c:\\roms\\arcade";
     static const GUID nemulator_scheme_guid;
@@ -119,6 +121,7 @@ private:
     c_stats *stats;
     c_nsf_stats* nsf_stats;
     c_status *status;
+    c_disk_indicator *disk_indicator;
     enum MENUS
     {
         MENU_SELECT = 1,
@@ -153,7 +156,9 @@ private:
     void save_display_settings();
     void show_general_menu();
     void save_general_settings();
-    int sync_mode_at_open; //saved when the general menu closes, if it changed
+    //saved when the general menu closes, if they changed
+    int sync_mode_at_open;
+    bool pause_on_lost_focus_at_open;
 
     //settings > system, for each group of systems that shares an input identifier (e.g., NES and FDS),
     //saved as <identifier>.<setting>.  only systems with a setting to change are listed.
@@ -163,6 +168,8 @@ private:
         std::string name;
         bool has_sprite_limit = false;
         bool limit_sprites = default_limit_sprites;
+        bool has_disk_indicator = false;
+        bool disk_indicator = default_disk_indicator;
     };
     std::vector<s_system_settings> system_settings;
     int system_settings_index; //the system whose options menu is open
@@ -173,6 +180,8 @@ private:
     void save_system_settings();
     //applies a system's settings to its games, including any that are running
     void apply_system_settings(const s_system_settings &settings);
+    //the game has a disk indicator, and it's turned on in settings > system
+    bool disk_indicator_enabled(c_system_container *g);
     std::string startup_message; //shown once the splash screen is done
     //the audio stream paces frames in the audio sync mode, so it runs in the menu as well as in a game
     void update_audio_stream();

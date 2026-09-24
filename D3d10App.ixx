@@ -57,6 +57,9 @@ public:
 	static constexpr int default_window_width = 0; //uses default_window_scale
 	static constexpr double default_window_scale = .5; //fraction of the screen's work area width
 	static constexpr bool default_aspect_lock = true;
+	//pause emulation while the window doesn't have focus; otherwise, only input is ignored
+	static bool get_pause_on_lost_focus();
+	static void set_pause_on_lost_focus(bool enable);
 	static constexpr bool default_pause_on_lost_focus = true;
 
 	//how emulation is paced:

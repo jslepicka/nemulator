@@ -158,6 +158,17 @@ void D3d10App::set_sync_mode(int mode)
     instance->sync_mode = mode;
 }
 
+bool D3d10App::get_pause_on_lost_focus()
+{
+    return instance->pause_on_lost_focus;
+}
+
+//only changed from a menu, so the window has focus: nothing is paused or ignored that would need undoing
+void D3d10App::set_pause_on_lost_focus(bool enable)
+{
+    instance->pause_on_lost_focus = enable;
+}
+
 void D3d10App::set_frame_rate(double rate)
 {
     instance->frame_rate = rate > 0.0 ? rate : 60.0;

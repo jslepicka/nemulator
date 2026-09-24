@@ -26,6 +26,30 @@ public:
     //systems with has_sprite_limit set limit sprites per line as the hardware does, unless turned off
     virtual void set_sprite_limit(bool limit_sprites) {}
     virtual bool get_sprite_limit() { return false; }
+    //what the disk drive of a system with has_disk_indicator is doing, for the indicator shown while
+    //it's accessed
+    struct s_disk_activity
+    {
+        enum class STATE
+        {
+            IDLE,
+            READING,
+            WRITING,
+            SWITCHING //the disk is out while it's being changed
+        } state = STATE::IDLE;
+        int disk = 0; //from 0
+        int side = 0; //0 = side A, 1 = side B
+        int disks = 1; //how many disks the game came on
+        double position = 0.0; //how far the head is across the side, from 0 to 1
+
+        //most games came on a single disk, so its sides are just A and B; otherwise, 1A, 1B, 2A, ...
+        std::string get_side_name() const
+        {
+            char side_letter = side ? 'B' : 'A';
+            return disks > 1 ? std::to_string(disk + 1) + side_letter : std::string(1, side_letter);
+        }
+    };
+    virtual s_disk_activity get_disk_activity() { return {}; }
     std::string path;
     std::string filename;
     std::string path_file;
@@ -72,6 +96,9 @@ public:
         //the system has a per-line sprite limit that can be turned off in settings > system.  systems
         //that share an input identifier (e.g., NES and FDS) share their system settings as well
         bool has_sprite_limit = false;
+        //the system loads from a disk slowly enough that an indicator is shown while it's accessed, so the
+        //game doesn't appear to have hung.  it can be turned off in settings > system
+        bool has_disk_indicator = false;
         std::function <std::unique_ptr<c_system>()> constructor;
 
         const std::string &get_input_identifier() const

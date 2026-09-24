@@ -4,6 +4,7 @@ export module nes:mapper;
 import class_registry;
 import :ines;
 import nemulator.std;
+import system;
 
 namespace nes
 {
@@ -168,6 +169,11 @@ export class c_mapper
     virtual int switch_disk()
     {
         return 0;
+    }
+
+    virtual c_system::s_disk_activity get_disk_activity()
+    {
+        return {};
     }
 
     int get_mirroring()

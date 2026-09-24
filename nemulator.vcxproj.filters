@@ -317,6 +317,7 @@
     <ClCompile Include="sound.cpp" />
     <ClCompile Include="stats.cpp" />
     <ClCompile Include="status.cpp" />
+    <ClCompile Include="disk_indicator.cpp" />
     <ClCompile Include="system_container.cpp" />
     <ClCompile Include="task.cpp" />
     <ClCompile Include="audio_info.ixx" />
@@ -333,6 +334,7 @@
     <ClCompile Include="sound.ixx" />
     <ClCompile Include="stats.ixx" />
     <ClCompile Include="status.ixx" />
+    <ClCompile Include="disk_indicator.ixx" />
     <ClCompile Include="system.ixx" />
     <ClCompile Include="system_container.ixx" />
     <ClCompile Include="task.ixx" />
