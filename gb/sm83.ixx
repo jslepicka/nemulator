@@ -366,7 +366,7 @@ class c_sm83
         case 0x0D6: {SUB8(o); } break; //SUB %02X
         case 0x0D7: {push_word(PC); PC = 0x10; } break; //RST 10H
         case 0x0D8: {if (fc) { PC = pop_word(); available_cycles -= 12; } } break; //RET C
-        case 0x0D9: {PC = pop_word(); pending_ei = 1; } break; //RETI
+        case 0x0D9: {PC = pop_word(); IME = 1; } break; //RETI (unlike EI, no delay)
         case 0x0DA: {if (fc) { PC = o; available_cycles -= 4; } } break; //JP C, %04X
         case 0x0DB: {} break; //
         case 0x0DC: {if (fc) { CALL(o); available_cycles -= 12; } } break; //CALL C, %04X

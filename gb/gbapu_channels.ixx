@@ -22,6 +22,11 @@ class c_timer
         this->period = period;
     }
 
+    void reload(int extra = 0)
+    {
+        counter = period + extra;
+    }
+
     int clock()
     {
         int prev = counter;
@@ -331,11 +336,19 @@ class c_square
         int p = (period_hi << 8) | period_lo;
         int freq = (2048 - p);
         timer.set_period(freq);
+        //trigger reloads the frequency timer, and the first step is delayed slightly.
+        //When a game retriggers at a multiple of the period (e.g., Super Mario Land's
+        //timer countdown), this delays the waveform by one duty step each time, which is audible.
+        timer.reload(1);
+        clock_divider = 0;
         sweep_shadow = p;
         sweep_counter = sweep_period;
         if (sweep_period || sweep_shift) {
             sweep_enabled = 1;
-            calc_sweep();
+            //overflow check on trigger only happens when shift is non-zero
+            if (sweep_shift) {
+                calc_sweep();
+            }
         }
         else {
             sweep_enabled = 0;
@@ -444,7 +457,8 @@ class c_noise
             case 1:
                 starting_volume = data >> 4;
                 envelope.set_volume(starting_volume);
-                envelope.set_mode(data & 0x8);
+                envelope_mode = data & 0x8;
+                envelope.set_mode(envelope_mode);
                 envelope_period = data & 0x7;
                 envelope.set_period(envelope_period);
                 dac_power = !!(data >> 3);

@@ -79,7 +79,14 @@ class c_gbppu
                         start_vblank = 1;
                         mode = 1;
                         update_stat();
-                        std::swap(fb, fb_back);
+                        //the first frame after the lcd is turned on isn't displayed, so the
+                        //front buffer keeps the blank fill from when the lcd was turned off
+                        if (lcd_on_frame) {
+                            lcd_on_frame = 0;
+                        }
+                        else {
+                            std::swap(fb, fb_back);
+                        }
                     }
                     else if (line == 154) {
                         //end vblank
@@ -155,6 +162,7 @@ class c_gbppu
         p1_addr = 0;
         current_pixel = 0;
         start_vblank = 0;
+        lcd_on_frame = 0;
         fetch_x = 0;
         window_tile = 0;
         window_line = 0;
@@ -328,6 +336,9 @@ class c_gbppu
                         }
                         std::fill_n(fb.get(), 160 * 144, col);
                     }
+                    else if (!(LCDC & 0x80) && (data & 0x80)) {
+                        lcd_on_frame = 1;
+                    }
                     LCDC = data;
                     break;
                 case 0xFF41:
@@ -339,10 +350,11 @@ class c_gbppu
                         // M-cycle. Because the GBC in DMG mode does not have this quirk, two games
                         // that depend on this quirk (Ocean's Road Rash and Vic Tokai's Zerd no
                         // Densetsu) will not run on a GBC.
-                        STAT = 0xFF;
+                        STAT |= 0x78;
                         update_stat();
                     }
-                    STAT = data;
+                    //bits 0-2 (mode, LY=LYC) are read-only
+                    STAT = (STAT & 0x07) | (data & 0x78);
                     update_stat();
                     break;
                 case 0xFF42:
@@ -1032,6 +1044,7 @@ private:
 
     int current_pixel;
     int start_vblank;
+    int lcd_on_frame;
     int dma_count;
     int sprite_count;
     int lcd_paused;
