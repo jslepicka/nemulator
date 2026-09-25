@@ -147,28 +147,51 @@ class c_vdp : public i_vdp
         int sprite_width = registers[0x1] & 0x1 ? 16 : 8;
 
         int y = line_number;
+        int active_height = get_active_height();
 
-        if (y < 192) {
+        //The GG LCD shows the middle 144 lines.  In 224-line mode, shift the output up
+        //so that the visible area lands in the same place in the frame buffer.
+        int gg_top = 24;
+        int fb_row = y;
+        if constexpr (model == SMS_MODEL::GAMEGEAR) {
+            if (active_height == 224) {
+                gg_top = 40;
+                fb_row = (y - 16) & 0xFF;
+            }
+        }
+        int *fb_line = &frame_buffer[fb_row * 256];
+
+        if (y < active_height) {
             if (registers[0x1] & 0x40) {
                 int x_coarse = registers[8] >> 3;
                 int x_fine = registers[8] & 0x7;
                 if (y < 16 && registers[0] & 0x40) {
                     x_coarse = x_fine = 0;
                 }
-                int y_coarse = registers[9] >> 3;
-                int y_fine = registers[9] & 0x7;
-                int y_adjusted = y + (y_coarse * 8) + y_fine;
+                int y_adjusted = y + registers[9];
+                if (active_height == 224) {
+                    y_adjusted &= 0xFF;
+                }
+                else {
+                    y_adjusted %= 224;
+                }
                 int y_offset = y_adjusted % 8;
-                int y_address = ((y_adjusted / 8) % 28) * 64;
+                int y_address = (y_adjusted / 8) * 64;
                 int background_color = lookup_color((registers[7] & 0xF) | 0x10);
                 for (int i = 0; i < 8; i++) {
-                    frame_buffer[y * 256 + i] = background_color;
+                    fb_line[i] = background_color;
                 }
                 for (int column = 0; column < 32; column++) {
                     unsigned int nt_column = (column - x_coarse) & 0x1F;
-                    int nt_address = /*((registers[2] & 0xE) << 10) | */ (y_address + (nt_column * 2));
-                    nt_address &= 0x7FF;
-                    nt_address |= ((registers[2] & 0xE) << 10);
+                    int nt_address;
+                    if (active_height == 224) {
+                        //32 row name table at 0x700 offset
+                        nt_address = (((registers[2] & 0xC) << 10) | 0x700) + y_address + (nt_column * 2);
+                    }
+                    else {
+                        nt_address = (y_address + (nt_column * 2)) & 0x7FF;
+                        nt_address |= ((registers[2] & 0xE) << 10);
+                    }
 
                     unsigned char nt_low = vram[nt_address];
                     unsigned char nt_hi = vram[nt_address + 1];

@@ -337,7 +337,7 @@ export class c_sms : public c_system, register_class<system_registry, c_sms>
         ext_dir = 0xFF;
         ext_tx = 0x00;
         ext_serial = 0x00;
-        joy = 0xFFFF;
+        joy = ~0;
         psg_cycles = 0;
         last_psg_run = 0;
         return 0;
@@ -472,7 +472,7 @@ export class c_sms : public c_system, register_class<system_registry, c_sms>
     SMS_MODEL model;
     int psg_cycles;
     int has_sram = 0;
-    int joy = 0xFF;
+    int joy = ~0;
     int loaded = 0;
     int ram_select;
     int nationalism;
