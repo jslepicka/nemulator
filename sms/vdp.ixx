@@ -208,7 +208,7 @@ class c_vdp : public i_vdp
 
                     int pat = *((int *)pattern);
 
-                    int *fb = &frame_buffer[y * 256 + x];
+                    int *fb = &fb_line[x];
                     for (int p = 0; p < 8 && x < 256; p++, x++) {
                         int pat2 = pat << (p ^ h_flip);
 #ifdef USE_BMI
@@ -248,7 +248,7 @@ class c_vdp : public i_vdp
                         };
 
                         if constexpr (model == SMS_MODEL::GAMEGEAR) {
-                            if (y < 24 || y >= 168 || x < 48 || x >= 208) {
+                            if (y < gg_top || y >= gg_top + 144 || x < 48 || x >= 208) {
                                 color = 0;
                             }
                             else {
@@ -265,20 +265,20 @@ class c_vdp : public i_vdp
             }
             else {
                 for (int x = 0; x < 256; x++) {
-                    frame_buffer[y * 256 + x] = 0;
+                    fb_line[x] = 0;
                 }
             }
         }
         else if (y < 256) {
             for (int x = 0; x < 256; x++) {
-                frame_buffer[y * 256 + x] = 0;
+                fb_line[x] = 0;
             }
         }
         //need to figure out irq timing.
         //leaving line increment here allows earthworm jim (gg) to run but moving the increment past the irq checks
         //causes shaking at the screen split in black belt
 
-        if (line_number > 192) {
+        if (line_number > active_height) {
             line_counter = registers[10];
         }
         else {
@@ -290,7 +290,7 @@ class c_vdp : public i_vdp
             }
         }
 
-        if (line_number == 192) {
+        if (line_number == active_height) {
             status |= 0x80;
             update_irq();
         }
@@ -302,7 +302,9 @@ class c_vdp : public i_vdp
 
     int get_scanline()
     {
-        if (line_number <= 0xDA)
+        //NTSC v counter: 00-DA, D5-FF (192 lines) or 00-EA, E5-FF (224 lines)
+        int jump = get_active_height() == 224 ? 0xEA : 0xDA;
+        if (line_number <= jump)
             return line_number;
         else
             return (line_number - 6);
@@ -318,10 +320,13 @@ class c_vdp : public i_vdp
         if (registers[0x1] & 0x1) {
             sprite_height *= 2;
         }
+        //sprite list terminator only exists in 192-line mode
+        //https://www.smspower.org/Development/Sprites
+        bool check_terminator = get_active_height() == 192;
         for (int i = 0; i < 64; i++) {
             unsigned char sprite_y = *(sat + i);
 
-            if (sprite_y == 0xD0)
+            if (sprite_y == 0xD0 && check_terminator)
                 break;
             int sprite_y_adjusted = 0;
 
@@ -373,6 +378,16 @@ class c_vdp : public i_vdp
     }
 
   private:
+    int get_active_height() const
+    {
+        //224-line mode: M4, M2, and M1 set, M3 clear.  240-line mode (M3 instead of M1)
+        //only works on PAL consoles, so it isn't supported.
+        if ((registers[0] & 0x6) == 0x6 && (registers[1] & 0x18) == 0x10) {
+            return 224;
+        }
+        return 192;
+    }
+
     int lookup_color(int palette_index)
     {
         if constexpr (model == SMS_MODEL::SMS) {
