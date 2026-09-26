@@ -119,11 +119,57 @@ export class c_invaders : public c_system, register_class<system_registry, c_inv
                 default:
                     break;
             }
+            if (line < 224) {
+                draw_line(line);
+            }
             //19.968MHz clock divided by 10 / 262 / 59.541985Hz refresh
             z80->execute(128);
             clock_sound(128 / audio_divider);
         }
         return 0;
+    }
+
+    void draw_line(int line)
+    {
+        enum screen_loc
+        {
+            status_line_y = 16,  //line separating playfield from ships/credits info
+            base_top_y = 71,     //the top line of the base section
+            ufo_bottom_y = 192,  //bottom line of ufo section, just above aliens
+            ufo_top_y = 223,     //top line of ufo section, just below scores
+            ships_left_x = 25,   //left edge of remaining ships icons
+            credits_left_x = 136 //left edge of credits
+        };
+
+        const int white = 0xFFFFF0F0;
+        const int green = 0xFFB9E000;
+        const int orange = 0xFF5A97F1;
+
+        uint32_t *f = &fb[line * FB_WIDTH];
+        uint8_t *v = &vram[line * 32];
+        //this is a bit confusing, but the screen is rotated; line (y) is x from the
+        //viewer's perspective.
+        int x = line;
+        for (int offset = 0; offset < 32; offset++) {
+            uint8_t data = *v++;
+            int y = offset * 8;
+            for (int i = 0; i < 8; i++, y++) {
+                int color = white;
+                if (y < screen_loc::status_line_y) {
+                    if (x >= screen_loc::ships_left_x && x <= screen_loc::credits_left_x) {
+                        color = green;
+                    }
+                }
+                else if (y > screen_loc::status_line_y && y <= screen_loc::base_top_y) {
+                    color = green;
+                }
+                else if (y >= screen_loc::ufo_bottom_y && y <= screen_loc::ufo_top_y) {
+                    color = orange;
+                }
+                *f++ = (data & 0x1) ? color : 0;
+                data >>= 1;
+            }
+        }
     }
 
     int reset()
@@ -253,41 +299,7 @@ export class c_invaders : public c_system, register_class<system_registry, c_inv
             ram[address - 0x2000] = data;
         }
         else if (address < 0x4000) {
-
-            enum screen_loc
-            {
-                status_line_y = 16,  //line separating playfield from ships/credits info
-                base_top_y = 71,     //the top line of the base section
-                ufo_bottom_y = 192,  //bottom line of ufo section, just above aliens
-                ufo_top_y = 223,     //top line of ufo section, just below scores
-                ships_left_x = 25,   //left edge of remaining ships icons
-                credits_left_x = 136 //left edge of credits
-            };
-            int loc = address - 0x2400;
-            vram[loc] = data;
-            uint32_t *f = &fb[loc * 8];
-            int x = loc >> 5; //divide by 32 (256 width / 8 bits/byte)
-            int y_base = (loc & 0x1F) * 8;
-            const int white = 0xFFFFF0F0;
-            const int green = 0xFFB9E000;
-            const int orange = 0xFF5A97F1;
-            for (int i = 0; i < 8; i++) {
-                int color = white;
-                int y = y_base + i;
-                if (y < screen_loc::status_line_y) {
-                    if (x >= screen_loc::ships_left_x && x <= screen_loc::credits_left_x) {
-                        color = green;
-                    }
-                }
-                else if (y > screen_loc::status_line_y && y <= screen_loc::base_top_y) {
-                    color = green;
-                }
-                else if (y >= screen_loc::ufo_bottom_y && y <= screen_loc::ufo_top_y) {
-                    color = orange;
-                }
-                *f++ = (data & 0x1) * color;
-                data >>= 1;
-            }
+            vram[address - 0x2400] = data;
         }
         else {
             int x = 1;

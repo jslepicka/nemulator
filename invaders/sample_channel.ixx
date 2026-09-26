@@ -45,6 +45,9 @@ export class c_sample_channel
         if (p2 <= len - 1) {
             right_sample = (float)data[p2] / 32768.0f;
         }
+        else if (loop) {
+            right_sample = (float)data[0] / 32768.0f;
+        }
         pos += step;
         if (pos >= len) {
             if (loop) {
