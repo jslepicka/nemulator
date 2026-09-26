@@ -24,6 +24,9 @@ export class i_vdp
     virtual void draw_scanline() = 0;
     virtual int get_scanline() = 0;
     virtual void eval_sprites() = 0;
+    virtual void latch_hscroll() = 0;
+    virtual void line_irqs() = 0;
+    virtual void end_line() = 0;
     virtual ~i_vdp() = default;
 
   protected:
@@ -122,6 +125,7 @@ class c_vdp : public i_vdp
         line_irq = 0;
         frame_irq = 0;
         line_counter = 255;
+        hscroll_latch = 0;
         control = 0;
         address = 0;
         address_latch_lo = 0;
@@ -163,8 +167,8 @@ class c_vdp : public i_vdp
 
         if (y < active_height) {
             if (registers[0x1] & 0x40) {
-                int x_coarse = registers[8] >> 3;
-                int x_fine = registers[8] & 0x7;
+                int x_coarse = hscroll_latch >> 3;
+                int x_fine = hscroll_latch & 0x7;
                 if (y < 16 && registers[0] & 0x40) {
                     x_coarse = x_fine = 0;
                 }
@@ -274,14 +278,25 @@ class c_vdp : public i_vdp
                 fb_line[x] = 0;
             }
         }
-        //need to figure out irq timing.
-        //leaving line increment here allows earthworm jim (gg) to run but moving the increment past the irq checks
-        //causes shaking at the screen split in black belt
+    }
 
-        if (line_number > active_height) {
-            line_counter = registers[10];
+    //Horizontal scroll is latched for the next line at vdp cycle 313.
+    void latch_hscroll()
+    {
+        hscroll_latch = registers[8];
+    }
+
+    //The frame interrupt (vdp cycle 315, v counter $C1 in 192-line mode) and the line
+    //counter (vdp cycle 316, for the lines leading into v counter 0 to active_height).
+    void line_irqs()
+    {
+        int active_height = get_active_height();
+        if (line_number == active_height) {
+            status |= 0x80;
+            update_irq();
         }
-        else {
+
+        if (line_number < active_height || line_number == 261) {
             line_counter--;
             if (line_counter == 0xFF) {
                 line_counter = registers[10];
@@ -289,11 +304,14 @@ class c_vdp : public i_vdp
                 update_irq();
             }
         }
-
-        if (line_number == active_height) {
-            status |= 0x80;
-            update_irq();
+        else {
+            line_counter = registers[10];
         }
+    }
+
+    //The v counter moves to the next line at vdp cycle 315.
+    void end_line()
+    {
         if (line_number == 261)
             line_number = 0;
         else
@@ -453,6 +471,7 @@ class c_vdp : public i_vdp
         int pixels[8];
     } sprite_data[8];
     int line_number;
+    int hscroll_latch;
     unsigned char line_counter;
     int line_irq;
     int frame_irq;

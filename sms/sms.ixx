@@ -109,10 +109,19 @@ export class c_sms : public c_system, register_class<system_registry, c_sms>
     int emulate_frame()
     {
         psg->clear_buffer();
+        //vdp events within each 228 cycle line.  The z80 applies an instruction's i/o
+        //when the instruction completes, so events are placed where that lines up with
+        //the vdp: horizontal scroll latch and interrupts after cycle 209, v counter
+        //after cycle 210.
         for (int i = 0; i < 262; i++) {
-            z80->execute(228);
             vdp->eval_sprites();
             vdp->draw_scanline();
+            z80->execute(209);
+            vdp->latch_hscroll();
+            vdp->line_irqs();
+            z80->execute(1);
+            vdp->end_line();
+            z80->execute(18);
         }
         catchup_psg();
         return 0;
