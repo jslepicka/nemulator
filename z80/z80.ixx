@@ -216,7 +216,8 @@ class c_z80
                     opcode = 0x104;
                     halted = 0;
                 }
-                else if (*irq && IFF1) {
+                //no interrupt is accepted in the instruction slot directly after EI
+                else if (*irq && IFF1 && !pending_ei) {
                     IFF1 = IFF2 = 0;
                     halted = 0;
                     switch (IM) {
@@ -1191,8 +1192,10 @@ class c_z80
                         switch (z) {
                             case 0:
                                 //RET cc[y]
-                                if (test_flag(y))
+                                if (test_flag(y)) {
                                     PC = pull_word();
+                                    required_cycles += 6;
+                                }
                                 break;
                             case 1:
                                 switch (q) {
