@@ -12,6 +12,8 @@ class c_biquad final : public i_audio_filter
   public:
     c_biquad()
     {
+        z0 = 0.0f;
+        z1 = 0.0f;
     };
 
     __forceinline float process(float in)
