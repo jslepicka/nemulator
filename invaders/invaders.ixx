@@ -61,6 +61,7 @@ export class c_invaders : public c_system, register_class<system_registry, c_inv
 
         resampler = resampler_t::create((double)audio_freq / 48000.0);
         mixer_enabled = 0;
+        draw_overlay();
     }
 
     int load()
@@ -119,17 +120,26 @@ export class c_invaders : public c_system, register_class<system_registry, c_inv
                 default:
                     break;
             }
-            if (line < 224) {
+            if (line < FB_HEIGHT) {
                 draw_line(line);
             }
             //19.968MHz clock divided by 10 / 262 / 59.541985Hz refresh
             z80->execute(128);
             clock_sound(128 / audio_divider);
         }
+
+        //color frame buffer with overlay
+        uint32_t *f = fb;
+        uint32_t *o = overlay;
+        for (int i = 0; i < FB_WIDTH * FB_HEIGHT; i++) {
+            *f = *f & *o;
+            f++;
+            o++;
+        }
         return 0;
     }
 
-    void draw_line(int line)
+    void draw_overlay()
     {
         enum screen_loc
         {
@@ -141,32 +151,41 @@ export class c_invaders : public c_system, register_class<system_registry, c_inv
             credits_left_x = 136 //left edge of credits
         };
 
-        const int white = 0xFFFFF0F0;
-        const int green = 0xFFB9E000;
-        const int orange = 0xFF5A97F1;
+        const uint32_t white = 0xFFFFF0F0;
+        const uint32_t green = 0xFFB9E000;
+        const uint32_t orange = 0xFF5A97F1;
 
-        uint32_t *f = &fb[line * FB_WIDTH];
-        uint8_t *v = &vram[line * 32];
-        //this is a bit confusing, but the screen is rotated; line (y) is x from the
-        //viewer's perspective.
-        int x = line;
-        for (int offset = 0; offset < 32; offset++) {
-            uint8_t data = *v++;
-            int y = offset * 8;
-            for (int i = 0; i < 8; i++, y++) {
+        uint32_t *o = overlay;
+
+        for (int y = 0; y < FB_HEIGHT; y++) {
+            for (int x = 0; x < FB_WIDTH; x++) {
                 int color = white;
-                if (y < screen_loc::status_line_y) {
-                    if (x >= screen_loc::ships_left_x && x <= screen_loc::credits_left_x) {
+                //x and y are compared with the opposite dimension's coords to account
+                //for screen rotation
+                if (x < screen_loc::status_line_y) {
+                    if (y >= screen_loc::ships_left_x && y <= screen_loc::credits_left_x) {
                         color = green;
                     }
                 }
-                else if (y > screen_loc::status_line_y && y <= screen_loc::base_top_y) {
+                else if (x > screen_loc::status_line_y && x <= screen_loc::base_top_y) {
                     color = green;
                 }
-                else if (y >= screen_loc::ufo_bottom_y && y <= screen_loc::ufo_top_y) {
+                else if (x >= screen_loc::ufo_bottom_y && x <= screen_loc::ufo_top_y) {
                     color = orange;
                 }
-                *f++ = (data & 0x1) ? color : 0;
+                *o++ = color;
+            }
+        }
+    }
+
+    void draw_line(int line)
+    {
+        uint32_t *f = &fb[line * FB_WIDTH];
+        uint8_t *v = &vram[line * 32];
+        for (int offset = 0; offset < 32; offset++) {
+            uint8_t data = *v++;
+            for (int i = 0; i < 8; i++) {
+                *f++ = (data & 0x1) ? 0xFFFFFFFF : 0xFF000000;
                 data >>= 1;
             }
         }
@@ -516,5 +535,6 @@ export class c_invaders : public c_system, register_class<system_registry, c_inv
     uint8_t ram[1 * 1024];
     uint8_t vram[7 * 1024];
     uint32_t fb[FB_WIDTH * FB_HEIGHT];
+    uint32_t overlay[FB_WIDTH * FB_HEIGHT];
 };
 } //namespace invaders
