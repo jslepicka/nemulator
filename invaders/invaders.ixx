@@ -61,7 +61,6 @@ export class c_invaders : public c_system, register_class<system_registry, c_inv
 
         resampler = resampler_t::create((double)audio_freq / 48000.0);
         mixer_enabled = 0;
-        draw_overlay();
     }
 
     int load()
@@ -130,52 +129,13 @@ export class c_invaders : public c_system, register_class<system_registry, c_inv
 
         //color frame buffer with overlay
         uint32_t *f = fb;
-        uint32_t *o = overlay;
+        const uint32_t *o = overlay.data();
         for (int i = 0; i < FB_WIDTH * FB_HEIGHT; i++) {
             *f = *f & *o;
             f++;
             o++;
         }
         return 0;
-    }
-
-    void draw_overlay()
-    {
-        enum screen_loc
-        {
-            status_line_y = 16,  //line separating playfield from ships/credits info
-            base_top_y = 71,     //the top line of the base section
-            ufo_bottom_y = 192,  //bottom line of ufo section, just above aliens
-            ufo_top_y = 223,     //top line of ufo section, just below scores
-            ships_left_x = 25,   //left edge of remaining ships icons
-            credits_left_x = 136 //left edge of credits
-        };
-
-        const uint32_t white = 0xFFFFF0F0;
-        const uint32_t green = 0xFFB9E000;
-        const uint32_t orange = 0xFF5A97F1;
-
-        uint32_t *o = overlay;
-
-        for (int y = 0; y < FB_HEIGHT; y++) {
-            for (int x = 0; x < FB_WIDTH; x++) {
-                int color = white;
-                //x and y are compared with the opposite dimension's coords to account
-                //for screen rotation
-                if (x < screen_loc::status_line_y) {
-                    if (y >= screen_loc::ships_left_x && y <= screen_loc::credits_left_x) {
-                        color = green;
-                    }
-                }
-                else if (x > screen_loc::status_line_y && x <= screen_loc::base_top_y) {
-                    color = green;
-                }
-                else if (x >= screen_loc::ufo_bottom_y && x <= screen_loc::ufo_top_y) {
-                    color = orange;
-                }
-                *o++ = color;
-            }
-        }
     }
 
     void draw_line(int line)
@@ -534,7 +494,46 @@ export class c_invaders : public c_system, register_class<system_registry, c_inv
     uint8_t rom[8 * 1024];
     uint8_t ram[1 * 1024];
     uint8_t vram[7 * 1024];
-    uint32_t fb[FB_WIDTH * FB_HEIGHT];
-    uint32_t overlay[FB_WIDTH * FB_HEIGHT];
+    alignas(64) uint32_t fb[FB_WIDTH * FB_HEIGHT];
+    static const std::array<uint32_t, FB_WIDTH * FB_HEIGHT> overlay;
 };
+
+const std::array<uint32_t, c_invaders::FB_WIDTH * c_invaders::FB_HEIGHT> c_invaders::overlay = [] {
+    std::array<uint32_t, FB_WIDTH * FB_HEIGHT> overlay;
+    enum screen_loc
+    {
+        status_line_y = 16,  //line separating playfield from ships/credits info
+        base_top_y = 71,     //the top line of the base section
+        ufo_bottom_y = 192,  //bottom line of ufo section, just above aliens
+        ufo_top_y = 223,     //top line of ufo section, just below scores
+        ships_left_x = 25,   //left edge of remaining ships icons
+        credits_left_x = 136 //left edge of credits
+    };
+
+    const uint32_t white = 0xFFFFF0F0;
+    const uint32_t green = 0xFFB9E000;
+    const uint32_t orange = 0xFF5A97F1;
+    uint32_t *o = overlay.data();
+    for (int y = 0; y < FB_HEIGHT; y++) {
+        for (int x = 0; x < FB_WIDTH; x++) {
+            int color = white;
+            //x and y are compared with the opposite dimension's coords to account
+            //for screen rotation
+            if (x < screen_loc::status_line_y) {
+                if (y >= screen_loc::ships_left_x && y <= screen_loc::credits_left_x) {
+                    color = green;
+                }
+            }
+            else if (x > screen_loc::status_line_y && x <= screen_loc::base_top_y) {
+                color = green;
+            }
+            else if (x >= screen_loc::ufo_bottom_y && x <= screen_loc::ufo_top_y) {
+                color = orange;
+            }
+            *o++ = color;
+        }
+    }
+    return overlay;
+}();
+
 } //namespace invaders
