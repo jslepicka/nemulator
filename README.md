@@ -17,7 +17,7 @@ nemulator is a multi-system emulator for Windows
 - See configuration options in nemulator.ini
 - Default ROM locations are c:\roms\\(nes|fds|sms|gg|genesis|pce|gb|gbc|arcade\\romset)
     - Supported pacman rom sets are pacman, mspacman, mspacmab, and mspacmnf
-    - Space Invaders requires invaders rom set and, optionally, audio samples from https://samples.mameworld.info/Unofficial%20Samples.htm
+    - Space Invaders requires invaders rom set and, optionally, audio samples from [https://samples.mameworld.info/Unofficial%20Samples.htm](https://web.archive.org/web/20251130141249/https://samples.mameworld.info/Unofficial%20Samples.htm)
 - Default keyboard assignments:
     - Up/Down/Left/Right - arrow keys
     - A button - X
