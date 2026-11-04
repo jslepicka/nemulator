@@ -1,10 +1,12 @@
 module;
-#include "d3d10.h"
-#include "d3dx10.h"
+#include "d3d11.h"
 
 export module nemulator:disk_indicator;
 import nemulator.std;
 import task;
+import font;
+import vec;
+import shader_pass;
 import system;
 
 //shown in the corner of the screen while the running game's disk is being accessed, since loading from a
@@ -28,16 +30,21 @@ export class c_disk_indicator : public c_task
         float x, y, z;
         float u, v;
     };
-    ID3D10Effect *effect;
-    ID3D10EffectTechnique *technique;
-    ID3D10EffectVectorVariable *var_size;
-    ID3D10EffectScalarVariable *var_progress;
-    ID3D10EffectScalarVariable *var_writing;
-    ID3D10EffectScalarVariable *var_spin;
-    ID3D10EffectScalarVariable *var_alpha;
-    ID3D10InputLayout *layout;
-    ID3D10Buffer *vertices;
-    ID3DX10Font *font;
+    //what shape_disk_ps.hlsl expects
+    struct s_constants
+    {
+        s_vec2 size;
+        float progress;
+        float writing;
+        float spin;
+        float alpha;
+        float padding[2];
+    };
+    c_shader_pass pass;
+    ID3D11Buffer *constants_buffer;
+    ID3D11InputLayout *layout;
+    ID3D11Buffer *vertices;
+    c_font *font;
     void load_font();
 
     c_system::s_disk_activity shown; //the last activity, kept while the indicator lingers and fades

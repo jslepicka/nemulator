@@ -1,12 +1,12 @@
 module;
-#include "d3d10.h"
-#include "D3DX10.h"
+#include "d3d11.h"
 #include <cstdio>
 module nemulator:stats;
 
 extern int clientHeight;
 extern int clientWidth;
-extern ID3D10Device *d3dDev;
+extern ID3D11Device *d3dDev;
+extern ID3D11DeviceContext *d3dContext;
 
 c_stats::c_stats()
 {
@@ -16,32 +16,13 @@ c_stats::c_stats()
 
 c_stats::~c_stats()
 {
-    if (font)
-    {
-        font->Release();
-        font = NULL;
-    }
+    delete font;
 }
 
 void c_stats::load_fonts()
 {
-    if (font)
-    {
-        font->Release();
-        font = 0;
-    }
-    D3DX10_FONT_DESC fontDesc;
-    fontDesc.Height = (int)(clientHeight * .05);
-    fontDesc.Width = 0;
-    fontDesc.Weight = 0;
-    fontDesc.MipLevels = 1;
-    fontDesc.Italic = false;
-    fontDesc.CharSet = DEFAULT_CHARSET;
-    fontDesc.OutputPrecision = OUT_DEFAULT_PRECIS;
-    fontDesc.Quality = DEFAULT_QUALITY;
-    fontDesc.PitchAndFamily = DEFAULT_PITCH | FF_DONTCARE;
-    strcpy_s(fontDesc.FaceName, "Calibri");
-    HRESULT hr = D3DX10CreateFontIndirect(d3dDev, &fontDesc, &font);
+    delete font;
+    font = new c_font((int)(clientHeight * .05), "Calibri");
 
 }
 
@@ -99,7 +80,7 @@ void c_stats::draw()
     //{
     //    std::pair<std::string, std::string> p = *i;
     //    std::string s(p.first + ": " + p.second);
-    //    draw_text((char*)s.c_str(), .02, y, D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f));
+    //    draw_text((char*)s.c_str(), .02, y, s_color(1.0f, 1.0f, 1.0f, 1.0f));
     //    y += .05;
     //}
 
@@ -107,20 +88,20 @@ void c_stats::draw()
     {
         std::pair<std::string, std::string> p = stat;
         std::string s(p.first + ": " + p.second);
-        draw_text((char*)s.c_str(), .02, y, D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f));
+        draw_text((char*)s.c_str(), .02, y, s_color(1.0f, 1.0f, 1.0f, 1.0f));
         y += .05;
     }
 
-    //draw_text("test", .1, .1, D3DXCOLOR(0.0f, 1.0f, 0.0f, 1.0f));
+    //draw_text("test", .1, .1, s_color(0.0f, 1.0f, 0.0f, 1.0f));
 }
 
-void c_stats::draw_text(char *text, double x, double y, D3DXCOLOR color)
+void c_stats::draw_text(char *text, double x, double y, s_color color)
 {
     RECT r = {(long)(clientWidth * x), (long)(clientHeight * y), clientWidth, clientHeight};
-    ID3D10DepthStencilState *state;
+    ID3D11DepthStencilState *state;
     int oldref;
-    d3dDev->OMGetDepthStencilState(&state, (UINT *)&oldref);
-    font->DrawText(NULL, text, -1, &r, DT_NOCLIP, color);
-    d3dDev->OMSetDepthStencilState(state, oldref);
+    d3dContext->OMGetDepthStencilState(&state, (UINT *)&oldref);
+    font->draw(text, r, 0, color);
+    d3dContext->OMSetDepthStencilState(state, oldref);
 }
     

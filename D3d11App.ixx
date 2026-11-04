@@ -16,23 +16,22 @@ module;
 
 #endif
 
-#include <d3d10.h>
+#include <d3d11.h>
 #include <dxgi.h>
-#include <dxerr.h>
-#include <d3dx10.h>
 #include <windows.h>
 
-export module D3d10App;
+export module D3d11App;
 import nemulator.std;
 import input_handler;
 import config;
 import task;
+import vec;
 
-export class D3d10App
+export class D3d11App
 {
 public:
-	D3d10App(HINSTANCE hInstance);
-	virtual ~D3d10App();
+	D3d11App(HINSTANCE hInstance);
+	virtual ~D3d11App();
 	HINSTANCE GetInstance();
 	HWND GetWnd();
 	int Run();
@@ -85,12 +84,7 @@ public:
 	//returns -1 if the name isn't recognized
 	static int parse_sync_mode(const std::string &name);
 
-	struct SimpleVertex
-	{
-		D3DXVECTOR3 pos;
-		D3DXVECTOR2 tex;
-	};
-	D3DXCOLOR clearColor;
+	s_color clearColor;
 
 protected:
 	void InitWnd();
@@ -113,13 +107,12 @@ protected:
 	int ignore_input;
 
 	IDXGISwapChain *swapChain;
-	ID3D10Texture2D *depthStencilBuffer;
-	ID3D10RenderTargetView *renderTargetView;
-	ID3D10DepthStencilView *depthStencilView;
+	ID3D11Texture2D *depthStencilBuffer;
+	ID3D11RenderTargetView *renderTargetView;
+	ID3D11DepthStencilView *depthStencilView;
 
 	//define these in derived class constructor
 	std::string caption;
-	D3D10_DRIVER_TYPE d3dDriverType;
 
 
 	LARGE_INTEGER liFreq;
@@ -136,7 +129,7 @@ protected:
 
 	BOOL fullscreen;
 	int fullscreen_request; //-1 = no change requested
-	static D3d10App *instance;
+	static D3d11App *instance;
 	int window_width; //windowed mode client width, as saved in app.x
 	bool window_width_pending; //the window hasn't been resized to window_width yet
 	bool save_window_width();
@@ -148,5 +141,5 @@ protected:
 	IDXGIFactory * pFactory;
 
 	HANDLE power_request;
-    D3D10_TEXTURE2D_DESC depthStencilDesc;
+    D3D11_TEXTURE2D_DESC depthStencilDesc;
 };

@@ -14,11 +14,10 @@ module;
 #include "dwmapi.h"
 #include "resource.h"
 #include <timeapi.h>
-#include "d3d10.h"
-#include "D3DX10.h"
+#include "d3d11.h"
+#include <DirectXMath.h>
 
-#pragma comment(lib, "d3d10.lib")
-#pragma comment(lib, "d3dx10.lib")
+#pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "PowrProf.lib")
 #pragma comment(lib, "avrt.lib")
@@ -26,11 +25,12 @@ module;
 
 #define ReleaseCOM(x) { if(x) { x->Release(); x = 0; } }
 
-module D3d10App;
+module D3d11App;
 
-ID3D10Device *d3dDev;
-D3DXMATRIX matrixView;
-D3DXMATRIX matrixProj;
+ID3D11Device *d3dDev;
+ID3D11DeviceContext *d3dContext;
+DirectX::XMFLOAT4X4 matrixView;
+DirectX::XMFLOAT4X4 matrixProj;
 int clientHeight;
 int clientWidth;
 bool startFullscreen;
@@ -42,11 +42,11 @@ std::unique_ptr<c_input_handler> g_ih;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    static D3d10App *app = 0;
+    static D3d11App *app = 0;
     switch (msg) {
         case WM_CREATE: {
             CREATESTRUCT *cs = (CREATESTRUCT *)lParam;
-            app = (D3d10App *)cs->lpCreateParams;
+            app = (D3d11App *)cs->lpCreateParams;
             return 0;
         }
     }
@@ -57,9 +57,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-D3d10App *D3d10App::instance = nullptr;
+D3d11App *D3d11App::instance = nullptr;
 
-D3d10App::D3d10App(HINSTANCE hInstance)
+D3d11App::D3d11App(HINSTANCE hInstance)
 {
     instance = this;
     fullscreen = FALSE;
@@ -80,14 +80,14 @@ D3d10App::D3d10App(HINSTANCE hInstance)
     startFullscreen = false;
 
     d3dDev = 0;
+    d3dContext = 0;
     swapChain = 0;
     depthStencilBuffer = 0;
     renderTargetView = 0;
     depthStencilView = 0;
 
     caption = "";
-    d3dDriverType = D3D10_DRIVER_TYPE_HARDWARE;
-    clearColor = D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f);
+    clearColor = s_color(0.0f, 0.0f, 0.0f, 1.0f);
     clientWidth = 960;
     clientHeight = 600;
 
@@ -99,7 +99,7 @@ D3d10App::D3d10App(HINSTANCE hInstance)
     power_request = NULL;
 }
 
-D3d10App::~D3d10App()
+D3d11App::~D3d11App()
 {
     timeEndPeriod(1);
     if (avrt_handle != 0) {
@@ -111,13 +111,14 @@ D3d10App::~D3d10App()
         swapChain->SetFullscreenState(false, NULL);
 
        //KillTimer(hWnd, 0);
-    if (d3dDev)
-        d3dDev->ClearState();
+    if (d3dContext)
+        d3dContext->ClearState();
 
     ReleaseCOM(renderTargetView);
     ReleaseCOM(depthStencilView);
     ReleaseCOM(swapChain);
     ReleaseCOM(depthStencilBuffer);
+    ReleaseCOM(d3dContext);
     ReleaseCOM(d3dDev);
 
     if (config)
@@ -126,55 +127,55 @@ D3d10App::~D3d10App()
         CloseHandle(power_request);
 }
 
-HINSTANCE D3d10App::GetInstance()
+HINSTANCE D3d11App::GetInstance()
 {
     return hInstance;
 }
 
-HWND D3d10App::GetWnd()
+HWND D3d11App::GetWnd()
 {
     return hWnd;
 }
 
-bool D3d10App::is_fullscreen()
+bool D3d11App::is_fullscreen()
 {
     if (instance->fullscreen_request != -1)
         return instance->fullscreen_request;
     return instance->fullscreen;
 }
 
-void D3d10App::set_fullscreen(bool enable)
+void D3d11App::set_fullscreen(bool enable)
 {
     instance->fullscreen_request = enable;
 }
 
-int D3d10App::get_sync_mode()
+int D3d11App::get_sync_mode()
 {
     return instance->sync_mode;
 }
 
-void D3d10App::set_sync_mode(int mode)
+void D3d11App::set_sync_mode(int mode)
 {
     instance->sync_mode = mode;
 }
 
-bool D3d10App::get_pause_on_lost_focus()
+bool D3d11App::get_pause_on_lost_focus()
 {
     return instance->pause_on_lost_focus;
 }
 
 //only changed from a menu, so the window has focus: nothing is paused or ignored that would need undoing
-void D3d10App::set_pause_on_lost_focus(bool enable)
+void D3d11App::set_pause_on_lost_focus(bool enable)
 {
     instance->pause_on_lost_focus = enable;
 }
 
-void D3d10App::set_frame_rate(double rate)
+void D3d11App::set_frame_rate(double rate)
 {
     instance->frame_rate = rate > 0.0 ? rate : 60.0;
 }
 
-double D3d10App::get_refresh_rate()
+double D3d11App::get_refresh_rate()
 {
     DEVMODE mode = {};
     mode.dmSize = sizeof(mode);
@@ -185,7 +186,7 @@ double D3d10App::get_refresh_rate()
 
 //the number of refreshes in one 60Hz frame, so a 120Hz display presents every second refresh.  0 if the
 //display isn't ~60Hz or a multiple of it.  Windows reports 59.94Hz as 59.
-int D3d10App::get_refresh_multiple()
+int D3d11App::get_refresh_multiple()
 {
     double rate = get_refresh_rate();
     if (rate <= 0.0)
@@ -199,12 +200,12 @@ int D3d10App::get_refresh_multiple()
     return multiple;
 }
 
-const char *D3d10App::get_sync_mode_name(int mode)
+const char *D3d11App::get_sync_mode_name(int mode)
 {
     return mode == SYNC_TIMER ? "timer" : "vsync";
 }
 
-int D3d10App::parse_sync_mode(const std::string &name)
+int D3d11App::parse_sync_mode(const std::string &name)
 {
     for (int mode = 0; mode < SYNC_COUNT; mode++) {
         if (name == get_sync_mode_name(mode))
@@ -213,7 +214,7 @@ int D3d10App::parse_sync_mode(const std::string &name)
     return -1;
 }
 
-bool D3d10App::set_window_width(int width)
+bool D3d11App::set_window_width(int width)
 {
     instance->window_width = get_window_width(width);
     instance->window_width_pending = true;
@@ -222,7 +223,7 @@ bool D3d10App::set_window_width(int width)
 
 //app.x is the windowed mode client width.  0, or a width too wide for the screen (e.g., one saved on a
 //larger monitor), uses a fraction of the screen's work area instead.
-int D3d10App::get_window_width(int configured)
+int D3d11App::get_window_width(int configured)
 {
     RECT work_area;
     SystemParametersInfo(SPI_GETWORKAREA, 0, &work_area, 0);
@@ -232,13 +233,13 @@ int D3d10App::get_window_width(int configured)
     return configured;
 }
 
-bool D3d10App::save_window_width()
+bool D3d11App::save_window_width()
 {
     return config->set_config_values({{"app.x", std::to_string(window_width)}});
 }
 
 //resizes the client area to width, with the height from the aspect ratio
-void D3d10App::resize_window(int width)
+void D3d11App::resize_window(int width)
 {
     if (maximized)
         ShowWindow(hWnd, SW_RESTORE);
@@ -247,14 +248,14 @@ void D3d10App::resize_window(int width)
                  SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
 }
 
-void D3d10App::OnPause(bool paused)
+void D3d11App::OnPause(bool paused)
 {
     for (auto &task : *c_task::task_list) {
         task->on_pause(paused);
     }
 }
 
-int D3d10App::Run()
+int D3d11App::Run()
 {
     MSG msg = {0};
     double dt = 0.0;
@@ -277,8 +278,8 @@ int D3d10App::Run()
             }
             if (!paused) {
                 g_ih->poll(dt, ignore_input);
-                d3dDev->ClearRenderTargetView(renderTargetView, clearColor);
-                d3dDev->ClearDepthStencilView(depthStencilView, D3D10_CLEAR_DEPTH | D3D10_CLEAR_STENCIL, 1.0f, 0);
+                d3dContext->ClearRenderTargetView(renderTargetView, (float *)&clearColor);
+                d3dContext->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
                 int r = 999;
                 int params = 0;
                 for (auto i = c_task::task_list->begin(); i != c_task::task_list->end(); /* ++i*/) {
@@ -297,11 +298,11 @@ int D3d10App::Run()
                 std::for_each(c_task::task_list->rbegin(), c_task::task_list->rend(),
                               [](c_task *task) { task->draw(); });
 
-                d3dDev->Flush();
+                d3dContext->Flush();
 
                 //on a 120Hz display a 60Hz frame is held for two refreshes, and so on
                 swapChain->Present(sync_mode == SYNC_VSYNC ? (refresh_multiple ? refresh_multiple : 1) : 0, 0);
-                //d3dDev->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
+                //d3dContext->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
             }
             else
                 Sleep(250);
@@ -344,7 +345,7 @@ int D3d10App::Run()
     return (int)msg.wParam;
 }
 
-void D3d10App::Init(char *config_file_name, c_task *init_task, void *params)
+void D3d11App::Init(char *config_file_name, c_task *init_task, void *params)
 {
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);
@@ -415,7 +416,7 @@ void D3d10App::Init(char *config_file_name, c_task *init_task, void *params)
     SetProcessInformation(GetCurrentProcess(), ProcessPowerThrottling, &PowerThrottling, sizeof(PowerThrottling));
 }
 
-void D3d10App::disable_screensaver()
+void D3d11App::disable_screensaver()
 {
     REASON_CONTEXT rc = {0};
     rc.Version = POWER_REQUEST_CONTEXT_VERSION;
@@ -427,13 +428,15 @@ void D3d10App::disable_screensaver()
     }
 }
 
-void D3d10App::OnResize()
+void D3d11App::OnResize()
 {
-    d3dDev->OMSetRenderTargets(0, 0, 0);
+    d3dContext->OMSetRenderTargets(0, 0, 0);
     ReleaseCOM(renderTargetView);
     ReleaseCOM(depthStencilView);
     ReleaseCOM(depthStencilBuffer);
-    d3dDev->ClearState();
+    d3dContext->ClearState();
+    //the back buffer can't be resized until its views are gone, and released objects are destroyed on a flush
+    d3dContext->Flush();
     swapChain->ResizeBuffers(0, 0, 0, DXGI_FORMAT_UNKNOWN, 0);
     DXGI_MODE_DESC mode = {0};
     mode.Width = clientWidth;
@@ -441,8 +444,8 @@ void D3d10App::OnResize()
 
     swapChain->ResizeTarget(&mode);
 
-    ID3D10Texture2D *backBuffer;
-    swapChain->GetBuffer(0, __uuidof(ID3D10Texture2D), (void **)(&backBuffer));
+    ID3D11Texture2D *backBuffer;
+    swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void **)(&backBuffer));
     d3dDev->CreateRenderTargetView(backBuffer, 0, &renderTargetView);
     ReleaseCOM(backBuffer);
 
@@ -454,39 +457,39 @@ void D3d10App::OnResize()
     depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
     depthStencilDesc.SampleDesc.Count = 1;
     depthStencilDesc.SampleDesc.Quality = 0;
-    depthStencilDesc.Usage = D3D10_USAGE_DEFAULT;
-    depthStencilDesc.BindFlags = D3D10_BIND_DEPTH_STENCIL;
+    depthStencilDesc.Usage = D3D11_USAGE_DEFAULT;
+    depthStencilDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
     depthStencilDesc.CPUAccessFlags = 0;
     depthStencilDesc.MiscFlags = 0;
 
     d3dDev->CreateTexture2D(&depthStencilDesc, 0, &depthStencilBuffer);
     d3dDev->CreateDepthStencilView(depthStencilBuffer, 0, &depthStencilView);
 
-    d3dDev->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
+    d3dContext->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
 
-    D3D10_VIEWPORT vp;
-    vp.TopLeftX = 0;
-    vp.TopLeftY = 0;
-    vp.Width = clientWidth;
-    vp.Height = clientHeight;
+    D3D11_VIEWPORT vp;
+    vp.TopLeftX = 0.0f;
+    vp.TopLeftY = 0.0f;
+    vp.Width = (float)clientWidth;
+    vp.Height = (float)clientHeight;
     vp.MinDepth = 0.0f;
     vp.MaxDepth = 1.0f;
 
-    d3dDev->RSSetViewports(1, &vp);
+    d3dContext->RSSetViewports(1, &vp);
     //a fullscreen switch can change the display mode
     refresh_multiple = get_refresh_multiple();
     resized = true;
 }
 
-void D3d10App::UpdateScene(float dt)
+void D3d11App::UpdateScene(float dt)
 {
 }
 
-void D3d10App::DrawScene()
+void D3d11App::DrawScene()
 {
 }
 
-LRESULT D3d10App::MsgProc(UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT D3d11App::MsgProc(UINT msg, WPARAM wParam, LPARAM lParam)
 {
     switch (msg) {
         case WM_ACTIVATE:
@@ -627,7 +630,7 @@ LRESULT D3d10App::MsgProc(UINT msg, WPARAM wParam, LPARAM lParam)
     return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-void D3d10App::InitWnd()
+void D3d11App::InitWnd()
 {
     WNDCLASS wc;
     wc.style = CS_HREDRAW | CS_VREDRAW;
@@ -639,7 +642,7 @@ void D3d10App::InitWnd()
     wc.hCursor = LoadCursor(0, IDC_ARROW);
     wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
     wc.lpszMenuName = 0;
-    wc.lpszClassName = "D3d10AppWndClass";
+    wc.lpszClassName = "D3d11AppWndClass";
 
     if (!RegisterClass(&wc)) {
         MessageBox(0, "RegisterClass failed", 0, 0);
@@ -653,7 +656,7 @@ void D3d10App::InitWnd()
     window_adj_x = width - clientWidth;
     window_adj_y = height - clientHeight;
 
-    hWnd = CreateWindow("D3d10AppWndClass", caption.c_str(), WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, width,
+    hWnd = CreateWindow("D3d11AppWndClass", caption.c_str(), WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, width,
                         height, 0, 0, hInstance, this);
 
     if (!hWnd) {
@@ -666,12 +669,12 @@ void D3d10App::InitWnd()
     }
 }
 
-void D3d10App::SetCaption(std::string cap)
+void D3d11App::SetCaption(std::string cap)
 {
     SetWindowText(hWnd, cap.c_str());
 }
 
-int D3d10App::InitD3d()
+int D3d11App::InitD3d()
 {
     HRESULT hr2 = CreateDXGIFactory(__uuidof(IDXGIFactory), (void **)(&pFactory));
     IDXGIAdapter *pAdapter;
@@ -686,9 +689,17 @@ int D3d10App::InitD3d()
 
     UINT createDeviceFlags = 0;
     //#if defined(DEBUG) || defined(_DEBUG)
-      //    createDeviceFlags |= D3D10_CREATE_DEVICE_DEBUG;
+      //    createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
     //#endif
-    hr2 = D3D10CreateDevice(pAdapter, d3dDriverType, 0, createDeviceFlags, D3D10_SDK_VERSION, &d3dDev);
+    //the shaders are shader model 4.0, so any GPU that ran the D3D10 version still can
+    const D3D_FEATURE_LEVEL feature_levels[] = {D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1, D3D_FEATURE_LEVEL_10_0};
+    //an explicit adapter requires an unknown driver type
+    hr2 = D3D11CreateDevice(pAdapter, D3D_DRIVER_TYPE_UNKNOWN, 0, createDeviceFlags, feature_levels,
+                            (UINT)std::size(feature_levels), D3D11_SDK_VERSION, &d3dDev, NULL, &d3dContext);
+    if (FAILED(hr2)) {
+        MessageBox(0, "Unable to create a Direct3D device", "Error", MB_OK);
+        exit(1);
+    }
 
     IDXGIDevice1 *pDXGIDevice;
     hr2 = d3dDev->QueryInterface(__uuidof(IDXGIDevice1), (void **)&pDXGIDevice);
@@ -734,6 +745,6 @@ int D3d10App::InitD3d()
     return 1;
 }
 
-void D3d10App::OnKeyUp(WPARAM wParam)
+void D3d11App::OnKeyUp(WPARAM wParam)
 {
 }

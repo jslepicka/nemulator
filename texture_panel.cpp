@@ -1,8 +1,10 @@
 module;
 #include <string>
-#include "d3d10.h"
-#include "D3DX10.h"
-#include "effect.fxo.h"
+#include "d3d11.h"
+#include <DirectXMath.h>
+#include "transform_vs.fxo.h"
+#include "tile_ps.fxo.h"
+#include "tile_border_ps.fxo.h"
 #define ReleaseCOM(x) { if(x) {x->Release(); x = 0; } }
 
 
@@ -11,9 +13,10 @@ import interpolate;
 using namespace interpolate;
 
 
-extern ID3D10Device *d3dDev;
-extern D3DXMATRIX matrixView;
-extern D3DXMATRIX matrixProj;
+extern ID3D11Device *d3dDev;
+extern ID3D11DeviceContext *d3dContext;
+extern DirectX::XMFLOAT4X4 matrixView;
+extern DirectX::XMFLOAT4X4 matrixProj;
 
 const float c_texture_panel::c_item_container::selectDuration = 120.0f;
 const float c_texture_panel::zoomDuration = 250.0f;
@@ -109,6 +112,9 @@ c_texture_panel::c_texture_panel(int rows, int columns)
 
 c_texture_panel::~c_texture_panel()
 {
+    ReleaseCOM(transform_buffer);
+    ReleaseCOM(constants_buffer);
+    ReleaseCOM(sampler);
     for (auto &item : item_containers)
     {
         delete item;
@@ -123,39 +129,35 @@ int c_texture_panel::get_num_items()
 
 void c_texture_panel::Init()
 {
-    D3D10_INPUT_ELEMENT_DESC elementDesc[] =
+    D3D11_INPUT_ELEMENT_DESC elementDesc[] =
     {
-        { TEXT("POSITION"), 0, DXGI_FORMAT_R32G32B32_FLOAT, 0,  0, D3D10_INPUT_PER_VERTEX_DATA, 0 },
-        { TEXT("TEXCOORD"), 0, DXGI_FORMAT_R32G32_FLOAT,    0, 12, D3D10_INPUT_PER_VERTEX_DATA, 0 }
+        { TEXT("POSITION"), 0, DXGI_FORMAT_R32G32B32_FLOAT, 0,  0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { TEXT("TEXCOORD"), 0, DXGI_FORMAT_R32G32_FLOAT,    0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 }
     };
     UINT numElements = sizeof(elementDesc) / sizeof(elementDesc[0]);
 
-    //hr = D3DX10CreateEffectFromFile("effect.fx", NULL, NULL, "fx_4_0", 0, 0, d3dDev, NULL, NULL, &effect, NULL, NULL);
-    hr = D3DX10CreateEffectFromMemory((LPCVOID)g_effect1, sizeof(g_effect1), "effect1", NULL, NULL, "fx_4_0", 0, 0, d3dDev, NULL, NULL, &effect, NULL, NULL);
-    if (FAILED(hr))
+    D3D11_BLEND_DESC no_blend = no_blend_desc();
+    D3D11_BLEND_DESC alpha_blend = alpha_blend_desc();
+    D3D11_DEPTH_STENCIL_DESC depth = {};
+    depth.DepthEnable = TRUE;
+    depth.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+    depth.DepthFunc = D3D11_COMPARISON_LESS;
+    bool created = tile_pass.create({g_transform_vs, sizeof(g_transform_vs), g_tile_ps, sizeof(g_tile_ps), &no_blend, &depth});
+    //the border is at the same depth as the tile it's drawn over
+    depth.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
+    created = created && border_pass.create({g_transform_vs, sizeof(g_transform_vs), g_tile_border_ps, sizeof(g_tile_border_ps),
+                                             &alpha_blend, &depth});
+    transform_buffer = create_constant_buffer<s_transform_constants>();
+    constants_buffer = create_constant_buffer<s_constants>();
+    sampler = create_linear_sampler(D3D11_TEXTURE_ADDRESS_BORDER);
+    if (!created || !transform_buffer || !constants_buffer || !sampler)
     {
-        MessageBox(NULL, "D3DX10CreateEffectFromFile failed", 0, 0);
+        MessageBox(NULL, "Unable to create shaders", 0, 0);
         PostQuitMessage(0);
         return;
     }
-    technique = effect->GetTechniqueByName("Render");
 
-    varWorld = effect->GetVariableByName("World")->AsMatrix();
-    varView = effect->GetVariableByName("View")->AsMatrix();
-    varProj = effect->GetVariableByName("Projection")->AsMatrix();
-    varTex = effect->GetVariableByName("txDiffuse")->AsShaderResource();
-    varColor = effect->GetVariableByName("color")->AsScalar();
-    var_output_size = effect->GetVariableByName("output_size")->AsVector();
-    var_border_color = effect->GetVariableByName("border_color")->AsVector();
-    var_sharpness = effect->GetVariableByName("sharpness")->AsScalar();
-    var_max_y = effect->GetVariableByName("max_y")->AsScalar();
-    var_max_x = effect->GetVariableByName("max_x")->AsScalar();
-    var_scanlines = effect->GetVariableByName("scanlines")->AsScalar();
-
-    D3D10_PASS_DESC passDesc;
-    technique->GetPassByIndex(0)->GetDesc(&passDesc);
-
-    hr = d3dDev->CreateInputLayout(elementDesc, numElements, passDesc.pIAInputSignature, passDesc.IAInputSignatureSize, &vertexLayout);
+    hr = d3dDev->CreateInputLayout(elementDesc, numElements, g_transform_vs, sizeof(g_transform_vs), &vertexLayout);
     if (FAILED(hr)) {
         MessageBox(NULL, "CreateInputLayout failed", 0, 0);
         PostQuitMessage(0);
@@ -170,17 +172,17 @@ void c_texture_panel::Init()
     };
 
 
-    bd.Usage = D3D10_USAGE_DEFAULT;
+    bd.Usage = D3D11_USAGE_DEFAULT;
     bd.ByteWidth = sizeof(SimpleVertex) * 4;
-    bd.BindFlags = D3D10_BIND_VERTEX_BUFFER;
+    bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     bd.CPUAccessFlags = 0;
     bd.MiscFlags = 0;
 
-    D3D10_SUBRESOURCE_DATA initData;
+    D3D11_SUBRESOURCE_DATA initData;
     initData.pSysMem = vertices;
     hr = d3dDev->CreateBuffer(&bd, &initData, &vertexBuffer);
 
-    D3D10_TEXTURE2D_DESC texDesc;
+    D3D11_TEXTURE2D_DESC texDesc;
     texDesc.Width = 512;
     texDesc.Height = 512;
     texDesc.MipLevels = 1;
@@ -188,9 +190,9 @@ void c_texture_panel::Init()
     texDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
     texDesc.SampleDesc.Count = 1;
     texDesc.SampleDesc.Quality = 0;
-    texDesc.Usage = D3D10_USAGE_DYNAMIC;
-    texDesc.BindFlags = D3D10_BIND_SHADER_RESOURCE;
-    texDesc.CPUAccessFlags = D3D10_CPU_ACCESS_WRITE;
+    texDesc.Usage = D3D11_USAGE_DYNAMIC;
+    texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+    texDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
     texDesc.MiscFlags = 0;
 
     hr = d3dDev->CreateTexture2D(&texDesc, 0, &tex);
@@ -200,9 +202,9 @@ void c_texture_panel::Init()
         return;
     }
 
-    D3D10_SHADER_RESOURCE_VIEW_DESC descRv;
+    D3D11_SHADER_RESOURCE_VIEW_DESC descRv;
     descRv.Format = texDesc.Format;
-    descRv.ViewDimension = D3D10_SRV_DIMENSION_TEXTURE2D;
+    descRv.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
     descRv.Texture2D.MipLevels = 1;
     descRv.Texture2D.MostDetailedMip = 0;
     hr = d3dDev->CreateShaderResourceView(tex, &descRv, &texRv);
@@ -212,12 +214,6 @@ void c_texture_panel::Init()
         return;
     }
 
-    D3DXMatrixIdentity(&matrixWorld);
-    varView->SetMatrix((float*)&matrixView);
-    varProj->SetMatrix((float*)&matrixProj);
-    varTex->SetResource(texRv);
-    var_scanlines->SetBool(false);
-    
     set_sharpness(0.0f);
 }
 
@@ -228,7 +224,7 @@ void c_texture_panel::set_sharpness(float factor)
     else if (factor > 1.0f)
         factor = 1.0f;
 
-    var_sharpness->SetFloat(factor);
+    constants.sharpness = factor;
 }
 
 bool c_texture_panel::Changed()
@@ -370,11 +366,11 @@ void c_texture_panel::update_menu(double dt)
         float tile_x = x + scrollOffset + (p / rows) * tile_width;
         float tile_y = y + (p % rows) * -tile_height;
 
-        D3DXVECTOR3 tile_pos = { tile_x, tile_y, 0.0f };
-        D3DXVECTOR3 popped_pos = lerp(tile_pos, { zoomDestX, zoomDestY, zoomDestZ }, .3);
+        s_vec3 tile_pos = { tile_x, tile_y, 0.0f };
+        s_vec3 popped_pos = lerp(tile_pos, { zoomDestX, zoomDestY, zoomDestZ }, .3);
 
         if (item_containers[i]->selecting) {
-            D3DXVECTOR3 pos[2] = { tile_pos, popped_pos };
+            s_vec3 pos[2] = { tile_pos, popped_pos };
             item_containers[i]->selectTimer += dt;
             int dir = item_containers[i]->select_dir;
 
@@ -428,7 +424,7 @@ void c_texture_panel::update_zoom(double dt)
     non_selected_z = lerp(non_selected_pos[0 ^ zoom_dir], non_selected_pos[1 ^ zoom_dir], mu);
     if (in_focus) {
         c_item_container *i = item_containers[selected_item];
-        D3DXVECTOR3 zoom_pos[2] = { { zoomStartX, zoomStartY, zoomStartZ }, { zoomDestX, zoomDestY, zoomDestZ } };
+        s_vec3 zoom_pos[2] = { { zoomStartX, zoomStartY, zoomStartZ }, { zoomDestX, zoomDestY, zoomDestZ } };
         item_containers[selected_item]->pos = lerp(zoom_pos[0 ^ zoom_dir], zoom_pos[1 ^ zoom_dir], mu);
     }
 
@@ -498,8 +494,13 @@ void c_texture_panel::Update(double dt)
 
 void c_texture_panel::Draw()
 {
-    varProj->SetMatrix((float*)&matrixProj);
-    varView->SetMatrix((float*)&matrixView);
+    transform.projection = matrixProj;
+    transform.view = matrixView;
+    //nothing else draws until the panel is done, so these stay set for every item
+    d3dContext->VSSetConstantBuffers(0, 1, &transform_buffer);
+    d3dContext->PSSetConstantBuffers(1, 1, &constants_buffer);
+    d3dContext->PSSetShaderResources(0, 1, &texRv);
+    d3dContext->PSSetSamplers(0, 1, &sampler);
 
     switch (state)
     {
@@ -508,9 +509,9 @@ void c_texture_panel::Draw()
     case STATE_ZOOMING:
         for (int i = first_item; i < last_item; ++i) {
             c_item_container *p = item_containers[i];
-            var_scanlines->SetBool(false);
+            constants.scanlines = FALSE;
             if (in_focus && i == selected_item) {
-                var_border_color->SetFloatVector((float *)(p->item->Selectable() ? &border_color : &invalid_border_color));
+                constants.border_color = p->item->Selectable() ? border_color : invalid_border_color;
                 DrawItem(p, state != STATE_ZOOMING, p->pos.x, p->pos.y, p->pos.z, 1.0f);
             }
             else {
@@ -520,7 +521,7 @@ void c_texture_panel::Draw()
         break;
     case STATE_ZOOMED:
         if (in_focus) {
-            var_scanlines->SetBool(scanlines);
+            constants.scanlines = scanlines;
             c_item_container *p = item_containers[selected_item];
             DrawItem(p, 0, p->pos.x, p->pos.y, p->pos.z);
         }
@@ -533,47 +534,45 @@ void c_texture_panel::DrawItem(c_item_container *item, int draw_border, float x,
 {
     UINT stride = sizeof(SimpleVertex);
     UINT offset = 0;
-    d3dDev->IASetInputLayout(vertexLayout);
-    ID3D10Buffer *b = item->item->get_vertex_buffer(0);
+    d3dContext->IASetInputLayout(vertexLayout);
+    ID3D11Buffer *b = item->item->get_vertex_buffer(0);
     
-    d3dDev->IASetVertexBuffers(0, 1, &b, &stride, &offset);
-    d3dDev->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+    d3dContext->IASetVertexBuffers(0, 1, &b, &stride, &offset);
+    d3dContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
     if (dim) {
         c *= .09f;
     }
 
-    varColor->SetFloat(c);
+    constants.color = c;
 
-    D3D10_VIEWPORT vp;
+    D3D11_VIEWPORT vp;
     UINT num_vp = 1;
-    d3dDev->RSGetViewports(&num_vp, &vp);
-    D3DXVECTOR3 topleft, bottomright;
-    D3DXMATRIX identity;
-    D3DXMatrixIdentity(&identity);
-    auto v3 = D3DXVECTOR3(x - 4.0f / 3.0f, y - 1.0f, z);
-    D3DXVec3Project(&topleft, &v3, &vp, &matrixProj, &matrixView, &identity);
-    v3 = D3DXVECTOR3(x + 4.0f / 3.0f, y + 1.0f, z);
-    D3DXVec3Project(&bottomright, &v3, &vp, &matrixProj, &matrixView, &identity);
-    float quad_width = bottomright.x - topleft.x;
-    float quad_height = topleft.y - bottomright.y;
-    auto v2 = D3DXVECTOR2(quad_width, quad_height);
-    var_output_size->SetFloatVector((float*)&v2);
-    //D3DXCOLOR oc = item->item->get_overscan_color();
-    //var_overscan_color->SetFloatVector((float*)&item->item->get_overscan_color());
-    var_max_y->SetFloat((float)item->item->get_height());
-    var_max_x->SetFloat((float)item->item->get_width());
+    d3dContext->RSGetViewports(&num_vp, &vp);
+    auto project = [&vp](float px, float py, float pz) {
+        return DirectX::XMVector3Project(DirectX::XMVectorSet(px, py, pz, 1.0f), vp.TopLeftX, vp.TopLeftY,
+                                         vp.Width, vp.Height, vp.MinDepth, vp.MaxDepth,
+                                         DirectX::XMLoadFloat4x4(&matrixProj), DirectX::XMLoadFloat4x4(&matrixView),
+                                         DirectX::XMMatrixIdentity());
+    };
+    DirectX::XMVECTOR topleft = project(x - 4.0f / 3.0f, y - 1.0f, z);
+    DirectX::XMVECTOR bottomright = project(x + 4.0f / 3.0f, y + 1.0f, z);
+    constants.output_size = {DirectX::XMVectorGetX(bottomright) - DirectX::XMVectorGetX(topleft),
+                             DirectX::XMVectorGetY(topleft) - DirectX::XMVectorGetY(bottomright)};
+    constants.max_y = (float)item->item->get_height();
+    constants.max_x = (float)item->item->get_width();
 
     item->item->DrawToTexture(tex);
-    D3DXMatrixTranslation(&matrixWorld, x, y, z);
-    varWorld->SetMatrix((float*)&matrixWorld);
-    technique->GetPassByIndex(0)->Apply(0);
-    d3dDev->Draw(4, 0);
+    DirectX::XMStoreFloat4x4(&transform.world, DirectX::XMMatrixTranslation(x, y, z));
+    d3dContext->UpdateSubresource(transform_buffer, 0, NULL, &transform, 0, 0);
+    d3dContext->UpdateSubresource(constants_buffer, 0, NULL, &constants, 0, 0);
+    tile_pass.apply();
+    d3dContext->Draw(4, 0);
     if (draw_border) {
-        d3dDev->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
-        d3dDev->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-        technique->GetPassByIndex(1)->Apply(0);
-        d3dDev->Draw(4, 0);
+        d3dContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+        d3dContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+        border_pass.apply();
+        d3dContext->Draw(4, 0);
     }
 }
 

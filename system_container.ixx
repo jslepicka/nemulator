@@ -1,11 +1,12 @@
 module;
-#include "d3dx10.h"
+#include "d3d11.h"
 
 export module nemulator:system_container;
 import nemulator.std;
 import nemulator.buttons;
 import system;
 import texture_panel;
+import vec;
 
 // A container that decouples nemulator-specific code from emulation code
 export class c_system_container : public c_texture_panel_item
@@ -15,8 +16,8 @@ export class c_system_container : public c_texture_panel_item
     ~c_system_container();
     //c_system* system;
     std::unique_ptr<c_system> system;
-    void DrawToTexture(ID3D10Texture2D *tex);
-    ID3D10Buffer *get_vertex_buffer(int stretched);
+    void DrawToTexture(ID3D11Texture2D *tex);
+    ID3D11Buffer *get_vertex_buffer(int stretched);
     bool Selectable();
     bool mask_sides;
     bool limit_sprites; //applied when the system is created, from settings > system
@@ -27,8 +28,8 @@ export class c_system_container : public c_texture_panel_item
     double get_width();
     struct SimpleVertex
     {
-        D3DXVECTOR3 pos;
-        D3DXVECTOR2 tex;
+        s_vec3 pos;
+        s_vec2 tex;
     };
     bool is_nes = false;
 
@@ -51,11 +52,11 @@ export class c_system_container : public c_texture_panel_item
     std::string path;
     std::string sram_path;
 
-    D3D10_BUFFER_DESC bd;
-    ID3D10Buffer *vertex_buffer = NULL;
-    ID3D10Buffer *stretched_vertex_buffer = NULL;
-    ID3D10Buffer *default_vertex_buffer = NULL;
-    ID3D10Buffer *unloaded_vertex_buffer = NULL;
+    D3D11_BUFFER_DESC bd = {};
+    ID3D11Buffer *vertex_buffer = NULL;
+    ID3D11Buffer *stretched_vertex_buffer = NULL;
+    ID3D11Buffer *default_vertex_buffer = NULL;
+    ID3D11Buffer *unloaded_vertex_buffer = NULL;
 
     double width;
     double height;

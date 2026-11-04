@@ -9,8 +9,8 @@ module;
 #include "benchmark.h"
 #include <string_view>
 #include <ranges>
-#include "d3d10.h"
-#include "D3DX10.h"
+#include "d3d11.h"
+#include <DirectXMath.h>
 #include <filesystem>
 
 #define ReleaseCOM(x) { if(x) {x->Release(); x = 0; } }
@@ -22,9 +22,10 @@ import nemulator.menu;
 import nes;
 import interpolate;
 
-extern ID3D10Device *d3dDev;
-extern D3DXMATRIX matrixView;
-extern D3DXMATRIX matrixProj;
+extern ID3D11Device *d3dDev;
+extern ID3D11DeviceContext *d3dContext;
+extern DirectX::XMFLOAT4X4 matrixView;
+extern DirectX::XMFLOAT4X4 matrixProj;
 extern int clientHeight;
 extern int clientWidth;
 extern bool startFullscreen;
@@ -106,9 +107,9 @@ void c_nemulator::kill_threads()
 
 c_nemulator::~c_nemulator()
 {
-    ReleaseCOM(font1);
-    ReleaseCOM(font2);
-    ReleaseCOM(font3);
+    delete font1;
+    delete font2;
+    delete font3;
     kill_threads();
     for (auto &game : gameList)
     {
@@ -119,7 +120,7 @@ c_nemulator::~c_nemulator()
 void c_nemulator::LoadFonts()
 {
     struct s_fonts {
-        ID3DX10Font **font;
+        c_font **font;
         double scale;
         unsigned int weight = 0;
     };
@@ -130,27 +131,9 @@ void c_nemulator::LoadFonts()
         {&font3, .9, FW_SEMIBOLD}
     };
 
-
-    D3DX10_FONT_DESC fontDesc;
-
     for (auto f : fonts) {
-        ReleaseCOM((*f.font));
-        fontDesc = { 0 };
-        fontDesc.Height = (int)(clientHeight * f.scale);
-        fontDesc.Width = 0;
-        fontDesc.Weight = f.weight;
-        fontDesc.MipLevels = 1;
-        fontDesc.Italic = false;
-        fontDesc.CharSet = DEFAULT_CHARSET;
-        fontDesc.OutputPrecision = OUT_DEFAULT_PRECIS;
-        fontDesc.Quality = DEFAULT_QUALITY;
-        fontDesc.PitchAndFamily = DEFAULT_PITCH | FF_DONTCARE;
-        strcpy_s(fontDesc.FaceName, "Calibri");
-        hr = D3DX10CreateFontIndirect(d3dDev, &fontDesc, f.font);
-        if (hr != S_OK) {
-            MessageBox(hWnd, "Unable to load fonts", "Error", MB_OK);
-            exit(1);
-        }
+        delete *f.font;
+        *f.font = new c_font((int)(clientHeight * f.scale), "Calibri", f.weight);
     }
 }
 
@@ -251,14 +234,9 @@ void c_nemulator::Init()
     mainPanel2->zoomDestX = eye_x;
     mainPanel2->zoomDestY = eye_y;
     mainPanel2->zoomDestZ = (float)(eye_z + (1.0 / tan( fovy/2.0 )));
-    auto eye = D3DXVECTOR3(eye_x, eye_y, eye_z);
-    auto at = D3DXVECTOR3(eye_x, eye_y, 0.0f);
-    auto up = D3DXVECTOR3(0.0f, 1.0f, 0.0f);
-    D3DXMatrixLookAtLH(
-        &matrixView,
-        &eye,
-        &at,
-        &up);
+    DirectX::XMStoreFloat4x4(&matrixView, DirectX::XMMatrixLookAtLH(DirectX::XMVectorSet(eye_x, eye_y, eye_z, 0.0f),
+                                                                    DirectX::XMVectorSet(eye_x, eye_y, 0.0f, 0.0f),
+                                                                    DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f)));
 
     menu_delay = config->get_double("menu_delay", default_menu_delay);
 
@@ -274,10 +252,10 @@ void c_nemulator::Init()
     configure_input();
 
     //the mode is honored even when the display doesn't suit it, so say so instead
-    if (D3d10App::get_sync_mode() == D3d10App::SYNC_VSYNC && D3d10App::get_refresh_multiple() == 0) {
+    if (D3d11App::get_sync_mode() == D3d11App::SYNC_VSYNC && D3d11App::get_refresh_multiple() == 0) {
         char buf[96];
         sprintf_s(buf, sizeof(buf), "Vsync needs a ~60Hz display; this display is %dHz",
-                  (int)D3d10App::get_refresh_rate());
+                  (int)D3d11App::get_refresh_rate());
         startup_message = buf;
     }
 
@@ -447,17 +425,17 @@ bool c_nemulator::write_default_config(const std::string &filename)
 
     f << "\n;\n;Display\n;\n"
          "\n;x resolution for windowed mode, y resolution is computed from the aspect ratio.  0 (the\n"
-         ";default) uses " << (int)(D3d10App::default_window_scale * 100) << "% of the screen width, as does a width too wide for the screen.  Saved\n"
+         ";default) uses " << (int)(D3d11App::default_window_scale * 100) << "% of the screen width, as does a width too wide for the screen.  Saved\n"
          ";when the window is resized, and reset by settings > display > reset to defaults.\n"
-         "app.x = " << D3d10App::default_window_width << "\n"
+         "app.x = " << D3d11App::default_window_width << "\n"
          "\n;Start in fullscreen mode?  Also changed by settings > display.\n"
-         "app.fullscreen = " << yes_no(D3d10App::default_fullscreen) << "\n"
+         "app.fullscreen = " << yes_no(D3d11App::default_fullscreen) << "\n"
          "\n;Image scaling sharpness, from 0.0 (soft) to 1.0 (sharp).  Also changed by settings > display.\n"
          "sharpness = " << format_sharpness(default_sharpness) << "\n"
          "\n;Enable scanlines.  Also changed by settings > display.\n"
          "scanlines = " << yes_no(default_scanlines) << "\n"
          "\n;Aspect ratio lock, i.e., constrain window dimensions on resize\n"
-         "app.aspect_lock = " << yes_no(D3d10App::default_aspect_lock) << "\n"
+         "app.aspect_lock = " << yes_no(D3d11App::default_aspect_lock) << "\n"
          "\n;How emulation is paced.  Also changed by settings > general.\n"
          ";  vsync - vsync on, with the audio rate adjusted to match the display.  Needs a ~60Hz display,\n"
          ";          or a multiple of it (120, 180, 240), which is presented every nth refresh.\n"
@@ -470,7 +448,7 @@ bool c_nemulator::write_default_config(const std::string &filename)
          ";ready (tearing, in fullscreen) or held for an uneven number of refreshes (judder).  Setting\n"
          ";the display to 60Hz - or 120Hz, where vsync holds each frame for exactly two refreshes -\n"
          ";avoids this, as does a variable refresh rate display with timer mode.\n"
-         "sync_mode = " << D3d10App::get_sync_mode_name(D3d10App::default_sync_mode) << "\n";
+         "sync_mode = " << D3d11App::get_sync_mode_name(D3d11App::default_sync_mode) << "\n";
 
     f << "\n;\n;Menu\n;\n"
          "\n;Number of columns in the menu.  The number of rows is computed automatically.  Minimum is 3.\n"
@@ -479,7 +457,7 @@ bool c_nemulator::write_default_config(const std::string &filename)
          "preload = " << yes_no(default_preload) << "\n"
          "\n;Pause emulation when the application loses focus.  Otherwise, it keeps running but ignores input.\n"
          ";Also changed by settings > general.\n"
-         "app.pause_on_lost_focus = " << yes_no(D3d10App::default_pause_on_lost_focus) << "\n"
+         "app.pause_on_lost_focus = " << yes_no(D3d11App::default_pause_on_lost_focus) << "\n"
          "\n;Show the suspend computer option in the quit menu\n"
          "show_suspend = " << yes_no(default_show_suspend) << "\n"
          "\n;How long, in ms, start+select need to be held to show the menu in a game.  The default keeps\n"
@@ -647,7 +625,7 @@ void c_nemulator::OnResize()
     title_scroll_game = NULL;
 
     float aspect = (float)clientWidth/clientHeight;
-    D3DXMatrixPerspectiveFovLH(&matrixProj, (float)fovy, aspect, 1.0f, 1000.0f);
+    DirectX::XMStoreFloat4x4(&matrixProj, DirectX::XMMatrixPerspectiveFovLH((float)fovy, aspect, 1.0f, 1000.0f));
 }
 
 void c_nemulator::RunGames()
@@ -917,7 +895,7 @@ void c_nemulator::show_settings_menu(int selected)
 
 void c_nemulator::show_display_menu()
 {
-    display_settings_at_open = {sharpness, mainPanel2->scanlines, D3d10App::is_fullscreen()};
+    display_settings_at_open = {sharpness, mainPanel2->scanlines, D3d11App::is_fullscreen()};
 
     //in a game, leave it undimmed so changes can be seen as they're made
     if (settings_in_game)
@@ -942,8 +920,8 @@ void c_nemulator::show_display_menu()
             },
             {
                 .label = "Display mode",
-                .get_value = []() { return std::string(D3d10App::is_fullscreen() ? "Fullscreen" : "Windowed"); },
-                .change = [](int) { D3d10App::set_fullscreen(!D3d10App::is_fullscreen()); },
+                .get_value = []() { return std::string(D3d11App::is_fullscreen() ? "Fullscreen" : "Windowed"); },
+                .change = [](int) { D3d11App::set_fullscreen(!D3d11App::is_fullscreen()); },
             },
             {
                 .label = "Reset to defaults",
@@ -951,8 +929,8 @@ void c_nemulator::show_display_menu()
                     [this](int) {
                         set_sharpness(default_sharpness);
                         set_scanlines(default_scanlines);
-                        D3d10App::set_fullscreen(D3d10App::default_fullscreen);
-                        if (!D3d10App::set_window_width(D3d10App::default_window_width))
+                        D3d11App::set_fullscreen(D3d11App::default_fullscreen);
+                        if (!D3d11App::set_window_width(D3d11App::default_window_width))
                             status->add_message("Unable to save window width to nemulator.ini");
                     },
                 .confirm_label = "Press again to reset to defaults",
@@ -974,7 +952,7 @@ void c_nemulator::save_display_settings()
         values.push_back({"sharpness", format_sharpness(sharpness)});
     if (mainPanel2->scanlines != opened.scanlines)
         values.push_back({"scanlines", mainPanel2->scanlines ? "true" : "false"});
-    bool fullscreen = D3d10App::is_fullscreen();
+    bool fullscreen = D3d11App::is_fullscreen();
     if (fullscreen != opened.fullscreen)
         values.push_back({"app.fullscreen", fullscreen ? "true" : "false"});
 
@@ -984,48 +962,48 @@ void c_nemulator::save_display_settings()
 
 void c_nemulator::show_general_menu()
 {
-    sync_mode_at_open = D3d10App::get_sync_mode();
-    pause_on_lost_focus_at_open = D3d10App::get_pause_on_lost_focus();
+    sync_mode_at_open = D3d11App::get_sync_mode();
+    pause_on_lost_focus_at_open = D3d11App::get_pause_on_lost_focus();
 
     c_options_menu::s_params p = {
         .title = "General",
         .items = {
             {
                 .label = "Sync mode",
-                .get_value = []() { return std::string(D3d10App::get_sync_mode() == D3d10App::SYNC_TIMER ? "Timer" : "Vsync"); },
+                .get_value = []() { return std::string(D3d11App::get_sync_mode() == D3d11App::SYNC_TIMER ? "Timer" : "Vsync"); },
                 .change =
                     [](int direction) {
                         //enter moves forward, the same as right
                         if (direction == 0)
                             direction = 1;
-                        int mode = (D3d10App::get_sync_mode() + direction + D3d10App::SYNC_COUNT) %
-                                   D3d10App::SYNC_COUNT;
-                        D3d10App::set_sync_mode(mode);
+                        int mode = (D3d11App::get_sync_mode() + direction + D3d11App::SYNC_COUNT) %
+                                   D3d11App::SYNC_COUNT;
+                        D3d11App::set_sync_mode(mode);
                     },
             },
             {
                 .label = "Pause in background",
-                .get_value = []() { return std::string(D3d10App::get_pause_on_lost_focus() ? "On" : "Off"); },
-                .change = [](int) { D3d10App::set_pause_on_lost_focus(!D3d10App::get_pause_on_lost_focus()); },
+                .get_value = []() { return std::string(D3d11App::get_pause_on_lost_focus() ? "On" : "Off"); },
+                .change = [](int) { D3d11App::set_pause_on_lost_focus(!D3d11App::get_pause_on_lost_focus()); },
             },
             {
                 .label = "Reset to defaults",
                 .change =
                     [](int) {
-                        D3d10App::set_sync_mode(D3d10App::default_sync_mode);
-                        D3d10App::set_pause_on_lost_focus(D3d10App::default_pause_on_lost_focus);
+                        D3d11App::set_sync_mode(D3d11App::default_sync_mode);
+                        D3d11App::set_pause_on_lost_focus(D3d11App::default_pause_on_lost_focus);
                     },
                 .confirm_label = "Press again to reset to defaults",
             },
         },
         //either mode can be chosen; the one that doesn't suit the display says so
         .get_note = []() -> std::string {
-            if (D3d10App::get_sync_mode() == D3d10App::SYNC_TIMER)
+            if (D3d11App::get_sync_mode() == D3d11App::SYNC_TIMER)
                 return "A variable refresh rate (G-Sync/FreeSync) display is recommended";
-            if (D3d10App::get_refresh_multiple() == 0) {
+            if (D3d11App::get_refresh_multiple() == 0) {
                 char buf[96];
                 sprintf_s(buf, sizeof(buf), "Vsync needs a ~60Hz display; this display is %dHz",
-                          (int)D3d10App::get_refresh_rate());
+                          (int)D3d11App::get_refresh_rate());
                 return buf;
             }
             return "";
@@ -1039,10 +1017,10 @@ void c_nemulator::show_general_menu()
 void c_nemulator::save_general_settings()
 {
     std::vector<std::pair<std::string, std::string>> values;
-    int mode = D3d10App::get_sync_mode();
+    int mode = D3d11App::get_sync_mode();
     if (mode != sync_mode_at_open)
-        values.push_back({"sync_mode", D3d10App::get_sync_mode_name(mode)});
-    bool pause = D3d10App::get_pause_on_lost_focus();
+        values.push_back({"sync_mode", D3d11App::get_sync_mode_name(mode)});
+    bool pause = D3d11App::get_pause_on_lost_focus();
     if (pause != pause_on_lost_focus_at_open)
         values.push_back({"app.pause_on_lost_focus", pause ? "true" : "false"});
 
@@ -1405,7 +1383,7 @@ void c_nemulator::leave_game()
     }
     c_system_container* g = (c_system_container*)texturePanels[selectedPanel]->GetSelected();
     input_bindings.restore(g->get_input_identifier());
-    D3d10App::set_frame_rate(60.0); //the menu runs at 60Hz
+    D3d11App::set_frame_rate(60.0); //the menu runs at 60Hz
     if (g->is_nes)
     {
         nes::c_nes *n = (nes::c_nes *)g->system.get();
@@ -1426,7 +1404,7 @@ void c_nemulator::start_game()
     {
         input_bindings.apply(g->get_input_identifier());
         sound->set_num_channels(g->get_num_sound_channels());
-        D3d10App::set_frame_rate(g->get_frame_rate());
+        D3d11App::set_frame_rate(g->get_frame_rate());
         inGame = true;
         update_audio_stream();
         n->enable_mixer();
@@ -1892,14 +1870,14 @@ void c_nemulator::UpdateScene(double dt)
     }
 }
 
-void c_nemulator::DrawText(ID3DX10Font *font, float x, float y, std::string text, D3DXCOLOR color)
+void c_nemulator::DrawText(c_font *font, float x, float y, std::string text, s_color color)
 {
     RECT r = {(LONG)(clientWidth * x), (LONG)(clientHeight * y), 0, 0};
-    ID3D10DepthStencilState *state;
+    ID3D11DepthStencilState *state;
     int oldref;
-    d3dDev->OMGetDepthStencilState(&state, (UINT *)&oldref);
-    font->DrawText(NULL, text.c_str(), -1, &r, DT_NOCLIP, color);
-    d3dDev->OMSetDepthStencilState(state, oldref);
+    d3dContext->OMGetDepthStencilState(&state, (UINT *)&oldref);
+    font->draw(text.c_str(), r, 0, color);
+    d3dContext->OMSetDepthStencilState(state, oldref);
 }
 
 void c_nemulator::update_title_scroll(double dt)
@@ -1918,9 +1896,7 @@ void c_nemulator::update_title_scroll(double dt)
         title_scroll_state = TITLE_SCROLL_WAIT_START;
         title_scroll_timer = 0.0;
         title_scroll_offset = 0.0;
-        RECT r = {0, 0, 0, 0};
-        font1->DrawText(NULL, g->title.c_str(), -1, &r, DT_CALCRECT, D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f));
-        int title_width = r.right - r.left;
+        int title_width = font1->measure(g->title.c_str());
         int available_width = (int)(clientWidth * (1.0 - title_margin * 2));
         title_overflow = title_width > available_width ? title_width - available_width : 0;
     }
@@ -1973,18 +1949,18 @@ void c_nemulator::DrawScene()
             alpha = (splash_timer / 1000.0) * 1.0;
         }
         RECT r = {0, 0, clientWidth, (long)(clientHeight*.8)};
-        ID3D10DepthStencilState *state;
+        ID3D11DepthStencilState *state;
         int oldref;
-        d3dDev->OMGetDepthStencilState(&state, (UINT *)&oldref);
-        font1->DrawText(NULL, "nemulator", -1, &r, DT_NOCLIP | DT_CENTER | DT_VCENTER, D3DXCOLOR(1.0f, 1.0f, 1.0f, (float)alpha));
+        d3dContext->OMGetDepthStencilState(&state, (UINT *)&oldref);
+        font1->draw("nemulator", r, DT_CENTER | DT_VCENTER, s_color(1.0f, 1.0f, 1.0f, (float)alpha));
         if (!loaded && preload && rom_count)
         {
             RECT r2 = {0, 0, clientWidth, (long)(clientHeight * 1.95)};
             char buf[256];
             sprintf_s(buf, 256, "Loading: %d%%", (int)((double)num_games / rom_count * 100.0));
-            font2->DrawText(NULL, buf, -1, &r2, DT_NOCLIP | DT_CENTER | DT_VCENTER, D3DXCOLOR(.46f, .46f, .46f, 1.0));
+            font2->draw(buf, r2, DT_CENTER | DT_VCENTER, s_color(.46f, .46f, .46f, 1.0));
         }
-        d3dDev->OMSetDepthStencilState(state, oldref);
+        d3dContext->OMSetDepthStencilState(state, oldref);
         return;
     }
 
@@ -1999,9 +1975,9 @@ void c_nemulator::DrawScene()
             !menu)
         {
             double dim = mainPanel2->dim ? .25 : 1.0;
-            DrawText(font1, (float)(title_margin - title_scroll_offset / clientWidth), .85f, g->title, D3DXCOLOR((float)(1.0f * dim), 0.0f, 0.0f, 1.0f));
+            DrawText(font1, (float)(title_margin - title_scroll_offset / clientWidth), .85f, g->title, s_color((float)(1.0f * dim), 0.0f, 0.0f, 1.0f));
             DrawText(font2, .0525f, .925f, g->get_system_name(),
-                     D3DXCOLOR((float)(.22f * dim), (float)(.22f * dim), (float)(.22f * dim), 1.0f));
+                     s_color((float)(.22f * dim), (float)(.22f * dim), (float)(.22f * dim), 1.0f));
         }
 
         if (!inGame && !menu && (fastscroll || scroll_fade_timer > 0.0))
@@ -2009,11 +1985,11 @@ void c_nemulator::DrawScene()
             char s[2];
             sprintf_s(s, "%c", toupper(g->title[0]));
             RECT r = { 0, 0, clientWidth, (long)(clientHeight*.8) };
-            ID3D10DepthStencilState *state;
+            ID3D11DepthStencilState *state;
             int oldref;
-            d3dDev->OMGetDepthStencilState(&state, (UINT *)&oldref);
-            font3->DrawText(NULL, s, -1, &r, DT_NOCLIP | DT_CENTER | DT_VCENTER, D3DXCOLOR(1.0f, 1.0f, 1.0f, .8f));
-            d3dDev->OMSetDepthStencilState(state, oldref);
+            d3dContext->OMGetDepthStencilState(&state, (UINT *)&oldref);
+            font3->draw(s, r, DT_CENTER | DT_VCENTER, s_color(1.0f, 1.0f, 1.0f, .8f));
+            d3dContext->OMSetDepthStencilState(state, oldref);
         }
 
         if (inGame && g->is_nes && g->system->get_crc() == 0x0B0E128F)
@@ -2022,16 +1998,16 @@ void c_nemulator::DrawScene()
             int nwc_time = 0;
             sprintf_s(time, "%2d:%.2d", nwc_time / 60, nwc_time % 60);
             RECT r = { (LONG)(clientWidth * .02), 0, clientWidth, (LONG)(clientHeight*1.95) };
-            ID3D10DepthStencilState *state;
+            ID3D11DepthStencilState *state;
             int oldref;
-            d3dDev->OMGetDepthStencilState(&state, (UINT *)&oldref);
-            font2->DrawText(NULL, time, -1, &r, DT_NOCLIP | DT_VCENTER, D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f));
-            d3dDev->OMSetDepthStencilState(state, oldref);
+            d3dContext->OMGetDepthStencilState(&state, (UINT *)&oldref);
+            font2->draw(time, r, DT_VCENTER, s_color(1.0f, 1.0f, 1.0f, 1.0f));
+            d3dContext->OMSetDepthStencilState(state, oldref);
         }
     }
     else if (!menu)
     {
-        DrawText(font1, .05f, .5f, "No roms found\nCheck paths in nemulator.ini\nDefault NES path: c:\\roms\\nes\nDefault SMS path: c:\\roms\\sms", D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f));
+        DrawText(font1, .05f, .5f, "No roms found\nCheck paths in nemulator.ini\nDefault NES path: c:\\roms\\nes\nDefault SMS path: c:\\roms\\sms", s_color(1.0f, 1.0f, 1.0f, 1.0f));
     }
 }
 void c_nemulator::on_pause(bool paused)

@@ -1,11 +1,13 @@
 module;
 #include <vector>
 #include <list>
-#include "d3d10.h"
-#include "d3dx10.h"
+#include "d3d11.h"
+#include <DirectXMath.h>
 
 export module texture_panel;
 export import :item;
+import vec;
+import shader_pass;
 
 export class c_texture_panel
 {
@@ -62,15 +64,15 @@ private:
 
     struct SimpleVertex
     {
-        D3DXVECTOR3 pos;
-        D3DXVECTOR2 tex;
+        s_vec3 pos;
+        s_vec2 tex;
     };
     class c_item_container
     {
     public:
         c_item_container(c_texture_panel_item *item);
         ~c_item_container();
-        D3DXVECTOR3 pos;
+        s_vec3 pos;
         float ratio;
         bool selecting;
         bool selected;
@@ -138,35 +140,38 @@ private:
 
     HRESULT hr;
 
-    ID3D10Effect *effect;
-    ID3D10Texture2D *tex;
-    ID3D10Texture2D *tex_blank;
-    ID3D10EffectTechnique *technique;
-    ID3D10EffectMatrixVariable *varWorld;
-    ID3D10EffectMatrixVariable *varView;
-    ID3D10EffectMatrixVariable *varProj;
-    ID3D10EffectScalarVariable *varColor;
-    ID3D10EffectVectorVariable *var_output_size;
-    ID3D10EffectVectorVariable *var_border_color;
-    ID3D10EffectVectorVariable *var_overscan_color;
-    ID3D10EffectScalarVariable *var_sharpness;
-    ID3D10EffectScalarVariable *var_max_y;
-    ID3D10EffectScalarVariable *var_max_x;
-    ID3D10EffectScalarVariable *var_scanlines;
+    //what tile_constants.hlsli expects
+    struct s_constants
+    {
+        s_vec3 border_color;
+        float color;
+        s_vec2 output_size;
+        float max_x;
+        float max_y;
+        BOOL scanlines;
+        float sharpness;
+        float padding[2];
+    };
 
-    ID3D10EffectShaderResourceVariable *varTex;
+    c_shader_pass tile_pass;
+    c_shader_pass border_pass;
+    s_transform_constants transform = {};
+    s_constants constants = {};
+    ID3D11Buffer *transform_buffer = nullptr;
+    ID3D11Buffer *constants_buffer = nullptr;
+    ID3D11SamplerState *sampler = nullptr;
+    ID3D11Texture2D *tex;
+    ID3D11Texture2D *tex_blank;
 
-    ID3D10Buffer *vertexBuffer;
-    ID3D10ShaderResourceView *texRv;
-    ID3D10InputLayout *vertexLayout;
-
-    D3DXMATRIX matrixWorld;
+    ID3D11Buffer *vertexBuffer;
+    ID3D11ShaderResourceView *texRv;
+    ID3D11InputLayout *vertexLayout;
 
     int valid_chars[27];
 
-    D3D10_BUFFER_DESC bd;
+    D3D11_BUFFER_DESC bd = {};
 
-    D3DXVECTOR3 border_color, border_color_start, border_color_end;
-    D3DXVECTOR3 invalid_border_color, invalid_border_color_start, invalid_border_color_end;
-    D3DXVECTOR3 border_colors[4];
+    s_vec3 border_color, border_color_start, border_color_end;
+    s_vec3 invalid_border_color, invalid_border_color_start, invalid_border_color_end;
+    s_vec3 border_colors[4];
 };
