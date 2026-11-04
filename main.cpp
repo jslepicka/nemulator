@@ -4,7 +4,7 @@
 #include <chrono>
 #include "benchmark.h"
 
-import D3d10App;
+import D3d11App;
 import nemulator;
 import nemulator.std;
 
@@ -14,7 +14,7 @@ import nemulator.std;
 #ifdef PREVIEW_SHA
 std::string app_title = "nemulator " STRINGIFY(PREVIEW_SHA);
 #else
-std::string app_title = "nemulator 6.0";
+std::string app_title = "nemulator 7.0";
 #endif
 
 struct s_cpu_info
@@ -96,7 +96,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdPlin
     const char *config_filename = "nemulator.ini";
     if (!std::filesystem::exists(config_filename))
         c_nemulator::write_default_config(config_filename);
-    std::unique_ptr<D3d10App> app = std::make_unique<D3d10App>(hInstance);
+    std::unique_ptr<D3d11App> app = std::make_unique<D3d11App>(hInstance);
     app->Init((char*)config_filename, new c_nemulator(), NULL);
     app->SetCaption(app_title);
     int retval = app->Run();

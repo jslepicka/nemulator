@@ -24,6 +24,3 @@ nemulator is a multi-system emulator for Windows
     - B button - Z
     - Start - ]
     - Select - [
-
-## Requirements
-- [DirectX End-User Runtimes](https://www.microsoft.com/en-us/download/details.aspx?id=8109)

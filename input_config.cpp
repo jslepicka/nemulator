@@ -1,7 +1,6 @@
 module;
 #include "windows.h"
-#include "d3d10.h"
-#include "D3DX10.h"
+#include "d3d11.h"
 
 #define ReleaseCOM(x) { if(x) {x->Release(); x = 0; } }
 
@@ -12,7 +11,8 @@ import config;
 import nemulator.buttons;
 import input_handler;
 
-extern ID3D10Device *d3dDev;
+extern ID3D11Device *d3dDev;
+extern ID3D11DeviceContext *d3dContext;
 extern int clientHeight;
 extern int clientWidth;
 extern std::unique_ptr<c_input_handler> g_ih;
@@ -195,9 +195,9 @@ void c_input_bindings::restore(const std::string &identifier)
 
 c_input_config::~c_input_config()
 {
-    ReleaseCOM(title_font);
-    ReleaseCOM(font);
-    ReleaseCOM(hint_font);
+    delete title_font;
+    delete font;
+    delete hint_font;
     g_ih->disable_input_detection();
 }
 
@@ -531,7 +531,7 @@ void c_input_config::load_fonts()
 {
     struct s_fonts
     {
-        ID3DX10Font **font;
+        c_font **font;
         double scale;
     };
 
@@ -542,38 +542,27 @@ void c_input_config::load_fonts()
     };
 
     for (auto f : fonts) {
-        ReleaseCOM((*f.font));
-        D3DX10_FONT_DESC fontDesc = {0};
-        fontDesc.Height = (int)(clientHeight * f.scale);
-        fontDesc.Width = 0;
-        fontDesc.Weight = 0;
-        fontDesc.MipLevels = 1;
-        fontDesc.Italic = false;
-        fontDesc.CharSet = DEFAULT_CHARSET;
-        fontDesc.OutputPrecision = OUT_DEFAULT_PRECIS;
-        fontDesc.Quality = DEFAULT_QUALITY;
-        fontDesc.PitchAndFamily = DEFAULT_PITCH | FF_DONTCARE;
-        strcpy_s(fontDesc.FaceName, "Calibri");
-        D3DX10CreateFontIndirect(d3dDev, &fontDesc, f.font);
+        delete *f.font;
+        *f.font = new c_font((int)(clientHeight * f.scale), "Calibri");
     }
 }
 
-void c_input_config::draw_text(ID3DX10Font *f, const std::string &text, double left, double right, double y,
-                               UINT format, D3DXCOLOR color)
+void c_input_config::draw_text(c_font *f, const std::string &text, double left, double right, double y,
+                               UINT format, s_color color)
 {
     RECT r = {(LONG)(clientWidth * left), (LONG)(clientHeight * y), (LONG)(clientWidth * right), clientHeight};
-    f->DrawText(NULL, text.c_str(), -1, &r, DT_NOCLIP | format, color);
+    f->draw(text.c_str(), r, format, color);
 }
 
 void c_input_config::draw()
 {
-    const D3DXCOLOR normal(1.0f, 1.0f, 1.0f, .8f);
-    const D3DXCOLOR highlight(1.0f, 0.0f, 0.0f, .8f);
-    const D3DXCOLOR hint(.46f, .46f, .46f, 1.0f);
+    const s_color normal(1.0f, 1.0f, 1.0f, .8f);
+    const s_color highlight(1.0f, 0.0f, 0.0f, .8f);
+    const s_color hint(.46f, .46f, .46f, 1.0f);
 
-    ID3D10DepthStencilState *depth_state;
+    ID3D11DepthStencilState *depth_state;
     UINT oldref;
-    d3dDev->OMGetDepthStencilState(&depth_state, &oldref);
+    d3dContext->OMGetDepthStencilState(&depth_state, &oldref);
 
     std::string hint_text;
     if (state == STATE_SYSTEMS) {
@@ -649,6 +638,6 @@ void c_input_config::draw()
     }
     draw_text(hint_font, hint_text, 0.0, 1.0, HINT_Y, DT_CENTER, hint);
 
-    d3dDev->OMSetDepthStencilState(depth_state, oldref);
+    d3dContext->OMSetDepthStencilState(depth_state, oldref);
     ReleaseCOM(depth_state);
 }

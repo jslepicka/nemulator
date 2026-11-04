@@ -1,9 +1,11 @@
 module;
 
-#include <d3d10.h>
-#include <D3DX10.h>
+#include <d3d11.h>
+#include <DirectXMath.h>
 export module nemulator:audio_info;
 import task;
+import vec;
+import shader_pass;
 
 export class c_audio_info :
     public c_task
@@ -22,21 +24,18 @@ public:
 private:
         struct SimpleVertex
     {
-        D3DXVECTOR3 pos;
-        D3DXVECTOR2 tex;
+        s_vec3 pos;
+        s_vec2 tex;
     };
-    ID3D10Effect *effect;
-    ID3D10Texture2D *tex;
-    ID3D10EffectTechnique *technique;
-    ID3D10EffectShaderResourceVariable *var_tex;
-    ID3D10Buffer *vertex_buffer;
-    ID3D10ShaderResourceView *tex_rv;
-    ID3D10InputLayout *vertex_layout;
-    D3DXMATRIX matrix_world;
+    c_shader_pass pass;
+    s_transform_constants transform = {};
+    ID3D11Buffer *transform_buffer = nullptr;
+    ID3D11SamplerState *sampler = nullptr;
+    ID3D11Texture2D *tex;
+    ID3D11Buffer *vertex_buffer;
+    ID3D11ShaderResourceView *tex_rv;
+    ID3D11InputLayout *vertex_layout;
 
-        ID3D10EffectMatrixVariable *var_world;
-    ID3D10EffectMatrixVariable *var_view;
-    ID3D10EffectMatrixVariable *var_proj;
     int count;
     static const int tex_size = 256;
     int freq[tex_size];

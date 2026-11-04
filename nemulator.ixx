@@ -1,7 +1,6 @@
 module;
 #include "Windows.h"
-#include "d3d10.h"
-#include "d3dx10.h"
+#include "d3d11.h"
 
 #include <vector>
 #include <list>
@@ -18,8 +17,10 @@ import :disk_indicator;
 import :system_container;
 import :input_config;
 
-import D3d10App;
+import D3d11App;
 import task;
+import font;
+import vec;
 import config;
 import texture_panel;
 import input_handler;
@@ -218,7 +219,7 @@ private:
     static constexpr double title_scroll_speed = .10; //client widths per second
     static constexpr double title_scroll_min_duration = 500.0; //ms, so short scrolls don't look like a jump
     void LoadFonts();
-    void DrawText(ID3DX10Font *font, float x, float y, std::string text, D3DXCOLOR color);
+    void DrawText(c_font *font, float x, float y, std::string text, s_color color);
     void OnPause(bool paused);
     void GetEvents();
 
@@ -239,16 +240,13 @@ private:
 
     HRESULT hr;
 
-    D3DXMATRIX matrixWorld;
-    
-    ID3D10EffectShaderResourceVariable *varTex;
-    ID3D10ShaderResourceView *texRv;
+    ID3D11ShaderResourceView *texRv;
 
-    ID3D10Texture2D *tex;
+    ID3D11Texture2D *tex;
 
-    ID3DX10Font *font1;
-    ID3DX10Font *font2;
-    ID3DX10Font *font3;
+    c_font *font1;
+    c_font *font2;
+    c_font *font3;
 
     LARGE_INTEGER liFreq;
     LARGE_INTEGER liCurrent;

@@ -1,11 +1,12 @@
 module;
-#include "d3d10.h"
-#include <d3dx10.h>
+#include "d3d11.h"
 
 export module nemulator:input_config;
 import nemulator.std;
 
 import task;
+import font;
+import vec;
 import input_handler;
 import nemulator.buttons;
 
@@ -95,8 +96,8 @@ export class c_input_config : public c_task
 
     void listen(double dt);
     void load_fonts();
-    void draw_text(ID3DX10Font *f, const std::string &text, double left, double right, double y, UINT format,
-                   D3DXCOLOR color);
+    void draw_text(c_font *f, const std::string &text, double left, double right, double y, UINT format,
+                   s_color color);
     static void move_selection(int &selected, int count, int delta, int result);
     static void update_scroll(int &scroll, int selected);
     static int get_display_order(int button);
@@ -126,7 +127,7 @@ export class c_input_config : public c_task
     double listen_timer = 0.0;
     std::vector<s_binding> held_inputs;
     s_binding release_input;
-    ID3DX10Font *title_font = nullptr;
-    ID3DX10Font *font = nullptr;
-    ID3DX10Font *hint_font = nullptr;
+    c_font *title_font = nullptr;
+    c_font *font = nullptr;
+    c_font *hint_font = nullptr;
 };

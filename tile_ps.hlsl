@@ -1,0 +1,46 @@
+//a tile of the menu, or the game when it's zoomed in
+
+#include "tile_constants.hlsli"
+
+Texture2D txDiffuse : register(t0);
+SamplerState samLinear : register(s0);
+
+float4 main(PS_INPUT input) : SV_Target
+{
+ float2 scale = {output_size.x / max_x, output_size.y / max_y};
+ float2 interp = (scale - lerp(scale, 1.0, sharpness))/(scale * 2.0);
+ //interp *= sharpness;
+ //saturate(interp);
+
+ float2 p = input.Tex.xy;
+
+ p = p * 512.0 + .5;
+ float2 i = floor(p);
+ float2 f = p - i;
+
+ f = (f-interp)/(1.0-interp*2.0);
+ f = saturate(f);
+
+ p = i + f;
+ p = (p - .5) / 512.0;
+ float4 r = txDiffuse.Sample(samLinear, p, 0) * color;
+ //r = pow(r, 1.0/2.2);
+ r.w = 1.0;
+	
+	if (scanlines)
+	{
+    
+		static const float scanline_gamma = 0.9; // sharpness of the bright band; higher = thinner
+		static const float scanline_min = 0.65; // darkest point between scanlines (0=black, 1=no effect)
+		float scan_phase = frac(input.Tex.y * 512) * 3.14159;
+		float scanline_raw = pow(sin(scan_phase), scanline_gamma);
+
+		// Attenuate scanline effect in the interpolated fringe vs. pixel center
+		float pixel_center = 1.0 - abs(f.y * 2.0 - 1.0); // 1 at center, 0 at edges
+		float scanline = lerp(scanline_raw, 1.0, pixel_center * 0.3);
+
+		r.rgb *= lerp(scanline_min, 1.0, scanline);
+	}
+
+ return r;
+}

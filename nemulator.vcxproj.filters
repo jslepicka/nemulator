@@ -304,10 +304,15 @@
     <ClCompile Include="audio_info.cpp" />
     <ClCompile Include="config.cpp" />
     <ClCompile Include="crc32.ixx" />
-    <ClCompile Include="D3d10App.cpp" />
+    <ClCompile Include="D3d11App.cpp" />
     <ClCompile Include="input_config.cpp" />
     <ClCompile Include="input_handler.cpp" />
     <ClCompile Include="interpolate.ixx" />
+    <ClCompile Include="vec.ixx" />
+    <ClCompile Include="font.ixx" />
+    <ClCompile Include="font.cpp" />
+    <ClCompile Include="shader_pass.ixx" />
+    <ClCompile Include="shader_pass.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="menu.cpp" />
     <ClCompile Include="nemulator.cpp" />
@@ -324,7 +329,7 @@
     <ClCompile Include="buttons.ixx" />
     <ClCompile Include="class_registry.ixx" />
     <ClCompile Include="config.ixx" />
-    <ClCompile Include="D3d10App.ixx" />
+    <ClCompile Include="D3d11App.ixx" />
     <ClCompile Include="input_config.ixx" />
     <ClCompile Include="input_handler.ixx" />
     <ClCompile Include="menu.ixx" />
@@ -492,9 +497,15 @@
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="effect.fx" />
-    <FxCompile Include="effect2.fx" />
-    <FxCompile Include="shape.fx" />
+    <FxCompile Include="text_vs.hlsl" />
+    <FxCompile Include="text_ps.hlsl" />
+    <FxCompile Include="transform_vs.hlsl" />
+    <FxCompile Include="tile_ps.hlsl" />
+    <FxCompile Include="tile_border_ps.hlsl" />
+    <FxCompile Include="overlay_ps.hlsl" />
+    <FxCompile Include="shape_vs.hlsl" />
+    <FxCompile Include="shape_triangle_ps.hlsl" />
+    <FxCompile Include="shape_disk_ps.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="nemulator.rc">

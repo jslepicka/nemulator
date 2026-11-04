@@ -1,13 +1,13 @@
 module;
-#include "d3d10.h"
-#include "d3dx10.h"
+#include "d3d11.h"
 
 module nemulator:system_container;
 import random;
 
 extern HANDLE g_start_event;
 
-extern ID3D10Device *d3dDev;
+extern ID3D11Device *d3dDev;
+extern ID3D11DeviceContext *d3dContext;
 
 std::string c_system_container::get_filename()
 {
@@ -26,9 +26,9 @@ c_system_container::c_system_container(c_system::s_system_info &si, std::string 
     mask_sides = false;
     title = filename.substr(0, filename.find_last_of("."));
 
-    bd.Usage = D3D10_USAGE_DEFAULT;
+    bd.Usage = D3D11_USAGE_DEFAULT;
     bd.ByteWidth = sizeof(SimpleVertex) * 4;
-    bd.BindFlags = D3D10_BIND_VERTEX_BUFFER;
+    bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     bd.CPUAccessFlags = 0;
     bd.MiscFlags = 0;
 }
@@ -46,12 +46,12 @@ void c_system_container::OnActivate(bool load)
 {
     if (ref == 0)
     {
-        SimpleVertex unloaded_vertices[4] = {{D3DXVECTOR3(-4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2(0.0f, (FLOAT)((double)static_height/tex_height))},
-                                             {D3DXVECTOR3(-4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2(0.0f, 0.0f)},
-                                             {D3DXVECTOR3(4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2((FLOAT)((double)static_width/tex_width), (FLOAT)((double)static_height/tex_height))},
-                                             {D3DXVECTOR3(4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2((FLOAT)((double)static_width/tex_width), 0.0f)}};
+        SimpleVertex unloaded_vertices[4] = {{{-4.0f / 3.0f, -1.0f, 0.0f}, {0.0f, (FLOAT)((double)static_height/tex_height)}},
+                                             {{-4.0f / 3.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+                                             {{4.0f / 3.0f, -1.0f, 0.0f}, {(FLOAT)((double)static_width/tex_width), (FLOAT)((double)static_height/tex_height)}},
+                                             {{4.0f / 3.0f, 1.0f, 0.0f}, {(FLOAT)((double)static_width/tex_width), 0.0f}}};
 
-        D3D10_SUBRESOURCE_DATA initData;
+        D3D11_SUBRESOURCE_DATA initData;
         initData.pSysMem = unloaded_vertices;
         HRESULT hr = d3dDev->CreateBuffer(&bd, &initData, &unloaded_vertex_buffer);
 
@@ -122,11 +122,11 @@ bool c_system_container::crop_changed()
     return false;
 }
 
-void c_system_container::DrawToTexture(ID3D10Texture2D *tex)
+void c_system_container::DrawToTexture(ID3D11Texture2D *tex)
 {
-    D3D10_MAPPED_TEXTURE2D map;
+    D3D11_MAPPED_SUBRESOURCE map;
     map.pData = 0;
-    tex->Map(0, D3D10_MAP_WRITE_DISCARD, NULL, &map);
+    d3dContext->Map(tex, 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
     int* p;
     auto &display_info = system_info.display_info;
     int pitch = map.RowPitch / 4;
@@ -182,7 +182,7 @@ void c_system_container::DrawToTexture(ID3D10Texture2D *tex)
             }
         }
     }
-    tex->Unmap(0);
+    d3dContext->Unmap(tex, 0);
 }
 
 bool c_system_container::Selectable()
@@ -239,10 +239,10 @@ void c_system_container::create_vertex_buffer()
     h_end /= tex_height;
 
     SimpleVertex vertices[4] = {
-        {D3DXVECTOR3(-4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2((FLOAT)w_start, (FLOAT)h_end)},
-        {D3DXVECTOR3(-4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2((FLOAT)w_start, (FLOAT)h_start)},
-        {D3DXVECTOR3(4.0f / 3.0f, -1.0f, 0.0f), D3DXVECTOR2((FLOAT)w_end, (FLOAT)h_end)},
-        {D3DXVECTOR3(4.0f / 3.0f, 1.0f, 0.0f), D3DXVECTOR2((FLOAT)w_end, (FLOAT)h_start)},
+        {{-4.0f / 3.0f, -1.0f, 0.0f}, {(FLOAT)w_start, (FLOAT)h_end}},
+        {{-4.0f / 3.0f, 1.0f, 0.0f}, {(FLOAT)w_start, (FLOAT)h_start}},
+        {{4.0f / 3.0f, -1.0f, 0.0f}, {(FLOAT)w_end, (FLOAT)h_end}},
+        {{4.0f / 3.0f, 1.0f, 0.0f}, {(FLOAT)w_end, (FLOAT)h_start}},
     };
 
     if (display_info.rotation == 90) {
@@ -258,7 +258,7 @@ void c_system_container::create_vertex_buffer()
         vertices[2].tex.y = vertices[3].tex.y = (FLOAT)h_end;
     }
 
-    D3D10_SUBRESOURCE_DATA initData;
+    D3D11_SUBRESOURCE_DATA initData;
     initData.pSysMem = vertices;
     HRESULT hr = d3dDev->CreateBuffer(&bd, &initData, &vertex_buffer);
 }
@@ -282,7 +282,7 @@ double c_system_container::get_height()
     return height;
 }
 
-ID3D10Buffer* c_system_container::get_vertex_buffer(int stretched)
+ID3D11Buffer* c_system_container::get_vertex_buffer(int stretched)
 {
     if (crop_changed()) {
         create_vertex_buffer();

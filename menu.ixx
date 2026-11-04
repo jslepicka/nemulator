@@ -1,10 +1,11 @@
 module;
-#include "d3d10.h"
-#include "d3dx10.h"
+#include "d3d11.h"
 
 export module nemulator.menu;
 import nemulator.std;
 import task;
+import font;
+import vec;
 
 export class c_menu :
     public c_task
@@ -27,8 +28,8 @@ protected:
     double text_height;
     double text_spacing;
     double y_offset;
-    void draw_text(char *text, double x, double y, D3DXCOLOR color);
-    ID3DX10Font *font;
+    void draw_text(char *text, double x, double y, s_color color);
+    c_font *font;
     int selected_item;
     void load_fonts();
     s_menu_items *menu_items;
@@ -66,8 +67,8 @@ public:
 
 private:
     void load_fonts();
-    void draw_text(ID3DX10Font *f, const std::string &text, double left, double right, double y, UINT format,
-                   D3DXCOLOR color);
+    void draw_text(c_font *f, const std::string &text, double left, double right, double y, UINT format,
+                   s_color color);
 
     static constexpr double TITLE_Y = .06;
     static constexpr double LIST_Y = .24;
@@ -81,7 +82,7 @@ private:
     bool confirm = false;
     std::function<std::string()> get_note;
     bool shadow = false;
-    ID3DX10Font *title_font = nullptr;
-    ID3DX10Font *font = nullptr;
-    ID3DX10Font *hint_font = nullptr;
+    c_font *title_font = nullptr;
+    c_font *font = nullptr;
+    c_font *hint_font = nullptr;
 };

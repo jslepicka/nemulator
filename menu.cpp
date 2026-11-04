@@ -1,7 +1,6 @@
 module;
 
-#include "d3d10.h"
-#include "D3DX10.h"
+#include "d3d11.h"
 
 #define ReleaseCOM(x) { if(x) {x->Release(); x = 0; } }
 
@@ -11,7 +10,8 @@ import input_handler;
 
 extern int clientHeight;
 extern int clientWidth;
-extern ID3D10Device *d3dDev;
+extern ID3D11Device *d3dDev;
+extern ID3D11DeviceContext *d3dContext;
 extern std::unique_ptr<c_input_handler> g_ih;
 
 c_menu::c_menu()
@@ -32,11 +32,7 @@ c_menu::~c_menu()
         delete[] menu_items->items;
     if (menu_items)
         delete menu_items;
-    if (font)
-    {
-        font->Release();
-        font = NULL;
-    }
+    delete font;
 }
 
 void c_menu::init(void *params)
@@ -63,7 +59,7 @@ void c_menu::draw()
 {
     for (int i = 0; i < menu_items->num_items; i++)
     {
-        draw_text(menu_items->items[i], 0.0, y_offset + text_spacing * i, i == selected_item ? D3DXCOLOR(1.0f, 0.0f, 0.0f, .8f) : D3DXCOLOR(1.0f, 1.0f, 1.0f, .8f));
+        draw_text(menu_items->items[i], 0.0, y_offset + text_spacing * i, i == selected_item ? s_color(1.0f, 0.0f, 0.0f, .8f) : s_color(1.0f, 1.0f, 1.0f, .8f));
     }
 }
 
@@ -102,42 +98,27 @@ int c_menu::update(double dt, int child_result, void *params)
     return c_task::TASK_RESULT_NONE;
 }
 
-void c_menu::draw_text(char *text, double x, double y, D3DXCOLOR color)
+void c_menu::draw_text(char *text, double x, double y, s_color color)
 {
     RECT r = {0, (long)(clientHeight * y), clientWidth, clientHeight};
-    ID3D10DepthStencilState *state;
+    ID3D11DepthStencilState *state;
     int oldref;
-    d3dDev->OMGetDepthStencilState(&state, (UINT *)&oldref);
-    font->DrawText(NULL, text, -1, &r, DT_NOCLIP | DT_CENTER, color);
-    d3dDev->OMSetDepthStencilState(state, oldref);
+    d3dContext->OMGetDepthStencilState(&state, (UINT *)&oldref);
+    font->draw(text, r, DT_CENTER, color);
+    d3dContext->OMSetDepthStencilState(state, oldref);
 }
 
 void c_menu::load_fonts()
 {
-    if (font)
-    {
-        font->Release();
-        font = NULL;
-    }
-    D3DX10_FONT_DESC fontDesc;
-    fontDesc.Height = (int)(clientHeight * text_height);
-    fontDesc.Width = 0;
-    fontDesc.Weight = 0;
-    fontDesc.MipLevels = 1;
-    fontDesc.Italic = false;
-    fontDesc.CharSet = DEFAULT_CHARSET;
-    fontDesc.OutputPrecision = OUT_DEFAULT_PRECIS;
-    fontDesc.Quality = DEFAULT_QUALITY;
-    fontDesc.PitchAndFamily = DEFAULT_PITCH | FF_DONTCARE;
-    strcpy_s(fontDesc.FaceName, "Calibri");
-    HRESULT hr = D3DX10CreateFontIndirect(d3dDev, &fontDesc, &font);
+    delete font;
+    font = new c_font((int)(clientHeight * text_height), "Calibri");
 }
 
 c_options_menu::~c_options_menu()
 {
-    ReleaseCOM(title_font);
-    ReleaseCOM(font);
-    ReleaseCOM(hint_font);
+    delete title_font;
+    delete font;
+    delete hint_font;
 }
 
 void c_options_menu::init(void *params)
@@ -207,7 +188,7 @@ void c_options_menu::load_fonts()
 {
     struct s_fonts
     {
-        ID3DX10Font **font;
+        c_font **font;
         double scale;
     };
 
@@ -219,51 +200,40 @@ void c_options_menu::load_fonts()
 
     for (auto f : fonts)
     {
-        ReleaseCOM((*f.font));
-        D3DX10_FONT_DESC fontDesc = {0};
-        fontDesc.Height = (int)(clientHeight * f.scale);
-        fontDesc.Width = 0;
-        fontDesc.Weight = 0;
-        fontDesc.MipLevels = 1;
-        fontDesc.Italic = false;
-        fontDesc.CharSet = DEFAULT_CHARSET;
-        fontDesc.OutputPrecision = OUT_DEFAULT_PRECIS;
-        fontDesc.Quality = DEFAULT_QUALITY;
-        fontDesc.PitchAndFamily = DEFAULT_PITCH | FF_DONTCARE;
-        strcpy_s(fontDesc.FaceName, "Calibri");
-        D3DX10CreateFontIndirect(d3dDev, &fontDesc, f.font);
+        delete *f.font;
+        *f.font = new c_font((int)(clientHeight * f.scale), "Calibri");
     }
 }
 
-void c_options_menu::draw_text(ID3DX10Font *f, const std::string &text, double left, double right, double y,
-                               UINT format, D3DXCOLOR color)
+void c_options_menu::draw_text(c_font *f, const std::string &text, double left, double right, double y,
+                               UINT format, s_color color)
 {
     RECT r = {(LONG)(clientWidth * left), (LONG)(clientHeight * y), (LONG)(clientWidth * right), clientHeight};
     if (shadow)
     {
         LONG offset = clientHeight / 400 + 1;
         RECT shadow_rect = {r.left + offset, r.top + offset, r.right + offset, r.bottom + offset};
-        f->DrawText(NULL, text.c_str(), -1, &shadow_rect, DT_NOCLIP | format, D3DXCOLOR(0.0f, 0.0f, 0.0f, color.a));
+        f->draw(text.c_str(), shadow_rect, format, s_color(0.0f, 0.0f, 0.0f, color.a));
     }
-    f->DrawText(NULL, text.c_str(), -1, &r, DT_NOCLIP | format, color);
+    f->draw(text.c_str(), r, format, color);
 }
 
 void c_options_menu::draw()
 {
-    const D3DXCOLOR normal(1.0f, 1.0f, 1.0f, 1.0f);
-    const D3DXCOLOR highlight(1.0f, 0.0f, 0.0f, 1.0f);
-    const D3DXCOLOR hint(.6f, .6f, .6f, 1.0f);
+    const s_color normal(1.0f, 1.0f, 1.0f, 1.0f);
+    const s_color highlight(1.0f, 0.0f, 0.0f, 1.0f);
+    const s_color hint(.6f, .6f, .6f, 1.0f);
 
-    ID3D10DepthStencilState *depth_state;
+    ID3D11DepthStencilState *depth_state;
     UINT oldref;
-    d3dDev->OMGetDepthStencilState(&depth_state, &oldref);
+    d3dContext->OMGetDepthStencilState(&depth_state, &oldref);
 
     draw_text(title_font, title, 0.0, 1.0, TITLE_Y, DT_CENTER, normal);
     for (int i = 0; i < (int)items.size(); i++)
     {
         auto &item = items[i];
         double y = LIST_Y + ROW_HEIGHT * i;
-        D3DXCOLOR color = i == selected_item ? highlight : normal;
+        s_color color = i == selected_item ? highlight : normal;
         if (item.get_value)
         {
             //labels end just left of center and values start just right of it
@@ -288,6 +258,6 @@ void c_options_menu::draw()
     draw_text(hint_font, is_setting ? "Left/Right: change    Esc: back" : "Enter: select    Esc: back", 0.0, 1.0,
               HINT_Y, DT_CENTER, hint);
 
-    d3dDev->OMSetDepthStencilState(depth_state, oldref);
+    d3dContext->OMSetDepthStencilState(depth_state, oldref);
     ReleaseCOM(depth_state);
 }

@@ -1,11 +1,13 @@
 module;
-#include "d3d10.h"
-#include <d3dx10.h>
+#include "d3d11.h"
 
 export module nemulator:qam;
 import nemulator.std;
 
 import task;
+import font;
+import vec;
+import shader_pass;
 
 export class c_qam :
     public c_task
@@ -26,22 +28,27 @@ public:
     bool system_chosen() { return result == RESULT_SYSTEM; }
     int get_system() { return selected_system; }
 private:
-    ID3DX10Font *font;
-    ID3DX10Font *system_font;
+    c_font *font;
+    c_font *system_font;
     //the arrow is drawn as a shape rather than as text, so it can turn over between the rows
     struct s_shape_vertex
     {
         float x, y, z;
         float u, v;
     };
-    ID3D10Effect *shape_effect;
-    ID3D10EffectTechnique *triangle_technique;
-    ID3D10EffectVectorVariable *shape_color;
-    ID3D10EffectScalarVariable *shape_angle; //so the shading's light stays put as the shape turns
-    ID3D10InputLayout *shape_layout;
-    ID3D10Buffer *shape_vertices;
+    //what shape_triangle_ps.hlsl expects
+    struct s_shape_constants
+    {
+        s_color color;
+        float angle; //so the shading's light stays put as the shape turns
+        float padding[3];
+    };
+    c_shader_pass shape_pass;
+    ID3D11Buffer *shape_constants_buffer;
+    ID3D11InputLayout *shape_layout;
+    ID3D11Buffer *shape_vertices;
     void init_arrow();
-    void draw_arrow(double center_x, double center_y, double size, double angle, D3DXCOLOR color);
+    void draw_arrow(double center_x, double center_y, double size, double angle, s_color color);
     int selected;
     static const char *c;
     double scroll_timer;

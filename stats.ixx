@@ -1,10 +1,11 @@
 module;
-#include "d3d10.h"
-#include "d3dx10.h"
+#include "d3d11.h"
 
 export module nemulator:stats;
 import nemulator.std;
 import task;
+import font;
+import vec;
 
 export class c_stats:
     public c_task
@@ -23,8 +24,8 @@ public:
     void clear();
   private:
     bool reported;
-    void draw_text(char *text, double x, double y, D3DXCOLOR color);
-    ID3DX10Font *font;
+    void draw_text(char *text, double x, double y, s_color color);
+    c_font *font;
     void load_fonts();
     std::map<std::string, std::string> stats;
 };
